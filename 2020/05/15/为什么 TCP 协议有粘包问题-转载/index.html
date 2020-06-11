@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="TCP&#x2F;IP 协议簇建立了互联网中通信协议的概念模型，该协议簇中的两个主要协议就是 TCP 和 IP 协议。TCP&#x2F; IP 协议簇中的 TCP 协议能够保证数据段（Segment）的可靠性和顺序，有了可靠的传输层协议之后，应用层协议就可以直接使用 TCP 协议传输数据，不在需要关心数据段的丢失和重复问题1。  图 1 - TCP 协议与应用层协议 IP 协议解决了数据包（Packet）的路由和传输">
+<meta property="og:type" content="article">
+<meta property="og:title" content="为什么 TCP 协议有粘包问题-转载">
+<meta property="og:url" content="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="TCP&#x2F;IP 协议簇建立了互联网中通信协议的概念模型，该协议簇中的两个主要协议就是 TCP 和 IP 协议。TCP&#x2F; IP 协议簇中的 TCP 协议能够保证数据段（Segment）的可靠性和顺序，有了可靠的传输层协议之后，应用层协议就可以直接使用 TCP 协议传输数据，不在需要关心数据段的丢失和重复问题1。  图 1 - TCP 协议与应用层协议 IP 协议解决了数据包（Packet）的路由和传输">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://img.draveness.me/2020-03-05-15834216958567-tcp-and-application-protocols.png">
+<meta property="og:image" content="https://img.draveness.me/2020-03-05-15834216958612-nagle-algorithm.png">
+<meta property="og:image" content="https://img.draveness.me/2020-03-05-15834216958643-message-framing.png">
+<meta property="article:published_time" content="2020-05-15T19:15:30.000Z">
+<meta property="article:modified_time" content="2020-05-16T05:46:07.480Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://img.draveness.me/2020-03-05-15834216958567-tcp-and-application-protocols.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>为什么 TCP 协议有粘包问题-转载 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          为什么 TCP 协议有粘包问题-转载
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-16 03:15:30 / 修改时间：13:46:07" itemprop="dateCreated datePublished" datetime="2020-05-16T03:15:30+08:00">2020-05-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>TCP/IP 协议簇建立了互联网中通信协议的概念模型，该协议簇中的两个主要协议就是 TCP 和 IP 协议。TCP/ IP 协议簇中的 TCP 协议能够保证数据段（Segment）的可靠性和顺序，有了可靠的传输层协议之后，应用层协议就可以直接使用 TCP 协议传输数据，不在需要关心数据段的丢失和重复问题<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:1" target="_blank" rel="noopener">1</a>。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958567-tcp-and-application-protocols.png" alt="tcp-and-application-protocols"></p>
+<p><strong>图 1 - TCP 协议与应用层协议</strong></p>
+<p>IP 协议解决了数据包（Packet）的路由和传输，上层的 TCP 协议不再关注路由和寻址<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:2" target="_blank" rel="noopener">2</a>，那么 TCP 协议解决的是传输的可靠性和顺序问题，上层不需要关心数据能否传输到目标进程，只要写入 TCP 协议的缓冲区的数据，协议栈几乎都能保证数据的送达。</p>
+<p>当应用层协议使用 TCP 协议传输数据时，TCP 协议可能会将应用层发送的数据分成多个包依次发送，而数据的接收方收到的数据段可能有多个『应用层数据包』组成，所以当应用层从 TCP 缓冲区中读取数据时发现粘连的数据包时，需要对收到的数据进行拆分。</p>
+<p>粘包并不是 TCP 协议造成的，它的出现是因为应用层协议设计者对 TCP 协议的错误理解，忽略了 TCP 协议的定义并且缺乏设计应用层协议的经验。本文将从 TCP 协议以及应用层协议出发，分析我们经常提到的 TCP 协议中的粘包是如何发生的：</p>
+<ul>
+<li>TCP 协议是面向字节流的协议，它可能会组合或者拆分应用层协议的数据；</li>
+<li>应用层协议的没有定义消息的边界导致数据的接收方无法拼接数据；</li>
+</ul>
+<p>很多人可能会认为粘包是一个比较低级的甚至不值得讨论的问题，但是在作者看来这个问题还是很有趣的，不是所有人都系统性地学过基于 TCP 的应用层协议设计，也不是所有人对 TCP 协议也没有那么深入的理解，相信很多人学习编程的过程都是自底向上的，所以作者认为这是一个值得回答的问题，我们应该传递正确的知识，而不是负面的和居高临下的情绪。</p>
+<h2 id="面向字节流"><a href="#面向字节流" class="headerlink" title="面向字节流"></a>面向字节流</h2><p>TCP 协议是面向连接的、可靠的、基于字节流的传输层通信协议<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:3" target="_blank" rel="noopener">3</a>，应用层交给 TCP 协议的数据并不会以消息为单位向目的主机传输，这些数据在某些情况下会被组合成一个数据段发送给目标的主机。</p>
+<p>Nagle 算法是一种通过减少数据包的方式提高 TCP 传输性能的算法<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:4" target="_blank" rel="noopener">4</a>。因为网络 带宽有限，它不会将小的数据块直接发送到目的主机，而是会在本地缓冲区中等待更多待发送的数据，这种批量发送数据的策略虽然会影响实时性和网络延迟，但是能够降低网络拥堵的可能性并减少额外开销。</p>
+<p>在早期的互联网中，Telnet 是被广泛使用的应用程序，然而使用 Telnet 会产生大量只有 1 字节负载的有效数据，每个数据包都会有 40 字节的额外开销，带宽的利用率只有 ~2.44%，Nagle 算法就是在当时的这种场景下设计的。</p>
+<p>当应用层协议通过 TCP 协议传输数据时，实际上待发送的数据先被写入了 TCP 协议的缓冲区，如果用户开启了 Nagle 算法，那么 TCP 协议可能不会立刻发送写入的数据，它会等待缓冲区中数据超过最大数据段（MSS）或者上一个数据段被 ACK 时才会发送缓冲区中的数据。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958612-nagle-algorithm.png" alt="nagle-algorithm"></p>
+<p><strong>图 2 - Nagle 算法</strong></p>
+<p>几十年前还会发生网络拥塞的问题，但是今天的网络带宽资源不再像过去那么紧张，在默认情况下，Linux 内核都会使用如下的方式默认关闭 Nagle 算法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP_NODELAY = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>Linux 内核中使用如下所示的 <a href="https://github.com/torvalds/linux/blob/bd2463ac7d7ec51d432f23bf0e893fb371a908cd/net/ipv4/tcp_output.c#L1897" target="_blank" rel="noopener"><code>tcp_nagle_test</code></a> 函数测试我们是否应该发送当前的 TCP 数据段，感兴趣的读者可以以这段代码为入口详细了解 Nagle 算法在今天的实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">tcp_nagle_test</span><span class="params">(<span class="keyword">const</span> struct tcp_sock *tp, <span class="keyword">const</span> struct sk_buff *skb,</span></span></span><br><span class="line"><span class="function"><span class="params">				  <span class="keyword">unsigned</span> <span class="keyword">int</span> cur_mss, <span class="keyword">int</span> nonagle)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (nonagle &amp; TCP_NAGLE_PUSH)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tcp_urg_mode(tp) || (TCP_SKB_CB(skb)-&gt;tcp_flags &amp; TCPHDR_FIN))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!tcp_nagle_check(skb-&gt;len &lt; cur_mss, tp, nonagle))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Nagle 算法确实能够在数据包较小时提高网络带宽的利用率并减少 TCP 和 IP 协议头带来的额外开销，但是使用该算法也可能会导致应用层协议多次写入的数据被合并或者拆分发送，当接收方从 TCP 协议栈中读取数据时会发现不相关的数据出现在了同一个数据段中，应用层协议可能没有办法对它们进行拆分和重组。</p>
+<p>除了 Nagle 算法之外，TCP 协议栈中还有另一个用于延迟发送数据的选项 <code>TCP_CORK</code>，如果我们开启该选项，那么当发送的数据小于 MSS 时，TCP 协议就会延迟 200ms 发送该数据或者等待缓冲区中的数据超过 MSS<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:5" target="_blank" rel="noopener">5</a>。</p>
+<p>无论是 <code>TCP_NODELAY</code> 还是 <code>TCP_CORK</code>，它们都会通过延迟发送数据来提高带宽的利用率，它们会对应用层协议写入的数据进行拆分和重组，而这些机制和配置能够出现的最重要原因是 — TCP 协议是基于字节流的协议，其本身没有数据包的概念，不会按照数据包发送数据。</p>
+<h2 id="消息边界"><a href="#消息边界" class="headerlink" title="消息边界"></a>消息边界</h2><p>如果我们系统性地学习过 TCP 协议以及基于 TCP 的应用层协议设计，那么设计一个能够被 TCP 协议栈任意拆分和组装数据包的应用层协议就不会有什么问题。既然 TCP 协议是基于字节流的，这其实就意味着应用层协议要自己划分消息的边界。</p>
+<p>如果我们能在应用层协议中定义消息的边界，那么无论 TCP 协议如何对应用层协议的数据包进程拆分和重组，接收方都能根据协议的规则恢复对应的消息。在应用层协议中，最常见的两种解决方案就是基于长度或者基于终结符（Delimiter）。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958643-message-framing.png" alt="message-framing"></p>
+<p><strong>图 3 - 实现消息边界的方法</strong></p>
+<p>基于长度的实现有两种方式，一种是使用固定长度，所有的应用层消息都使用统一的大小，另一种方式是使用不固定长度，但是需要在应用层协议的协议头中增加表示负载长度的字段，这样接收方才可以从字节流中分离出不同的消息，HTTP 协议的消息边界就是基于长度实现的：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: text/html; charset=UTF-8</span><br><span class="line"><span class="attribute">Content-Length</span>: 138</span><br><span class="line">...</span><br><span class="line"><span class="attribute">Connection</span>: close</span><br><span class="line"></span><br><span class="line">&lt;html&gt;</span><br><span class="line">  &lt;head&gt;</span><br><span class="line">    &lt;title&gt;An Example Page&lt;/title&gt;</span><br><span class="line">  &lt;/head&gt;</span><br><span class="line">  &lt;body&gt;</span><br><span class="line">    &lt;p&gt;Hello World, this is a very simple HTML document.&lt;/p&gt;</span><br><span class="line">  &lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<p>在上述 HTTP 消息中，我们使用 <code>Content-Length</code> 头表示 HTTP 消息的负载大小，当应用层协议解析到足够的字节数后，就能从中分离出完整的 HTTP 消息，无论发送方如何处理对应的数据包，我们都可以遵循这一规则完成 HTTP 消息的重组<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:6" target="_blank" rel="noopener">6</a>。</p>
+<p>不过 HTTP 协议除了使用基于长度的方式实现边界，也会使用基于终结符的策略，当 HTTP 使用块传输（Chunked Transfer）机制时，HTTP 头中就不再包含 <code>Content-Length</code> 了，它会使用负载大小为 0 的 HTTP 消息作为终结符表示消息的边界。</p>
+<p>当然除了这两种方式之外，我们可以基于特定的规则实现消息的边界，例如：使用 TCP 协议发送 JSON 数据，接收方可以根据接收到的数据是否能够被解析成合法的 JSON 判断消息是否终结。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TCP 协议粘包问题是因为应用层协议开发者的错误设计导致的，他们忽略了 TCP 协议数据传输的核心机制 — 基于字节流，其本身不包含消息、数据包等概念，所有数据的传输都是流式的，需要应用层协议自己设计消息的边界，即消息帧（Message Framing），我们重新回顾一下粘包问题出现的核心原因：</p>
+<ol>
+<li>TCP 协议是基于字节流的传输层协议，其中不存在消息和数据包的概念；</li>
+<li>应用层协议没有使用基于长度或者基于终结符的消息边界，导致多个消息的粘连；</li>
+</ol>
+<p>网络协议的学习过程非常有趣，不断思考背后的问题能够让我们对定义有更深的认识。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
+<ul>
+<li>基于 UDP 协议的应用层协议应该如何设计？会出现粘包的问题么？</li>
+<li>有哪些应用层协议使用基于长度的分帧？又有哪些使用基于终结符的分帧？</li>
+</ul>
+<blockquote>
+<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
+</blockquote>
+<h2 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h2><ul>
+<li><a href="https://draveness.me/whys-the-design-tcp-three-way-handshake" target="_blank" rel="noopener">为什么 TCP 建立连接需要三次握手</a></li>
+<li><a href="https://draveness.me/whys-the-design-tcp-segment-ip-packet" target="_blank" rel="noopener">为什么 TCP/IP 协议会拆分数据</a></li>
+</ul>
+<h2 id="推荐阅读"><a href="#推荐阅读" class="headerlink" title="推荐阅读"></a>推荐阅读</h2><ul>
+<li>JC Mogul. “Rethinking the TCP Nagle Algorithm” <a href="http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf" target="_blank" rel="noopener">http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf</a></li>
+<li>Stephen Cleary. Apr 30, 2009. “Message Framing” <a href="https://blog.stephencleary.com/2009/04/message-framing.html" target="_blank" rel="noopener">https://blog.stephencleary.com/2009/04/message-framing.html</a></li>
+</ul>
+<hr>
+<ol>
+<li>Wikipedia: Internet protocol suite <a href="https://en.wikipedia.org/wiki/Internet_protocol_suite" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Internet_protocol_suite</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:1" target="_blank" rel="noopener">↩︎</a></li>
+<li>What is the Internet Protocol? <a href="https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/" target="_blank" rel="noopener">https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:2" target="_blank" rel="noopener">↩︎</a></li>
+<li>Wikipedia: Transmission Control Procol <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Transmission_Control_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:3" target="_blank" rel="noopener">↩︎</a></li>
+<li>Nagle, J., “Congestion Control in IP/TCP Internetworks”, RFC 896, DOI 10.17487/RFC0896, January 1984, <a href="https://www.rfc-editor.org/info/rfc896" target="_blank" rel="noopener">https://www.rfc-editor.org/info/rfc896</a>. <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:4" target="_blank" rel="noopener">↩︎</a></li>
+<li>Is there any significant difference between TCP_CORK and TCP_NODELAY in this use-case? <a href="https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use" target="_blank" rel="noopener">https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:5" target="_blank" rel="noopener">↩︎</a></li>
+<li>Wikipedia: Hypertext Transfer Protocol <a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:6" target="_blank" rel="noopener">↩︎</a></li>
+</ol>
+<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/" target="_blank" rel="noopener">原文地址</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20MD5%20%E4%B8%8D%E8%83%BD%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%AF%86%E7%A0%81-%E8%BD%AC%E8%BD%BD/" rel="prev" title="为什么 MD5 不能用于存储密码-转载">
+      <i class="fa fa-chevron-left"></i> 为什么 MD5 不能用于存储密码-转载
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/05/15/RESTful%E6%9E%B6%E6%9E%84-%E8%BD%AC%E8%BD%BD/" rel="next" title="RESTful架构-转载">
+      RESTful架构-转载 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#面向字节流"><span class="nav-number">1.</span> <span class="nav-text">面向字节流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#消息边界"><span class="nav-number">2.</span> <span class="nav-text">消息边界</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#相关文章"><span class="nav-number">4.</span> <span class="nav-text">相关文章</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#推荐阅读"><span class="nav-number">5.</span> <span class="nav-text">推荐阅读</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">126</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">304k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

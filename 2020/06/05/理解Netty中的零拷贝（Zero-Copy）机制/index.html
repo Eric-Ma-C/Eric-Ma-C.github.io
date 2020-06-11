@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="转载 原文地址 理解零拷贝零拷贝是Netty的重要特性之一，而究竟什么是零拷贝呢？ WIKI中对其有如下定义：  “Zero-copy” describes computer operations in which the CPU does not perform the task of copying data from one memory area to another.  从WIKI的定义">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解Netty中的零拷贝（Zero-Copy）机制">
+<meta property="og:url" content="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="转载 原文地址 理解零拷贝零拷贝是Netty的重要特性之一，而究竟什么是零拷贝呢？ WIKI中对其有如下定义：  “Zero-copy” describes computer operations in which the CPU does not perform the task of copying data from one memory area to another.  从WIKI的定义">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0108/104700_qc4H_859646.png">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0108/104957_UW6E_859646.png">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0108/112132_6ASE_859646.png">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0108/112212_qD2w_859646.png">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0108/113714_EoXP_859646.png">
+<meta property="og:image" content="http://static.oschina.net/uploads/space/2014/0113/105411_Hrta_859646.png">
+<meta property="article:published_time" content="2020-06-05T03:01:27.000Z">
+<meta property="article:modified_time" content="2020-06-05T11:05:52.524Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://static.oschina.net/uploads/space/2014/0108/104700_qc4H_859646.png">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>理解Netty中的零拷贝（Zero-Copy）机制 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解Netty中的零拷贝（Zero-Copy）机制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 11:01:27 / 修改时间：19:05:52" itemprop="dateCreated datePublished" datetime="2020-06-05T11:01:27+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>转载 <a href="https://my.oschina.net/plucury/blog/192577" target="_blank" rel="noopener">原文地址</a></p>
+<h2 id="理解零拷贝"><a href="#理解零拷贝" class="headerlink" title="理解零拷贝"></a>理解零拷贝</h2><p>零拷贝是Netty的重要特性之一，而究竟什么是零拷贝呢？ WIKI中对其有如下定义：</p>
+<blockquote>
+<p>“Zero-copy” describes computer operations in which the CPU does not perform the task of copying data from one memory area to another.</p>
+</blockquote>
+<p>从WIKI的定义中，我们看到“零拷贝”是指计算机操作的过程中，CPU不需要为数据在内存之间的拷贝消耗资源。而它通常是指计算机在网络上发送文件时，不需要将文件内容拷贝到用户空间（User Space）而直接在内核空间（Kernel Space）中传输到网络的方式。</p>
+<p>Non-Zero Copy方式： <img src="http://static.oschina.net/uploads/space/2014/0108/104700_qc4H_859646.png" alt="Non-Zero Copy"></p>
+<p>Zero Copy方式： <img src="http://static.oschina.net/uploads/space/2014/0108/104957_UW6E_859646.png" alt="在此输入图片描述"></p>
+<p>从上图中可以清楚的看到，Zero Copy的模式中，避免了数据在用户空间和内存空间之间的拷贝，从而提高了系统的整体性能。Linux中的<code>sendfile()</code>以及Java NIO中的<code>FileChannel.transferTo()</code>方法都实现了零拷贝的功能，而在Netty中也通过在<code>FileRegion</code>中包装了NIO的<code>FileChannel.transferTo()</code>方法实现了零拷贝。</p>
+<p>而在Netty中还有另一种形式的零拷贝，即Netty允许我们将多段数据合并为一整段虚拟数据供用户使用，而过程中不需要对数据进行拷贝操作，这也是我们今天要讲的重点。我们都知道在stream-based transport（如TCP/IP）的传输过程中，数据包有可能会被重新封装在不同的数据包中，例如当你发送如下数据时：</p>
+<p><img src="http://static.oschina.net/uploads/space/2014/0108/112132_6ASE_859646.png" alt="Data Stream Sent"></p>
+<p>有可能实际收到的数据如下：</p>
+<p><img src="http://static.oschina.net/uploads/space/2014/0108/112212_qD2w_859646.png" alt="Data Stream Received"></p>
+<p>因此在实际应用中，很有可能一条完整的消息被分割为多个数据包进行网络传输，而单个的数据包对你而言是没有意义的，只有当这些数据包组成一条完整的消息时你才能做出正确的处理，而Netty可以通过零拷贝的方式将这些数据包组合成一条完整的消息供你来使用。而此时，零拷贝的作用范围仅在用户空间中。</p>
+<p><img src="http://static.oschina.net/uploads/space/2014/0108/113714_EoXP_859646.png" alt="Virtual Buffer"> ##Netty3中零拷贝的实现机制 <em>以下以Netty 3.8.0.Final的源代码来进行说明</em> </p>
+<h3 id="ChannelBuffer接口"><a href="#ChannelBuffer接口" class="headerlink" title="ChannelBuffer接口"></a>ChannelBuffer接口</h3><p>Netty为需要传输的数据制定了统一的<code>ChannelBuffer</code>接口。该接口的主要设计思路如下：</p>
+<ul>
+<li>使用<code>getByte(int index)</code>方法来实现随机访问</li>
+<li>使用双指针的方式实现顺序访问<ul>
+<li>每个Buffer都有一个读指针（readIndex）和写指针（writeIndex）</li>
+<li>在读取数据时读指针后移，在写入数据时写指针后移 <img src="http://static.oschina.net/uploads/space/2014/0113/105411_Hrta_859646.png" alt="在此输入图片描述"></li>
+</ul>
+</li>
+</ul>
+<p>定义了统一的接口之后，就是来做各种实现了。Netty主要实现了<code>HeapChannelBuffer</code>,<code>ByteBufferBackedChannelBuffer</code>等等，下面我们就来讲讲与Zero Copy直接相关的<code>CompositeChannelBuffer</code>类。 </p>
+<h3 id="CompositeChannelBuffer类"><a href="#CompositeChannelBuffer类" class="headerlink" title="CompositeChannelBuffer类"></a>CompositeChannelBuffer类</h3><p><code>CompositeChannelBuffer</code>类的作用是将多个<code>ChannelBuffer</code>组成一个虚拟的<code>ChannelBuffer</code>来进行操作。为什么说是虚拟的呢，因为<code>CompositeChannelBuffer</code>并没有将多个<code>ChannelBuffer</code>真正的组合起来，而只是保存了他们的引用，这样就避免了数据的拷贝，实现了Zero Copy。 下面我们来看看具体的代码实现，首先是成员变量</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">private int readerIndex;</span><br><span class="line">private int writerIndex;</span><br><span class="line">private ChannelBuffer[] components;</span><br><span class="line">private int[] indices;</span><br><span class="line">private int lastAccessedComponentId;</span><br></pre></td></tr></table></figure>
+
+<p>以上这里列出了几个比较重要的成员变量。其中<code>readerIndex</code>既读指针和<code>writerIndex</code>既写指针是从<code>AbstractChannelBuffer</code>继承而来的；然后<code>components</code>是一个<code>ChannelBuffer</code>的数组，他保存了组成这个虚拟Buffer的所有子Buffer，<code>indices</code>是一个<code>int</code>类型的数组，它保存的是各个Buffer的索引值；最后的<code>lastAccessedComponentId</code>是一个<code>int</code>值，它记录了最后一次访问时的子Buffer ID。从这个数据结构，我们不难发现所谓的<code>CompositeChannelBuffer</code>实际上就是将一系列的Buffer通过数组保存起来，然后实现了<code>ChannelBuffer</code> 的接口，使得在上层看来，操作这些Buffer就像是操作一个单独的Buffer一样。</p>
+<h3 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h3><p> 接下来，我们再看一下<code>CompositeChannelBuffer.setComponents</code>方法，它会在初始化<code>CompositeChannelBuffer</code>时被调用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Setup this ChannelBuffer from the list</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setComponents</span><span class="params">(List&lt;ChannelBuffer&gt; newComponents)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> !newComponents.isEmpty();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Clear the cache.</span></span><br><span class="line">    lastAccessedComponentId = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Build the component array.</span></span><br><span class="line">    components = <span class="keyword">new</span> ChannelBuffer[newComponents.size()];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; components.length; i ++) &#123;</span><br><span class="line">        ChannelBuffer c = newComponents.get(i);</span><br><span class="line">        <span class="keyword">if</span> (c.order() != order()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(</span><br><span class="line">                    <span class="string">"All buffers must have the same endianness."</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">assert</span> c.readerIndex() == <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">assert</span> c.writerIndex() == c.capacity();</span><br><span class="line"></span><br><span class="line">        components[i] = c;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Build the component lookup table.</span></span><br><span class="line">    indices = <span class="keyword">new</span> <span class="keyword">int</span>[components.length + <span class="number">1</span>];</span><br><span class="line">    indices[<span class="number">0</span>] = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= components.length; i ++) &#123;</span><br><span class="line">        indices[i] = indices[i - <span class="number">1</span>] + components[i - <span class="number">1</span>].capacity();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Reset the indexes.</span></span><br><span class="line">    setIndex(<span class="number">0</span>, capacity());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过代码可以看到该方法的功能就是将一个<code>ChannelBuffer</code>的List给组合起来。它首先将List中得元素放入到<code>components</code>数组中，然后创建<code>indices</code>用于数据的查找，最后使用<code>setIndex</code>来重置指针。这里需要注意的是<code>setIndex(0, capacity())</code>会将读指针设置为0，写指针设置为当前Buffer的长度，这也就是前面需要做<code>assert c.readerIndex() == 0</code>和<code>assert c.writerIndex() == c.capacity()</code>这两个判断的原因，否则很容易会造成数据重复读写的问题，所以Netty推荐我们使用<code>ChannelBuffers.wrappedBuffer</code>方法来进行Buffer的合并，因为在该方法中Netty会通过<code>slice()</code>方法来确保构建<code>CompositeChannelBuffer</code>是传入的所有子Buffer都是符合要求的。</p>
+<h3 id="数据访问"><a href="#数据访问" class="headerlink" title="数据访问"></a>数据访问</h3><p><code>CompositeChannelBuffer.getByte(int index)</code>的实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">byte</span> <span class="title">getByte</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> componentId = componentId(index);</span><br><span class="line">    <span class="keyword">return</span> components[componentId].getByte(index - indices[componentId]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从代码我们可以看到，在随机查找时会首先通过index获取这个字节所在的<code>componentId</code>既字节所在的子Buffer序列，然后通过<code>index - indices[componentId]</code>计算出它在这个子Buffer中的第几个字节，然后返回结果。</p>
+<p>下面再来看一下<code>componentId(int index)</code>的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">componentId</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> lastComponentId = lastAccessedComponentId;</span><br><span class="line">    <span class="keyword">if</span> (index &gt;= indices[lastComponentId]) &#123;</span><br><span class="line">        <span class="keyword">if</span> (index &lt; indices[lastComponentId + <span class="number">1</span>]) &#123;</span><br><span class="line">            <span class="keyword">return</span> lastComponentId;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Search right</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = lastComponentId + <span class="number">1</span>; i &lt; components.length; i ++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (index &lt; indices[i + <span class="number">1</span>]) &#123;</span><br><span class="line">                lastAccessedComponentId = i;</span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Search left</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = lastComponentId - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i --) &#123;</span><br><span class="line">            <span class="keyword">if</span> (index &gt;= indices[i]) &#123;</span><br><span class="line">                lastAccessedComponentId = i;</span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IndexOutOfBoundsException(<span class="string">"Invalid index: "</span> + index + <span class="string">", maximum: "</span> + indices.length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从代码中我们发现，Netty以<code>lastComponentId</code>既上次访问的子Buffer序号为中心，向左右两边进行搜索，这样做的目的是，当我们两次随机查找的字符序列相近时（大部分情况下都是这样），可以最快的搜索到目标索引的<code>componentId</code>。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a href="http://my.oschina.net/flashsword/blog/164237" target="_blank" rel="noopener">http://my.oschina.net/flashsword/blog/164237</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Zero-copy" target="_blank" rel="noopener">http://en.wikipedia.org/wiki/Zero-copy</a></li>
+<li><a href="http://stackoverflow.com/questions/20727615/is-nettys-zero-copy-different-from-os-level-zero-copy" target="_blank" rel="noopener">http://stackoverflow.com/questions/20727615/is-nettys-zero-copy-different-from-os-level-zero-copy</a></li>
+<li><a href="http://www-old.itm.uni-luebeck.de/teaching/ws1112/vs/Uebung/GrossUebungNetty/VS-WS1112-xx-Zero-Copy_Event-Driven_Servers_with_Netty.pdf?lang=de" target="_blank" rel="noopener">http://www-old.itm.uni-luebeck.de/teaching/ws1112/vs/Uebung/GrossUebungNetty/VS-WS1112-xx-Zero-Copy_Event-Driven_Servers_with_Netty.pdf?lang=de</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/05/Java%E4%B8%AD%E5%9B%9B%E7%A7%8D%E5%BC%95%E7%94%A8%E7%B1%BB%E5%9E%8B/" rel="prev" title="Java中四种引用类型">
+      <i class="fa fa-chevron-left"></i> Java中四种引用类型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/" rel="next" title="Object类的方法">
+      Object类的方法 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#理解零拷贝"><span class="nav-number">1.</span> <span class="nav-text">理解零拷贝</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ChannelBuffer接口"><span class="nav-number">1.1.</span> <span class="nav-text">ChannelBuffer接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CompositeChannelBuffer类"><span class="nav-number">1.2.</span> <span class="nav-text">CompositeChannelBuffer类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建"><span class="nav-number">1.3.</span> <span class="nav-text">创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据访问"><span class="nav-number">1.4.</span> <span class="nav-text">数据访问</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">2.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">126</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">304k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="转载自How does the default hashCode() work? 参考译文 In which scratching the surface of hashCode() leads to a speleology trip through the JVM source reaching object layout, biased locking, and surprising per">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How does the default hashCode() work?">
+<meta property="og:url" content="http://yoursite.com/2020/06/07/How%20does%20the%20default%20hashCode()%20work/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="转载自How does the default hashCode() work? 参考译文 In which scratching the surface of hashCode() leads to a speleology trip through the JVM source reaching object layout, biased locking, and surprising per">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://srvaroa.github.io/assets/hotspot_object_states.gif">
+<meta property="article:published_time" content="2020-06-07T18:13:35.000Z">
+<meta property="article:modified_time" content="2020-06-08T02:17:15.059Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://srvaroa.github.io/assets/hotspot_object_states.gif">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/07/How%20does%20the%20default%20hashCode()%20work/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>How does the default hashCode() work? | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/How%20does%20the%20default%20hashCode()%20work/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          How does the default hashCode() work?
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:13:35 / 修改时间：10:17:15" itemprop="dateCreated datePublished" datetime="2020-06-08T02:13:35+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>转载自<a href="https://srvaroa.github.io/jvm/java/openjdk/biased-locking/2017/01/30/hashCode.html" target="_blank" rel="noopener">How does the default hashCode() work?</a></p>
+<p><a href="https://www.javazhiyin.com/55723.html" target="_blank" rel="noopener">参考译文</a></p>
+<p><em>In which scratching the surface of <code>hashCode()</code> leads to a speleology trip through the JVM source reaching object layout, biased locking, and surprising performance implications of relying on the default <code>hashCode()</code>.</em></p>
+<p><em>Abundant thanks to <a href="https://twitter.com/giltene" target="_blank" rel="noopener">Gil Tene</a> and <a href="https://twitter.com/duarte_nunes" target="_blank" rel="noopener">Duarte Nunes</a> reviewing drafts of this article and their very valuable insights, suggestions and edits. Any remaining errors are my own.</em></p>
+<h2 id="A-trivial-mystery"><a href="#A-trivial-mystery" class="headerlink" title="A trivial mystery"></a>A trivial mystery</h2><p>Last week at work I submitted a trivial change to a class, an implementation of <code>toString()</code> so logs would be meaningful. To my surprise, the change caused a ~5% coverage drop in the class. I knew that all new code was covered by existing unit tests so, what could be wrong? Comparing coverage reports a sharper colleague noticed that the implementation of <code>hashCode()</code> was covered before the change but not after. Of course, that made sense: the default <code>toString()</code> calls <code>hashCode()</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public String toString() &#123;</span><br><span class="line">    return getClass().getName() + &quot;@&quot; + Integer.toHexString(hashCode());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>After overriding <code>toString()</code>, our custom <code>hashCode()</code> was no longer being called. We were missing a test.</p>
+<p>Everyone knew the default <code>toString()</code> but..</p>
+<h2 id="What-is-the-default-implementation-of-hashCode"><a href="#What-is-the-default-implementation-of-hashCode" class="headerlink" title="What is the default implementation of hashCode()?"></a>What is the default implementation of <code>hashCode()</code>?</h2><p>The value returned by the default implementation of <code>hashCode()</code> is called <strong>identity hash code</strong> so I will use this term from now on to distinguish it from the hash provided by overriden implementations of <code>hashCode()</code>. FYI: even if a class overrides <code>hashCode()</code>, you can always get the identity hash code of an object <code>o</code> by calling <code>System.identityHashCode(o)</code>.</p>
+<p>Common wisdom is that the identity hash code uses the integer representation of the memory address. That’s also what the <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--" target="_blank" rel="noopener">J2SE JavaDocs for Object.hashCode()</a> imply:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">... is typically implemented by converting the internal address of</span><br><span class="line">the object into an integer, but this implementation technique is not</span><br><span class="line">required by the Java™ programming language.</span><br></pre></td></tr></table></figure>
+
+<p>Still, this seems problematic as the method contract requires that:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Whenever it is invoked on the same object more than once during an</span><br><span class="line">execution of a Java application, the hashCode method must consistently</span><br><span class="line">return the same integer.</span><br></pre></td></tr></table></figure>
+
+<p>Given that the JVM will relocate objects (e.g. during garbage collection cycles due to promotion or compaction), after we calculate an object’s identity hash we must be able to retain it in a way that survives object relocation.</p>
+<p>A possibility could be to take the current memory position of the object on the first call to <code>hashCode()</code>, and save it somewhere along with the object, like the object’s header. That way, if the object is moved to a different memory location, it would carry the original hash with it. A caveat of this method is that it won’t prevent two objects from having the same identity hash, but that’s allowed by the <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--" target="_blank" rel="noopener">spec</a>.</p>
+<p>The best confirmation would be to to look at the source. Unfortunately, the default <code>java.lang.Object::hashCode()</code> <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/a71d26266469/src/share/classes/java/lang/Object.java#l100" target="_blank" rel="noopener">is a native function</a>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public native int hashCode();</span><br></pre></td></tr></table></figure>
+
+<p>Helmets on.</p>
+<h2 id="Will-the-real-hashCode-please-stand-up"><a href="#Will-the-real-hashCode-please-stand-up" class="headerlink" title="Will the real hashCode() please stand up"></a>Will the real <code>hashCode()</code> please stand up</h2><p>Note that the identity <code>hashCode()</code> implementation <strong>is dependant on the JVM</strong>. Since I will only look at OpenJDK sources, you should assume this specific implementation whenever I talk about the JVM. All links refer to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509" target="_blank" rel="noopener">changeset 5820:87ee5ee27509</a> of the <a href="http://hg.openjdk.java.net/jdk8/jdk8/hotspot" target="_blank" rel="noopener">Hotspot tree</a>, I assume that most of it will also be applicable to Oracle’s JVM, but things could (in fact, are) different in others (more about this later.)</p>
+<p>OpenJDK defines entry points for <code>hashCode()</code> at <code>src/share/vm/prims/jvm.h</code> and <code>src/share/vm/prims/jvm.cpp</code>. The latter has:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">508 JVM_ENTRY(jint, JVM_IHashCode(JNIEnv* env, jobject handle))</span><br><span class="line">509   JVMWrapper(&quot;JVM_IHashCode&quot;);</span><br><span class="line">510   &#x2F;&#x2F; as implemented in the classic virtual machine; return 0 if object is NULL</span><br><span class="line">511   return handle &#x3D;&#x3D; NULL ? 0 : ObjectSynchronizer::FastHashCode (THREAD, JNIHandles::resolve_non_null(handle)) ;</span><br><span class="line">512 JVM_END</span><br></pre></td></tr></table></figure>
+
+<p><a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> is also called from <code>identity_hash_value_for</code>, which is used from a few other call sites (e.g.: <code>System.identityHashCode()</code>)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">708 intptr_t ObjectSynchronizer::identity_hash_value_for(Handle obj) &#123;</span><br><span class="line">709   return FastHashCode (Thread::current(), obj()) ;</span><br><span class="line">710 &#125;</span><br></pre></td></tr></table></figure>
+
+<p>One might naively expect <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> to do something like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">if (obj.hash() &#x3D;&#x3D; 0) &#123;</span><br><span class="line">    obj.set_hash(generate_new_hash());</span><br><span class="line">&#125;</span><br><span class="line">return obj.hash();</span><br></pre></td></tr></table></figure>
+
+<p>But it turns out to be a hundred line function that seems to be far more complicated. At least we can spot a couple of if-not-exists-generate blocks like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">685   mark &#x3D; monitor-&gt;header();</span><br><span class="line">...</span><br><span class="line">687   hash &#x3D; mark-&gt;hash();</span><br><span class="line">688   if (hash &#x3D;&#x3D; 0) &#123;</span><br><span class="line">689     hash &#x3D; get_next_hash(Self, obj);</span><br><span class="line">...</span><br><span class="line">701   &#125;</span><br><span class="line">...</span><br><span class="line">703   return hash;</span><br></pre></td></tr></table></figure>
+
+<p>Which seems to confirm our hypothesis. Let’s ignore that <code>monitor</code> for now, and be satisfied that it gives us the object header. It is kept at <code>mark</code>, a pointer to an instance of <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp" target="_blank" rel="noopener">markOop</a>, which represents the <a href="http://openjdk.java.net/groups/hotspot/docs/HotSpotGlossary.html#markWord" target="_blank" rel="noopener">mark word</a> that belongs in the low bits of the object header. So, tries to get a hash inside the mark word. If it’s not there, it’s generated using <code>get_next_hash</code>, saved, and returned.</p>
+<h2 id="The-actual-identity-hash-generation"><a href="#The-actual-identity-hash-generation" class="headerlink" title="The actual identity hash generation"></a>The actual identity hash generation</h2><p>As we saw, this happens at <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l555" target="_blank" rel="noopener">get_next_hash</a>. This function offers six methods based on the value of some <code>hashCode</code> variable.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0. A randomly generated number.</span><br><span class="line">1. A function of memory address of the object.</span><br><span class="line">2. A hardcoded 1 (used for sensitivity testing.)</span><br><span class="line">3. A sequence.</span><br><span class="line">4. The memory address of the object, cast to int.</span><br><span class="line">5. Thread state combined with xorshift (https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Xorshift)</span><br></pre></td></tr></table></figure>
+
+<p>So what’s the default method? OpenJDK 8 seems to default on 5 according to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/globals.hpp#l1127" target="_blank" rel="noopener">globals.hpp</a>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1127   product(intx, hashCode, 5,                                                \</span><br><span class="line">1128           &quot;(Unstable) select hashCode generation algorithm&quot;)                \</span><br></pre></td></tr></table></figure>
+
+<p>OpenJDK 9 <a href="http://hg.openjdk.java.net/jdk9/jdk9/hotspot/file/fc7e94cb7485/src/share/vm/runtime/globals.hpp#l1198" target="_blank" rel="noopener">keeps the same default</a>. Looking at previous versions, both <a href="http://hg.openjdk.java.net/jdk7u/jdk7u/hotspot/file/5b9a416a5632/src/share/vm/runtime/globals.hpp#l1100" target="_blank" rel="noopener">OpenJDK 7</a> and <a href="http://hg.openjdk.java.net/jdk6/jdk6/hotspot/file/5cec449cc409/src/share/vm/runtime/globals.hpp#l1128" target="_blank" rel="noopener">OpenJDK 6</a> use the first method, a <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/os.cpp#l814" target="_blank" rel="noopener">random number generator</a>.</p>
+<p>So, unless I’m looking at the wrong place <strong>the default hashCode implementation in OpenJDK has nothing to do with the memory address</strong>, at least since version 6.</p>
+<h2 id="Object-headers-and-synchronization"><a href="#Object-headers-and-synchronization" class="headerlink" title="Object headers and synchronization"></a>Object headers and synchronization</h2><p>Let’s go back a couple of points that we left unexamined. First, <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> seems overly complex, needing over 100 lines to perform what we though was a trivial get-or-generate operation. Second, who is this <code>monitor</code> and why does it have our object’s header?</p>
+<p>The structure of the mark word is a good place to start making progress. In OpenJDK, it looks <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp#l37" target="_blank" rel="noopener">like this</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">30 &#x2F;&#x2F; The markOop describes the header of an object.</span><br><span class="line">31 &#x2F;&#x2F;</span><br><span class="line">32 &#x2F;&#x2F; Note that the mark is not a real oop but just a word.</span><br><span class="line">33 &#x2F;&#x2F; It is placed in the oop hierarchy for historical reasons.</span><br><span class="line">34 &#x2F;&#x2F;</span><br><span class="line">35 &#x2F;&#x2F; Bit-format of an object header (most significant first, big endian layout below):</span><br><span class="line">36 &#x2F;&#x2F;</span><br><span class="line">37 &#x2F;&#x2F;  32 bits:</span><br><span class="line">38 &#x2F;&#x2F;  --------</span><br><span class="line">39 &#x2F;&#x2F;             hash:25 ------------&gt;| age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">40 &#x2F;&#x2F;             JavaThread*:23 epoch:2 age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">41 &#x2F;&#x2F;             size:32 ------------------------------------------&gt;| (CMS free block)</span><br><span class="line">42 &#x2F;&#x2F;             PromotedObject*:29 ----------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">43 &#x2F;&#x2F;</span><br><span class="line">44 &#x2F;&#x2F;  64 bits:</span><br><span class="line">45 &#x2F;&#x2F;  --------</span><br><span class="line">46 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| unused:1   age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">47 &#x2F;&#x2F;  JavaThread*:54 epoch:2 unused:1   age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">48 &#x2F;&#x2F;  PromotedObject*:61 ---------------------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">49 &#x2F;&#x2F;  size:64 -----------------------------------------------------&gt;| (CMS free block)</span><br><span class="line">50 &#x2F;&#x2F;</span><br><span class="line">51 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; normal object)</span><br><span class="line">52 &#x2F;&#x2F;  JavaThread*:54 epoch:2 cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; biased object)</span><br><span class="line">53 &#x2F;&#x2F;  narrowOop:32 unused:24 cms_free:1 unused:4 promo_bits:3 -----&gt;| (COOPs &amp;&amp; CMS promoted object)</span><br><span class="line">54 &#x2F;&#x2F;  unused:21 size:35 --&gt;| cms_free:1 unused:7 ------------------&gt;| (COOPs &amp;&amp; CMS free block)</span><br></pre></td></tr></table></figure>
+
+<p>The format is slightly different on 32 and 64 bits. The latter has two variants depending on whether <a href="https://wiki.openjdk.java.net/display/HotSpot/CompressedOops" target="_blank" rel="noopener">Compressed Object Pointers</a> are enabled. Both Oracle and OpenJDK 8 <strong>do</strong> by default.</p>
+<p>Object headers may thus relate to a free block or an actual object, in which case there are multiple possible states. In the simplest, (“normal object”) the identity hash is stored directly in the low addresses of the header.</p>
+<p>But in other states, we find a pointer to a <code>JavaThread</code> or a <code>PromotedObject</code>. The plot thickens: if we put the identity hash in a “normal object”, will someone take it away? Where? If the object is biased, where can we get/set the hash? What is a biased object?</p>
+<p>Let’s try to answer those questions.</p>
+<h2 id="Biased-locking"><a href="#Biased-locking" class="headerlink" title="Biased locking"></a>Biased locking</h2><p>Biased objects appear as a result of <a href="https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot" target="_blank" rel="noopener">Biased Locking</a>. A (<a href="https://www.google.com/patents/US7814488" target="_blank" rel="noopener">patented</a>!) feature enabled by default from HotSpot 6 that tries to alleviate the cost of locking objects. Such operations are expensive because their implementation often relies on atomic CPU instructions (<a href="https://en.wikipedia.org/wiki/Compare-and-swap" target="_blank" rel="noopener">CAS</a>) in order to safely handle lock/unlock requests on the object from different threads. It was observed that in most applications, the majority of objects are only ever locked by one thread so paying the cost of the atomic operation was often a waste. To avoid it, JVMs with biased locking allow threads to try and “bias” an object towards themselves. While an object is biased, the lucky thread can lock/unlock the object without atomic instructions. As long as there are no threads contending for the same object, we’ll gain performance.</p>
+<p>The <code>biased_lock</code> bit in the header indicates whether an object is biased by the thread pointed at by <code>JavaThread*</code>. The <code>lock</code> bits indicate whether the object is locked.</p>
+<p>Precisely because OpenJDK’s implementation of biased locking requires writing a pointer in the mark word, it also needs to relocate the real mark word (which contains the identity hash.)</p>
+<p>This could explain the additional complexity in <code>FastHashCode</code>. The header not only holds the identity hash code, but also locking state (like the pointer to the lock’s owner thread). So we need to consider all cases and find where the identity hash resides.</p>
+<p>Let’s go read <code>FastHashCode</code>. The first thing we find is:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">601 intptr_t ObjectSynchronizer::FastHashCode (Thread * Self, oop obj) &#123;</span><br><span class="line">602   if (UseBiasedLocking) &#123;</span><br><span class="line">610     if (obj-&gt;mark()-&gt;has_bias_pattern()) &#123;</span><br><span class="line">          ...</span><br><span class="line">617       BiasedLocking::revoke_and_rebias(hobj, false, JavaThread::current());</span><br><span class="line">          ...</span><br><span class="line">619       assert(!obj-&gt;mark()-&gt;has_bias_pattern(), &quot;biases should be revoked by now&quot;);</span><br><span class="line">620     &#125;</span><br><span class="line">621   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>Wait. It just <strong>revoked existing biases, and disabled biased locking on the object</strong> (the <code>false</code> means “don’t attempt rebias”). A few lines down, this is indeed an invariant:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">637   &#x2F;&#x2F; object should remain ineligible for biased locking</span><br><span class="line">638   assert (!mark-&gt;has_bias_pattern(), &quot;invariant&quot;) ;</span><br></pre></td></tr></table></figure>
+
+<p>If I’m reading correctly, this means that <strong>simply asking for the identity hash code of an object will disable biased locking</strong>, which in turn forces any attempt to lock the object to use expensive atomic instructions. Even if there is only one thread.</p>
+<p>Oh boy.</p>
+<h2 id="Why-does-keeping-biased-locking-state-conflict-with-keeping-the-identity-hash-code"><a href="#Why-does-keeping-biased-locking-state-conflict-with-keeping-the-identity-hash-code" class="headerlink" title="Why does keeping biased locking state conflict with keeping the identity hash code?"></a>Why does keeping biased locking state conflict with keeping the identity hash code?</h2><p>To answer this question we must understand which are the possible locations of the mark word (that contains the identity hash) depending on the lock state of the object. The transitions are illustrated in this diagram from the <a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener">HotSpot Wiki</a>:</p>
+<p><a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener"><img src="https://srvaroa.github.io/assets/hotspot_object_states.gif" alt="img"></a></p>
+<p>My (fallible) reasoning is the following.</p>
+<p>For the 4 states at the top of the diagram, the OpenJDK will be able to use “thin” lock representations. In the simplest case (no locks) this means having the identity hash and other data directly in the object’s space for the mark word:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">46 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| unused:1   age:4    biased_lock:1 lock:2 (normal object)</span><br></pre></td></tr></table></figure>
+
+<p>in more complex cases, it needs that space to keep a pointer to the “lock record”. The mark word will thus be “displaced” and put somewhere else.</p>
+<p>While we have only one thread trying to lock the object, that pointer will actually refer to a memory location in the thread’s own stack. Which is twice good: it’s fast (no contention or coordination to access that memory location), and it suffices for the thread to identify that it owns the lock (because the memory location points to its own stack.)</p>
+<p>But this won’t work in all cases. If we have contended objects (e.g. objects used on synchronized statements that many threads traverse) we will need a more complex structure that fits not only a copy of the object’s header (again, “displaced”), but also a <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/objectMonitor.hpp#l126" target="_blank" rel="noopener">list of waiters</a>. A similar need for a list of waiters appears if a thread executes <code>object.wait()</code>.</p>
+<p>This richer data structure is the <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/objectMonitor.hpp" target="_blank" rel="noopener">ObjectMonitor</a>, which is referred to as a the “heavyweight” monitor in the diagram. The value left in the object’s header doesn’t point to a “displaced mark word” anymore, but to an actual object (the monitor). Accessing the identity hash code will now require “inflating the monitor”: chasing a pointer to an object and reading/mutating whichever field contains the displaced mark word. Which is more expensive and requires coordination.</p>
+<p><code>FastHashCode</code> does have work to do.</p>
+<p>Lines <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l640" target="_blank" rel="noopener">L640</a> to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l680" target="_blank" rel="noopener">L680</a> deal with finding the header and checking for a cached identity hash. I believe these are a fast path that probe for cases that don’t need to inflate the monitor.</p>
+<p>From <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l682" target="_blank" rel="noopener">L682</a> it needs to bite the bullet:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">682   &#x2F;&#x2F; Inflate the monitor to set hash code</span><br><span class="line">683   monitor &#x3D; ObjectSynchronizer::inflate(Self, obj);</span><br><span class="line"></span><br><span class="line">684   &#x2F;&#x2F; Load displaced header and check it has hash code</span><br><span class="line">685   mark &#x3D; monitor-&gt;header();</span><br><span class="line">...</span><br><span class="line">687   hash &#x3D; mark-&gt;hash();</span><br></pre></td></tr></table></figure>
+
+<p>At this point, if the id. hash is there (<code>hash != 0</code>), the JVM can return. Otherwise we’ll get one from <code>get_next_hash</code> and safely store it in the displaced header kept by the <code>ObjectMonitor</code>.</p>
+<p>This seems to offer a reasonable explanation to why calling <code>hashCode()</code> on an object of a class that doesn’t override the default implementation makes the object ineligible for biased locking:</p>
+<ul>
+<li>In order to keep the identity hash of an object consistent after relocation we need to store the hash in the object’s header.</li>
+<li>Threads asking for the identity hash may not even care about locking the object, but in practise they will be sharing data structures used by the locking mechanism. This is a complex beast in itself that might be not only mutating, but also <strong>moving</strong> (displacing) the header contents.</li>
+<li>Biased locking helped perform lock/unlock operations without atomic operations, and this was effective as long as only one thread locked the object because we could keep the lock state in the mark word. I’m not 100% sure here, but I understand that since other threads may ask for the identity hash, <strong>even if there is a single thread interested in the lock</strong>, the header word will be contended and require atomic operations to be handled correctly. Which defeats the whole point of biased locking.</li>
+</ul>
+<h2 id="Recap"><a href="#Recap" class="headerlink" title="Recap"></a>Recap</h2><ul>
+<li>The default</li>
+</ul>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hashCode()</span><br></pre></td></tr></table></figure>
+
+
+
+<p>  implementation (identity hash code)</p>
+<p>  has nothing to do with the object’s memory address</p>
+<p>  , at least in OpenJDK. In versions 6 and 7 it is a randomly generated number. In 8 and, for now, 9, it is a number based on the thread state.</p>
+<p>  Here</p>
+<p>  is a test that yields the same conclusion.</p>
+<ul>
+<li>Proving that “implementation-dependent” warns are not aesthetic: <a href="https://www.azul.com/products/zing/virtual-machine/" target="_blank" rel="noopener">Azul’s Zing</a> <strong>does</strong> generate the identity hash from the object’s memory address.</li>
+</ul>
+<ul>
+<li>In HotSpot, the result of the identity hash generation is generated once, and cached in the</li>
+</ul>
+<p>  mark word</p>
+<p>  of the object’s header.</p>
+<ul>
+<li>Zing uses a different solution to keep it consistent despite object relocations, in which they delay storing the id. hash until the object relocates. At that point, it’s stored in a “pre-header”</li>
+</ul>
+<ul>
+<li>In HotSpot, calling the default</li>
+</ul>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hashCode()</span><br></pre></td></tr></table></figure>
+
+<p>  , or</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">System.identityHashCode()</span><br></pre></td></tr></table></figure>
+
+
+
+<p>  will make the object ineligible for biased locking.</p>
+<ul>
+<li>This implies that <strong>if you are synchronizing on objects that have no contention, you’d better override the default <code>hashCode()</code> implementation</strong> or you’ll miss out on JVM optimizations.</li>
+</ul>
+<ul>
+<li>It is possible</li>
+</ul>
+<p>  to disable biased locking in HotSpot, on a per-object basis.</p>
+<ul>
+<li>This can be very useful. I’ve seen applications very heavy on contended producer/consumer queues where biased locking was causing more trouble than benefit, so we disabled the feature completely. Turns out, we could’ve done this only on specific objects/classes simply by calling System.identityHashCode() on them.</li>
+</ul>
+<ul>
+<li><p>I have found no HotSpot flag that allows changing the default generator, so experimenting with other options might need to compile from source</p>
+<p>.</p>
+<ul>
+<li>Admittedly, I didn’t look much. <a href="https://twitter.com/jmichaelras" target="_blank" rel="noopener">Michael Rasmussen</a> <a href="https://twitter.com/jmichaelras/status/827441456059187200" target="_blank" rel="noopener">kindly pointed out</a> that <strong>-XX:hashCode=2</strong> can be used to change the default. Thanks!</li>
+</ul>
+</li>
+</ul>
+<h2 id="Benchmarks"><a href="#Benchmarks" class="headerlink" title="Benchmarks"></a>Benchmarks</h2><p>I wrote a simple <a href="http://openjdk.java.net/projects/code-tools/jmh/" target="_blank" rel="noopener">JMH</a> harness to verify those conclusions.</p>
+<p>The benchmark (<a href="https://gist.github.com/srvaroa/aa1f6c273ea6ae215bbf43e481f7689e" target="_blank" rel="noopener">source</a>) does something equivalent to this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">object.hashCode();</span><br><span class="line">while(true) &#123;</span><br><span class="line">    synchronized(object) &#123;</span><br><span class="line">        counter++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>One configuration (<code>withIdHash</code>) synchronizes on an object that uses the identity hash, so we expect that biased locking will be disabled as soon as <code>hashCode()</code> is invoked. A second configuration (<code>withoutIdHash</code>) implements a custom hash code so biased locking should not be disabled. Each configuration is ran first with one thread, then with two threads (these have the suffix “Contended”.)</p>
+<p>By the way, we must enable <code>-XX:BiasedLockingStartupDelay=0</code> as otherwise the JVM will take 4s to trigger the optimisation distorting the results.</p>
+<p>The first execution:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                                       Mode  Cnt       Score      Error   Units</span><br><span class="line">BiasedLockingBenchmark.withIdHash              thrpt  100   35168,021 ±  230,252  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHash           thrpt  100  173742,468 ± 4364,491  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withIdHashContended     thrpt  100   22478,109 ± 1650,649  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHashContended  thrpt  100   20061,973 ±  786,021  ops&#x2F;ms</span><br></pre></td></tr></table></figure>
+
+<p>We can see that the using a custom hash code makes the lock/unlock loop work 4x faster than the one using the identity hash code (which disables biased locking.) When two threads contend for the lock, biased locking is disabled anyway so there is no significative difference between both hash methods.</p>
+<p>A second run disables biased locking (<code>-XX:-UseBiasedLocking</code>) in all configurations.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                                       Mode  Cnt      Score      Error   Units</span><br><span class="line">BiasedLockingBenchmark.withIdHash              thrpt  100  37374,774 ±  204,795  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHash           thrpt  100  36961,826 ±  214,083  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withIdHashContended     thrpt  100  18349,906 ± 1246,372  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHashContended  thrpt  100  18262,290 ± 1371,588  ops&#x2F;ms</span><br></pre></td></tr></table></figure>
+
+<p>The hash method no longer has any impact and <code>withoutIdHash</code> loses its advantage.</p>
+<p>(All benchmarks were ran on a 2,7 GHz Intel Core i5.)</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><p>Whatever is not wild speculation and my weak reasoning trying to make sense of the JVM sources, comes from stitching together various sources about layout, biased locking, etc. The main ones are below:</p>
+<ul>
+<li><a href="https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot" target="_blank" rel="noopener">https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot</a></li>
+<li><a href="http://fuseyism.com/openjdk/cvmi/java2vm.xhtml" target="_blank" rel="noopener">http://fuseyism.com/openjdk/cvmi/java2vm.xhtml</a></li>
+<li><a href="http://www.dcs.gla.ac.uk/~jsinger/pdfs/sicsa_openjdk/OpenJDKArchitecture.pdf" target="_blank" rel="noopener">http://www.dcs.gla.ac.uk/~jsinger/pdfs/sicsa_openjdk/OpenJDKArchitecture.pdf</a></li>
+<li><a href="https://www.infoq.com/articles/Introduction-to-HotSpot" target="_blank" rel="noopener">https://www.infoq.com/articles/Introduction-to-HotSpot</a></li>
+<li><a href="http://blog.takipi.com/5-things-you-didnt-know-about-synchronization-in-java-and-scala/#comment-1006598967" target="_blank" rel="noopener">http://blog.takipi.com/5-things-you-didnt-know-about-synchronization-in-java-and-scala/#comment-1006598967</a></li>
+<li><a href="http://www.azulsystems.com/blog/cliff/2010-01-09-biased-locking" target="_blank" rel="noopener">http://www.azulsystems.com/blog/cliff/2010-01-09-biased-locking</a></li>
+<li><a href="https://dzone.com/articles/why-should-you-care-about-equals-and-hashcode" target="_blank" rel="noopener">https://dzone.com/articles/why-should-you-care-about-equals-and-hashcode</a></li>
+<li><a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener">https://wiki.openjdk.java.net/display/HotSpot/Synchronization</a></li>
+<li><a href="https://mechanical-sympathy.blogspot.com.es/2011/11/biased-locking-osr-and-benchmarking-fun.html" target="_blank" rel="noopener">https://mechanical-sympathy.blogspot.com.es/2011/11/biased-locking-osr-and-benchmarking-fun.html</a>:</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/07/java%E9%BB%98%E8%AE%A4%E7%9A%84hashcode%E6%96%B9%E6%B3%95%E5%88%B0%E5%BA%95%E5%BE%97%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F/" rel="prev" title="java默认的hashcode方法到底得到的是什么？">
+      <i class="fa fa-chevron-left"></i> java默认的hashcode方法到底得到的是什么？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" rel="next" title="基于概率的数据结构:布隆过滤器">
+      基于概率的数据结构:布隆过滤器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#A-trivial-mystery"><span class="nav-number">1.</span> <span class="nav-text">A trivial mystery</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#What-is-the-default-implementation-of-hashCode"><span class="nav-number">2.</span> <span class="nav-text">What is the default implementation of hashCode()?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Will-the-real-hashCode-please-stand-up"><span class="nav-number">3.</span> <span class="nav-text">Will the real hashCode() please stand up</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-actual-identity-hash-generation"><span class="nav-number">4.</span> <span class="nav-text">The actual identity hash generation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Object-headers-and-synchronization"><span class="nav-number">5.</span> <span class="nav-text">Object headers and synchronization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Biased-locking"><span class="nav-number">6.</span> <span class="nav-text">Biased locking</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Why-does-keeping-biased-locking-state-conflict-with-keeping-the-identity-hash-code"><span class="nav-number">7.</span> <span class="nav-text">Why does keeping biased locking state conflict with keeping the identity hash code?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Recap"><span class="nav-number">8.</span> <span class="nav-text">Recap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Benchmarks"><span class="nav-number">9.</span> <span class="nav-text">Benchmarks</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">10.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">126</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">304k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
