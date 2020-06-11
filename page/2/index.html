@@ -186,6 +186,156 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" class="post-title-link" itemprop="url">基于概率的数据结构:布隆过滤器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:33:36 / 修改时间：10:39:06" itemprop="dateCreated datePublished" datetime="2020-06-08T02:33:36+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832" target="_blank" rel="noopener">Probabilistic Data structures: Bloom filter</a></p>
+<p>If you have a glass-protected bookshelf, that will protect your books from dust and insects, but it will cost you more time to access the books when you need them. Because you first need to slide or open the glass and then can get the books. On the other hand, if it’s an open bookshelf, that will give you quicker access but you will lose the protection. Similarly, if you organize your books in lexicographic order of their name, you can easily search for a book if you know it’s name. But if your bookshelf has cases of different size and you organize your books based on their size, it will look nice, but can you find a book in a hurry? I don’t think so.</p>
+<p>Data structures are nothing different. They are like the bookshelves of your application where you can organize your data. Different data structures will give you different facility and benefits. To properly use the power and accessibility of the data structures you need to know the trade-offs of using one.</p>
+<p>When main-stream data structures like Lists, Maps, Sets, Trees etc. are mostly used for achieving certain results about whether the data exist or not, maybe along with their number of occurrences and such, Probabilistic data structures will give you memory-efficient, faster result with a cost of providing a ‘probable’ result instead of a ‘certain’ one. It might not seems intuitive to use such data structures for now, but I’ll try to convince you in this post that these type of data structures have their specific use cases and you might find them useful in certain scenarios.</p>
+<p>In this post, I’ll talk about one of the most popular probabilistic data structures called <strong>‘Bloom filter’</strong>. In future, I’ll try to write about some others.</p>
+<h3 id="Bloom-filter"><a href="#Bloom-filter" class="headerlink" title="Bloom filter"></a>Bloom filter</h3><p>Do you know how hash tables work? When you insert a new data in a simple array or list, the index, where this data would be inserted, is not determined from the value to be inserted. That means there is no direct relationship between the ‘key(index)’ and the ‘value(data)’. As a result, if you need to search for a value in the array you have to search in all of the indexes. Now, in hash tables, you determine the ‘key’ or ‘index’ by hashing the ‘value’. Then you put this value in that index in the list. That means the ‘key’ is determined from the ‘value’ and every time you need to check if the value exists in the list you just hash the value and search on that key. It’s pretty fast and will require <em>O(1)</em> searching time in <a href="https://en.wikipedia.org/wiki/Big_O_notation" target="_blank" rel="noopener">Big-O notation</a>.</p>
+<p><img src="https://hackernoon.com/hn-images/1*BEkGh72F09juiD6wtg6q4A.png" alt="img"></p>
+<p>Now, let’s consider that you have a huge list of weak passwords and it is stored on some remote server. It’s not possible to load them at once in the memory/RAM because of the size. Each time a user enters his/her password you want to check if it is one of the weak passwords and if it is, you want to give him/her a warning to change it to something stronger. What can you do? As you already have the list of the weak passwords, you can store them in a hash table or something like that and each time you want to match, you can check against it if the given password has any match. The matching might be fast but the cost of searching it on the disk or over the network on a remote server would make it slow. Don’t forget that you would need to do it for every password given by every user. How can we reduce the cost?</p>
+<p>Well, Bloom filter can help us here. How? I’m going to answer it after explaining how a bloom filter works. OK?</p>
+<p>By definition, Bloom filter can check for if a value is <strong>‘possibly in the set’</strong> or <strong>‘definitely not in the set’</strong>. The subtle difference between <strong>‘possibly’</strong> and <strong>‘definitely not’ —</strong> is very crucial here. This <em>‘possibly in the set’</em> is exactly why it is called <strong>probabilistic</strong>. Using smart words it means that <a href="https://en.wikipedia.org/wiki/False_positives_and_false_negatives" target="_blank" rel="noopener">false positive</a> is possible <em>(there can be cases where it falsely thinks that the element is positive)</em> but false negative is impossible. Don’t be impatient, we are explaining what does it actually mean, shortly.</p>
+<p>The bloom filter essentially consists of a bit-vector or bit-list<em>(a list containing only either 0 or 1-bit value)</em> of length <strong>m</strong>, initially all values set to 0, as shown below.</p>
+<p><img src="https://hackernoon.com/hn-images/1*VssbV2VQmWn8CHlhfA-oNw.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>To add an item to the bloom filter, we feed it to <strong>k</strong> different hash functions and set the bits to ‘1’ at the resulting positions. As you can see, in hash tables we would’ve used a single hash function and as a result get only a single index as output. But in the case of the bloom filter, we would use multiple hash functions, which would give us multiple indexes.</p>
+<p><img src="https://hackernoon.com/hn-images/1*xm1aM4Hwevn8tizTSe7LKA.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>As you can see in the above example, for the given input ‘geeks’ our 3 hash functions will give 3 different output — 1, 4 and 7. We’ve marked them.</p>
+<p><img src="https://hackernoon.com/hn-images/1*WpJpIEfjWkKPnR6GGbbVvQ.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>For another input ‘nerd’, the hash functions give us 3, 4 and 5. You might’ve noticed that the index ‘4’ is already marked by the previous ‘geeks’ input. Hold your thought, this point is interesting and we’re going to discuss it shortly.</p>
+<p>We’ve already populated our bit vector with two inputs, now we can check for a value for its existence. How can we do that?<br>Easy. Just as we would’ve done it in a hash table. We would hash the ‘searched input’ with our 3 hash functions and see what are the resulting indexes hold.</p>
+<p><img src="https://hackernoon.com/hn-images/1*Fg3dBnWiip3Sbz3_XkKn7w.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>So, searching for ‘cat’, our hash functions are giving us 1, 3 and 7 this time. And we can see that all of the indexes are already marked as 1. That means we can say, <em>“maybe ‘cat’ is already inserted on our list”</em>. But it didn’t. So, what’s went wrong?<br>Actually, nothing went wrong. The thing is, this is the case of a <strong>‘false positive’</strong>. Bloom filter is telling us that it seems that maybe ‘cat’ was inserted before, because the indexes should’ve been marked by ‘cat’ are already marked (though by other different data).<br>So, if that’s the case, how it is helpful? Well, let’s consider if ‘cat’ would’ve given us the output of 1, 6, 7 instead of 1, 3, 7, what would happen then? We can see that among 3 indexes, 6 is ‘0’, that means it wasn’t marked by any of the previous inputs. That means obviously ‘cat’ never inserted before, if it was, there was no chance of 6 to be ‘0’, right? That’s how bloom filter can tell <strong>‘certainly’</strong> if a data is not on the list.</p>
+<p>So, in a nutshell:</p>
+<ul>
+<li>If we search for a value and see any of the hashed indexes for this value is ‘0’ then, the value is definitely not on the list.</li>
+<li>If all of the hashed indexes is ‘1’ then ‘maybe’ the searched value is on the list.</li>
+</ul>
+<p>Does it start making sense? A little maybe?</p>
+<p>Fine, now, back to the ‘password’ example we were talking earlier. If we implement our weak password checking with this type of bloom filter, you can see that initially, we would mark our bloom filter with our list of passwords, which will give us a bit vector with some indexes marked as ‘1’ and others left as 0. As the size of the bloom filter won’t be very large and will be a fixed size, it can easily be stored in the memory and also on the client side if necessary. That’s why bloom filter is very space-efficient. Where a hash table requires being of arbitrary size based on the input data, the bloom filters can work well with a fixed size.<br>So, every time a user enters their password, we will feed it to our hash functions and check it against our bit vector. If the password is strong enough, the bloom filter will show us that the password is certainly not in the ‘weak password list’ and we don’t have to do any more query. But if the password seems weak and gives us a ‘positive’ (might be false positive) result we will then send it to our server and check our actual list to confirm.</p>
+<p>As you can see, most of the time we don’t even need to make a request to our server or read from disk to check the list, this will be a significant improvement in speed of the application. In case, if we don’t want to store the bit-vector at the client side, we can still load it in the server memory and that will at least saves some disk lookup time. Also consider that, if your bloom filters false positive rate is 1%(we will talk about the error rate in details later), that means among the costly round-trips to the server or the disk, only 1% of the query will be returned with false result, other 99% won’t go in vain.<br>Not bad, huh?</p>
+<p><img src="https://hackernoon.com/hn-images/1*MYeocwtT6dtNYnihEh6tUA.png" alt="img"></p>
+<p>Nice visual simulation about how bloom filters work. Image Credit: <a href="https://en.wikipedia.org/wiki/Bloom_filter" target="_blank" rel="noopener">WikiPedia</a></p>
+<h4 id="Bloom-filter-operations"><a href="#Bloom-filter-operations" class="headerlink" title="Bloom filter operations"></a>Bloom filter operations</h4><p>The basic bloom filter supports two operations: <strong>test</strong> and <strong>add</strong>.</p>
+<p><strong>Test</strong> is used to check whether a given element is in the set or not.</p>
+<p><strong>Add</strong> simply adds an element to the set.</p>
+<p>Now a little quiz for you.</p>
+<p>Based on what we’ve discussed so far, is it possible to <strong>Remove</strong> an item from the bloom filter? If yes, then how?</p>
+<p>Take a 2 minutes break and think about the solution.</p>
+<p>Got anything? Nothing? Let me help you a bit. Let’s bring back the bit-vector after inserting ‘geeks’ and ‘nerd’ in it.</p>
+<p><img src="https://hackernoon.com/hn-images/1*xm1aM4Hwevn8tizTSe7LKA.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p><img src="https://hackernoon.com/hn-images/1*WpJpIEfjWkKPnR6GGbbVvQ.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>Now we want to remove ‘geeks’ from it. So, if we remove 1, 4, 7 from the bit vector, as they are marked by ‘geeks’, and convert them to ‘0’, what will happen? You can easily see that, next time if we search for ‘nerd’, as the index ‘4’ will show ‘0’, it will definitely tell us that ‘nerd’ is not on the list, though it actually is. That means removal is impossible without introducing false negatives.</p>
+<p>So, what’s the solution?</p>
+<p>The solution is we can’t support Remove operation in this simple bloom filters. But if we really need to have a Removal functionality we can use a variation of the bloom filter known as <strong>‘Counting bloom filter’</strong>. The idea is simple. Instead of storing a single bit of values, we will store an integer value and our bit vector will then be an integer vector. This will increase the size and costs more space to gives us the Removal functionality. Instead of just marking a bit value to ‘1’ when inserting a value, we will increment the integer value by 1. To check if an element exists, check if the corresponding indexes after hashing the element is greater than 0.<br>If you are having a hard time to understand how a ‘Counting bloom filter’ can give us ‘deletion’ feature, I’ll suggest you take a pen and a paper and simulate our bloom filter as a counting filter and then try a deletion on it. Hopefully, you’ll get it easily. If you failed, try again. If you failed again then please leave a comment and I’ll try to describe it.</p>
+<h4 id="Bloom-filter-size-and-number-of-Hash-functions"><a href="#Bloom-filter-size-and-number-of-Hash-functions" class="headerlink" title="Bloom filter size and number of Hash functions"></a>Bloom filter size and number of Hash functions</h4><p>You might already understand that if the size of the bloom filter is too small, soon enough all of the bit fields will turn into ‘1’ and then our bloom filter will return ‘false positive’ for every input. So, the size of the bloom filter is a very important decision to be made. A larger filter will have less false positives, and a smaller one more. So, we can tune our bloom filter to how much precise we need it to be based on the ‘false positive error rate’.<br>Another important parameter is ‘how many hash functions we will use’. The more hash functions we use, the slower the bloom filter will be, and the quicker it fills up. If we have too few, however, we may suffer too many false positives.</p>
+<p><img src="https://hackernoon.com/hn-images/1*sSuuWFeLpwVZIPuNSoAiyQ.png" alt="img"></p>
+<p>Image Credit: <a href="https://engineering.semantics3.com/use-the-bloom-filter-luke-b59fd0839fc4" target="_blank" rel="noopener">Abishek Bhat’s article about bloom filter</a></p>
+<p>You can see from the above graph that, increasing the number of hash functions, <strong>k</strong>, will drastically reduce the error rate, <strong>p</strong>.</p>
+<p>We can calculate the false positive error rate, <strong><em>p\</em></strong>, based on the size of the filter, <strong><em>m\</em></strong>, the number of hash functions, <strong><em>k\</em></strong>, and the number of elements inserted, <strong><em>n\</em></strong>, with the formula:</p>
+<p><img src="https://hackernoon.com/hn-images/1*4QvZrOV7d9XgQXqVaIOGPg.png" alt="img"></p>
+<p>Seems like WTF? Don’t worry, we would actually mostly need to decide what our <strong><em>m\</em></strong> and <strong><em>k\</em></strong> would be. So, if we set an error tolerance value <strong><em>p\</em></strong> and the number of elements <strong><em>n\</em></strong> by ourselves we can use the following formulas to calculate these parameters:</p>
+<p><img src="https://hackernoon.com/hn-images/1*eDTlEUQCLRB8wL96GileXA.png" alt="img"></p>
+<p>Another important point I also need to mention here. As the sole purpose of using bloom filter is to search faster, we can’t use slow hash functions, right? Cryptographic hash functions such as Sha-1, MD5 won’t be good choice for bloom filters as they are a bit slow. So, the better choices from the faster hash function implementations would be <a href="https://sites.google.com/site/murmurhash/" target="_blank" rel="noopener">murmur</a>, the <a href="http://isthe.com/chongo/tech/comp/fnv/" target="_blank" rel="noopener">fnv</a> series of hashes, Jenkins hashes and <a href="http://www.google.com/codesearch/url?ct=ext&url=http://www.concentric.net/~Ttwang/tech/inthash.htm&usg=AFQjCNEBOwEAd_jb5vYSckmG7OxrkeQhLA" target="_blank" rel="noopener">HashMix</a>.</p>
+<h4 id="Applications"><a href="#Applications" class="headerlink" title="Applications"></a>Applications</h4><p>Bloom filter is all about testing Membership in a set. The classic example of using bloom filters is to reduce expensive disk (or network) lookups for non-existent keys. As we can see that bloom filters can search for a key in O(k) constant time, where k is the number of hash functions, it will be very fast to test non-existence of a key.</p>
+<p>If the element is not in the bloom filter, then we know for sure we don’t need to perform the expensive lookup. On the other hand, if it <em>is</em> in the bloom filter, we perform the lookup, and we can expect it to fail some proportion of the time (the false positive rate).</p>
+<p>For some more concrete examples:</p>
+<ul>
+<li>You’ve seen in our given example that we could’ve use it to warn the user for weak passwords.</li>
+<li>You can use bloom filter to <a href="https://medium.com/@nathankrishnan/using-a-bloom-filter-to-prevent-users-of-your-ios-app-from-accessing-malicious-sites-7ad555a69598" target="_blank" rel="noopener">prevent your users</a> from <a href="https://stackoverflow.com/a/14403897/4230330" target="_blank" rel="noopener">accessing malicious sites</a>.</li>
+<li>Instead of making a query to an SQL database to check if a user with a certain email exists, you could first use a bloom filter for an inexpensive lookup check. If the email doesn’t exist, great! If it does exist, you might have to make an extra query to the database. You can do the same to <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">search for if a ‘Username is already taken’</a>.</li>
+<li>You can keep a bloom filter based on the IP address of the visitors to your website to check if a user to your website is a ‘returning user’ or a ‘new user’. Some false positive value for ‘returning user’ won’t hurt you, right?</li>
+<li>You can also make a <a href="http://codekata.com/kata/kata05-bloom-filters/" target="_blank" rel="noopener">Spell-checker by using bloom filter</a> to track the dictionary words.</li>
+<li>Want to know how Medium used bloom filter to decide if a user already read post? Read this <a href="https://blog.medium.com/what-are-bloom-filters-1ec2a50c68ff" target="_blank" rel="noopener">mind-blowing, freaking awesome article</a> about it.</li>
+</ul>
+<p>Do you still think that you won’t ever need bloom filter? Well, we don’t use all of the algorithms we’ve learned in our everyday life. But maybe someday it might save your arse. Who knows? Learning a new thing never hurts, right?</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/How%20does%20the%20default%20hashCode()%20work/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1298,142 +1448,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/" class="post-title-link" itemprop="url">通过HashMap认识equals与hashcode</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 12:17:27 / 修改时间：20:19:37" itemprop="dateCreated datePublished" datetime="2020-06-05T12:17:27+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载 <a href="https://www.jianshu.com/p/56e793643d8f" target="_blank" rel="noopener">原文链接</a></p>
-<h2 id="什么是hashcode-hashcode的作用是什么"><a href="#什么是hashcode-hashcode的作用是什么" class="headerlink" title="什么是hashcode,hashcode的作用是什么"></a>什么是hashcode,hashcode的作用是什么</h2><p>hashcode并不是java中独有的。设想一下，如果让你设计一个算法，根据关键码去得到一个集合中的某个值或者这个关键码所在的位置。普通的做法就是挨个比较，高级一点的使用二分检索或者树形检索等算法。但是以上的检索算法都跟集合的长度N有关，当问题规模N很大时，这些检索的效率可能十分低下。</p>
-<p>理想的情况是，根据关键码，我们就可以定位记录所在的位置，而不用去挨个进行比较。也就是说，在关键码与记录存放的位置之间做一种映射。这个映射的方法就是hash(哈希)函数，或者叫散列函数，也就是java中的hashCode()方法，他所返回的值就是hashcode，根据hashcode可以找到记录的位置。</p>
-<p>按照散列的存储方式构造的存储结构叫做散列表。散列表中的一个位置称之为一个槽。</p>
-<p>hashCode()方法存在于java.lang.Object类当中，任何类都可以继承修改这个方法。hashCode()方法返回调用它的实例的hashCode值，是个int值。</p>
-<p>注：以下代码均来自jdk1.7</p>
-<p>String中hashCode()方法的实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hash;</span><br><span class="line">        <span class="keyword">if</span> (h == <span class="number">0</span> &amp;&amp; value.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">char</span> val[] = value;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; value.length; i++) &#123;</span><br><span class="line">                h = <span class="number">31</span> * h + val[i];</span><br><span class="line">            &#125;</span><br><span class="line">            hash = h;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> h;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="什么是equals-Object-obj-方法"><a href="#什么是equals-Object-obj-方法" class="headerlink" title="什么是equals(Object obj)方法"></a>什么是equals(Object obj)方法</h2><p>equals(Object obj)方法同样来自Object类。在Object类中，他是这样实现的：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说，默认的equals(Object obj)方法直接将要比较的两个对象的内存地址进行了比较，一致则返回true。</p>
-<p>这个方法主要用来实现两个对象间的比较，确认他们在逻辑上是否相等。我们同样可以实现自己的equals(Object obj)方法。</p>
-<p>String中equals(Object obj)方法的实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            String anotherString = (String) anObject;</span><br><span class="line">            <span class="keyword">int</span> n = value.length;</span><br><span class="line">            <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">                <span class="keyword">char</span> v1[] = value;</span><br><span class="line">                <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="在java中hashcode方法与equals方法的作用"><a href="#在java中hashcode方法与equals方法的作用" class="headerlink" title="在java中hashcode方法与equals方法的作用"></a>在java中hashcode方法与equals方法的作用</h2><p>首先看一下HashMap中的put方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">put</span><span class="params">(K key, V value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (table == EMPTY_TABLE) &#123;</span><br><span class="line">            inflateTable(threshold);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (key == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">return</span> putForNullKey(value);</span><br><span class="line">        <span class="keyword">int</span> hash = hash(key);<span class="comment">//得到hash值</span></span><br><span class="line">        <span class="keyword">int</span> i = indexFor(hash, table.length);<span class="comment">//找到槽</span></span><br><span class="line">        <span class="keyword">for</span> (Entry&lt;K,V&gt; e = table[i]; e != <span class="keyword">null</span>; e = e.next) &#123;</span><br><span class="line">            Object k;</span><br><span class="line">            <span class="keyword">if</span> (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) &#123;</span><br><span class="line">                V oldValue = e.value;</span><br><span class="line">                e.value = value;</span><br><span class="line">                e.recordAccess(<span class="keyword">this</span>);</span><br><span class="line">                <span class="keyword">return</span> oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        modCount++;</span><br><span class="line">        addEntry(hash, key, value, i);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们从 int hash = hash(key); 这一行看起，这行起才是put方法的核心。</p>
-<p>首先 int hash = hash(key); key就是我们之前提到的关键码，我们看看HashMap中的这个hash方法做了些什么：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object k)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hashSeed;</span><br><span class="line">        <span class="keyword">if</span> (<span class="number">0</span> != h &amp;&amp; k <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        h ^= k.hashCode();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// This function ensures that hashCodes that differ only by</span></span><br><span class="line">        <span class="comment">// constant multiples at each bit position have a bounded</span></span><br><span class="line">        <span class="comment">// number of collisions (approximately 8 at default load factor).</span></span><br><span class="line">        h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line">        <span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，这个方法里调用了key本身的hashCode方法，得到了key的hashcode，然后对该hashcode进行了一些移位操作，最终返回操作后的int值。返回的这个值就是HashMap要用到的hashcode值，通过他可以找到记录所在的位置。那么现在有一个问题：为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？可以直接使用key的hashcode的呀，这样做看起来不是多此一举吗？</p>
-<p>其实这样做的目的是为下面的函数做准备的，我们看接下来要执行的代码：</p>
-<p><code>int i = indexFor(hash, table.length);</code>找到所谓的槽，也就是记录存在的位置。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Returns index for hash code h.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">indexFor</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">     <span class="comment">// assert Integer.bitCount(length) == 1 : "length must be a non-zero power of 2";</span></span><br><span class="line">    <span class="keyword">return</span> h &amp; (length<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，indexFor(int h, int length)如何通过hashcode得到记录的位置。indexFor方法内部是一个取模运算，h是我们通过上面的hash方法得到的，length是散列表的长度。HashMap中的散列表是一个数组，通过取模运算能保证indexFor方法的返回值(记录的位置)一定在这个数组内，没有超过其长度。因为h往往是一个很大的数字(int可以表示40亿这么大的数字)，而散列表的初始长度是可以由我们指定的(默认是16),另一方面，就算给他这么大的数组，内存也是放不下的。所以取模运算是必须的。经过取模运算得到的才是真正的槽值。</p>
-<p>回到上一个问题，<strong>为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？而不是直接使用key的hashcode的</strong>？</p>
-<p>想明白这个问题，参考<a href="https://link.jianshu.com?t=https://www.zhihu.com/question/20733617" target="_blank" rel="noopener">JDK 源码中 HashMap 的 hash 方法原理是什么？</a>。我们上面也说了这样做的目的是为indexFor方法做准备的，总的来说就是为了让取模运算不会出现一种极端情况：<strong>大量的不同的h经过取模后返回同样的槽值</strong>。这样会带来严重的性能问题，也就是严重的冲突情况导致性能下降。关于冲突，看下文。</p>
-<p>要理解接下来的代码，我们就需要知道哈希算法的另一个概念：冲突。</p>
-<p>散列函数可能对于不相等的关键码计算出相同的hashcode，该现象称为冲突。怎么理解呢？</p>
-<p>比如我们有这样一个串abcd，我们给出这样一个散列函数：将每一个字符的ascii值加起来除以字符的个数，得到他们的平均值就是这个串的hashcode。那么，可以保证没有其他的串经过这样的算法得到相同的hashcode吗？也就是说，无限多的元素通过散列函数映射到有穷集合上，一定会产生冲突。这也是我们理解hashcode的一个重要的点：<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。</p>
-<p>那么，产生冲突怎么办呢？产生冲突之后，不同的对象在散列表中找到了相同的位置，为了解决这个问题，我们将这个槽中的内容设计成一个链表，当产生冲突的时候，就将新的元素放到链表中，他看起来是这样的：</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/5555632-b4a42ccffa5bf44f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/580/format/webp" alt="img"></p>
-<p>其中：A，B，C分别为三条记录，他们就是产生冲突的三条记录。1,2,3….为散列表的索引位置。</p>
-<p>接下来的代码  <code>for (Entry e = table[i]; e != null; e = e.next)</code>就容易理解了。找到记录所对应的槽之后，遍历这个链表直到找到与关键码相同的位置(可能之前已经有以这个关键码为key的value插入)。如果遍历完链表还没有找到这样的值，说明还不存在此关键码对应的记录，直接插入即可：<code>addEntry(hash, key, value, i);</code>.</p>
-<p>那么，怎么判断两个关键码在逻辑上是否相同呢？</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if (e.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; e.key) &#x3D;&#x3D; key || key.equals(k)))</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，首先判断关键码的hashcode与链表记录的关键码hashcode是否相同：·<code>e.hash == hash</code>。为什么要加这样的判断？回头看看indexFor方法，经过取模运算后，不同的hashcode可以被散列在同一个槽中。通过这句代码可以将那些因为取模运算散列到同一个槽里的不同对象排除。</p>
-<p>我们知道<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。相同的对象hashcode也必须相等吗？试想一下，如果两个对象相同，但是他们的hashcode不同，那么这两个对象很有可能被散列在不同的槽里，造成了同一个对象重复存储的问题。所以，我们又得出一个重要结论：<strong>相同的对象(equals返回true)hashcode一定相等</strong>。</p>
-<p><code>e.hash == hash &amp;&amp; ((k = e.key) == key</code>：这段代码首先判断hashcode是否相等，然后判断关键码是否相等。注意，是判断<strong>关键码是否相等</strong>，直接比较内存地址，如果满足以上条件，那么可以断定两个关键码相同，是我们要找的记录。</p>
-<p><code>key.equals(k)</code>：如果上述两个条件没有满足，并不能够断定这两个关键码相等，此刻要使用equals方法判断这两个关键码是否相同。如果相同，说明是我们要找的记录。</p>
-<p><code>if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k)))</code>这句代码中其实包含了一种短路思想，|| 之前的判断如果生效，那么之后的key.equals(k)就不会再执行。很明显内存地址的比较要比equals方法高效的多。这也是Hashmap提高查找效率的一个重要手段。</p>
-<p>至此，我们应该对equals和hashcode有了一个相对清晰的认识：hashcode提高了查找指定对象的效率。euqals定义了两个对象之间是否在逻辑上相同。hashcode只在HashMap，HashSet等这样使用了散列思想的地方用到，而equals在判断两个对象之间是否相同时需要用到，比如排序等。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过上面的分析，我们知道了hashcode与equals的几个关键：</p>
-<h4 id="1-不同的对象-equals返回false-可以有相同的hashcode"><a href="#1-不同的对象-equals返回false-可以有相同的hashcode" class="headerlink" title="1.不同的对象(equals返回false)可以有相同的hashcode"></a>1.<strong>不同的对象(equals返回false)可以有相同的hashcode</strong></h4><h4 id="2-相同的对象-equals返回true-hashcode一定相等"><a href="#2-相同的对象-equals返回true-hashcode一定相等" class="headerlink" title="2.相同的对象(equals返回true)hashcode一定相等"></a>2.<strong>相同的对象(equals返回true)hashcode一定相等</strong></h4><h4 id="3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"><a href="#3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）" class="headerlink" title="3.若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"></a>3.<strong>若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义</strong>（对1、2的遵守）</h4><p><a href="https://link.jianshu.com?t=http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java" target="_blank" rel="noopener">关于如何重写equals方法与hashCode方法</a></p>
-<h2 id="equals与"><a href="#equals与" class="headerlink" title="equals与=="></a>equals与==</h2><p>“==” 比较的是两个对象的内存地址，是物理意义上的相等</p>
-<p>equals比较的是两个对象逻辑意义上的相等，是逻辑意义上的相等</p>
-<p>两个对象进行比较：</p>
-<p><strong>== 返回true，则equals一定返回true</strong>；</p>
-<p><strong>equals返回true，== 不一定返回true</strong>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1505,7 +1519,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">126</span>
+          <span class="site-state-item-count">127</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

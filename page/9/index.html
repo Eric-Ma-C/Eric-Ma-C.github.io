@@ -186,6 +186,94 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E9%95%9C%E5%83%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E9%95%9C%E5%83%8F/" class="post-title-link" itemprop="url">二叉树的镜像</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 06:51:22 / 修改时间：15:04:00" itemprop="dateCreated datePublished" datetime="2020-05-23T06:51:22+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>701</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>操作给定的二叉树，将其变换为源二叉树的镜像。</p>
+<h2 id="输入描述"><a href="#输入描述" class="headerlink" title="输入描述:"></a>输入描述:</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">二叉树的镜像定义：源二叉树 </span><br><span class="line">    	    8</span><br><span class="line">    	   &#x2F;  \</span><br><span class="line">    	  6   10</span><br><span class="line">    	 &#x2F; \  &#x2F; \</span><br><span class="line">    	5  7 9 11</span><br><span class="line">    	镜像二叉树</span><br><span class="line">    	    8</span><br><span class="line">    	   &#x2F;  \</span><br><span class="line">    	  10   6</span><br><span class="line">    	 &#x2F; \  &#x2F; \</span><br><span class="line">    	11 9 7  5</span><br></pre></td></tr></table></figure>
+
+<p>递归最简单</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Mirror</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    TreeNode left = root.left;</span><br><span class="line">    root.left = root.right;</span><br><span class="line">    root.right = left;</span><br><span class="line"></span><br><span class="line">    Mirror(root.left);</span><br><span class="line">    Mirror(root.right);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>非递归</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Mirror</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Stack&lt;TreeNode&gt; stack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    stack.push(root);</span><br><span class="line">    <span class="keyword">while</span> (!stack.empty()) &#123;</span><br><span class="line">        TreeNode tmp = stack.pop();</span><br><span class="line">        TreeNode left = tmp.left;</span><br><span class="line">        tmp.left = tmp.right;</span><br><span class="line">        tmp.right = left;</span><br><span class="line">        <span class="keyword">if</span> (tmp.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (tmp.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%90%88%E5%B9%B6%E4%B8%A4%E4%B8%AA%E6%8E%92%E5%BA%8F%E7%9A%84%E9%93%BE%E8%A1%A8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1078,146 +1166,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/19/Python%20Web%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/19/Python%20Web%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Python Web开发入门</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-20 05:55:48 / 修改时间：13:57:36" itemprop="dateCreated datePublished" datetime="2020-05-20T05:55:48+08:00">2020-05-20</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>本文内容为慕课网Python全栈案例入门课程笔记,<a href="https://www.imooc.com/learn/864" target="_blank" rel="noopener">点击跳转课程页面</a></p>
-<h1 id="后端"><a href="#后端" class="headerlink" title="后端"></a>后端</h1><h4 id="Python-web框架"><a href="#Python-web框架" class="headerlink" title="Python web框架"></a>Python web框架</h4><ul>
-<li>flask    简单轻量,灵活性大,创建于2010</li>
-<li>django 简单,比flask重,灵活性不如flask,创建于2006</li>
-<li>web.py 简单轻量,不再维护,创建于2008</li>
-</ul>
-<h1 id="web应用开发流程"><a href="#web应用开发流程" class="headerlink" title="web应用开发流程"></a>web应用开发流程</h1><ol>
-<li>产品分析: 用户需求,市场调研</li>
-<li>技术选型: 前端,后端,数据库,业务框架(大数据,直播)</li>
-<li>开发实现: 前后端开发,测试</li>
-<li>生产上线: 部署,升级,峰值处理,成本优化,警报处理<h1 id="Python基础"><a href="#Python基础" class="headerlink" title="Python基础"></a>Python基础</h1><h4 id="常用数据类型"><a href="#常用数据类型" class="headerlink" title="常用数据类型"></a>常用数据类型</h4></li>
-</ol>
-<ul>
-<li>字符串:<code>str,unicode</code><br>python3.x只有str</li>
-<li>列表:<code>list 可变列表, tuple 不可变列表, set 唯一列表</code><br>tuple内的元素是不变的</li>
-<li>字典:<code>dict</code><br>key —&gt; value映射,数据量大可用redis数据库</li>
-</ul>
-<h4 id="生成器"><a href="#生成器" class="headerlink" title="生成器"></a>生成器</h4><p>generator</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 一次性产生10个元素的数组,占内存</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>)</span><br><span class="line">	<span class="keyword">print</span> i</span><br><span class="line">	</span><br><span class="line"><span class="comment">#xrange() 函数用法与 range 完全相同，所不同的是生成的不是一个数组，而是一个生成器,依次产生1,2,3...节省内存</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> xrange(<span class="number">10</span>) <span class="comment">#</span></span><br><span class="line">	<span class="keyword">print</span> i</span><br></pre></td></tr></table></figure>
-<h4 id="迭代器"><a href="#迭代器" class="headerlink" title="迭代器"></a>迭代器</h4><p>迭代器对象从集合的第一个元素开始访问，直到所有的元素被访问完结束。迭代器只能往前不会后退。<br>迭代器有两个基本的方法：<code>iter()</code>和 <code>next()</code>。<br>字符串<code>str</code>，列表<code>list</code>或元组<code>tuple</code>对象都可用于创建迭代器：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>list=[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>it = iter(list)    <span class="comment"># 创建迭代器对象</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">print</span> (next(it))   <span class="comment"># 输出迭代器的下一个元素</span></span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">print</span> (next(it))</span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="comment"># 可以使用常规for语句进行遍历：</span></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> it:</span><br><span class="line">    <span class="keyword">print</span> (x, end=<span class="string">" "</span>)</span><br></pre></td></tr></table></figure>
-
-<h4 id="切片"><a href="#切片" class="headerlink" title="切片"></a>切片</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>list = range(<span class="number">10</span>)</span><br><span class="line">&gt;&gt;&gt;&gt; list</span><br><span class="line">[<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>,<span class="number">9</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>list[<span class="number">5</span> : <span class="number">7</span>]    <span class="comment"># 切片,第5-6个位置</span></span><br><span class="line">[<span class="number">5</span>, <span class="number">6</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>list[<span class="number">-2</span> : ]    <span class="comment"># 倒数第二个位置到最后</span></span><br><span class="line">[<span class="number">8</span>, <span class="number">9</span>]</span><br></pre></td></tr></table></figure>
-<h4 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h4><ul>
-<li>def 自定义函数</li>
-<li>lambda 匿名函数<figure class="highlight plain"><figcaption><span>[arg1 [,arg2,.....argn]]:expression```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;python</span><br><span class="line"> &gt;&gt;&gt; sum &#x3D; lambda arg1, arg2: arg1 + arg2</span><br><span class="line"> &gt;&gt;&gt; print (&quot;相加后的值为 : &quot;, sum( 10, 20 ))</span><br><span class="line">	相加后的值为 :  30</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<ul>
-<li>functools.partial 函数封装</li>
-<li>functools.wraps 装饰器</li>
-</ul>
-<p>python中函数像变量一样,可作为参数传入另一个函数:<br><img src="https://img-blog.csdnimg.cn/20191210100759984.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h4 id="列表-字典推导式"><a href="#列表-字典推导式" class="headerlink" title="列表 / 字典推导式"></a>列表 / 字典推导式</h4><ul>
-<li><strong>列表推导式</strong>可以方便地由<code>a_list</code>生成新的列表<code>b_list</code></li>
-<li><strong>字典推导式</strong>可以方便地由列表<code>a_list</code>和<code>string.letters</code>生成新的字典<code>b_dict</code><br><img src="https://img-blog.csdnimg.cn/20191210100255508.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h4 id="列表-字典解析式"><a href="#列表-字典解析式" class="headerlink" title="列表 / 字典解析式"></a>列表 / 字典解析式</h4></li>
-<li>使用<code>enumerate</code>可以在遍历时方便地获取<strong>列表</strong>下标<code>index</code></li>
-<li>使用<code>iteritems()</code>迭代器可以方便地遍历<strong>字典</strong><code>(key,value)</code>,快速又省内存<br><img src="https://img-blog.csdnimg.cn/20191210100351382.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h1 id="Flask"><a href="#Flask" class="headerlink" title="Flask"></a>Flask</h1><h3 id="最简单的web-app"><a href="#最简单的web-app" class="headerlink" title="最简单的web app"></a>最简单的web app</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__) <span class="comment">### 生成一个web app对象</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/')  ### 注册一个url,当请求url+'/'这个网址时,执行hello_world函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hello_world</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">'Hello, World!'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">	app.run()     <span class="comment">### run(host=None, port=None, debug=None, **options)</span></span><br><span class="line">				  <span class="comment">### 默认host: 127.0.0.1</span></span><br><span class="line">				  <span class="comment">### 默认port: 5000</span></span><br></pre></td></tr></table></figure>
-<h3 id="调试flask应用"><a href="#调试flask应用" class="headerlink" title="调试flask应用"></a>调试flask应用</h3></li>
-<li>设置app.run(debug=True)</li>
-<li>Python打印log,前端页面打印log(开发者模式)</li>
-<li>本地开发可以使用断点调试<h3 id="图书馆管理系统"><a href="#图书馆管理系统" class="headerlink" title="图书馆管理系统"></a>图书馆管理系统</h3><img src="https://img-blog.csdnimg.cn/20191209194815498.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191209195033835.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h4 id="项目文件"><a href="#项目文件" class="headerlink" title="项目文件"></a>项目文件</h4></li>
-</ul>
-<p><strong>接口与逻辑分开设计</strong></p>
-<ul>
-<li>views.py: url接口逻辑<br><img src="https://img-blog.csdnimg.cn/20191209195357219.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>logic.py: 逻辑处理<br><img src="https://img-blog.csdnimg.cn/20191209200108740.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>run.py: 应用发布<br><img src="https://img-blog.csdnimg.cn/20191209200429598.png" alt="在这里插入图片描述"></li>
-</ul>
-<h1 id="实践-DashBoard可视化"><a href="#实践-DashBoard可视化" class="headerlink" title="实践:DashBoard可视化"></a>实践:DashBoard可视化</h1><p><a href="https://github.com/litaotao/IPython-Dashboard" target="_blank" rel="noopener">点击获取项目源码</a></p>
-<h2 id="应用设计"><a href="#应用设计" class="headerlink" title="应用设计"></a>应用设计</h2><p><img src="https://img-blog.csdnimg.cn/20191209220402880.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191209220500455.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>项目文件结构:<br><img src="https://img-blog.csdnimg.cn/20191209222556417.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h2 id="python应用发布工具"><a href="#python应用发布工具" class="headerlink" title="python应用发布工具"></a>python应用发布工具</h2><p>CI / CD  持续集成,持续部署</p>
-<ol>
-<li>setup.py打包至pip公共仓库, 通过pip安装 / 卸载</li>
-<li>github hooks,  travis 轻量,适合中小型项目</li>
-<li>jenkins 较重,适合中大型项目</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1289,7 +1237,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">126</span>
+          <span class="site-state-item-count">127</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
