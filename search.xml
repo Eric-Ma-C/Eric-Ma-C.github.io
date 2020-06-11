@@ -3176,6 +3176,9 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
     <title>fb</title>
     <url>/2020/06/11/fb/</url>
     <content><![CDATA[]]></content>
+      <tags>
+        <tag>tag</tag>
+      </tags>
   </entry>
   <entry>
     <title>为什么 MD5 不能用于存储密码-转载</title>
