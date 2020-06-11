@@ -191,6 +191,377 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/" class="post-title-link" itemprop="url">MySQL事务隔离级别和锁</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-08 02:40:04" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-11 15:53:43" itemprop="dateModified" datetime="2020-06-11T15:53:43+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载,整理自</p>
+<p>1.<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html" target="_blank" rel="noopener">MySQL 事务隔离级别和锁</a></p>
+<p>2.<a href="https://blog.csdn.net/puhaiyang/article/details/72284702" target="_blank" rel="noopener">对mysql乐观锁、悲观锁、共享锁、排它锁、行锁、表锁概念的理解</a></p>
+<p>3.<a href="https://blog.csdn.net/hh1sdfsf56456/article/details/79449714" target="_blank" rel="noopener">mysql乐观锁总结和实践：用version或者时间戳</a></p>
+<h2 id="事务及其特性"><a href="#事务及其特性" class="headerlink" title="事务及其特性"></a>事务及其特性</h2><p>数据库事务（简称:事务）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。事务的使用是数据库管理系统区别文件系统的重要特征之一。</p>
+<p>事务拥有四个重要的特性：<strong>原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）</strong>，人们习惯称之为 ACID 特性。下面我逐一对其进行解释。</p>
+<ul>
+<li><p>原子性（Atomicity）</p>
+<p>事务开始后所有操作，要么全部做完，要么全部不做，不可能停滞在中间环节。事务执行过程中出错，会回滚到事务开始前的状态，所有的操作就像没有发生一样。例如，如果一个事务需要新增 100 条记录，但是在新增了 10 条记录之后就失败了，那么数据库将回滚对这 10 条新增的记录。也就是说事务是一个不可分割的整体，就像化学中学过的原子，是物质构成的基本单位。</p>
+</li>
+<li><p>一致性（Consistency）</p>
+<p>指事务将数据库从一种状态转变为另一种一致的的状态。事务开始前和结束后，数据库的完整性约束没有被破坏。例如工号带有唯一属性，如果经过一个修改工号的事务后，工号变的非唯一了，则表明一致性遭到了破坏。</p>
+</li>
+<li><p>隔离性（Isolation）</p>
+<p>要求每个读写事务的对象对其他事务的操作对象能互相分离，即该事务提交前对其他事务不可见。 也可以理解为多个事务并发访问时，事务之间是隔离的，一个事务不应该影响其它事务运行效果。这指的是在并发环境中，当不同的事务同时操纵相同的数据时，每个事务都有各自的完整数据空间。由并发事务所做的修改必须与任何其他并发事务所做的修改隔离。例如一个用户在更新自己的个人信息的同时，是不能看到系统管理员也在更新该用户的个人信息（此时更新事务还未提交）。</p>
+<p>注：MySQL 通过锁机制来保证事务的隔离性。</p>
+</li>
+<li><p>持久性（Durability）</p>
+<p>事务一旦提交，则其结果就是永久性的。即使发生宕机的故障，数据库也能将数据恢复，也就是说事务完成后，事务对数据库的所有更新将被保存到数据库，不能回滚。这只是从事务本身的角度来保证，排除 RDBMS（关系型数据库管理系统，例如 Oracle、MySQL 等）本身发生的故障。</p>
+<p>注：MySQL 使用 <code>redo log</code> 来保证事务的持久性。</p>
+</li>
+</ul>
+<h2 id="事务的隔离级别"><a href="#事务的隔离级别" class="headerlink" title="事务的隔离级别"></a>事务的隔离级别</h2><p>SQL 标准定义的四种隔离级别被 ANSI（美国国家标准学会）和 ISO/IEC（国际标准）采用，每种级别对事务的处理能力会有不同程度的影响。</p>
+<p>我们分别对四种隔离级别从并发程度由高到低进行描述，并用代码进行演示，数据库环境为 MySQL 5.7。</p>
+<h3 id="READ-UNCOMMITTED（读未提交）"><a href="#READ-UNCOMMITTED（读未提交）" class="headerlink" title="READ UNCOMMITTED（读未提交）"></a>READ UNCOMMITTED（读未提交）</h3><p>该隔离级别的事务会读到其它未提交事务的数据，此现象也称之为<strong>脏读</strong>。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ UNCOMMITTED</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-UNCOMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条ID为2的记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务后查看表中的数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>最后一步读取到了 mysql 终端 1 中未提交的事务（没有 commit 提交动作），即产生了<strong>脏读</strong>，<strong>大部分业务场景都不允许脏读</strong>出现，<strong>但</strong>是此隔离级别下数据库的<strong>并发是最好的</strong>。</p>
+<h3 id="READ-COMMITTED（读提交）"><a href="#READ-COMMITTED（读提交）" class="headerlink" title="READ COMMITTED（读提交）"></a>READ COMMITTED（读提交）</h3><p>一个事务可以读取另一个已提交的事务，这次事务内多次读取会得到不一样的结果，此现象称为<strong>不可重复读(也称虚读)</strong>问题，Oracle 和 SQL Server 的默认隔离级别。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ COMMITTED</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-COMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2，并确认记录数变更过来。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条记录为 2</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务后，查看表中的数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看一条 ID 为 1 的记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，提交事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+<p>mysql 终端 2 在开启了一个事务之后，在第一次读取 <code>test</code> 表（此时 mysql 终端 1 的事务还未提交）时 ID 为 <code>1</code>，在第二次读取 <code>test</code> 表（此时 mysql 终端 1 的事务已经提交）时 ID 已经变为 <code>2</code>，说明在此隔离级别下已经<strong>读取到已提交的事务。</strong></p>
+<h3 id="REPEATABLE-READ（可重复读）"><a href="#REPEATABLE-READ（可重复读）" class="headerlink" title="REPEATABLE READ（可重复读）"></a>REPEATABLE READ（可重复读）</h3><p>该隔离级别是 <strong>MySQL 默认的隔离级别</strong>，在同一个事务里，<code>select</code> 的结果是事务开始时时间点的状态，因此，同样的 <code>select</code> 操作读到的结果会是一致的，但是，会有<strong>幻读</strong>现象。MySQL 的 InnoDB 引擎可以通过 <code>next-key locks</code> 机制（参考下文<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html#1行锁的算法outline" target="_blank" rel="noopener">“行锁的算法”</a>一节）来避免幻读。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，准备一张测试表<code>test</code>并调整隔离级别为<code>REPEATABLE READ</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>,<span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">20</span>));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 1，增加一条记录并提交。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'a'</span>);</span><br><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 msyql 终端 2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">--此时查询还是无记录</span></span><br></pre></td></tr></table></figure>
+
+<p>通过这一步可以证明，在该隔离级别下已经<strong>读取不到别的已提交的事务</strong>，如果想看到 mysql 终端 1 提交的事务，在 mysql 终端 2 将当前事务提交后再次查询就可以读取到 mysql 终端 1 提交的事务。我们接着实验，看看在该隔离级别下是否会存在别的问题。</p>
+</li>
+<li><p>此时接着在 mysql 终端 2 插入一条数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'b'</span>); <span class="comment">-- 此时报主键冲突的错误</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>也许到这里您心里可能会有疑问，明明在第 5 步没有数据，为什么在这里会报错呢？其实这就是该隔离级别下可能产生的问题，MySQL 称之为<strong>幻读</strong>。注意我在这里强调的是 MySQL 数据库，Oracle 数据库对于幻读的定义可能有所不同。</p>
+<h3 id="SERIALIZABLE（序列化）"><a href="#SERIALIZABLE（序列化）" class="headerlink" title="SERIALIZABLE（序列化）"></a>SERIALIZABLE（序列化）</h3><p>在该隔离级别下事务都是串行顺序执行的，MySQL 数据库的 <strong>InnoDB 引擎会给读操作隐式加一把读共享锁</strong>，从而<strong>避免了脏读、不可重读复读和幻读</strong>问题。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，准备一张测试表 test 并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'SERIALIZABLE'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务，并写入一条数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时会一直卡住</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>立马切换到 mysql 终端 1,提交事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>一旦事务提交，msyql 终端 2 会立马返回 ID 为 1 的记录，否则会一直卡住，直到超时，其中超时参数是由 <code>innodb_lock_wait_timeout</code> 控制。由于每条 <code>select</code> 语句都会加锁，所以该隔离级别的数据库并发能力最弱，但是有些资料表明该结论也不一定对，如果感兴趣，您可以自行做个压力测试。</p>
+<p>表 1 总结了各个隔离级别下产生的一些问题。</p>
+<center>表 1. 各个隔离级别下产生的一些问题</center>
+
+<table>
+<thead>
+<tr>
+<th align="left"><strong>隔离级别</strong></th>
+<th align="left"><strong>脏读</strong>(读到可能会回滚的数据)</th>
+<th align="left">(一个事务内)<strong>不可重复读</strong></th>
+<th align="left"><strong>幻读</strong>(读到数据不够新?)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">读未提交</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">读提交</td>
+<td align="left">不允许出现</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">可重复读</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">序列化</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+</tr>
+</tbody></table>
+<h2 id="脏读"><a href="#脏读" class="headerlink" title="脏读"></a>脏读</h2><p>脏读指在一个事务处理过程里读取了另一个未提交的事务中的数据，读取数据不一致。<br>事务A对数据进行增删改操作，但未提交，另一事务B可以读取到未提交的数据。如果事务A这时候回滚了，则第二个事务B读取的即为脏数据。</p>
+<p>举例：当一个事务正在多次修改某个数据，而在这个事务中多次的修改都还未提交，这时一个并发的事务来访问该数据，就会造成两个事务得到的数据不一致。<br>例如：用户A向用户B转账100元，对应SQL命令如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money + <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’B’;  <span class="comment">--(此时A通知B)</span></span><br><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money - <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’A’;</span><br></pre></td></tr></table></figure>
+
+<p>当只执行第一条SQL时，A通知B查看账户，B发现确实钱已到账（此时即发生了脏读），而之后无论第二条SQL是否执行，只要该事务不提交，则所有操作都将回滚，那么当B以后再次查看账户时就会发现钱其实并没有转。</p>
+<h2 id="不可重复读-虚读"><a href="#不可重复读-虚读" class="headerlink" title="不可重复读(虚读)"></a>不可重复读(虚读)</h2><p>所谓的虚读，也就是大家经常说的不可重复读，是指在数据库访问中，一个事务范围内两个相同的查询却返回了不同数据。<strong>这是由于查询时系统中其他事务修改的提交而引起的。</strong>比如事务T1读取某一数据，事务T2读取并修改了该数据，T1为了对读取值进行检验而再次读取该数据，便得到了不同的结果。<br>一种更易理解的说法是：在一个事务内，多次读同一个数据。在这个事务还没有结束时，另一个事务也访问该同一数据。那么，在第一个事务的两次读数据之间。由于第二个事务的修改，那么第一个事务读到的数据可能不一样，这样就发生了在一个事务内两次读到的数据是不一样的，因此称为不可重复读，即原始读取不可重复。</p>
+<h2 id="幻读"><a href="#幻读" class="headerlink" title="幻读"></a>幻读</h2><p>幻读是指当事务不是独立执行时发生的一种现象，例如第一个事务对一个表中的数据进行了修改，比如这种修改涉及到表中的“全部数据行”。同时，第二个事务也修改这个表中的数据，这种修改是向表中插入“一行新数据”。那么，以后就会发生操作第一个事务的用户发现表中还有没有修改的数据行，就好象发生了幻觉一样.</p>
+<p>一般解决幻读的方法是增加范围锁RangeS，<strong>锁定检锁范围为只读</strong>，这样就避免了幻读。简单来说，幻读是由插入或者删除引起的。</p>
+<h2 id="不可重复读（虚读）和幻读比较"><a href="#不可重复读（虚读）和幻读比较" class="headerlink" title="不可重复读（虚读）和幻读比较"></a>不可重复读（虚读）和幻读比较</h2><p>两者都表现为两次读取的结果不一致.</p>
+<p>大致的区别在于不可重复读是由于另一个事务对数据的更改(<code>update</code>)所造成的，而幻读是由于另一个事务插入(<code>insert</code>)或删除(<code>delete</code>)引起的。</p>
+<p>但如果你从控制的角度来看, 两者的区别就比较大：<br>对于前者, 只需要锁住满足条件的记录<br>对于后者, 要锁住满足条件及其相近的记录</p>
+<h2 id="MySQL-中的锁"><a href="#MySQL-中的锁" class="headerlink" title="MySQL 中的锁"></a>MySQL 中的锁</h2><p>锁也是数据库管理系统区别文件系统的重要特征之一。锁机制使得在对数据库进行并发访问时，可以保障数据的完整性和一致性。对于锁的实现，各个数据库厂商的实现方法都会有所不同。本文讨论 MySQL 中的 InnoDB 引擎的锁。</p>
+<h3 id="锁的类型"><a href="#锁的类型" class="headerlink" title="锁的类型"></a>锁的类型</h3><h5 id="悲观锁-行锁"><a href="#悲观锁-行锁" class="headerlink" title="悲观锁(行锁)"></a>悲观锁(行锁)</h5><p>InnoDB 实现了两种类型的行级锁,属于悲观锁的范畴：</p>
+<ul>
+<li><p><strong>共享锁</strong>（也称为 S 锁,读锁）：允许事务读取一行数据。</p>
+<p>可以使用 SQL 语句 <code>select * from tableName where … lock in share mode;</code> 手动加 S 锁。</p>
+</li>
+<li><p><strong>排他锁</strong>（也称为 X 锁,写锁,独占锁）：允许事务删除或更新一行数据。</p>
+<p>可以使用 SQL 语句 <code>select * from tableName where … for update</code>; 手动加 X 锁。</p>
+</li>
+</ul>
+<p>S 锁和 S 锁是<strong>兼容</strong>的，X 锁和其它锁都<strong>不兼容</strong>.</p>
+<p>举个例子，事务 T1 获取了一个行 r1 的 S 锁，另外事务 T2 可以立即获得行 r1 的 S 锁，此时 T1 和 T2 共同获得行 r1 的 S 锁，此种情况称为<strong>锁兼容</strong>，但是另外一个事务 T2 此时如果想获得行 r1 的 X 锁，则必须等待 T1 对行 r 锁的释放，此种情况也成为<strong>锁冲突</strong>。</p>
+<p>为了实现多粒度的锁机制，InnoDB 还有两种内部使用的<strong>意向锁</strong>，由 InnoDB 自动添加，且都是<strong>表级别的锁</strong>。</p>
+<ul>
+<li><strong>意向共享锁</strong>（IS）：事务即将给表中的各个行设置共享锁S，事务给数据行加 S 锁前必须获得该表的 IS 锁。</li>
+<li><strong>意向排他锁</strong>（IX）：事务即将给表中的各个行设置排他锁X，事务给数据行加 X 锁前必须获得该表 IX 锁。</li>
+</ul>
+<p>意向锁的主要目的是为了使得<strong>行锁</strong>和<strong>表锁</strong>共存。表 2 列出了行级锁(S,X)和表级意向锁(IS,IX)的兼容性。</p>
+<center>表 2. 行级锁和表级意向锁的兼容性</center>
+
+<table>
+<thead>
+<tr>
+<th align="left"><strong>锁类型</strong></th>
+<th align="left"><strong>X</strong></th>
+<th align="left"><strong>IX</strong></th>
+<th align="left"><strong>S</strong></th>
+<th align="left"><strong>IS</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>X</strong></td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+</tr>
+<tr>
+<td align="left"><strong>IX</strong></td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+</tr>
+<tr>
+<td align="left"><strong>S</strong></td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+</tr>
+<tr>
+<td align="left"><strong>IS</strong></td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+</tr>
+</tbody></table>
+<h5 id="乐观锁"><a href="#乐观锁" class="headerlink" title="乐观锁"></a>乐观锁</h5><p><strong>乐观锁不是数据库自带的</strong>，需要我们自己去实现。乐观锁是指操作数据库时(更新操作)，想法很乐观，认为这次的操作不会导致冲突，在操作数据时，并不加锁，而在进行更新后，再去判断是否有冲突了(CAS操作)。</p>
+<p>一般来说有以下2种方式：</p>
+<ol>
+<li><p>使用<strong>数据版本（Version）</strong>记录机制实现</p>
+<p>这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</p>
+</li>
+<li><p>使用<strong>时间戳（Timestamp）</strong>记录机制实现</p>
+<p>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</p>
+</li>
+</ol>
+<p>举例：在表中的数据进行操作时(更新)，先给数据表加一个版本(version)字段，每操作一次，将那条记录的版本号加1。也就是先查询出那条记录，获取出version字段,如果要对那条记录进行操作(更新),则先判断此刻version的值是否与刚刚查询出来时的version的值相等，如果相等，则说明这段期间，没有其他程序对其进行操作，则可以执行更新，将version字段的值加1；如果更新时发现此刻的version值与刚刚获取出来的version的值不相等，则说明这段期间已经有其他程序对其进行操作了，则不进行更新操作。</p>
+<p>下单操作包括3步骤：</p>
+<p>1.查询出商品信息</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> (<span class="keyword">status</span>,<span class="keyword">status</span>,<span class="keyword">version</span>) <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>2.根据商品信息生成订单</p>
+<p>3.修改商品status为2</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> t_goods </span><br><span class="line"><span class="keyword">set</span> <span class="keyword">status</span>=<span class="number">2</span>,<span class="keyword">version</span>=<span class="keyword">version</span>+<span class="number">1</span></span><br><span class="line"><span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125; and version=#&#123;version&#125;;</span></span><br></pre></td></tr></table></figure>
+
+<p>除了自己手动实现乐观锁之外，现在网上许多框架已经封装好了乐观锁的实现，如hiberate实现的乐观锁。</p>
+<h3 id="行锁的算法"><a href="#行锁的算法" class="headerlink" title="行锁的算法"></a>行锁的算法</h3><p>InnoDB 存储引擎使用三种行锁的算法用来满足相关事务隔离级别的要求。</p>
+<ul>
+<li><p>Record Locks</p>
+<p>该锁为索引记录上的锁，如果表中没有定义索引，InnoDB 会默认为该表创建一个隐藏的聚簇索引，并使用该索引锁定记录。</p>
+</li>
+<li><p>Gap Locks</p>
+<p>该锁会锁定一个范围，但是不括记录本身。可以通过修改隔离级别为 <code>READ COMMITTED</code> 或者配置 <code>innodb_locks_unsafe_for_binlog</code> 参数为 <code>ON</code>。</p>
+</li>
+<li><p>Next-key Locks</p>
+<p>该锁就是 Record Locks 和 Gap Locks 的组合，即锁定一个范围并且锁定该记录本身。<strong>InnoDB 使用 Next-key Locks 解决幻读问题</strong>。需要注意的是，如果索引有唯一属性，则 InnnoDB 会自动将 Next-key Locks 降级为 Record Locks。举个例子，如果一个索引有 1, 3, 5 三个值，则该索引锁定的区间为 <code>(-∞,1], (1,3], (3,5], (5,+ ∞)</code>。</p>
+</li>
+</ul>
+<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p><strong>死锁</strong>是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法推进下去。此时称系统处于死锁状态或系统产生了死锁，这些永远在互相等待的进程称为死锁进程。</p>
+<p>InnoDB 引擎采取的是 <code>wait-for graph</code> 等待图的方法来自动检测死锁，如果发现死锁会自动回滚一个事务。</p>
+<p>下面我们通过一个示例来了解死锁。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，再准备一张测试表<code>test</code>写入两条测试数据，并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>),(<span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>登录 mysql 终端 1，开启一个事务，手动给 ID 为1的记录加 X 锁。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务，手动给 ID 为2的记录加 X 锁。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 1，手动给 ID 为2的记录加 X 锁，此时会一直卡住，因为此时在等待第 3 步中 X 锁的释放，直到超时，超时时间由<code>innodb_lock_wait_timeout</code>控制。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在锁超时前立刻切换到 mysql 终端 2，手动给 ID 为1的记录加 X 锁，此时又会等待第 2 步中 X 所的释放，两个终端都在等待资源的释放，所以 InnoDB 引擎会立马检测到死锁产生，自动回滚一个事务，以防止死锁一直占用资源。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line">   ERROR 1213 (40001): Deadlock found when trying to get <span class="keyword">lock</span>; try restarting transaction</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>此时，通过 <code>show engine innodb status\G</code> 命令可以看到 <code>LATEST DETECTED DEADLOCK</code> 相关信息，即表明有死锁发生；或者通过配置 <code>innodb_print_all_deadlocks</code>（MySQL 5.6.2 版本开始提供）参数为 <code>ON</code> 将死锁相关信息打印到 MySQL 的错误日志。</p>
+<h3 id="锁的优化建议"><a href="#锁的优化建议" class="headerlink" title="锁的优化建议"></a>锁的优化建议</h3><p>锁如果利用不好，会给业务造成大量的卡顿现象，在了解了锁相关的一些知识点后，我们可以有意识的去避免锁带来的一些问题。</p>
+<ol>
+<li>合理设计索引，让 InnoDB 在索引键上面加锁的时候尽可能准确，尽可能的缩小锁定范围，避免造成不必要的锁定而影响其他 Query 的执行。</li>
+<li>尽可能减少基于范围的数据检索过滤条件，避免因为间隙锁带来的负面影响而锁定了不该锁定的记录。</li>
+<li>尽量控制事务的大小，减少锁定的资源量和锁定时间长度。</li>
+<li>在业务环境允许的情况下，尽量使用较低级别的事务隔离，以减少 MySQL 因为实现事务隔离级别所带来的附加成本。</li>
+</ol>
+<h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h2><p>通过阅读本文，可以让您对数据库的事务还有事务的隔离级别有个基本的了解，同时也介绍了 MySQL 中 InnoDB 引擎中一些锁相关的知识，从而可以让您利用关系型数据库系统设计一个更为健壮的业务模型。</p>
+<h2 id="参考资源"><a href="#参考资源" class="headerlink" title="参考资源"></a>参考资源</h2><ul>
+<li>查看<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html" target="_blank" rel="noopener"> MySQL 官方文档</a>，获取更多关于 MySQL 事务和锁相关的最新信息。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1356,103 +1727,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E6%9E%84%E5%BB%BA%E4%B9%98%E7%A7%AF%E6%95%B0%E7%BB%84/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/%E6%9E%84%E5%BB%BA%E4%B9%98%E7%A7%AF%E6%95%B0%E7%BB%84/" class="post-title-link" itemprop="url">构建乘积数组</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-06 02:05:51 / 修改时间：10:45:40" itemprop="dateCreated datePublished" datetime="2020-06-06T02:05:51+08:00">2020-06-06</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给定一个数组A[0,1,…,n-1],请构建一个数组B[0,1,…,n-1],其中B中的元素B[i]=A[0]<em>A[1]</em>…<em>A[i-1]*A[i+1]</em>…*A[n-1]。不能使用除法。（注意：规定B[0] = A[1] * A[2] * … * A[n-1]，B[n-1] = A[0] * A[1] * … * A[n-2];）</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>不能用除法,只能尽量减少乘法次数</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">int</span>[] multiply(<span class="keyword">int</span>[] A) &#123;</span><br><span class="line">    <span class="keyword">int</span>[] B = <span class="keyword">new</span> <span class="keyword">int</span>[A.length];</span><br><span class="line">    <span class="keyword">int</span>[] D = <span class="keyword">new</span> <span class="keyword">int</span>[A.length];</span><br><span class="line">    D[D.length - <span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = D.length - <span class="number">2</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">        D[i] = D[i + <span class="number">1</span>] * A[i + <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> C = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; B.length; i++) &#123;</span><br><span class="line">        B[i] = C * D[i];</span><br><span class="line">        C *= A[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> B;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/94a4d381a68b47b7a8bed86f2975db46?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/94a4d381a68b47b7a8bed86f2975db46?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="方法："><a href="#方法：" class="headerlink" title="方法："></a>方法：</h2><p>根据题目描述，如果可以使用除法，就很简单。但是要求不能使用。</p>
-<p>假设：<br><code>left[i] = A[0]*...*A[i-1]</code><br><code>right[i] = A[i+1]*...*A[n-1]</code><br>所以：<br><code>B[i] = left[i] * right[i]</code></p>
-<p>这样就避免使用了除法。但是如果对每个B[i], 0&lt;=i&lt;n,都这么求，显然时间复杂度太高。</p>
-<p>我们把整个结果画到下面图：<br><img src="https://uploadfiles.nowcoder.com/images/20200506/284295_1588756073632_8F528B3C1F44C5BD5ED7012E809F9A49" alt="图片说明"> </p>
-<p>可知：<br><code>left[i+1] = A[0]*...A[i-1]*A[i]</code><br><code>right[i+1] = A{i+2]*...*A[n-1]</code></p>
-<p>于是，<br><code>left[i+1] = left[i] * A[i]</code><br><code>right[i] = right[i+1] * A[i+1]</code></p>
-<p>所以，我们可以先把所有的left[i]求出，right[i]求出。</p>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">multiply</span><span class="params">(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A)</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">B</span><span class="params">(A.<span class="built_in">size</span>(), <span class="number">1</span>)</span></span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;A.<span class="built_in">size</span>(); ++i) &#123;</span><br><span class="line">            B[i] = B[i<span class="number">-1</span>] * A[i<span class="number">-1</span>]; <span class="comment">// left[i]用B[i]代替</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> tmp = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=A.<span class="built_in">size</span>()<span class="number">-2</span>; j&gt;=<span class="number">0</span>; --j) &#123;</span><br><span class="line">            tmp *= A[j+<span class="number">1</span>]; <span class="comment">// right[i]用tmp代替</span></span><br><span class="line">            B[j] *= tmp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> B;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度: O(1)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1524,7 +1798,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">127</span>
+          <span class="site-state-item-count">128</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1537,7 +1811,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1581,7 +1855,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">306k</span>
+    <span title="站点总字数">308k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
