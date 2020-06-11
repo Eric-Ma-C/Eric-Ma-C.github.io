@@ -191,7 +191,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/fb/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/%E7%9C%8B%E5%9B%BE%E5%AD%A6HTTPS/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/eric.png">
@@ -205,7 +205,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/06/11/fb/" class="post-title-link" itemprop="url">fb</a>
+            <a href="/2020/06/11/%E7%9C%8B%E5%9B%BE%E5%AD%A6HTTPS/" class="post-title-link" itemprop="url">看图学HTTPS</a>
         </h2>
 
         <div class="post-meta">
@@ -216,7 +216,16 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2020-06-11 09:19:29 / 修改时间：17:26:01" itemprop="dateCreated datePublished" datetime="2020-06-11T09:19:29+08:00">2020-06-11</time>
+              <time title="创建时间：2020-06-11 10:37:24 / 修改时间：18:39:39" itemprop="dateCreated datePublished" datetime="2020-06-11T10:37:24+08:00">2020-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
             </span>
 
           <br>
@@ -225,14 +234,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>0</span>
+              <span>2.1k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -244,7 +253,57 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          
+          <p>转载自<a href="https://juejin.im/post/5b0274ac6fb9a07aaa118f49" target="_blank" rel="noopener">看图学HTTPS</a></p>
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>之前说到HTTPS，在我的概念中就是更安全，需要服务器配置证书，但是到底什么是HTTPS，为什么会更安全，整套流程又是如何实现的，在脑子里没有具体的概念。所以，我花了几天的时间，通过参考一些文章，学习了HTTPS整套机制的实现，想要通过一篇文章把我学习到的东西总结出来，让更多之前不清楚HTTPS到底是什么的同学有一个入门的理解。</p>
+<p>我看过的很多文章都是通过大量的文字和协议图来解释，但往往会让人感觉有点枯燥，这篇文章我会通过一幅幅流程图，形象的说明从HTTP到HTTPS的演变过程，让大家可以更容易理解一些。当然，这个只是入门级，如果想要学习更深入的HTTPS的知识，还是要深入到一个个协议里面，看一些大部头，才可以达到完全理解的效果。</p>
+<p>本文也会同步到我的<a href="http://blog.liuxuan.site" target="_blank" rel="noopener">个人网站</a>。</p>
+<h1 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h1><h2 id="HTTP是什么样的？"><a href="#HTTP是什么样的？" class="headerlink" title="HTTP是什么样的？"></a>HTTP是什么样的？</h2><p>HTTP是属于应用层的协议，它是基于TCP/IP的，所以它只是规定一些要传输的内容，以及头部信息，然后通过TCP协议进行传输，依靠IP协议进行寻址，通过一幅最简单的图来描述：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2ee65cb6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-1"></p>
+<p>客户端发出请求，服务端进行响应，就是这么简单。在整个过程中，没有任何加密的东西，所以它是不安全的，中间人可以进行拦截，获取传输和响应的数据，造成数据泄露。</p>
+<h2 id="加个密呢？"><a href="#加个密呢？" class="headerlink" title="加个密呢？"></a>加个密呢？</h2><p>因为上图中数据是明文传输的，我们能想到最简单的提高安全性的方法就是在传输前对数据进行加密，如下图：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2f188c52?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-2"></p>
+<p>这种加密方式叫做：<strong>对称加密</strong>。 加密和解密用同一个秘钥的加密方式叫做对称加密。</p>
+<p>好了，我们对数据进行加密了，问题解决了吗？</p>
+<h2 id="多个客户端怎么办？"><a href="#多个客户端怎么办？" class="headerlink" title="多个客户端怎么办？"></a>多个客户端怎么办？</h2><p>这是一个客户端，但是在WWW上，是成千上万的客户端，情况会怎样呢？</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2ec7d8ef?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-3"></p>
+<p>为所有的客户端都应用同一个秘钥A，这种方式很显然是不合理的，破解了一个用户，所有的用户信息都会被盗取。</p>
+<p>想一想，是不是还有别的办法呢？</p>
+<p>相信大家都可以想到，如果对每一个客户端都用不同的秘钥进行传输是不是就解决这个问题了：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2eab0301?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-4"></p>
+<h2 id="对称加密秘钥如何传输？"><a href="#对称加密秘钥如何传输？" class="headerlink" title="对称加密秘钥如何传输？"></a>对称加密秘钥如何传输？</h2><p>我们对每个客户端应用不同的对称加密秘钥，那么这个秘钥客户端或者服务端是如何知道的呢，只能是在一端生成一个秘钥，然后通过HTTP传输给另一端：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2f463922?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-5"></p>
+<p>那么这个传输秘钥的过程，又如何保证加密？如果被中间人拦截，秘钥也会被获取。也许你会说，对秘钥再进行加密，那又如何保证对秘钥加密的过程，是加密的呢？</p>
+<p>好像我们走入了 <strong>while(1)</strong>，出不来了。</p>
+<h2 id="非对称加密"><a href="#非对称加密" class="headerlink" title="非对称加密"></a>非对称加密</h2><p>在对称加密的路上走不通了，我们换个思路，还有一种加密方式叫非对称加密，比如RSA。 非对称加密会有一对秘钥：<strong>公钥</strong>和<strong>私钥</strong>。 公钥加密的内容，只有私钥可以解开，私钥加密的内容，所有的公钥都可以解开（当然是指和秘钥是一对的公钥）。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d2f09eab3?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-6"></p>
+<p>私钥只保存在服务器端，公钥可以发送给所有的客户端。</p>
+<p>在传输公钥的过程中，肯定也会有被中间人获取的风险，但在目前的情况下，至少可以保证客户端通过公钥加密的内容，中间人是无法破解的，因为私钥只保存在服务器端，只有私钥可以破解公钥加密的内容。</p>
+<p>现在我们还存在一个问题，如果公钥被中间人拿到篡改呢：</p>
+<p><strong>MITM</strong>：Man-in-the-MiddleAttack</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d56d46dc7?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-7"></p>
+<p>客户端拿到的公钥是假的，如何解决这个问题？</p>
+<h2 id="第三方认证"><a href="#第三方认证" class="headerlink" title="第三方认证"></a>第三方认证</h2><p>公钥被掉包，是因为客户端无法分辨传回公钥的到底是中间人，还是服务器，这也是密码学中的身份验证问题。</p>
+<p>在HTTPS中，使用 <strong>证书 + 数字签名</strong> 来解决这个问题。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d961729a3?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-9"></p>
+<p>这里假设加密方式是MD5，将网站的信息加密后通过第三方机构的私钥再次进行加密，生成数字签名。</p>
+<p><strong>数字证书 = 网站信息 + 数字签名</strong></p>
+<p>假如中间人拦截后把服务器的公钥替换为自己的公钥，因为数字签名的存在，会导致客户端验证签名不匹配，这样就防止了中间人替换公钥的问题。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d6f402850?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-10"></p>
+<p>浏览器安装后会内置一些权威第三方认证机构的公钥，比如VeriSign、Symantec以及GlobalSign等等，验证签名的时候直接就从本地拿到相应第三方机构的公钥，对私钥加密后的数字签名进行解密得到真正的签名，然后客户端利用签名生成规则进行签名生成，看两个签名是否匹配，如果匹配认证通过，不匹配则获取证书失败。</p>
+<h2 id="为什么要有签名？"><a href="#为什么要有签名？" class="headerlink" title="为什么要有签名？"></a>为什么要有签名？</h2><p>大家可以想一下，为什么要有数字签名这个东西呢？</p>
+<p>第三方认证机构是一个开放的平台，我们可以去申请，中间人也可以去申请呀：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d6fb66044?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-11"></p>
+<p>如果没有签名，只对网站信息进行第三方机构私钥加密的话，会存在下面的问题：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d977c8344?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-12"></p>
+<p>因为没有认证，所以中间人也向第三方认证机构进行申请，然后拦截后把所有的信息都替换成自己的，客户端仍然可以解密，并且无法判断这是服务器的还是中间人的，最后造成数据泄露。</p>
+<h2 id="对称加密"><a href="#对称加密" class="headerlink" title="对称加密"></a>对称加密</h2><p>在安全的拿到服务器的公钥之后，客户端会随机生成一个对称秘钥，使用服务器公钥加密，传输给服务端，此后，相关的 <strong>Application Data</strong> 就通过这个随机生成的对称秘钥进行加密/解密，服务器也通过该对称秘钥进行解密/加密：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d96d391ca?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-13"></p>
+<h2 id="整体流程图"><a href="#整体流程图" class="headerlink" title="整体流程图"></a>整体流程图</h2><p>HTTPS = HTTP + TLS/SSL</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d976620af?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="http-15"></p>
+<p>HTTPS中具体的内容还有很多，可以通过下图做一个参考：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/5/21/1638197d98cf3281?imageslim" alt="http-14"></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>HTTPS就是使用SSL/TLS协议进行加密传输，让客户端拿到服务器的公钥，然后客户端随机生成一个对称加密的秘钥，使用公钥加密，传输给服务端，后续的所有信息都通过该对称秘钥进行加密解密，完成整个HTTPS的流程。</p>
+
       
     </div>
 
@@ -1066,125 +1125,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/" class="post-title-link" itemprop="url">详解布隆过滤器的原理，使用场景和注意事项</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-08 02:40:04 / 修改时间：10:41:50" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载自<a href="https://zhuanlan.zhihu.com/p/43263751" target="_blank" rel="noopener">详解布隆过滤器的原理，使用场景和注意事项</a></p>
-<p>在进入正文之前，之前看到的有句话我觉得说得很好：</p>
-<blockquote>
-<p>Data structures are nothing different. They are like the bookshelves of your application where you can organize your data. Different data structures will give you different facility and benefits. To properly use the power and accessibility of the data structures you need to know the trade-offs of using one.</p>
-<p>大意是不同的数据结构有不同的适用场景和优缺点，你需要仔细权衡自己的需求之后妥善适用它们，布隆过滤器就是践行这句话的代表。</p>
-</blockquote>
-<h2 id="什么是布隆过滤器"><a href="#什么是布隆过滤器" class="headerlink" title="什么是布隆过滤器"></a><strong>什么是布隆过滤器</strong></h2><p>本质上布隆过滤器是一种数据结构，比较巧妙的概率型数据结构（probabilistic data structure），特点是高效地插入和查询，可以用来告诉你 <strong>“某样东西一定不存在或者可能存在”</strong>。</p>
-<p>相比于传统的 List、Set、Map 等数据结构，它更高效、占用空间更少，但是缺点是其返回的结果是概率性的，而不是确切的。</p>
-<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a><strong>实现原理</strong></h2><p><strong>HashMap 的问题</strong></p>
-<p>讲述布隆过滤器的原理之前，我们先思考一下，通常你判断某个元素是否存在用的是什么？应该蛮多人回答 HashMap 吧，确实可以将值映射到 HashMap 的 Key，然后可以在 O(1) 的时间复杂度内返回结果，效率奇高。但是 HashMap 的实现也有缺点，例如存储容量占比高，考虑到负载因子的存在，通常空间是不能被用满的，而一旦你的值很多例如上亿的时候，那 HashMap 占据的内存大小就变得很可观了。</p>
-<p>还比如说你的数据集存储在远程服务器上，本地服务接受输入，而数据集非常大不可能一次性读进内存构建 HashMap 的时候，也会存在问题。</p>
-<p><strong>布隆过滤器数据结构</strong></p>
-<p>布隆过滤器是一个 bit 向量或者说 bit 数组，长这样：</p>
-<p><img src="https://pic3.zhimg.com/80/v2-530c9d4478398718c15632b9aa025c36_720w.jpg" alt="img"></p>
-<p>如果我们要映射一个值到布隆过滤器中，我们需要使用<strong>多个不同的哈希函数</strong>生成<strong>多个哈希值，</strong>并对每个生成的哈希值指向的 bit 位置 1，例如针对值 “baidu” 和三个不同的哈希函数分别生成了哈希值 1、4、7，则上图转变为：</p>
-<p><img src="https://pic4.zhimg.com/80/v2-a0ee721daf43f29dd42b7d441b79d227_720w.jpg" alt="img"></p>
-<p>Ok，我们现在再存一个值 “tencent”，如果哈希函数返回 3、4、8 的话，图继续变为：</p>
-<p><img src="https://pic3.zhimg.com/80/v2-c0c20d8e06308aae1578c16afdea3b6a_720w.jpg" alt="img"></p>
-<p>值得注意的是，4 这个 bit 位由于两个值的哈希函数都返回了这个 bit 位，因此它被覆盖了。现在我们如果想查询 “dianping” 这个值是否存在，哈希函数返回了 1、5、8三个值，结果我们发现 5 这个 bit 位上的值为 0，<strong>说明没有任何一个值映射到这个 bit 位上</strong>，因此我们可以很确定地说 “dianping” 这个值不存在。而当我们需要查询 “baidu” 这个值是否存在的话，那么哈希函数必然会返回 1、4、7，然后我们检查发现这三个 bit 位上的值均为 1，那么我们可以说 “baidu” <strong>存在了么？答案是不可以，只能是 “baidu” 这个值可能存在。</strong></p>
-<p>这是为什么呢？答案跟简单，因为随着增加的值越来越多，被置为 1 的 bit 位也会越来越多，这样某个值 “taobao” 即使没有被存储过，但是万一哈希函数返回的三个 bit 位都被其他值置位了 1 ，那么程序还是会判断 “taobao” 这个值存在。</p>
-<h2 id="支持删除么"><a href="#支持删除么" class="headerlink" title="支持删除么"></a>支持删除么</h2><p>感谢评论区提醒，传统的布隆过滤器并不支持删除操作。但是名为 Counting Bloom filter 的变种可以用来测试元素计数个数是否绝对小于某个阈值，它支持元素删除。可以参考文章 <a href="https://cloud.tencent.com/developer/article/1136056" target="_blank" rel="noopener">Counting Bloom Filter 的原理和实现</a></p>
-<h2 id="如何选择哈希函数个数和布隆过滤器长度"><a href="#如何选择哈希函数个数和布隆过滤器长度" class="headerlink" title="如何选择哈希函数个数和布隆过滤器长度"></a><strong>如何选择哈希函数个数和布隆过滤器长度</strong></h2><p>很显然，过小的布隆过滤器很快所有的 bit 位均为 1，那么查询任何值都会返回“可能存在”，起不到过滤的目的了。布隆过滤器的长度会直接影响误报率，布隆过滤器越长其误报率越小。</p>
-<p>另外，哈希函数的个数也需要权衡，个数越多则布隆过滤器 bit 位置位 1 的速度越快，且布隆过滤器的效率越低；但是如果太少的话，那我们的误报率会变高。</p>
-<p><img src="https://pic4.zhimg.com/80/v2-05d4a17ec47911d9ff0e72dc788d5573_720w.jpg" alt="img">k 为哈希函数个数，m 为布隆过滤器长度，n 为插入的元素个数，p 为误报率</p>
-<p>如何选择适合业务的 k 和 m 值呢，这里直接贴一个公式：</p>
-<p><img src="https://pic1.zhimg.com/80/v2-1ed5b79aa7ac2e9cd66c83690fdbfcf0_720w.jpg" alt="img"></p>
-<p>如何推导这个公式这里只是提一句，因为对于使用来说并没有太大的意义，你让一个高中生来推会推得很快。k 次哈希函数某一 bit 位未被置为 1 的概率为：</p>
-<p><img src="https://www.zhihu.com/equation?tex=%281-%5Cfrac%7B1%7D%7Bm%7D%29%5E%7Bk%7D" alt="[公式]"></p>
-<p>插入n个元素后依旧为 0 的概率和为 1 的概率分别是：</p>
-<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D" alt="[公式]"> <img src="https://www.zhihu.com/equation?tex=1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk+%7D" alt="[公式]"></p>
-<p>标明某个元素是否在集合中所需的 k 个位置都按照如上的方法设置为 1，但是该方法可能会使算法错误的认为某一原本不在集合中的元素却被检测为在该集合中（False Positives），该概率由以下公式确定</p>
-<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%5B+1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D+%5Cright%5D%5E%7Bk%7D%5Capprox%5Cleft%28+1-e%5E%7B-kn%2Fm%7D+%5Cright%29%5E%7Bk%7D" alt="[公式]"></p>
-<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a><strong>最佳实践</strong></h2><p>常见的适用常见有，利用布隆过滤器减少磁盘 IO 或者网络请求，因为一旦一个值必定不存在的话，我们可以不用进行后续昂贵的查询请求。</p>
-<p>另外，既然你使用布隆过滤器来加速查找和判断是否存在，那么性能很低的哈希函数不是个好选择，推荐 MurmurHash、Fnv 这些。</p>
-<p><strong>大Value拆分</strong></p>
-<p>Redis 因其支持 setbit 和 getbit 操作，且纯内存性能高等特点，因此天然就可以作为布隆过滤器来使用。但是布隆过滤器的不当使用极易产生大 Value，增加 Redis 阻塞风险，因此生成环境中建议对体积庞大的布隆过滤器进行拆分。</p>
-<p>拆分的形式方法多种多样，但是本质是不要将 Hash(Key) 之后的请求分散在多个节点的多个小 bitmap 上，而是应该拆分成多个小 bitmap 之后，对一个 Key 的所有哈希函数都落在这一个小 bitmap 上。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a><strong>参考资料</strong></h2><p><a href="https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832" target="_blank" rel="noopener">https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832hackernoon.com</a><a href="https://www.jasondavies.com/bloomfilter/" target="_blank" rel="noopener">Bloom Filterswww.jasondavies.com<img src="https://pic2.zhimg.com/v2-8fe8b3a427a0db249407ee62e428f1cd_180x120.jpg" alt="图标"></a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1552,6 +1492,125 @@
   
   
 
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/" class="post-title-link" itemprop="url">详解布隆过滤器的原理，使用场景和注意事项</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:40:04 / 修改时间：10:41:50" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://zhuanlan.zhihu.com/p/43263751" target="_blank" rel="noopener">详解布隆过滤器的原理，使用场景和注意事项</a></p>
+<p>在进入正文之前，之前看到的有句话我觉得说得很好：</p>
+<blockquote>
+<p>Data structures are nothing different. They are like the bookshelves of your application where you can organize your data. Different data structures will give you different facility and benefits. To properly use the power and accessibility of the data structures you need to know the trade-offs of using one.</p>
+<p>大意是不同的数据结构有不同的适用场景和优缺点，你需要仔细权衡自己的需求之后妥善适用它们，布隆过滤器就是践行这句话的代表。</p>
+</blockquote>
+<h2 id="什么是布隆过滤器"><a href="#什么是布隆过滤器" class="headerlink" title="什么是布隆过滤器"></a><strong>什么是布隆过滤器</strong></h2><p>本质上布隆过滤器是一种数据结构，比较巧妙的概率型数据结构（probabilistic data structure），特点是高效地插入和查询，可以用来告诉你 <strong>“某样东西一定不存在或者可能存在”</strong>。</p>
+<p>相比于传统的 List、Set、Map 等数据结构，它更高效、占用空间更少，但是缺点是其返回的结果是概率性的，而不是确切的。</p>
+<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a><strong>实现原理</strong></h2><p><strong>HashMap 的问题</strong></p>
+<p>讲述布隆过滤器的原理之前，我们先思考一下，通常你判断某个元素是否存在用的是什么？应该蛮多人回答 HashMap 吧，确实可以将值映射到 HashMap 的 Key，然后可以在 O(1) 的时间复杂度内返回结果，效率奇高。但是 HashMap 的实现也有缺点，例如存储容量占比高，考虑到负载因子的存在，通常空间是不能被用满的，而一旦你的值很多例如上亿的时候，那 HashMap 占据的内存大小就变得很可观了。</p>
+<p>还比如说你的数据集存储在远程服务器上，本地服务接受输入，而数据集非常大不可能一次性读进内存构建 HashMap 的时候，也会存在问题。</p>
+<p><strong>布隆过滤器数据结构</strong></p>
+<p>布隆过滤器是一个 bit 向量或者说 bit 数组，长这样：</p>
+<p><img src="https://pic3.zhimg.com/80/v2-530c9d4478398718c15632b9aa025c36_720w.jpg" alt="img"></p>
+<p>如果我们要映射一个值到布隆过滤器中，我们需要使用<strong>多个不同的哈希函数</strong>生成<strong>多个哈希值，</strong>并对每个生成的哈希值指向的 bit 位置 1，例如针对值 “baidu” 和三个不同的哈希函数分别生成了哈希值 1、4、7，则上图转变为：</p>
+<p><img src="https://pic4.zhimg.com/80/v2-a0ee721daf43f29dd42b7d441b79d227_720w.jpg" alt="img"></p>
+<p>Ok，我们现在再存一个值 “tencent”，如果哈希函数返回 3、4、8 的话，图继续变为：</p>
+<p><img src="https://pic3.zhimg.com/80/v2-c0c20d8e06308aae1578c16afdea3b6a_720w.jpg" alt="img"></p>
+<p>值得注意的是，4 这个 bit 位由于两个值的哈希函数都返回了这个 bit 位，因此它被覆盖了。现在我们如果想查询 “dianping” 这个值是否存在，哈希函数返回了 1、5、8三个值，结果我们发现 5 这个 bit 位上的值为 0，<strong>说明没有任何一个值映射到这个 bit 位上</strong>，因此我们可以很确定地说 “dianping” 这个值不存在。而当我们需要查询 “baidu” 这个值是否存在的话，那么哈希函数必然会返回 1、4、7，然后我们检查发现这三个 bit 位上的值均为 1，那么我们可以说 “baidu” <strong>存在了么？答案是不可以，只能是 “baidu” 这个值可能存在。</strong></p>
+<p>这是为什么呢？答案跟简单，因为随着增加的值越来越多，被置为 1 的 bit 位也会越来越多，这样某个值 “taobao” 即使没有被存储过，但是万一哈希函数返回的三个 bit 位都被其他值置位了 1 ，那么程序还是会判断 “taobao” 这个值存在。</p>
+<h2 id="支持删除么"><a href="#支持删除么" class="headerlink" title="支持删除么"></a>支持删除么</h2><p>感谢评论区提醒，传统的布隆过滤器并不支持删除操作。但是名为 Counting Bloom filter 的变种可以用来测试元素计数个数是否绝对小于某个阈值，它支持元素删除。可以参考文章 <a href="https://cloud.tencent.com/developer/article/1136056" target="_blank" rel="noopener">Counting Bloom Filter 的原理和实现</a></p>
+<h2 id="如何选择哈希函数个数和布隆过滤器长度"><a href="#如何选择哈希函数个数和布隆过滤器长度" class="headerlink" title="如何选择哈希函数个数和布隆过滤器长度"></a><strong>如何选择哈希函数个数和布隆过滤器长度</strong></h2><p>很显然，过小的布隆过滤器很快所有的 bit 位均为 1，那么查询任何值都会返回“可能存在”，起不到过滤的目的了。布隆过滤器的长度会直接影响误报率，布隆过滤器越长其误报率越小。</p>
+<p>另外，哈希函数的个数也需要权衡，个数越多则布隆过滤器 bit 位置位 1 的速度越快，且布隆过滤器的效率越低；但是如果太少的话，那我们的误报率会变高。</p>
+<p><img src="https://pic4.zhimg.com/80/v2-05d4a17ec47911d9ff0e72dc788d5573_720w.jpg" alt="img">k 为哈希函数个数，m 为布隆过滤器长度，n 为插入的元素个数，p 为误报率</p>
+<p>如何选择适合业务的 k 和 m 值呢，这里直接贴一个公式：</p>
+<p><img src="https://pic1.zhimg.com/80/v2-1ed5b79aa7ac2e9cd66c83690fdbfcf0_720w.jpg" alt="img"></p>
+<p>如何推导这个公式这里只是提一句，因为对于使用来说并没有太大的意义，你让一个高中生来推会推得很快。k 次哈希函数某一 bit 位未被置为 1 的概率为：</p>
+<p><img src="https://www.zhihu.com/equation?tex=%281-%5Cfrac%7B1%7D%7Bm%7D%29%5E%7Bk%7D" alt="[公式]"></p>
+<p>插入n个元素后依旧为 0 的概率和为 1 的概率分别是：</p>
+<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D" alt="[公式]"> <img src="https://www.zhihu.com/equation?tex=1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk+%7D" alt="[公式]"></p>
+<p>标明某个元素是否在集合中所需的 k 个位置都按照如上的方法设置为 1，但是该方法可能会使算法错误的认为某一原本不在集合中的元素却被检测为在该集合中（False Positives），该概率由以下公式确定</p>
+<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%5B+1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D+%5Cright%5D%5E%7Bk%7D%5Capprox%5Cleft%28+1-e%5E%7B-kn%2Fm%7D+%5Cright%29%5E%7Bk%7D" alt="[公式]"></p>
+<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a><strong>最佳实践</strong></h2><p>常见的适用常见有，利用布隆过滤器减少磁盘 IO 或者网络请求，因为一旦一个值必定不存在的话，我们可以不用进行后续昂贵的查询请求。</p>
+<p>另外，既然你使用布隆过滤器来加速查找和判断是否存在，那么性能很低的哈希函数不是个好选择，推荐 MurmurHash、Fnv 这些。</p>
+<p><strong>大Value拆分</strong></p>
+<p>Redis 因其支持 setbit 和 getbit 操作，且纯内存性能高等特点，因此天然就可以作为布隆过滤器来使用。但是布隆过滤器的不当使用极易产生大 Value，增加 Redis 阻塞风险，因此生成环境中建议对体积庞大的布隆过滤器进行拆分。</p>
+<p>拆分的形式方法多种多样，但是本质是不要将 Hash(Key) 之后的请求分散在多个节点的多个小 bitmap 上，而是应该拆分成多个小 bitmap 之后，对一个 Key 的所有哈希函数都落在这一个小 bitmap 上。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a><strong>参考资料</strong></h2><p><a href="https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832" target="_blank" rel="noopener">https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832hackernoon.com</a><a href="https://www.jasondavies.com/bloomfilter/" target="_blank" rel="noopener">Bloom Filterswww.jasondavies.com<img src="https://pic2.zhimg.com/v2-8fe8b3a427a0db249407ee62e428f1cd_180x120.jpg" alt="图标"></a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
 
   
   <nav class="pagination">
@@ -1680,7 +1739,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">304k</span>
+    <span title="站点总字数">306k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
