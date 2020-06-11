@@ -191,6 +191,143 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/04/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%8C%B9%E9%85%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/04/%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F%E5%8C%B9%E9%85%8D/" class="post-title-link" itemprop="url">正则表达式匹配</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 03:34:34 / 修改时间：14:30:34" itemprop="dateCreated datePublished" datetime="2020-06-05T03:34:34+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>请实现一个函数用来匹配包括’.’和’*‘的正则表达式。模式中的字符’.’表示任意一个字符，而’<em>‘表示它前面的字符可以出现任意次（包含0次）。 在本题中，匹配是指字符串的所有字符匹配整个模式。例如，字符串”aaa”与模式”a.a”和”ab\</em>ac*a”匹配，但是与”aa.a”和”ab*a”均不匹配</p>
+<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>待补充</p>
+<h2 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/45327ae22b7b413ea21df13ee7d6429c?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/45327ae22b7b413ea21df13ee7d6429c?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h2 id="方法一：递归"><a href="#方法一：递归" class="headerlink" title="方法一：递归"></a>方法一：递归</h2><p>假设主串为s，长度为<code>sn</code>， 模式串为<code>p</code>，长度为<code>pn</code>，对于模式串p当前的第<code>i</code>位来说，有<code>&#39;正常字符&#39;、&#39;*&#39;、&#39;.&#39;</code>三种情况。我们针对这三种情况进行讨论：</p>
+<ol>
+<li>如果<code>p[i]</code>为正常字符， 那么我们看<code>s[i]</code>是否等于<code>p[i]</code>, 如果相等，说明第i位匹配成功,接下来看<code>s[i+1...sn-1] 和 p[i+1...pn-1]</code></li>
+<li>如果p[i] 为<code>&#39;.&#39;</code>, 它能匹配任意字符，直接看<code>s[i+1...sn-1] 和 p[i+1...pn-1]</code></li>
+<li>如果<code>p[i]</code> 为<code>&#39;*&#39;</code>， 表明<code>p[i-1]</code>可以重复<code>0</code>次或者多次，需要把<code>p[i-1] 和 p[i]</code>看成一个整体.<ul>
+<li>如果<code>p[i-1]</code>重复<code>0</code>次，则直接看<code>s[i...sn-1] 和 p[i+2...pn-1]</code> </li>
+<li>如果<code>p[i-1]</code>重复一次或者多次,则直接看<code>s[i+1...sn-1] 和p[i...pn-1]</code>，但是有个前提：<code>s[i]==p[i] 或者 p[i] == &#39;.&#39;</code> </li>
+</ul>
+</li>
+</ol>
+<p>三种情况如下图：<br><img src="https://uploadfiles.nowcoder.com/images/20200509/284295_1589013766371_56D5186BDC1AB01FA96CC2C22507B1F7" alt="图片说明"><br><img src="https://uploadfiles.nowcoder.com/images/20200509/284295_1589013796397_0432A5039CAF5F0EF87F6CB864FF5787" alt="图片说明"><br><img src="https://uploadfiles.nowcoder.com/images/20200509/284295_1589013961988_7005C0EF0F08F8F8753D173CA5021486" alt=" "><br><img src="https://uploadfiles.nowcoder.com/images/20200509/284295_1589013997068_082222C32703837926302706F005BADC" alt=" "><br>显然上述的过程可以递归进行计算。<br>则递归三部曲为：</p>
+<ol>
+<li>递归函数功能：<code>match(s, p) -&gt; bool</code>, 表示<code>p</code>是否可以匹配s</li>
+<li>递归终止条件：<ul>
+<li>如果<code>s 和 p</code> 同时为空，表明正确匹配 </li>
+<li>如果<code>s不为空，p为空</code>，表明，不能正确匹配 </li>
+<li>如果<code>s为空，p不为空</code>，需要计算，不能直接给出结果 </li>
+</ul>
+</li>
+<li>下一步递归：<ul>
+<li>对于前面讨论的情况<code>1，2</code>进行合并，如果<code>*s == *p || *p == &#39;.&#39;,则match(s+1, p+1)</code></li>
+<li>对于情况<code>3</code>，如果重复一次或者多次，则<code>match(s+1,p),如果重复0次，则match(s, p+2)</code></li>
+</ul>
+</li>
+</ol>
+<p>具体代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">match</span><span class="params">(<span class="keyword">char</span>* s, <span class="keyword">char</span>* p)</span></span></span><br><span class="line"><span class="function">    </span>&#123;    <span class="comment">// 如果 s 和 p 同时为空</span></span><br><span class="line">        <span class="keyword">if</span> (*s == <span class="string">'\0'</span> &amp;&amp; *p == <span class="string">'\0'</span>) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">// 如果 s不为空， 但是 p 为空</span></span><br><span class="line">        <span class="keyword">if</span> (*p == <span class="string">'\0'</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="comment">// 如果没有 '*'</span></span><br><span class="line">        <span class="keyword">if</span> (*(p+<span class="number">1</span>) != <span class="string">'*'</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (*s != <span class="string">'\0'</span> &amp;&amp; (*s == *p || *p == <span class="string">'.'</span>))</span><br><span class="line">                <span class="keyword">return</span> match(s+<span class="number">1</span>, p+<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 如果有 '*'</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">bool</span> ret = <span class="literal">false</span>;</span><br><span class="line">            <span class="comment">// 重复 1 次或多次</span></span><br><span class="line">            <span class="keyword">if</span> (*s != <span class="string">'\0'</span> &amp;&amp; (*s == *p || *p == <span class="string">'.'</span>))</span><br><span class="line">                ret = match(s+<span class="number">1</span>, p);</span><br><span class="line">            <span class="comment">// 重复 0 次</span></span><br><span class="line">            <span class="keyword">return</span> ret || match(s, p+<span class="number">2</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="方法二：动态规划"><a href="#方法二：动态规划" class="headerlink" title="方法二：动态规划"></a>方法二：动态规划</h2><p>方法一的递归代码属于自顶向下，而动态规划的代码属于自底向上。</p>
+<ol>
+<li>动态规划转移方程：<br><code>f[i][j]</code>表示<code>s</code>的前<code>i</code>个和<code>p</code>的前<code>j</code>个能否匹配 </li>
+</ol>
+<ul>
+<li><p>对于方法一种的<code>1,2</code>两种情况可知：<code>f[i][j] = f[i-1][j-1]</code> </p>
+</li>
+<li><p>对于第</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">3</span><br></pre></td></tr></table></figure>
+
+<p>种情况可知：</p>
+<ul>
+<li>如果重复<code>0</code>次，<code>f[i][j] = f[i][j-2]</code> </li>
+<li>如果重复<code>1</code>次或者多次，<code>f[i][j] = f[i-1][j]</code> </li>
+</ul>
+</li>
+</ul>
+<ol>
+<li>动态规划初始条件： </li>
+</ol>
+<ul>
+<li><code>s为空且p为空，为真: f[0][0] = 1</code> </li>
+<li><code>s不为空且p为空,为假: f[1..sn][0] = 0</code> </li>
+</ul>
+<p>代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">match</span><span class="params">(<span class="keyword">char</span>* s, <span class="keyword">char</span>* p)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> sn = <span class="built_in">strlen</span>(s), pn = <span class="built_in">strlen</span>(p);</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="built_in">vector</span>&lt;<span class="keyword">char</span>&gt;&gt; <span class="title">f</span><span class="params">(sn+<span class="number">1</span>, <span class="built_in">vector</span>&lt;<span class="keyword">char</span>&gt;(pn+<span class="number">1</span>, <span class="number">0</span>))</span></span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;=sn; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;=pn; ++j) &#123;</span><br><span class="line">                <span class="comment">// 初始条件</span></span><br><span class="line">                <span class="keyword">if</span> (j == <span class="number">0</span>) f[i][j] = (i == <span class="number">0</span>);</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 如果没有 '*'</span></span><br><span class="line">                    <span class="keyword">if</span> (p[j<span class="number">-1</span>] != <span class="string">'*'</span>) &#123;</span><br><span class="line">                        <span class="keyword">if</span> (i &gt;= <span class="number">1</span> &amp;&amp; (s[i<span class="number">-1</span>] == p[j<span class="number">-1</span>] || p[j<span class="number">-1</span>] == <span class="string">'.'</span>)) &#123;</span><br><span class="line">                            f[i][j] = f[i<span class="number">-1</span>][j<span class="number">-1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">// 如果有 '*'</span></span><br><span class="line">                    <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">// 重复 0 次</span></span><br><span class="line">                        <span class="keyword">if</span> (j &gt;= <span class="number">2</span>) &#123;</span><br><span class="line">                            f[i][j] |= f[i][j<span class="number">-2</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="comment">// 重复 1 次或者多次</span></span><br><span class="line">                        <span class="comment">// 这里要用 | 连接， 不然重复 0 次的会直接覆盖</span></span><br><span class="line">                        <span class="keyword">if</span> (i &gt;= <span class="number">1</span> &amp;&amp; j&gt;=<span class="number">2</span> &amp;&amp; (s[i<span class="number">-1</span>] == p[j<span class="number">-2</span>] || p[j<span class="number">-2</span>] == <span class="string">'.'</span>)) &#123;</span><br><span class="line">                            f[i][j] |= f[i<span class="number">-1</span>][j];</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> f[sn][pn];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/04/%E5%AD%97%E7%AC%A6%E6%B5%81%E4%B8%AD%E7%AC%AC%E4%B8%80%E4%B8%AA%E4%B8%8D%E9%87%8D%E5%A4%8D%E7%9A%84%E5%AD%97%E7%AC%A6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1125,118 +1262,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/02/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E7%9A%84%E6%9C%80%E5%A4%A7%E5%80%BC/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/02/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E7%9A%84%E6%9C%80%E5%A4%A7%E5%80%BC/" class="post-title-link" itemprop="url">滑动窗口的最大值</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-03 05:50:42 / 修改时间：14:36:56" itemprop="dateCreated datePublished" datetime="2020-06-03T05:50:42+08:00">2020-06-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给定一个数组和滑动窗口的大小，找出所有滑动窗口里数值的最大值。例如，如果输入数组{2,3,4,2,6,2,5,1}及滑动窗口的大小3，那么一共存在6个滑动窗口，他们的最大值分别为{4,4,6,6,6,5}； 针对数组{2,3,4,2,6,2,5,1}的滑动窗口有以下6个： {[2,3,4],2,6,2,5,1}， {2,[3,4,2],6,2,5,1}， {2,3,[4,2,6],2,5,1}， {2,3,4,[2,6,2],5,1}， {2,3,4,2,[6,2,5],1}， {2,3,4,2,6,[2,5,1]}。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ArrayList&lt;Integer&gt; <span class="title">maxInWindows</span><span class="params">(<span class="keyword">int</span>[] num, <span class="keyword">int</span> size)</span> </span>&#123;</span><br><span class="line">    LinkedList&lt;Integer&gt; list = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">    ArrayList&lt;Integer&gt; arrayList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">if</span> (size &lt;= <span class="number">0</span> || size &gt; num.length) &#123;</span><br><span class="line">        <span class="keyword">return</span> arrayList;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; i++) &#123;</span><br><span class="line">        list.add(num[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    Collections.sort(list);</span><br><span class="line">    arrayList.add(list.getLast());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= num.length - size; i++) &#123;<span class="comment">//窗口前移</span></span><br><span class="line">        list.remove(<span class="keyword">new</span> Integer(num[i - <span class="number">1</span>]));</span><br><span class="line">        list.add(num[i + size - <span class="number">1</span>]);</span><br><span class="line">        Collections.sort(list);</span><br><span class="line">        arrayList.add(list.getLast());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> arrayList;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/1624bc35a45c42c0bc17d17fa0cba788?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/1624bc35a45c42c0bc17d17fa0cba788?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="方法一：暴力方法"><a href="#方法一：暴力方法" class="headerlink" title="方法一：暴力方法"></a>方法一：暴力方法</h2><p>根据题目描述，我们很容易想到暴力方法。并且也很轻松的就可以写出来。如果数组的大小是n，窗口的大小是size，那么窗口的数量就是 n - size + 1.<br>算法步骤如下：</p>
-<ul>
-<li>枚举每个窗口的左边界 i </li>
-<li>根据窗口的左边界i可以对应计算出右边界j </li>
-<li>遍历窗口，计算出最大值 </li>
-</ul>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">maxInWindows</span><span class="params">(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; num, <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="built_in">size</span>)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; ret;</span><br><span class="line">        <span class="keyword">if</span> (num.<span class="built_in">size</span>() == <span class="number">0</span> || <span class="built_in">size</span> &lt; <span class="number">1</span> || num.<span class="built_in">size</span>() &lt; <span class="built_in">size</span>) <span class="keyword">return</span> ret;</span><br><span class="line">        <span class="keyword">int</span> n = num.<span class="built_in">size</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i + <span class="built_in">size</span> - <span class="number">1</span> &lt; n; ++i) &#123;</span><br><span class="line">            <span class="keyword">int</span> j = i + <span class="built_in">size</span> - <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">int</span> max_val = num[j];</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> k = i; k &lt; j; ++k) &#123;</span><br><span class="line">                max_val = <span class="built_in">max</span>(max_val, num[k]);</span><br><span class="line">            &#125;</span><br><span class="line">            ret.push_back(max_val);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(n*k), 其中n为数组大小，k为窗口大小<br>空间复杂度：O(1)，存结果必须要开的数组不算入额外空间</p>
-<h2 id="方法二：单调队列"><a href="#方法二：单调队列" class="headerlink" title="方法二：单调队列"></a>方法二：单调队列</h2><p>方法一种存在很多大量重复计算，比如说，对于数组，假设我们当前遍历到下标i，对于下标i+1的元素（假设i和i+1都在同一个窗口），如果比arr[i]大，说明了什么？<br>如果arr[i+1] 已经大于了 arr[i], 那么还要arr[i]有什么用.就有点“既生瑜何生亮”的感觉。<br>如果arr[i+1] &lt; arr[i]呢？显然arr[i]还是需要保留的。为什么呢？<br>因为又可以arr[i] 对于下一个arr[i+1]所在的窗口来说，arr[i]已经失效了。</p>
-<p>假设这里有那么一个容器可以保留上述操作。</p>
-<ol>
-<li>遍历数组的每一个元素， </li>
-<li>如果容器为空，则直接将当前元素加入到容器中。 </li>
-<li>如果容器不为空，则让当前元素和容器的最后一个元素比较，如果大于，则将容器的最后一个元素删除，然后继续讲当前元素和容器的最后一个元素比较 </li>
-<li>如果当前元素小于容器的最后一个元素，则直接将当前元素加入到容器的末尾 </li>
-<li>如果容器头部的元素已经不属于当前窗口的边界，则应该将头部元素删除 </li>
-</ol>
-<p>总结一下，首先容器中放的元素应该是单调递减的。然后还有删除容器头部元素和最后一个元素的操作。因此，这样的数据结构就是双端队列。c++中就是<code>deque</code></p>
-<p>如何判断队列中头部的元素是否过期呢？<br>这里我们可以存数组的下标，根据下标的比较来判断。比如，当前遍历到下标为5的元素，窗口的大小为3， 显然显然下标为2的已经过期了。</p>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">maxInWindows</span><span class="params">(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; num, <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="built_in">size</span>)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; ret;</span><br><span class="line">        <span class="keyword">if</span> (num.<span class="built_in">size</span>() == <span class="number">0</span> || <span class="built_in">size</span> &lt; <span class="number">1</span> || num.<span class="built_in">size</span>() &lt; <span class="built_in">size</span>) <span class="keyword">return</span> ret;</span><br><span class="line">        <span class="keyword">int</span> n = num.<span class="built_in">size</span>();</span><br><span class="line">           <span class="built_in">deque</span>&lt;<span class="keyword">int</span>&gt; dq;</span><br><span class="line">           <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">               <span class="keyword">while</span> (!dq.empty() &amp;&amp; num[dq.back()] &lt; num[i]) &#123;</span><br><span class="line">                   dq.pop_back();</span><br><span class="line">               &#125;</span><br><span class="line">               dq.push_back(i);</span><br><span class="line">               <span class="comment">// 判断队列的头部的下标是否过期</span></span><br><span class="line">               <span class="keyword">if</span> (dq.front() + <span class="built_in">size</span> &lt;= i) &#123;</span><br><span class="line">                   dq.pop_front();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 判断是否形成了窗口</span></span><br><span class="line">               <span class="keyword">if</span> (i + <span class="number">1</span> &gt;= <span class="built_in">size</span>) &#123;</span><br><span class="line">                   ret.push_back(num[dq.front()]);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">return</span> ret; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(n), 其中n为数组大小<br>空间复杂度：O(k)，k为窗口的大小</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1308,7 +1333,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">128</span>
+          <span class="site-state-item-count">129</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1321,7 +1346,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1365,7 +1390,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">308k</span>
+    <span title="站点总字数">333k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

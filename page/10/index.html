@@ -191,6 +191,112 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E8%B7%B3%E5%8F%B0%E9%98%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/21/%E8%B7%B3%E5%8F%B0%E9%98%B6/" class="post-title-link" itemprop="url">跳台阶</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-22 04:49:37 / 修改时间：12:52:12" itemprop="dateCreated datePublished" datetime="2020-05-22T04:49:37+08:00">2020-05-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>967</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>一只青蛙一次可以跳上1级台阶，也可以跳上2级。求该青蛙跳上一个n级的台阶总共有多少种跳法（先后次序不同算不同的结果）。</p>
+<p>裴波那契数列</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">JumpFloor</span><span class="params">(<span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (target &lt; <span class="number">3</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span>[] fb = <span class="keyword">new</span> <span class="keyword">int</span>[target + <span class="number">1</span>];</span><br><span class="line">    fb[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">    fb[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">3</span>; i &lt; target + <span class="number">1</span>; i++) &#123;</span><br><span class="line">        fb[i] = fb[i - <span class="number">2</span>] + fb[i - <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fb[target];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/8c82a5b80378478f9484d87d1c5f12a4?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/8c82a5b80378478f9484d87d1c5f12a4?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h2 id="迭代"><a href="#迭代" class="headerlink" title="迭代"></a>迭代</h2><p>本质上还是斐波那契数列，所以迭代也可以求</p>
+<p>当成 dp 问题来想的话：首先分析问题，它最终解是由前面的解累积起来的解，如何缩小问题的规模？</p>
+<p>首先可知，第一阶有只能一步，一种；，第二阶可以两次一步、一次两步两种</p>
+<ul>
+<li>若楼梯阶级 n = 3<ul>
+<li>跳 2 步到 3：剩下的是第一步没跳，起始跳到第一步只有一种</li>
+<li>跳 1 步到 3：剩下的是第二步没跳，起始跳到第二步有两种</li>
+</ul>
+</li>
+</ul>
+<p>通过分类讨论，问题规模就减少了:</p>
+<ul>
+<li>若楼梯阶级 n = n<ul>
+<li>跳 2 步到 n：剩下的是第 n - 2 步没跳，起始跳到第 n - 2 步设它为 pre2 种</li>
+<li>跳 1 步到 n：剩下的是第 n - 1 步没跳，起始跳到第 n - 1 步设它为 pre1 种</li>
+</ul>
+</li>
+</ul>
+<p>同时可以发现第 n 阶的解法，只要用到 n - 1 和 n - 2 阶是多少，其他的不用考虑，因此用两个变量临时存下来即可</p>
+<p>dp(i) = dp(i-2) + dp(i-1)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">JumpFloor</span><span class="params">(<span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(target &lt;= <span class="number">2</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> target;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> pre2 = <span class="number">1</span>, pre1 = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">3</span>; i &lt;= target; i++)&#123;</span><br><span class="line">            <span class="keyword">int</span> cur = pre2 + pre1;</span><br><span class="line">            pre2 = pre1;</span><br><span class="line">            pre1 = cur;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> pre1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%95%B0%E5%88%97/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1388,123 +1494,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/Java%E4%B8%AD%E7%9A%84%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E4%B8%8E%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/16/Java%E4%B8%AD%E7%9A%84%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E4%B8%8E%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/" class="post-title-link" itemprop="url">Java中的静态代理与动态代理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-05-17 06:26:17" itemprop="dateCreated datePublished" datetime="2020-05-17T06:26:17+08:00">2020-05-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-27 10:47:50" itemprop="dateModified" datetime="2020-05-27T10:47:50+08:00">2020-05-27</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://chenjiayang.me/2018/10/05/dynamic-proxy/" target="_blank" rel="noopener">原文地址</a> 作者:<a href="https://www.yuque.com/chenjiayang" target="_blank" rel="noopener"><strong>YoungChen</strong></a></p>
-<h2 id="什么是代理模式"><a href="#什么是代理模式" class="headerlink" title="什么是代理模式"></a>什么是代理模式</h2><p>人话来讲就是由代理对象来执行目标对象的方法，且还可以在代理对象中增强目标对象方法的一种设计模式。类比生活，像是房产中介。代理模式存在的意义和一个架构设计原则息息相关 —— 开闭原则（对扩展开放，对修改关闭），即一种好的设计模式，都是在不修改原有形态的基础上扩展出新的功能。</p>
-<h2 id="为什么需要代理"><a href="#为什么需要代理" class="headerlink" title="为什么需要代理"></a>为什么需要代理</h2><p>代理模式的概念很容易理解，但是早期的我即使读懂了代理模式的概念，对为什么要使用代理模式，还是一头雾水。为什么我不直接调用目标对象的方法，非得要借助个代理对象呢？</p>
-<h3 id="1-调用的目标对象在远程主机上，并不在你本地"><a href="#1-调用的目标对象在远程主机上，并不在你本地" class="headerlink" title="1. 调用的目标对象在远程主机上，并不在你本地"></a>1. 调用的目标对象在远程主机上，并不在你本地</h3><p>类似中介就是房东出国了，联系不上，你只能跟我沟通。对应到我们程序设计的时候就是：客户端无法直接操作实际目标对象。为什么无法直接操作？一种情况是你需要调用的对象在另外一台机器上，你需要跨越网络才能访问，如果让你直接编码实现远程调用，你需要处理网络连接、处理打包、解包等等非常复杂的步骤，所以为了简化客户端的处理，我们使用代理模式，在客户端建立一个远程目标对象的代理，客户端就象调用本地对象一样调用该代理，再由代理去跟实际对象联系，对于客户端来说背后这个通信过程是透明的。</p>
-<h3 id="2-你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去"><a href="#2-你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去" class="headerlink" title="2. 你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去"></a>2. 你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去</h3><p>例如常见的例子就是 Spring AOP 实现日志功能，你不必关心目标类究竟如何繁杂，你只是想要在前后调用的时候打印一下日志，那么你就可以使用代理模式，通过 AOP 提供的切面进行编码实现，你通过代理模式达到了在目标对象的方法前后增加了一些自定义行为的目的。类似的例子还有权限校验。这样做的好处有很多，一方面你需要在意目标类的代码，二来你维护了目标类功能的单一性，而不是将日志或者权限校验的功能硬编码到目标类的方法中。</p>
-<h2 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a>静态代理</h2><p>静态代理非常简单，就是实现类和代理类均实现同样的接口，然后在代理类中通过构造器将接口或者实现类注入进来，然后就可以在代理类的方法实现中增加一些自己的逻辑。看个 <a href="https://www.cnblogs.com/daniels/p/8242592.html" target="_blank" rel="noopener">例子</a> 就懂了：</p>
-<h3 id="静态代理的例子"><a href="#静态代理的例子" class="headerlink" title="静态代理的例子"></a>静态代理的例子</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BuyHouseImpl</span> <span class="keyword">implements</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 代理类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BuyHouseProxy</span> <span class="keyword">implements</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> BuyHouse buyHouse;</span><br><span class="line">    <span class="comment">// 将接口引入</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BuyHouseProxy</span><span class="params">(<span class="keyword">final</span> BuyHouse buyHouse)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.buyHouse = buyHouse;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 增加一些自己的逻辑</span></span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">        buyHouse.buyHosue();</span><br><span class="line">        System.out.println(<span class="string">"66666"</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="静态代理的缺点"><a href="#静态代理的缺点" class="headerlink" title="静态代理的缺点"></a>静态代理的缺点</h3><p>很明显，静态代理中，一个代理类只能对一个业务接口的实现类进行包装，如果有多个业务接口的话就要定义很多实现类和代理类才行。而且，如果代理类对业务方法的预处理、调用后操作都是一样的（比如：调用前输出提示、调用后自动关闭连接），则多个代理类就会有很多重复代码。这时我们可以定义这样一个代理类，它能代理所有实现类的方法调用：根据传进来的业务实现类和方法名进行具体调用。即动态代理模式。Java 中常见的有 JDK 动态代理和 CGLib 动态代理，前者只能代理接口，后者可以代理实现类。</p>
-<h2 id="JDK-动态代理"><a href="#JDK-动态代理" class="headerlink" title="JDK 动态代理"></a>JDK 动态代理</h2><p>JDK 的动态代理使用到 Java reflect 包下的 Proxy 类和 InvocationHandler 接口。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicProxyHandler</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object object;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DynamicProxyHandler</span><span class="params">(<span class="keyword">final</span> Object object)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.object = object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">        Object result = method.invoke(object, args);</span><br><span class="line">        System.out.println(<span class="string">"66666"</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicProxyTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        BuyHouse buyHouse = <span class="keyword">new</span> BuyHouseImpl();</span><br><span class="line">        BuyHouse proxyBuyHouse = (BuyHouse) Proxy.newProxyInstance(BuyHouse.class.getClassLoader(), new Class[]&#123;BuyHouse.class&#125;, new DynamicProxyHandler(buyHouse));</span><br><span class="line">        proxyBuyHouse.buyHosue();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>DynamicProxyHandler 实现了 InvocationHandler 接口，并复写其 invoke 方法，我们可以看到 invoke 方法的参数是实现类和方法参数列表。测试类中通过 newProxyInstance 这个静态工厂方法创建了代理对象，代理对象的每个执行方法都会替换执行InvocationHandler 中的 invoke 方法。这个方法总共有3个参数：</p>
-<ol>
-<li>ClassLoader loader用来指明生成代理对象使用哪个类装载器</li>
-<li>Class&lt;?&gt;[] interfaces用来指明生成哪个对象的代理对象，通过接口指定，这就是为什么 JDK 动态代理必须要通过接口的方式</li>
-<li>InvocationHandler 用来指明产生的这个代理对象要做什么事情。</li>
-</ol>
-<p>newProxyInstance 内部本质上是根据反射机制生成了一个新类。</p>
-<h2 id="CGLib-动态代理"><a href="#CGLib-动态代理" class="headerlink" title="CGLib 动态代理"></a>CGLib 动态代理</h2><p>CGLib 是针对类来实现代理的，原理是对指定的实现类生成一个子类，并覆盖其中的方法实现代理。因为采用的是继承，所以不能对final 修饰的类进行代理。<a href="https://www.cnblogs.com/ygj0930/p/6542259.html" target="_blank" rel="noopener">例子</a> 如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 实现类，有没有实现接口无所谓</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookFacadeImpl</span> </span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addBook</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">        System.out.println(<span class="string">"新增图书..."</span>);  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookFacadeCglib</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;  </span><br><span class="line">    <span class="comment">// 业务类对象，供代理方法中进行真正的业务方法调用</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 相当于JDK动态代理中的绑定</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getInstance</span><span class="params">(Object target)</span> </span>&#123;  </span><br><span class="line">        <span class="comment">// 给业务对象赋值</span></span><br><span class="line">        <span class="keyword">this</span>.target = target;  </span><br><span class="line">        <span class="comment">// 创建加强器，用来创建动态代理类</span></span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer(); </span><br><span class="line">        <span class="comment">// 为加强器指定要代理的业务类（即：为下面生成的代理类指定父类）</span></span><br><span class="line">        enhancer.setSuperclass(<span class="keyword">this</span>.target.getClass());  </span><br><span class="line">        <span class="comment">// 设置回调：对于代理类上所有方法的调用，都会调用CallBack，而Callback则需要实现intercept()方法进行拦</span></span><br><span class="line">        enhancer.setCallback(<span class="keyword">this</span>); </span><br><span class="line">       <span class="comment">// 创建动态代理类对象并返回 </span></span><br><span class="line">       <span class="keyword">return</span> enhancer.create(); </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 实现回调方法 </span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object obj, Method method, Object[] args, MethodProxy proxy)</span> </span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> Throwable </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"预处理——————"</span>);</span><br><span class="line">        <span class="comment">//调用业务类（父类中）的方法</span></span><br><span class="line">        proxy.invokeSuper(obj, args); </span><br><span class="line">        System.out.println(<span class="string">"调用后操作——————"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>; </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 测试类</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;      </span><br><span class="line">    BookFacadeImpl bookFacade = <span class="keyword">new</span> BookFacadeImpl()；</span><br><span class="line">    BookFacadeCglib cglib = <span class="keyword">new</span> BookFacadeCglib();  </span><br><span class="line">    BookFacadeImpl bookCglib = (BookFacadeImpl)cglib.getInstance(bookFacade);  </span><br><span class="line">    bookCglib.addBook(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
-<li><a href="https://www.cnblogs.com/ygj0930/p/6542259.html" target="_blank" rel="noopener">Java动态代理之JDK实现和CGlib实现（简单易懂）</a></li>
-<li><a href="https://www.cnblogs.com/xiaoluo501395377/p/3383130.html" target="_blank" rel="noopener">java的动态代理机制详解</a></li>
-<li><a href="https://www.cnblogs.com/gonjan-blog/p/6685611.html" target="_blank" rel="noopener">java动态代理实现与原理详细分析</a></li>
-</ol>
-<h2 id="License"><a href="#License" class="headerlink" title="License"></a>License</h2><ul>
-<li>本文遵守创作共享 <a href="https://link.zhihu.com/?target=https%3A//creativecommons.org/licenses/by-nc-sa/3.0/cn/">CC BY-NC-SA 3.0协议</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1576,7 +1565,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">128</span>
+          <span class="site-state-item-count">129</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1589,7 +1578,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1633,7 +1622,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">308k</span>
+    <span title="站点总字数">333k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
