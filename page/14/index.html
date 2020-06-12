@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Eric&#39;s Blogs">
+<meta property="og:url" content="http://yoursite.com/page/14/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/page/14/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/13/java%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/13/java%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于对象序列化的总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-13 14:46:38" itemprop="dateCreated datePublished" datetime="2019-10-13T14:46:38+08:00">2019-10-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 20:11:56" itemprop="dateModified" datetime="2020-04-30T20:11:56+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>对象序列化，就是<strong>将Object转换成byte序列</strong>，反之叫对象的反序列化.</p>
+<ul>
+<li>序列化流(<code>ObjectOutputStream</code>),是过滤流—-writeObject</li>
+<li>反序列化流(<code>ObjectInputStream</code>)—-readObject</li>
+</ul>
+<h3 id="序列化接口-Serializable"><a href="#序列化接口-Serializable" class="headerlink" title="序列化接口(Serializable)"></a>序列化接口(Serializable)</h3><p>   对象必须实现序列化接口 ，才能进行序列化，否则将出现异常<br>   这个接口，没有任何方法，只是一个标准.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">String file = <span class="string">"demo/obj.dat"</span>;</span><br><span class="line">		<span class="comment">//1.对象的序列化</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(file));</span><br><span class="line">		Student stu = <span class="keyword">new</span> Student(<span class="string">"10001"</span>, <span class="string">"张三"</span>, <span class="number">20</span>);</span><br><span class="line">		oos.writeObject(stu);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line">		<span class="comment">//2.对象的反序列化</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(file));</span><br><span class="line">		Student stu = (Student)ois.readObject();</span><br><span class="line">		System.out.println(stu);</span><br><span class="line">		ois.close();</span><br></pre></td></tr></table></figure>
+
+<h3 id="transient关键字"><a href="#transient关键字" class="headerlink" title="transient关键字"></a>transient关键字</h3><p><code>transient</code>修饰的变量不会进行jvm默认的序列化,但可以自己完成这个元素的序列化.即覆写:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(java.io.ObjectOutputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Student</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> String stuno;</span><br><span class="line">	<span class="keyword">private</span> String stuname;</span><br><span class="line">	<span class="comment">//该元素不会进行jvm默认的序列化,也可以自己完成这个元素的序列化</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">transient</span> <span class="keyword">int</span> stuage;  </span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Student</span><span class="params">(String stuno, String stuname, <span class="keyword">int</span> stuage)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">super</span>();</span><br><span class="line">		<span class="keyword">this</span>.stuno = stuno;</span><br><span class="line">		<span class="keyword">this</span>.stuname = stuname;</span><br><span class="line">		<span class="keyword">this</span>.stuage = stuage;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">getStuno</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuno;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuno</span><span class="params">(String stuno)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuno = stuno;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">getStuname</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuname;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuname</span><span class="params">(String stuname)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuname = stuname;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getStuage</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuage;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuage</span><span class="params">(<span class="keyword">int</span> stuage)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuage = stuage;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">"Student [stuno="</span> + stuno + <span class="string">", stuname="</span> + stuname + <span class="string">", stuage="</span></span><br><span class="line">				+ stuage + <span class="string">"]"</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	 <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(java.io.ObjectOutputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException</span>&#123;</span><br><span class="line">		 s.defaultWriteObject();<span class="comment">//把jvm能默认序列化的元素进行序列化操作</span></span><br><span class="line">		 s.writeInt(stuage);<span class="comment">//自己完成stuage的序列化</span></span><br><span class="line">	 &#125;</span><br><span class="line">	 <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException</span>&#123;</span><br><span class="line">		  s.defaultReadObject();<span class="comment">//把jvm能默认反序列化的元素进行反序列化操作</span></span><br><span class="line">		  <span class="keyword">this</span>.stuage = s.readInt();<span class="comment">//自己完成stuage的反序列化操作</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p> 如<code>ArrayList</code>源码中对<code>elementData</code>数组序列化和反序列化的处理,因为<code>elementData</code>数组中不是所有元素都是有效元素,所以只序列化了<code>size</code>个有效元素.<br> <img src="https://img-blog.csdnimg.cn/20191206205124318.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191206205301628.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h3 id="序列化中-子父类构造函数的调用问题"><a href="#序列化中-子父类构造函数的调用问题" class="headerlink" title="序列化中 子父类构造函数的调用问题"></a>序列化中 子父类构造函数的调用问题</h3><p>一个类实现了序列化接口，那么其<strong>子类</strong>都可以进行序列化.<br>对<strong>子类</strong>对象进行反序列化操作时,如果其<strong>父类</strong>没有实现序列化接口,那么其<strong>父类的构造函数</strong>会被调用.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ObjectSeriaDemo2</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception</span>&#123;</span><br><span class="line">		<span class="comment">//序列化Foo2</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Foo2 foo2 = <span class="keyword">new</span> Foo2();</span><br><span class="line">		oos.writeObject(foo2);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//反序列化Foo2是否递归调用父类的构造函数?不会调用Foo1(),Foo()</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Foo2 foo2 = (Foo2)ois.readObject();</span><br><span class="line">		System.out.println(foo2);</span><br><span class="line">		ois.close();</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//序列化Bar2</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Bar2 bar2 = <span class="keyword">new</span> Bar2();</span><br><span class="line">		oos.writeObject(bar2);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line"></span><br><span class="line">		<span class="comment">//反序列化Bar2是否递归调用父类的构造函数?会调用Bar1(),Bar()</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Bar2 bar2 = (Bar2)ois.readObject();</span><br><span class="line">		System.out.println(bar2);</span><br><span class="line">		ois.close();</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * 对子类对象进行反序列化操作时，</span></span><br><span class="line"><span class="comment">		 * 如果其父类没有实现序列化接口</span></span><br><span class="line"><span class="comment">		 * 那么其父类的构造函数会被调用</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> *   一个类实现了序列化接口，那么其子类都可以进行序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo1</span> <span class="keyword">extends</span> <span class="title">Foo</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo1</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo1..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo2</span> <span class="keyword">extends</span> <span class="title">Foo1</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo2</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo2..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar1</span> <span class="keyword">extends</span> <span class="title">Bar</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar1</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar1.."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar2</span> <span class="keyword">extends</span> <span class="title">Bar1</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar2</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar2..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/09/Linux%E5%85%B3%E6%9C%BA%E4%B8%8E%E9%87%8D%E5%90%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/09/Linux%E5%85%B3%E6%9C%BA%E4%B8%8E%E9%87%8D%E5%90%AF/" class="post-title-link" itemprop="url">Linux关机与重启</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-09 11:42:17" itemprop="dateCreated datePublished" datetime="2019-10-09T11:42:17+08:00">2019-10-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 19:46:31" itemprop="dateModified" datetime="2020-04-30T19:46:31+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>451</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="关机与重启"><a href="#关机与重启" class="headerlink" title="关机与重启"></a>关机与重启</h2><h4 id="shutdown命令"><a href="#shutdown命令" class="headerlink" title="shutdown命令"></a>shutdown命令</h4><p>安全的关机命令<code>shutdown [选项] 时间</code><br>关机时会自动保存运行数据<br>时间为<code>now</code>则立即执行,或<code>23:30</code>定时关机</p>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-c</td>
+<td>取消前一个关机命令</td>
+</tr>
+<tr>
+<td>-h</td>
+<td>关机</td>
+</tr>
+<tr>
+<td>-r</td>
+<td>重启</td>
+</tr>
+</tbody></table>
+<p>不安全的关机:<code>halt, poweroff, init 0</code>等,尽量不用<br>重启:<code>reboot</code>可用,较安全,<code>init 6</code>尽量不用</p>
+<h4 id="系统运行级别"><a href="#系统运行级别" class="headerlink" title="系统运行级别"></a>系统运行级别</h4><p><code>runlevel</code>可查看系统运行级别</p>
+<table>
+<thead>
+<tr>
+<th>系统运行级别</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>关机</td>
+</tr>
+<tr>
+<td>1</td>
+<td>单用户(类似win安全模式)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>不完全多用户,不含NFS(文件共享)服务</td>
+</tr>
+<tr>
+<td>3</td>
+<td>完全多用户   常用</td>
+</tr>
+<tr>
+<td>4</td>
+<td>未分配</td>
+</tr>
+<tr>
+<td>5</td>
+<td>图形界面</td>
+</tr>
+<tr>
+<td>6</td>
+<td>重启</td>
+</tr>
+</tbody></table>
+<p>CentOS系统启动的默认运行级别<code>initdefault</code>的设置在<code>/etc/inittab</code>中,<code>initdefault</code>不能改为0或6,否则无法开机!</p>
+<h4 id="退出登录"><a href="#退出登录" class="headerlink" title="退出登录"></a>退出登录</h4><p><code>logout</code><br>linux默认最多允许256个用户同时登录<br>winXP默认最多允许1个用户同时登录<br>winSever 2003默认最多允许2个用户同时登录<br>winSever 2008默认最多允许4-8个用户同时登录<br>直接关闭终端窗口并不能退出用户,终端号没有释放,一定要手动<code>logout</code></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/07/shell%E5%A4%87%E5%BF%98%E5%BD%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/07/shell%E5%A4%87%E5%BF%98%E5%BD%95/" class="post-title-link" itemprop="url">shell备忘录</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-07 14:46:38" itemprop="dateCreated datePublished" datetime="2019-10-07T14:46:38+08:00">2019-10-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 19:56:28" itemprop="dateModified" datetime="2020-04-30T19:56:28+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>696</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="用户登录"><a href="#用户登录" class="headerlink" title="用户登录"></a>用户登录</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@主机名 ~] # root(超级)用户</span><br><span class="line">[xxxx@主机名 ~] $ 普通用户</span><br></pre></td></tr></table></figure>
+<h2 id="切换默认shell"><a href="#切换默认shell" class="headerlink" title="切换默认shell"></a>切换默认shell</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chsh -s /usr/bin/fish</span><br><span class="line">grep root /etc/passwd</span><br></pre></td></tr></table></figure>
+<h2 id="快速删除-移动光标"><a href="#快速删除-移动光标" class="headerlink" title="快速删除,移动光标"></a>快速删除,移动光标</h2><p>键盘快捷键:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ctrl + w 往回删除一个单词，光标放在最末尾</span><br><span class="line">ctrl + u 删除光标以前的字符</span><br><span class="line">ctrl + k 删除光标以后的字符</span><br><span class="line">ctrl + a 移动光标至的字符头</span><br><span class="line">ctrl + e 移动光标至的字符尾</span><br><span class="line">ctrl + l 清屏</span><br></pre></td></tr></table></figure>
+
+<h2 id="已知进程pid获取其父进程pid"><a href="#已知进程pid获取其父进程pid" class="headerlink" title="已知进程pid获取其父进程pid"></a>已知进程pid获取其父进程pid</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ps -ef  #查看所有用户进程</span><br><span class="line">ps -ef|awk '$2 ~ /pid/&#123;print $3&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="tar打包解包"><a href="#tar打包解包" class="headerlink" title="tar打包解包"></a>tar打包解包</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tar -zcvf xx.tar.gz xx  </span><br><span class="line">tar -zxvf xx.tar.gz xx</span><br></pre></td></tr></table></figure>
+<h2 id="tail命令"><a href="#tail命令" class="headerlink" title="tail命令"></a>tail命令</h2><p>用于查看纯文本文档的后N行或持续刷新内容</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tail [选项] [文件]</span><br></pre></td></tr></table></figure>
+<h2 id="判断字符串长度"><a href="#判断字符串长度" class="headerlink" title="判断字符串长度"></a>判断字符串长度</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ID=12345</span><br><span class="line">if [ $&#123;#ID&#125; -eq 5 ];then</span><br><span class="line">    echo "5"</span><br><span class="line">fi</span><br></pre></td></tr></table></figure>
+
+<h2 id="将命令的输出结果赋值给变量"><a href="#将命令的输出结果赋值给变量" class="headerlink" title="将命令的输出结果赋值给变量"></a>将命令的输出结果赋值给变量</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">begin_time=`date`    #开始时间，使用``替换</span><br><span class="line">sleep 20s            #休眠20秒</span><br><span class="line">finish_time=$(date)  #结束时间，使用$()替换</span><br><span class="line">echo "Begin time: $begin_time"</span><br><span class="line">echo "Finish time: $finish_time"</span><br></pre></td></tr></table></figure>
+<h2 id="文件类型"><a href="#文件类型" class="headerlink" title="文件类型"></a>文件类型</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ls  -lh  # --long   --human人性化显示大小</span><br><span class="line">ll    # ls -l</span><br><span class="line">drwx------ 2 root root 4096 Nov  3 10:13 Downloads </span><br><span class="line">        引用计数</span><br></pre></td></tr></table></figure>
+<p>linux中有6中文件类型,常用的三种为:<br>-普通文件 d目录 l软连接<br><img src="https://img-blog.csdnimg.cn/2019120811435069.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191208115535623.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/13/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">133</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">349k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

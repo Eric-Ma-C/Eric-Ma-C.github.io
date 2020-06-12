@@ -191,6 +191,559 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/03/JavaIO%E5%88%86%E7%B1%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/03/03/JavaIO%E5%88%86%E7%B1%BB/" class="post-title-link" itemprop="url">JavaIO分类</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-03-03 16:42:31" itemprop="dateCreated datePublished" datetime="2020-03-03T16:42:31+08:00">2020-03-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-17 14:11:39" itemprop="dateModified" datetime="2020-05-17T14:11:39+08:00">2020-05-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="BIO-阻塞IO"><a href="#BIO-阻塞IO" class="headerlink" title="BIO (阻塞IO)"></a>BIO (阻塞IO)</h2><p>服务器程序一个线程负责一个连接，进行请求的处理和响应。当客户端比较多的时候，服务端的线程可能就不够了，这时候对应的请求就没法及时处理了。</p>
+<h2 id="伪异步IO（BIO增加线程池）"><a href="#伪异步IO（BIO增加线程池）" class="headerlink" title="伪异步IO（BIO增加线程池）"></a>伪异步IO（BIO增加线程池）</h2><p>服务端会维护一个线程池来处理请求端的请求,<strong>减少了线程创建销毁开销</strong>。当客户端的请求比较多的时候，线程池的线程也是不够的，此时也会出现请求处理阻塞的情况。</p>
+<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>同步非阻塞IO方式，服务端通过<strong>缓存区</strong>、<strong>通道</strong>、<strong>多路复用</strong>等技术，允许客户端的请求成千上万。读写都首先通过缓冲区来承接，然后通过通道（双向，区别于需要两个<code>InputStream</code>和<code>OutputStream</code>）来传输信息。通过多路复用器轮询通道(<code>select/poll,epoll</code>)，看看是否存在读或者写时间，然后再进行处理，大大提升了IO处理的性能和稳定性.<strong>由于操作复杂，Netty横空出世。</strong></p>
+<h2 id="AIO"><a href="#AIO" class="headerlink" title="AIO"></a>AIO</h2><p>AIO又称为NIO2.0，在JDK7才开始支持<strong>(但Linux平台下没有真正的异步IO实现,如windows下的IOCP技术,只能用epoll模拟异步IO)</strong>。真正的异步IO，简化了NIO的通信模型。它是连接注册读写事件和回调函数，读写方法异步，同时它是主动通知程序。<br>AIO异步通信提供了两种方式获取操作结果：第一种方式是通过<code>java.util.concurrent</code>的<code>Future</code>类来表示异步操作的结果；第二种方式是在执行异步操作的时候传入一个<code>java.nio.channels.CompletionHandler</code>接口的实现类作为操作完成回调。<br>AIO的异步套接字回调，是真正的异步非阻塞IO, .对应于Unix网络编程中的事件驱动IO，不需要通过多路复用器对被注册的通道进行轮询操作即可实现异步读写，从而简化NIO的编程模型。</p>
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><table>
+<thead>
+<tr>
+<th>IO通信方式</th>
+<th>客户端:处理线程</th>
+<th>IO类型</th>
+<th>可靠性</th>
+<th>调试难度</th>
+<th>吞吐量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BIO</td>
+<td>M:M</td>
+<td>同步阻塞</td>
+<td>差</td>
+<td>简单</td>
+<td>低</td>
+</tr>
+<tr>
+<td>伪异步IO(线程池)</td>
+<td>M:N (N&lt;M)</td>
+<td>同步阻塞</td>
+<td>比较差</td>
+<td>简单</td>
+<td>中</td>
+</tr>
+<tr>
+<td>NIO</td>
+<td>M:1</td>
+<td>同步非阻塞</td>
+<td>比较高</td>
+<td>复杂</td>
+<td>高</td>
+</tr>
+<tr>
+<td>AIO(异步NIO)</td>
+<td>M:0</td>
+<td>异步非阻塞</td>
+<td>比较高</td>
+<td>比较复杂</td>
+<td>高</td>
+</tr>
+</tbody></table>
+<p>阻塞式的I/O模型需要每个链接开一个线程（或进程），当线程数达到10k级别时，<strong>内存占用</strong>和<strong>上下文切换</strong>（context switch）导致系统的开销很大。</p>
+<h2 id="为什么Netty使用NIO而不是AIO？"><a href="#为什么Netty使用NIO而不是AIO？" class="headerlink" title="为什么Netty使用NIO而不是AIO？"></a>为什么Netty使用NIO而不是AIO？</h2><p><a href="https://www.jianshu.com/p/df1d6d8c3f9d" target="_blank" rel="noopener">参考链接</a></p>
+<ul>
+<li>Netty不看重Windows上的使用，<strong>在Linux系统上，AIO的底层实现仍使用EPOLL，没有很好实现AIO</strong>，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化</li>
+<li>Netty整体架构是reactor模型, 而AIO是proactor模型, 混合在一起会非常混乱,把AIO也改造成reactor模型看起来是把epoll绕个弯(Linux用epoll实现AIO)又绕回来</li>
+<li>AIO还有个缺点是接收数据需要预先分配缓存, 而不是NIO那种需要接收时才需要分配缓存.所以对连接数量非常大但流量小的情况, AIO内存浪费很多</li>
+<li>Linux上AIO不够成熟，处理回调结果速度跟不到处理需求，比如外卖员太少，顾客太多，供不应求，造成处理速度有瓶颈.</li>
+<li>Netty作者原话：<br>Not faster than NIO (epoll) on unix systems (which is true).<br>There is no daragram suppport.<br>Unnecessary threading model (too much abstraction without usage).</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/03/Linux%E5%B8%AE%E5%8A%A9%E5%91%BD%E4%BB%A4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/11/03/Linux%E5%B8%AE%E5%8A%A9%E5%91%BD%E4%BB%A4/" class="post-title-link" itemprop="url">Linux帮助命令</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-03 14:46:38" itemprop="dateCreated datePublished" datetime="2019-11-03T14:46:38+08:00">2019-11-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 18:48:07" itemprop="dateModified" datetime="2020-04-30T18:48:07+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>429</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="man-命令"><a href="#man-命令" class="headerlink" title="man 命令"></a>man 命令</h1><h2 id="man-命令名"><a href="#man-命令名" class="headerlink" title="man 命令名"></a><code>man 命令名</code></h2><p>man是manual的简写<br>如<code>man ls</code></p>
+<h2 id="man-f-命令名"><a href="#man-f-命令名" class="headerlink" title="man -f 命令名"></a><code>man -f 命令名</code></h2><p>man帮助文档,可以按级别查看:<br><code>man -f 命令名</code>相当于<code>whatis 命令名</code><br>举例:<br><code>shell
+man -5 passwd  #系统所有用户信息
+man -4 null  #系统黑洞
+man -8 ifconfig</code><br>如果只有一种等级的帮助文档,直接<code>man 命令名</code>即可<br><img src="https://img-blog.csdnimg.cn/20191208165450164.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h2 id="man-k-命令名"><a href="#man-k-命令名" class="headerlink" title="man -k 命令名"></a><code>man -k 命令名</code></h2><p>man查看和命令相关的所有帮助:<br><code>man -k 命令名</code>相当于<code>apropos 命令名</code><br>如:<code>apropos passwd</code><br><br></p>
+<h1 id="help-选项帮助"><a href="#help-选项帮助" class="headerlink" title="--help 选项帮助"></a>--help 选项帮助</h1><p>比较常用,通过命令选项获取帮助,如<code>ls --help</code><br><br></p>
+<h1 id="help获取shell内部命令的帮助"><a href="#help获取shell内部命令的帮助" class="headerlink" title="help获取shell内部命令的帮助"></a>help获取shell内部命令的帮助</h1><p><code>help shell内部命令</code>获取shell内部命令的帮助<br>如<br><code>shell
+whereis cd    #检查是否是shell内部命令,whereis只能找到外部命令的可执行文件位置
+help cd        #获取帮助
+help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell内部命令是最基本的命令<br><br></p>
+<h1 id="info详细命令帮助"><a href="#info详细命令帮助" class="headerlink" title="info详细命令帮助"></a>info详细命令帮助</h1><p><code>info 命令名</code>帮助文档,很详细,用得少.<br><img src="https://img-blog.csdnimg.cn/20191208172719768.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/03/Linux%E5%8E%8B%E7%BC%A9%E4%B8%8E%E8%A7%A3%E5%8E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/11/03/Linux%E5%8E%8B%E7%BC%A9%E4%B8%8E%E8%A7%A3%E5%8E%8B/" class="post-title-link" itemprop="url">Linux压缩与解压</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-03 13:38:05" itemprop="dateCreated datePublished" datetime="2019-11-03T13:38:05+08:00">2019-11-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-04 10:22:06" itemprop="dateModified" datetime="2020-05-04T10:22:06+08:00">2020-05-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>731</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="zip格式"><a href="#zip格式" class="headerlink" title=".zip格式"></a>.zip格式</h2><h4 id="压缩文件"><a href="#压缩文件" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>zip 文件.zip 源文件</code></p>
+<h4 id="压缩文件夹"><a href="#压缩文件夹" class="headerlink" title="压缩文件夹"></a>压缩文件夹</h4><p><code>zip -r 文件夹.zip 源目录</code></p>
+<h4 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h4><p><code>unzip 文件.zip</code></p>
+<h2 id="gz格式"><a href="#gz格式" class="headerlink" title=".gz格式"></a>.gz格式</h2><h4 id="压缩文件-1"><a href="#压缩文件-1" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>gzip 源文件</code><br>压缩为.gz格式,且源文件会消失<br><code>gzip -c 源文件 &gt; 源文件.gz</code><br>压缩为.gz格式,保留源文件,不常用,”-c”表示把压缩文件输出到屏幕,”&gt;”表示输出重定向</p>
+<h4 id="压缩目录-下的所有子文件"><a href="#压缩目录-下的所有子文件" class="headerlink" title="压缩目录(下的所有子文件)"></a>压缩目录(下的所有子文件)</h4><p><code>gzip -r 目录</code><br>压缩目录下的所有子文件,但是不能压缩目录.(很不方便,不常用)</p>
+<h4 id="解压-1"><a href="#解压-1" class="headerlink" title="解压"></a>解压</h4><p><code>gzip -d 压缩文件</code>或<code>gunzip 压缩文件</code></p>
+<h5 id="解压目录-下的所有子文件"><a href="#解压目录-下的所有子文件" class="headerlink" title="解压目录(下的所有子文件)"></a>解压目录(下的所有子文件)</h5><p><code>gunzip -r 目录</code></p>
+<h2 id="bz2格式"><a href="#bz2格式" class="headerlink" title=".bz2格式"></a>.bz2格式</h2><h4 id="压缩文件-2"><a href="#压缩文件-2" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>bzip2 源文件</code><br>不保留源文件<br><code>bzip2 -k 源文件</code><br>保留源文件</p>
+<p><strong>bzip2命令不能压缩目录!</strong></p>
+<h4 id="解压文件"><a href="#解压文件" class="headerlink" title="解压文件"></a>解压文件</h4><p><code>bzip2 -d 源文件</code>或<code>bunzip2 源文件</code><br>-k保留压缩文件<br><br></p>
+<p><strong>.gz和.bz2对目录的处理不太友好,下面介绍tar打包命令</strong></p>
+<h2 id="tar打包命令"><a href="#tar打包命令" class="headerlink" title="tar打包命令"></a>tar打包命令</h2><h4 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h4><h6 id="tar-cvf-打包名-源文件"><a href="#tar-cvf-打包名-源文件" class="headerlink" title="tar -cvf 打包名 源文件"></a><code>tar -cvf 打包名 源文件</code></h6><table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-c</td>
+<td>打包</td>
+</tr>
+<tr>
+<td>-v</td>
+<td>显示过程</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>指定打包后的文件名</td>
+</tr>
+</tbody></table>
+<p>如<code>tar -cvf xxx.tar xxx</code></p>
+<h4 id="解包"><a href="#解包" class="headerlink" title="解包"></a>解包</h4><h6 id="tar-xvf-打包名"><a href="#tar-xvf-打包名" class="headerlink" title="tar -xvf 打包名"></a><code>tar -xvf 打包名</code></h6><p>如<code>tar -xvf xxx.tar</code></p>
+<h4 id="打包-压缩为-gz"><a href="#打包-压缩为-gz" class="headerlink" title="打包+压缩为.gz"></a>打包+压缩为.gz</h4><h6 id="tar-zcvf-打包名-tar-gz-源文件-源文件2-源文件3"><a href="#tar-zcvf-打包名-tar-gz-源文件-源文件2-源文件3" class="headerlink" title="tar -zcvf 打包名.tar.gz 源文件 [源文件2] [源文件3]..."></a><code>tar -zcvf 打包名.tar.gz 源文件 [源文件2] [源文件3]...</code></h6><p><code>-z</code>代表.gz,可以有多个源文件,空格隔开</p>
+<h4 id="解压缩-tar-gz"><a href="#解压缩-tar-gz" class="headerlink" title="解压缩.tar.gz"></a>解压缩.tar.gz</h4><h6 id="tar-zxvf-打包名-tar-gz-C-新位置"><a href="#tar-zxvf-打包名-tar-gz-C-新位置" class="headerlink" title="tar -zxvf 打包名.tar.gz [-C 新位置]"></a><code>tar -zxvf 打包名.tar.gz [-C 新位置]</code></h6><p><code>-z</code>代表.gz</p>
+<h4 id="打包-压缩为-bz2"><a href="#打包-压缩为-bz2" class="headerlink" title="打包+压缩为.bz2"></a>打包+压缩为.bz2</h4><h6 id="tar-jcvf-打包名-tar-bz2-源文件"><a href="#tar-jcvf-打包名-tar-bz2-源文件" class="headerlink" title="tar -jcvf 打包名.tar.bz2 源文件"></a><code>tar -jcvf 打包名.tar.bz2 源文件</code></h6><p><code>-j</code>代表.bz2,,可以有多个源文件,空格隔开</p>
+<h4 id="解压缩-tar-bz2"><a href="#解压缩-tar-bz2" class="headerlink" title="解压缩.tar.bz2"></a>解压缩.tar.bz2</h4><h6 id="tar-jxvf-打包名-tar-bz2-C-新位置"><a href="#tar-jxvf-打包名-tar-bz2-C-新位置" class="headerlink" title="tar -jxvf 打包名.tar.bz2 [-C 新位置]"></a><code>tar -jxvf 打包名.tar.bz2 [-C 新位置]</code></h6><p><code>-j</code>代表.bz2</p>
+<h4 id="查看压缩包-不解压"><a href="#查看压缩包-不解压" class="headerlink" title="查看压缩包,不解压"></a>查看压缩包,不解压</h4><h6 id="tar-ztvf-打包名-tar-gz"><a href="#tar-ztvf-打包名-tar-gz" class="headerlink" title="tar -ztvf 打包名.tar.gz"></a><code>tar -ztvf 打包名.tar.gz</code></h6><h6 id="tar-jtvf-打包名-tar-bz2"><a href="#tar-jtvf-打包名-tar-bz2" class="headerlink" title="tar -jtvf 打包名.tar.bz2"></a><code>tar -jtvf 打包名.tar.bz2</code></h6><p><code>-t</code>代表test,查看文件内容.</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/02/Linux%E6%96%87%E4%BB%B6%E5%92%8C%E7%9B%AE%E5%BD%95%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/11/02/Linux%E6%96%87%E4%BB%B6%E5%92%8C%E7%9B%AE%E5%BD%95%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Linux文件和目录总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-03 02:12:47" itemprop="dateCreated datePublished" datetime="2019-11-03T02:12:47+08:00">2019-11-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-07 10:14:43" itemprop="dateModified" datetime="2020-06-07T10:14:43+08:00">2020-06-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="目录分类"><a href="#目录分类" class="headerlink" title="目录分类"></a>目录分类</h2><p><strong>/usr</strong>    系统软件资源目录<br><strong>/bin    /usr/bin</strong>    系统命令,所有用户可执行<br><strong>/sbin    /usr/sbin</strong>    系统命令,仅root可执行<br><strong>/boot</strong>    系统启动数据<br><strong>/etc</strong>    系统默认配置文件<br><strong>/dev</strong>    硬件设备文件<br><strong>/lib</strong>    系统功能函数库,so文件<br><strong>/sys    /proc</strong>    内存挂载点,直接写入内存,不能动<br><strong>/var</strong>    系统可变文档目录</p>
+<h2 id="目录操作"><a href="#目录操作" class="headerlink" title="目录操作"></a>目录操作</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span>    <span class="comment"># 等同于 cd ~ 回家</span></span><br><span class="line"><span class="built_in">cd</span> -  <span class="comment"># 上次目录 </span></span><br><span class="line">ls  -lh  <span class="comment"># --long   --human人性化显示大小   -i查看文件inode号</span></span><br><span class="line">ll    <span class="comment"># ls -l</span></span><br><span class="line"><span class="built_in">pwd</span>   <span class="comment"># print working dir</span></span><br><span class="line">mkdir -p xxxx <span class="comment"># -p 递归创建</span></span><br><span class="line">rm -r xxxx    <span class="comment">#删除目录</span></span><br><span class="line">cp -r src dst	<span class="comment"># -r复制目录 -p同时复制文件属性(如修改时间) -d若为链接文件,则复制链接属性</span></span><br><span class="line">cp -a src dst	<span class="comment"># --all相当于 cp -rpd  </span></span><br><span class="line">mv src dst	<span class="comment">#剪切文件和目录,重命名  目录不需要-r</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="链接文件"><a href="#链接文件" class="headerlink" title="链接文件"></a>链接文件</h2><ul>
+<li><code>硬链接</code>    文件索引表中拥有<strong>相同的inode号和存储block块</strong>,看做同一个文件<br>创建后文件引用计数加1<br>不能跨分区创建硬链接;目录不能创建硬链接.<br>有限制,易混淆,平时不建议用</li>
+<li><code>软链接</code>    有<strong>自己的inode号和block块</strong>,但数据块中只保存<strong>原文件的文件名和inode号</strong><br>类似win快捷方式,删除原文件,软链接不可用<br>block中文件名(路径)和inode号都符合才找得到<br><strong>软链接文件权限都为rwxrwxrwx</strong>,是否可以访问要看原文件的权限</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s src dis  # link  -s 软链接  src要写绝对路径!除非src和dst在同一目录</span><br></pre></td></tr></table></figure>
+
+<h2 id="文件搜索"><a href="#文件搜索" class="headerlink" title="文件搜索"></a>文件搜索</h2><h3 id="locate-文件名"><a href="#locate-文件名" class="headerlink" title="locate 文件名"></a><code>locate 文件名</code></h3><p>速度快,在数据库(索引)中<strong>按文件名</strong>查找文件,数据库在<code>/var/lib/mlocate</code>一般一天一更新,<code>updatedb</code>立即更新.<br>搜索时的排除项(不搜索的内容)配置在<code>/etc/updatedb.conf</code>,如</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PRUNE_BIND_MOUNTS="yes"</span><br><span class="line"><span class="meta">#</span><span class="bash"> PRUNENAMES=<span class="string">".git .bzr .hg .svn"</span></span></span><br><span class="line">PRUNEPATHS="/tmp /var/spool /media /home/.ecryptfs /var/lib/schroot"</span><br><span class="line">PRUNEFS="NFS nfs nfs4 rpc_pipefs afs binfmt_misc proc smbfs autofs iso9660 ncpfs coda devpts ftpfs devfs mfs shfs sysfs cifs lustre tmpfs usbfs udf fuse.glusterfs fuse.sshfs curlftpfs ecryptfs fusesmb devtmpfs"</span><br></pre></td></tr></table></figure>
+
+<h3 id="whereis-命令名"><a href="#whereis-命令名" class="headerlink" title="whereis 命令名"></a><code>whereis 命令名</code></h3><p>搜索(外部)<strong>命令,配置及其帮助文档</strong>所在位置,-b仅可执行文件,-m仅帮助文档.<br>有些命令找不到,如cd,因为它是shell的内置命令.</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">whereis ls</span><br><span class="line">ls: /bin/ls /usr/share/man/man1/ls.1.gz</span><br></pre></td></tr></table></figure>
+
+<h3 id="which-命令名"><a href="#which-命令名" class="headerlink" title="which 命令名"></a><code>which 命令名</code></h3><p>类似whereis,搜索(外部)<strong>命令</strong>所在位置及其别名.</p>
+<h3 id="echo-PATH"><a href="#echo-PATH" class="headerlink" title="echo $PATH"></a><code>echo $PATH</code></h3><p>PATH环境变量定义的是系统搜索路径.</p>
+<h3 id="find-范围-选项"><a href="#find-范围-选项" class="headerlink" title="find [范围] [选项]"></a><code>find [范围] [选项]</code></h3><p>功能非常强大,可能较慢.<br><code>find / -name 文件名</code><br>文件名需<strong>完全匹配</strong>,部分匹配用通配符:</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>*</td>
+<td>匹配任意字符</td>
+</tr>
+<tr>
+<td>?</td>
+<td>匹配任意一个字符</td>
+</tr>
+<tr>
+<td>[ ]</td>
+<td>匹配任意一个中括号内的字符</td>
+</tr>
+</tbody></table>
+<p><code>find / -iname 文件名</code>    不区分大小写<br><code>find / -user 用户名</code>    查找某用户的文件<br><code>find / -nouser</code>    查找没有所有者的文件,比如内核创建的文件,外来文件等<br><code>find /var/log/ -mtime +10</code>查找10天前修改的文件,一般是日志文件.单位也支持分钟.</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-atime</td>
+<td>文件访问时间</td>
+<td>-10</td>
+<td>10天内</td>
+</tr>
+<tr>
+<td>-ctime</td>
+<td>文件属性修改时间</td>
+<td>10</td>
+<td>第10天</td>
+</tr>
+<tr>
+<td>-mtime</td>
+<td>文件修改时间</td>
+<td>+10</td>
+<td>10天前</td>
+</tr>
+</tbody></table>
+<p> <code>find . -size 25k</code><br>查找当前目录下大小为25k的文件<br>注意大小写:</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-25k</td>
+<td>小于25kb</td>
+<td>-4M</td>
+<td>小于4Mb</td>
+</tr>
+<tr>
+<td>25k</td>
+<td>等于25kb</td>
+<td>4M</td>
+<td>等于4Mb</td>
+</tr>
+<tr>
+<td>+25k</td>
+<td>大于25kb</td>
+<td>+4M</td>
+<td>大于4Mb</td>
+</tr>
+</tbody></table>
+<p> <code>find /root -inum 25225</code><br>查找inode节点为25225的文件<br> <code>find /etc -size +20k -a -size -50k</code><br>多条件查询,在/etc下找大于20kb小于50kb的文件,<code>-a(and) -o(or)</code><br> <code>find /etc -size +20k -a -size -50k -exec ls -lh {} \;</code><br>显示查找结果的详细信息,多执行了<code>ls -lh</code><br>对find结果执行操作:<code>-exec/-ok 增加的命令 {} \ ;</code></p>
+<h3 id="grep-选项-quot-字符串-quot-文件名"><a href="#grep-选项-quot-字符串-quot-文件名" class="headerlink" title="grep [选项] &quot;字符串&quot; 文件名"></a><code>grep [选项] &quot;字符串&quot; 文件名</code></h3><p>在文件当中<strong>包含</strong>匹配符合条件的<strong>行</strong>,是部分匹配, -i忽略大小写  -v 排除指定字符串</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/24/TopK%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -786,362 +1339,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/13/java%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/13/java%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于对象序列化的总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-13 14:46:38" itemprop="dateCreated datePublished" datetime="2019-10-13T14:46:38+08:00">2019-10-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 20:11:56" itemprop="dateModified" datetime="2020-04-30T20:11:56+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>对象序列化，就是<strong>将Object转换成byte序列</strong>，反之叫对象的反序列化.</p>
-<ul>
-<li>序列化流(<code>ObjectOutputStream</code>),是过滤流—-writeObject</li>
-<li>反序列化流(<code>ObjectInputStream</code>)—-readObject</li>
-</ul>
-<h3 id="序列化接口-Serializable"><a href="#序列化接口-Serializable" class="headerlink" title="序列化接口(Serializable)"></a>序列化接口(Serializable)</h3><p>   对象必须实现序列化接口 ，才能进行序列化，否则将出现异常<br>   这个接口，没有任何方法，只是一个标准.</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">String file = <span class="string">"demo/obj.dat"</span>;</span><br><span class="line">		<span class="comment">//1.对象的序列化</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(file));</span><br><span class="line">		Student stu = <span class="keyword">new</span> Student(<span class="string">"10001"</span>, <span class="string">"张三"</span>, <span class="number">20</span>);</span><br><span class="line">		oos.writeObject(stu);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line">		<span class="comment">//2.对象的反序列化</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(file));</span><br><span class="line">		Student stu = (Student)ois.readObject();</span><br><span class="line">		System.out.println(stu);</span><br><span class="line">		ois.close();</span><br></pre></td></tr></table></figure>
-
-<h3 id="transient关键字"><a href="#transient关键字" class="headerlink" title="transient关键字"></a>transient关键字</h3><p><code>transient</code>修饰的变量不会进行jvm默认的序列化,但可以自己完成这个元素的序列化.即覆写:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(java.io.ObjectOutputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException</span></span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Student</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> String stuno;</span><br><span class="line">	<span class="keyword">private</span> String stuname;</span><br><span class="line">	<span class="comment">//该元素不会进行jvm默认的序列化,也可以自己完成这个元素的序列化</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">transient</span> <span class="keyword">int</span> stuage;  </span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Student</span><span class="params">(String stuno, String stuname, <span class="keyword">int</span> stuage)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">super</span>();</span><br><span class="line">		<span class="keyword">this</span>.stuno = stuno;</span><br><span class="line">		<span class="keyword">this</span>.stuname = stuname;</span><br><span class="line">		<span class="keyword">this</span>.stuage = stuage;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">getStuno</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuno;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuno</span><span class="params">(String stuno)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuno = stuno;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">getStuname</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuname;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuname</span><span class="params">(String stuname)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuname = stuname;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getStuage</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> stuage;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setStuage</span><span class="params">(<span class="keyword">int</span> stuage)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.stuage = stuage;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="string">"Student [stuno="</span> + stuno + <span class="string">", stuname="</span> + stuname + <span class="string">", stuage="</span></span><br><span class="line">				+ stuage + <span class="string">"]"</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	 <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(java.io.ObjectOutputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException</span>&#123;</span><br><span class="line">		 s.defaultWriteObject();<span class="comment">//把jvm能默认序列化的元素进行序列化操作</span></span><br><span class="line">		 s.writeInt(stuage);<span class="comment">//自己完成stuage的序列化</span></span><br><span class="line">	 &#125;</span><br><span class="line">	 <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">readObject</span><span class="params">(java.io.ObjectInputStream s)</span></span></span><br><span class="line"><span class="function">		        <span class="keyword">throws</span> java.io.IOException, ClassNotFoundException</span>&#123;</span><br><span class="line">		  s.defaultReadObject();<span class="comment">//把jvm能默认反序列化的元素进行反序列化操作</span></span><br><span class="line">		  <span class="keyword">this</span>.stuage = s.readInt();<span class="comment">//自己完成stuage的反序列化操作</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<p> 如<code>ArrayList</code>源码中对<code>elementData</code>数组序列化和反序列化的处理,因为<code>elementData</code>数组中不是所有元素都是有效元素,所以只序列化了<code>size</code>个有效元素.<br> <img src="https://img-blog.csdnimg.cn/20191206205124318.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191206205301628.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h3 id="序列化中-子父类构造函数的调用问题"><a href="#序列化中-子父类构造函数的调用问题" class="headerlink" title="序列化中 子父类构造函数的调用问题"></a>序列化中 子父类构造函数的调用问题</h3><p>一个类实现了序列化接口，那么其<strong>子类</strong>都可以进行序列化.<br>对<strong>子类</strong>对象进行反序列化操作时,如果其<strong>父类</strong>没有实现序列化接口,那么其<strong>父类的构造函数</strong>会被调用.</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ObjectSeriaDemo2</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception</span>&#123;</span><br><span class="line">		<span class="comment">//序列化Foo2</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Foo2 foo2 = <span class="keyword">new</span> Foo2();</span><br><span class="line">		oos.writeObject(foo2);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//反序列化Foo2是否递归调用父类的构造函数?不会调用Foo1(),Foo()</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Foo2 foo2 = (Foo2)ois.readObject();</span><br><span class="line">		System.out.println(foo2);</span><br><span class="line">		ois.close();</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//序列化Bar2</span></span><br><span class="line">		ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Bar2 bar2 = <span class="keyword">new</span> Bar2();</span><br><span class="line">		oos.writeObject(bar2);</span><br><span class="line">		oos.flush();</span><br><span class="line">		oos.close();</span><br><span class="line"></span><br><span class="line">		<span class="comment">//反序列化Bar2是否递归调用父类的构造函数?会调用Bar1(),Bar()</span></span><br><span class="line">		ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(<span class="string">"demo/obj1.dat"</span>));</span><br><span class="line">		Bar2 bar2 = (Bar2)ois.readObject();</span><br><span class="line">		System.out.println(bar2);</span><br><span class="line">		ois.close();</span><br><span class="line">		</span><br><span class="line">		</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * 对子类对象进行反序列化操作时，</span></span><br><span class="line"><span class="comment">		 * 如果其父类没有实现序列化接口</span></span><br><span class="line"><span class="comment">		 * 那么其父类的构造函数会被调用</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> *   一个类实现了序列化接口，那么其子类都可以进行序列化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo1</span> <span class="keyword">extends</span> <span class="title">Foo</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo1</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo1..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo2</span> <span class="keyword">extends</span> <span class="title">Foo1</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Foo2</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"foo2..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar1</span> <span class="keyword">extends</span> <span class="title">Bar</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar1</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar1.."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar2</span> <span class="keyword">extends</span> <span class="title">Bar1</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Bar2</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"bar2..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/09/Linux%E5%85%B3%E6%9C%BA%E4%B8%8E%E9%87%8D%E5%90%AF/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/09/Linux%E5%85%B3%E6%9C%BA%E4%B8%8E%E9%87%8D%E5%90%AF/" class="post-title-link" itemprop="url">Linux关机与重启</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-09 11:42:17" itemprop="dateCreated datePublished" datetime="2019-10-09T11:42:17+08:00">2019-10-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 19:46:31" itemprop="dateModified" datetime="2020-04-30T19:46:31+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>451</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="关机与重启"><a href="#关机与重启" class="headerlink" title="关机与重启"></a>关机与重启</h2><h4 id="shutdown命令"><a href="#shutdown命令" class="headerlink" title="shutdown命令"></a>shutdown命令</h4><p>安全的关机命令<code>shutdown [选项] 时间</code><br>关机时会自动保存运行数据<br>时间为<code>now</code>则立即执行,或<code>23:30</code>定时关机</p>
-<table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>-c</td>
-<td>取消前一个关机命令</td>
-</tr>
-<tr>
-<td>-h</td>
-<td>关机</td>
-</tr>
-<tr>
-<td>-r</td>
-<td>重启</td>
-</tr>
-</tbody></table>
-<p>不安全的关机:<code>halt, poweroff, init 0</code>等,尽量不用<br>重启:<code>reboot</code>可用,较安全,<code>init 6</code>尽量不用</p>
-<h4 id="系统运行级别"><a href="#系统运行级别" class="headerlink" title="系统运行级别"></a>系统运行级别</h4><p><code>runlevel</code>可查看系统运行级别</p>
-<table>
-<thead>
-<tr>
-<th>系统运行级别</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>0</td>
-<td>关机</td>
-</tr>
-<tr>
-<td>1</td>
-<td>单用户(类似win安全模式)</td>
-</tr>
-<tr>
-<td>2</td>
-<td>不完全多用户,不含NFS(文件共享)服务</td>
-</tr>
-<tr>
-<td>3</td>
-<td>完全多用户   常用</td>
-</tr>
-<tr>
-<td>4</td>
-<td>未分配</td>
-</tr>
-<tr>
-<td>5</td>
-<td>图形界面</td>
-</tr>
-<tr>
-<td>6</td>
-<td>重启</td>
-</tr>
-</tbody></table>
-<p>CentOS系统启动的默认运行级别<code>initdefault</code>的设置在<code>/etc/inittab</code>中,<code>initdefault</code>不能改为0或6,否则无法开机!</p>
-<h4 id="退出登录"><a href="#退出登录" class="headerlink" title="退出登录"></a>退出登录</h4><p><code>logout</code><br>linux默认最多允许256个用户同时登录<br>winXP默认最多允许1个用户同时登录<br>winSever 2003默认最多允许2个用户同时登录<br>winSever 2008默认最多允许4-8个用户同时登录<br>直接关闭终端窗口并不能退出用户,终端号没有释放,一定要手动<code>logout</code></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/07/shell%E5%A4%87%E5%BF%98%E5%BD%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/07/shell%E5%A4%87%E5%BF%98%E5%BD%95/" class="post-title-link" itemprop="url">shell备忘录</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-07 14:46:38" itemprop="dateCreated datePublished" datetime="2019-10-07T14:46:38+08:00">2019-10-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 19:56:28" itemprop="dateModified" datetime="2020-04-30T19:56:28+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>696</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="用户登录"><a href="#用户登录" class="headerlink" title="用户登录"></a>用户登录</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@主机名 ~] # root(超级)用户</span><br><span class="line">[xxxx@主机名 ~] $ 普通用户</span><br></pre></td></tr></table></figure>
-<h2 id="切换默认shell"><a href="#切换默认shell" class="headerlink" title="切换默认shell"></a>切换默认shell</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">chsh -s /usr/bin/fish</span><br><span class="line">grep root /etc/passwd</span><br></pre></td></tr></table></figure>
-<h2 id="快速删除-移动光标"><a href="#快速删除-移动光标" class="headerlink" title="快速删除,移动光标"></a>快速删除,移动光标</h2><p>键盘快捷键:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ctrl + w 往回删除一个单词，光标放在最末尾</span><br><span class="line">ctrl + u 删除光标以前的字符</span><br><span class="line">ctrl + k 删除光标以后的字符</span><br><span class="line">ctrl + a 移动光标至的字符头</span><br><span class="line">ctrl + e 移动光标至的字符尾</span><br><span class="line">ctrl + l 清屏</span><br></pre></td></tr></table></figure>
-
-<h2 id="已知进程pid获取其父进程pid"><a href="#已知进程pid获取其父进程pid" class="headerlink" title="已知进程pid获取其父进程pid"></a>已知进程pid获取其父进程pid</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ps -ef  #查看所有用户进程</span><br><span class="line">ps -ef|awk '$2 ~ /pid/&#123;print $3&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="tar打包解包"><a href="#tar打包解包" class="headerlink" title="tar打包解包"></a>tar打包解包</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tar -zcvf xx.tar.gz xx  </span><br><span class="line">tar -zxvf xx.tar.gz xx</span><br></pre></td></tr></table></figure>
-<h2 id="tail命令"><a href="#tail命令" class="headerlink" title="tail命令"></a>tail命令</h2><p>用于查看纯文本文档的后N行或持续刷新内容</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tail [选项] [文件]</span><br></pre></td></tr></table></figure>
-<h2 id="判断字符串长度"><a href="#判断字符串长度" class="headerlink" title="判断字符串长度"></a>判断字符串长度</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ID=12345</span><br><span class="line">if [ $&#123;#ID&#125; -eq 5 ];then</span><br><span class="line">    echo "5"</span><br><span class="line">fi</span><br></pre></td></tr></table></figure>
-
-<h2 id="将命令的输出结果赋值给变量"><a href="#将命令的输出结果赋值给变量" class="headerlink" title="将命令的输出结果赋值给变量"></a>将命令的输出结果赋值给变量</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">begin_time=`date`    #开始时间，使用``替换</span><br><span class="line">sleep 20s            #休眠20秒</span><br><span class="line">finish_time=$(date)  #结束时间，使用$()替换</span><br><span class="line">echo "Begin time: $begin_time"</span><br><span class="line">echo "Finish time: $finish_time"</span><br></pre></td></tr></table></figure>
-<h2 id="文件类型"><a href="#文件类型" class="headerlink" title="文件类型"></a>文件类型</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ls  -lh  # --long   --human人性化显示大小</span><br><span class="line">ll    # ls -l</span><br><span class="line">drwx------ 2 root root 4096 Nov  3 10:13 Downloads </span><br><span class="line">        引用计数</span><br></pre></td></tr></table></figure>
-<p>linux中有6中文件类型,常用的三种为:<br>-普通文件 d目录 l软连接<br><img src="https://img-blog.csdnimg.cn/2019120811435069.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191208115535623.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/12/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><span class="page-number current">13</span>
+    <a class="extend prev" rel="prev" href="/page/12/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><span class="page-number current">13</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/14/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1209,20 +1410,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">129</span>
+          <span class="site-state-item-count">133</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1266,7 +1467,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">333k</span>
+    <span title="站点总字数">349k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

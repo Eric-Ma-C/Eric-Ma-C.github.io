@@ -191,6 +191,387 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%8F%8D%E8%BD%AC%E9%93%BE%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E5%8F%8D%E8%BD%AC%E9%93%BE%E8%A1%A8/" class="post-title-link" itemprop="url">反转链表</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 02:05:05 / 修改时间：10:10:17" itemprop="dateCreated datePublished" datetime="2020-05-23T02:05:05+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>381</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入一个链表，反转链表后，输出新链表的表头。</p>
+<p>三个指针操作,注意将原链表的head.next置为null,同时注意处理原链表为空的情况.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ListNode <span class="title">ReverseList</span><span class="params">(ListNode head)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head==<span class="keyword">null</span>||head.next == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> head;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode pre=head,cur=head.next,next=head.next.next;</span><br><span class="line">    head.next=<span class="keyword">null</span>;<span class="comment">//容易忘!</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>)&#123;</span><br><span class="line">        cur.next=pre;</span><br><span class="line">        pre=cur;</span><br><span class="line">        cur=next;</span><br><span class="line">        <span class="keyword">if</span> (cur==<span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        next=cur.next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> pre;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E9%93%BE%E8%A1%A8%E4%B8%AD%E5%80%92%E6%95%B0%E7%AC%ACk%E4%B8%AA%E7%BB%93%E7%82%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/21/%E9%93%BE%E8%A1%A8%E4%B8%AD%E5%80%92%E6%95%B0%E7%AC%ACk%E4%B8%AA%E7%BB%93%E7%82%B9/" class="post-title-link" itemprop="url">链表中倒数第k个结点</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-22 07:47:42 / 修改时间：15:50:42" itemprop="dateCreated datePublished" datetime="2020-05-22T07:47:42+08:00">2020-05-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入一个链表，输出该链表中倒数第k个结点。</p>
+<p>两个指针即可,注意处理k=0的情况</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ListNode <span class="title">FindKthToTail</span><span class="params">(ListNode head, <span class="keyword">int</span> k)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head == <span class="keyword">null</span> || k &lt; <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode kth = <span class="keyword">null</span>;</span><br><span class="line">    ListNode tmp = head;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; k - <span class="number">1</span> &amp;&amp; tmp != <span class="keyword">null</span>; i++) &#123;</span><br><span class="line">        tmp = tmp.next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (tmp == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    kth = head;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (; tmp.next != <span class="keyword">null</span>; tmp = tmp.next) &#123;</span><br><span class="line">        kth = kth.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> kth;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/529d3ae5a407492994ad2a246518148a?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/529d3ae5a407492994ad2a246518148a?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h2 id="解法-1-两次循环"><a href="#解法-1-两次循环" class="headerlink" title="解法 1: 两次循环"></a>解法 1: 两次循环</h2><p>因为要求链表倒数第 k 个节点，也就是求正数第<code>length - k</code>个节点。整体过程如下：</p>
+<ul>
+<li>链表又是个单链表，并且没有保存长度信息。所以需要循环一次计算<code>length</code>。 </li>
+<li>第二次循环找到第<code>length - k</code>个节点。 </li>
+</ul>
+<p>时间复杂度是 O(N)，需要 2 次循环。</p>
+<p>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">FindKthToTail</span>(<span class="params">head, k</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> length = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">let</span> node = head;</span><br><span class="line">    <span class="keyword">while</span> (node) &#123;</span><br><span class="line">        ++length;</span><br><span class="line">        node = node.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (k &gt; length) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    node = head;</span><br><span class="line">    <span class="keyword">let</span> offset = length - k;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; offset; ++i) &#123;</span><br><span class="line">        node = node.next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> node;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="解法-2-快慢-双-指针"><a href="#解法-2-快慢-双-指针" class="headerlink" title="解法 2: 快慢(双)指针"></a>解法 2: 快慢(双)指针</h2><p>准备两个指针：left（慢）和 right（快）。整体过程如下：</p>
+<ul>
+<li>right 先向右移动 k 位，此时 <code>index(right) - index(left) = k</code> </li>
+<li>left 和 right 一起向右移动，直到 right 抵达边界 </li>
+<li>由于<code>index(right) - index(left) = k</code>，所以<code>index(left) = index(right) - k = length - k</code>。也就是 left 指针移动到了倒数第 k 个位置 </li>
+</ul>
+<p>时间复杂度是 O(N)，但仅需要遍历一次。空间复杂度是 O（1）</p>
+<p>代码如下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">FindKthToTail</span>(<span class="params">head, k</span>) </span>&#123;</span><br><span class="line">    <span class="keyword">let</span> right = head;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; k; ++i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (right === <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">// 链表长度小于k</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        right = right.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> left = head;</span><br><span class="line">    <span class="keyword">while</span> (right) &#123;</span><br><span class="line">        left = left.next;</span><br><span class="line">        right = right.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> left;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E9%87%8D%E5%BB%BA%E4%BA%8C%E5%8F%89%E6%A0%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/21/%E9%87%8D%E5%BB%BA%E4%BA%8C%E5%8F%89%E6%A0%91/" class="post-title-link" itemprop="url">重建二叉树</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-22 06:50:17 / 修改时间：15:30:00" itemprop="dateCreated datePublished" datetime="2020-05-22T06:50:17+08:00">2020-05-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>输入某二叉树的前序遍历和中序遍历的结果，请重建出该二叉树。假设输入的前序遍历和中序遍历的结果中都不含重复的数字。例如输入前序遍历序列{1,2,4,7,3,5,6,8}和中序遍历序列{4,7,2,1,5,3,8,6}，则重建二叉树并返回。</p>
+<p>递归建树即可.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TreeNode <span class="title">reConstructBinaryTree</span><span class="params">(<span class="keyword">int</span>[] pre, <span class="keyword">int</span>[] in)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (pre == <span class="keyword">null</span> || pre.length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    TreeNode root = <span class="keyword">new</span> TreeNode(pre[<span class="number">0</span>]);</span><br><span class="line">    <span class="keyword">int</span> rootInMid = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; in.length; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (in[i] == pre[<span class="number">0</span>]) &#123;</span><br><span class="line">            rootInMid = i;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/** 左子树结点个数 */</span></span><br><span class="line">    <span class="keyword">int</span> leftNum = rootInMid;</span><br><span class="line"></span><br><span class="line">    root.left = reConstructBinaryTree(</span><br><span class="line">        Arrays.copyOfRange(pre, <span class="number">1</span>, leftNum + <span class="number">1</span>),</span><br><span class="line">        Arrays.copyOfRange(in, <span class="number">0</span>, rootInMid));</span><br><span class="line">    root.right = reConstructBinaryTree(</span><br><span class="line">        Arrays.copyOfRange(pre, leftNum + <span class="number">1</span>, pre.length),</span><br><span class="line">        Arrays.copyOfRange(in, rootInMid + <span class="number">1</span>, in.length));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> root;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/8a19cbe657394eeaac2f6ea9b0f6fcf6?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/8a19cbe657394eeaac2f6ea9b0f6fcf6?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h2 id="递归构建二叉树"><a href="#递归构建二叉树" class="headerlink" title="递归构建二叉树"></a>递归构建二叉树</h2><h3 id="1-分析"><a href="#1-分析" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>根据中序遍历和前序遍历可以确定二叉树，具体过程为：</p>
+<ol>
+<li>根据前序序列第一个结点确定根结点 </li>
+<li>根据根结点在中序序列中的位置分割出左右两个子序列 </li>
+<li>对左子树和右子树分别递归使用同样的方法继续分解 </li>
+</ol>
+<p>例如：<br>前序序列{1,2,4,7,3,5,6,8} = pre<br>中序序列{4,7,2,1,5,3,8,6} = in</p>
+<ol>
+<li>根据当前前序序列的第一个结点确定根结点，为 1 </li>
+<li>找到 1 在中序遍历序列中的位置，为 in[3] </li>
+<li>切割左右子树，则 in[3] 前面的为左子树， in[3] 后面的为右子树 </li>
+<li>则切割后的<strong>左子树前序序列</strong>为：{2,4,7}，切割后的<strong>左子树中序序列</strong>为：{4,7,2}；切割后的<strong>右子树前序序列</strong>为：{3,5,6,8}，切割后的<strong>右子树中序序列</strong>为：{5,3,8,6} </li>
+<li>对子树分别使用同样的方法分解 </li>
+</ol>
+<h3 id="2-代码"><a href="#2-代码" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Definition for binary tree</span></span><br><span class="line"><span class="comment"> * public class TreeNode &#123;</span></span><br><span class="line"><span class="comment"> *     int val;</span></span><br><span class="line"><span class="comment"> *     TreeNode left;</span></span><br><span class="line"><span class="comment"> *     TreeNode right;</span></span><br><span class="line"><span class="comment"> *     TreeNode(int x) &#123; val = x; &#125;</span></span><br><span class="line"><span class="comment"> * &#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> TreeNode <span class="title">reConstructBinaryTree</span><span class="params">(<span class="keyword">int</span> [] pre,<span class="keyword">int</span> [] in)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (pre.length == <span class="number">0</span> || in.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        TreeNode root = <span class="keyword">new</span> TreeNode(pre[<span class="number">0</span>]);</span><br><span class="line">        <span class="comment">// 在中序中找到前序的根</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; in.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (in[i] == pre[<span class="number">0</span>]) &#123;</span><br><span class="line">                <span class="comment">// 左子树，注意 copyOfRange 函数，左闭右开</span></span><br><span class="line">                root.left = reConstructBinaryTree(Arrays.copyOfRange(pre, <span class="number">1</span>, i + <span class="number">1</span>), Arrays.copyOfRange(in, <span class="number">0</span>, i));</span><br><span class="line">                <span class="comment">// 右子树，注意 copyOfRange 函数，左闭右开</span></span><br><span class="line">                root.right = reConstructBinaryTree(Arrays.copyOfRange(pre, i + <span class="number">1</span>, pre.length), Arrays.copyOfRange(in, i + <span class="number">1</span>, in.length));</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84%E7%9A%84%E6%9C%80%E5%B0%8F%E6%95%B0%E5%AD%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/21/%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84%E7%9A%84%E6%9C%80%E5%B0%8F%E6%95%B0%E5%AD%97/" class="post-title-link" itemprop="url">旋转数组的最小数字</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-22 05:57:07 / 修改时间：14:54:51" itemprop="dateCreated datePublished" datetime="2020-05-22T05:57:07+08:00">2020-05-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>把一个数组最开始的若干个元素搬到数组的末尾，我们称之为数组的旋转。<br>输入一个非递减排序的数组的一个旋转，输出旋转数组的最小元素。<br>例如数组{3,4,5,1,2}为{1,2,3,4,5}的一个旋转，该数组的最小值为1。<br>NOTE：给出的所有元素都大于0，若数组大小为0，请返回0。</p>
+<p>O(n)的复杂度,不够好,应该参考二分查找的实现.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">minNumberInRotateArray</span><span class="params">(<span class="keyword">int</span>[] array)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (array == <span class="keyword">null</span> || array.length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = array.length - <span class="number">1</span>; i &gt; <span class="number">0</span>; i--) &#123;</span><br><span class="line">        <span class="keyword">if</span> (array[i - <span class="number">1</span>] &gt; array[i]) &#123;</span><br><span class="line">            <span class="keyword">return</span> array[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> array[<span class="number">0</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>改进版,要考虑到<code>1,1,0,1,1,1,1</code>等情况.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (array == <span class="keyword">null</span> || array.length == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> start = <span class="number">0</span>, end = array.length - <span class="number">1</span>;</span><br><span class="line"><span class="keyword">int</span> mid = (start + end) / <span class="number">2</span>;</span><br><span class="line"><span class="comment">/** 答案一定在start,mid,end的最大值和最小值之间 */</span></span><br><span class="line"><span class="keyword">for</span> (; array[start] &gt;= array[end] &amp;&amp; end - start &gt;= <span class="number">2</span>; mid = (start + end) / <span class="number">2</span>) &#123;<span class="comment">//说明有接头处</span></span><br><span class="line">    <span class="keyword">if</span> (array[mid] &lt; array[start] || array[mid] &lt; array[end]) &#123;</span><br><span class="line">        end = mid;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (array[mid] &gt; array[start] || array[mid] &gt; array[end]) &#123;</span><br><span class="line">        start = mid;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;<span class="comment">//start,mid,end相等的特殊情况</span></span><br><span class="line">        <span class="keyword">int</span> min = Integer.MAX_VALUE;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = start; i &lt; end; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (array[i] &lt; min) &#123;</span><br><span class="line">                min = array[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> min;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> Math.min(array[start], array[end]);</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/9f3231a991af4f55b95579b44b7a01ba?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/9f3231a991af4f55b95579b44b7a01ba?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<p>直接进行顺序的查找,复杂度为O(n).<br>但是我们看到题中是给出的有序的旋转数组,我们可以采用二分法来进行求解,其复杂度为O(logn).<br>这里我们需要利用带有条件的二分法来进行求解:</p>
+<p>第一步我们可以将这个旋转的数组看作是前后两个有序的子数组,然后设定我们的中间值 mid = (start + end) // 2.</p>
+<p>第二步我们能够看到,当我们选取的中间值 mid 所对应的值大于 start 所对应的值时,说明此时 mid 还在第一有序的数组中,而我们所要求解的最小值是在第二个有序数组的第一个位置,此时也就是在 mid   的后面,我们就将 start 移到 mid 所在的位置.</p>
+<p>第三步,当我们的 end 所对应的值大于 mid 所对应的值时,说明最小值可能是 mid 所对应的值或者在 mid 的前面,我们将 end 移到 mid 所在的位置.</p>
+<p>第四步,最后我们的 end 所在的位置就是最小值的位置,直接返回即可.</p>
+<p>我说下,在牛客的这道题目中,以上的方法就可以提交完成,但是当我们看剑指offer的书时,有这样的特例 比如数组 10111 , 这是会出现当 start mid end 所对应位置的值相等,这时候我们的程序就不能找到最小值,当出现这样的情况时,我们采用将 start 和 end 区间里面的值进行顺序查找来找出最小值.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span>:</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">minNumberInRotateArray</span><span class="params">(self, rotateArray)</span>:</span></span><br><span class="line">        <span class="comment"># write code here</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> rotateArray:</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">        <span class="keyword">if</span> len(rotateArray) == <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">return</span> rotateArray[<span class="number">0</span>]</span><br><span class="line">        start = <span class="number">0</span></span><br><span class="line">        end = len(rotateArray)<span class="number">-1</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> rotateArray[start] &gt;= rotateArray[end]:</span><br><span class="line">            <span class="keyword">if</span> end - start == <span class="number">1</span>:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            mid = (start + end) // <span class="number">2</span></span><br><span class="line">            <span class="keyword">if</span> rotateArray[start] == rotateArray[mid] <span class="keyword">and</span> rotateArray[end] == rotateArray[mid]:</span><br><span class="line">                <span class="comment">#进行顺序查找</span></span><br><span class="line">                temp = rotateArray[start]</span><br><span class="line">                <span class="keyword">for</span> i <span class="keyword">in</span> range(start,end + <span class="number">1</span>):</span><br><span class="line">                    <span class="keyword">if</span> temp &lt; rotateArray[i]:</span><br><span class="line">                        temp = rotateArray[i]</span><br><span class="line">                <span class="keyword">return</span> temp</span><br><span class="line">            <span class="keyword">if</span> rotateArray[mid] &gt;= rotateArray[start]:</span><br><span class="line">                start = mid</span><br><span class="line">            <span class="keyword">elif</span> rotateArray[end] &gt;= rotateArray[mid]:</span><br><span class="line">                end = mid</span><br><span class="line">        <span class="keyword">return</span> rotateArray[end]</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E8%B7%B3%E5%8F%B0%E9%98%B6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -926,578 +1307,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">Copy On Write机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-05-19 06:35:22" itemprop="dateCreated datePublished" datetime="2020-05-19T06:35:22+08:00">2020-05-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-24 17:20:34" itemprop="dateModified" datetime="2020-05-24T17:20:34+08:00">2020-05-24</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://juejin.im/post/5bd96bcaf265da396b72f855" target="_blank" rel="noopener">原文链接</a> 作者:Java3y</p>
-<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在读《Redis设计与实现》关于哈希表扩容的时候，发现这么一段话：</p>
-<blockquote>
-<p>执行BGSAVE命令或者BGREWRITEAOF命令的过程中，Redis需要创建当前服务器进程的子进程，而大多数操作系统都采用<strong>写时复制（copy-on-write）来优化子进程的使用效率</strong>，所以在子进程存在期间，服务器会提高负载因子的阈值，从而避免在子进程存在期间进行哈希表扩展操作，避免不必要的内存写入操作，最大限度地节约内存。</p>
-</blockquote>
-<p>触及到知识的盲区了，于是就去搜了一下copy-on-write写时复制这个技术究竟是怎么样的。发现涉及的东西蛮多的，也挺难读懂的。于是就写下这篇笔记来记录一下我学习copy-on-write的过程。</p>
-<p>本文<strong>力求简单讲清copy-on-write这个知识点</strong>，希望大家看完能有所收获。</p>
-<h1 id="一、Linux下的copy-on-write"><a href="#一、Linux下的copy-on-write" class="headerlink" title="一、Linux下的copy-on-write"></a>一、Linux下的copy-on-write</h1><p>在说明Linux下的copy-on-write机制前，我们首先要知道两个函数：<code>fork()</code>和<code>exec()</code>。需要注意的是<code>exec()</code>并不是一个特定的函数, 它是<strong>一组函数的统称</strong>, 它包括了<code>execl()</code>、<code>execlp()</code>、<code>execv()</code>、<code>execle()</code>、<code>execve()</code>、<code>execvp()</code>。</p>
-<h2 id="1-1简单来用用fork"><a href="#1-1简单来用用fork" class="headerlink" title="1.1简单来用用fork"></a>1.1简单来用用fork</h2><p>首先我们来看一下<code>fork()</code>函数是什么鬼：</p>
-<blockquote>
-<p>fork is an operation whereby a process creates a copy of itself.</p>
-</blockquote>
-<p>fork是类Unix操作系统上<strong>创建进程</strong>的主要方法。fork用于<strong>创建子进程</strong>(等同于当前进程的副本)。</p>
-<ul>
-<li>新的进程要通过老的进程复制自身得到，这就是fork！</li>
-</ul>
-<p>如果接触过Linux，我们会知道Linux下<strong>init进程是所有进程的爹</strong>(相当于Java中的Object对象)</p>
-<ul>
-<li>Linux的进程都通过init进程或init的子进程fork(vfork)出来的。</li>
-</ul>
-<p>下面以例子说明一下fork吧：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;  </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;  </span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">()</span>   </span></span><br><span class="line"><span class="function"></span>&#123;   </span><br><span class="line">    <span class="keyword">pid_t</span> fpid; <span class="comment">//fpid表示fork函数返回的值  </span></span><br><span class="line">    <span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 调用fork，创建出子进程  </span></span><br><span class="line">    fpid=fork();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 所以下面的代码有两个进程执行！</span></span><br><span class="line">    <span class="keyword">if</span> (fpid &lt; <span class="number">0</span>)   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"创建进程失败!/n"</span>);   </span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (fpid == <span class="number">0</span>) &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是子进程，由父进程fork出来/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">else</span> &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是父进程/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"统计结果是: %d/n"</span>,count);  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>得到的结果输出为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">我是子进程，由父进程fork出来</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br><span class="line"></span><br><span class="line">我是父进程</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br></pre></td></tr></table></figure>
-
-<p>解释一下：</p>
-<ul>
-<li>fork作为一个函数被调用。这个函数会有<strong>两次返回</strong>，将<strong>子进程的PID返回给父进程，0返回给子进程</strong>。(如果小于0，则说明创建子进程失败)。</li>
-<li>再次说明：当前进程调用<code>fork()</code>，会创建一个跟当前进程完全相同的子进程(除了pid)，所以子进程同样是会执行<code>fork()</code>之后的代码。</li>
-</ul>
-<p>所以说：</p>
-<ul>
-<li>父进程在执行if代码块的时候，<code>fpid变量</code>的值是子进程的pid</li>
-<li>子进程在执行if代码块的时候，<code>fpid变量</code>的值是0</li>
-</ul>
-<h2 id="1-2再来看看exec-函数"><a href="#1-2再来看看exec-函数" class="headerlink" title="1.2再来看看exec()函数"></a>1.2再来看看exec()函数</h2><p>从上面我们已经知道了fork会创建一个子进程。<strong>子进程的是父进程的副本</strong>。</p>
-<p>exec函数的作用就是：<strong>装载一个新的程序</strong>（可执行映像）覆盖<strong>当前进程</strong>内存空间中的映像，<strong>从而执行不同的任务</strong>。</p>
-<ul>
-<li>exec系列函数在执行时会<strong>直接替换掉当前进程的地址空间</strong>。</li>
-</ul>
-<p>我去画张图来理解一下：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1728f4e?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="exec函数的作用"></p>
-<p>参考资料：</p>
-<ul>
-<li>程序员必备知识——fork和exec函数详解<a href="https://blog.csdn.net/bad_good_man/article/details/49364947" target="_blank" rel="noopener">blog.csdn.net/bad_good_ma…</a></li>
-<li>linux中fork（）函数详解（原创！！实例讲解）：<a href="https://blog.csdn.net/jason314/article/details/5640969" target="_blank" rel="noopener">blog.csdn.net/jason314/ar…</a></li>
-<li>linux c语言 fork() 和 exec 函数的简介和用法：<a href="https://blog.csdn.net/nvd11/article/details/8856278" target="_blank" rel="noopener">blog.csdn.net/nvd11/artic…</a></li>
-<li>Linux下Fork与Exec使用：<a href="https://www.cnblogs.com/hicjiajia/archive/2011/01/20/1940154.html" target="_blank" rel="noopener">www.cnblogs.com/hicjiajia/a…</a></li>
-<li>Linux 系统调用 —— fork()内核源码剖析：<a href="https://blog.csdn.net/chen892704067/article/details/76596225" target="_blank" rel="noopener">blog.csdn.net/chen8927040…</a></li>
-</ul>
-<h2 id="1-3回头来看Linux下的COW是怎么一回事"><a href="#1-3回头来看Linux下的COW是怎么一回事" class="headerlink" title="1.3回头来看Linux下的COW是怎么一回事"></a>1.3回头来看Linux下的COW是怎么一回事</h2><blockquote>
-<p>fork()会产生一个和父进程完全相同的子进程(除了pid)</p>
-</blockquote>
-<p>如果按<strong>传统</strong>的做法，会<strong>直接</strong>将父进程的数据拷贝到子进程中，拷贝完之后，父进程和子进程之间的数据段和堆栈是<strong>相互独立的</strong>。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1818295?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="父进程的数据拷贝到子进程中"></p>
-<p>但是，以我们的使用经验来说：往往子进程都会执行<code>exec()</code>来做自己想要实现的功能。</p>
-<ul>
-<li>所以，如果按照上面的做法的话，创建子进程时复制过去的数据是没用的(因为子进程执行<code>exec()</code>，原有的数据会被清空)</li>
-</ul>
-<p>既然很多时候复制给子进程的数据是无效的，于是就有了Copy On Write这项技术了，原理也很简单：</p>
-<ul>
-<li>fork创建出的子进程，<strong>与父进程共享内存空间</strong>。也就是说，如果子进程<strong>不对内存空间进行写入操作的话，内存空间中的数据并不会复制给子进程</strong>，这样创建子进程的速度就很快了！(不用复制，直接引用父进程的物理空间)。</li>
-<li>并且如果在fork函数返回之后，子进程<strong>第一时间</strong>exec一个新的可执行映像，那么也不会浪费时间和内存空间了。</li>
-</ul>
-<p>另外的表达方式：</p>
-<blockquote>
-<p>在fork之后exec之前两个进程<strong>用的是相同的物理空间</strong>（内存区），子进程的代码段、数据段、堆栈都是指向父进程的物理空间，也就是说，两者的虚拟空间不同，但其对应的<strong>物理空间是同一个</strong>。</p>
-</blockquote>
-<blockquote>
-<p>当父子进程中<strong>有更改相应段的行为发生时</strong>，再<strong>为子进程相应的段分配物理空间</strong>。</p>
-</blockquote>
-<blockquote>
-<p>如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。</p>
-</blockquote>
-<blockquote>
-<p>而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
-</blockquote>
-<p>Copy On Write技术<strong>实现原理：</strong></p>
-<blockquote>
-<p>fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。中断例程中，kernel就会<strong>把触发的异常的页复制一份</strong>，于是父子进程各自持有独立的一份。</p>
-</blockquote>
-<p>Copy On Write技术<strong>好处</strong>是什么？</p>
-<ul>
-<li>COW技术可<strong>减少</strong>分配和复制大量资源时带来的<strong>瞬间延时</strong>。</li>
-<li>COW技术可减少<strong>不必要的资源分配</strong>。比如fork进程时，并不是所有的页面都需要复制，父进程的<strong>代码段和只读数据段都不被允许修改，所以无需复制</strong>。</li>
-</ul>
-<p>Copy On Write技术<strong>缺点</strong>是什么？</p>
-<ul>
-<li>如果在fork()之后，父子进程都还需要继续进行写操作，<strong>那么会产生大量的分页错误(页异常中断page-fault)</strong>，这样就得不偿失。</li>
-</ul>
-<p>几句话总结Linux的Copy On Write技术：</p>
-<ul>
-<li>fork出的子进程共享父进程的物理空间，当父子进程<strong>有内存写入操作时</strong>，read-only内存页发生中断，<strong>将触发的异常的内存页复制一份</strong>(其余的页还是共享父进程的)。</li>
-<li>fork出的子进程功能实现和父进程是一样的。如果有需要，我们会用<code>exec()</code>把当前进程映像替换成新的进程文件，完成自己想要实现的功能。</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>Linux进程基础：<a href="http://www.cnblogs.com/vamei/archive/2012/09/20/2694466.html" target="_blank" rel="noopener">www.cnblogs.com/vamei/archi…</a></li>
-<li>Linux写时拷贝技术(copy-on-write)<a href="http://www.cnblogs.com/biyeymyhjob/archive/2012/07/20/2601655.html" target="_blank" rel="noopener">www.cnblogs.com/biyeymyhjob…</a></li>
-<li>当你在 Linux 上启动一个进程时会发生什么？<a href="https://zhuanlan.zhihu.com/p/33159508" target="_blank" rel="noopener">zhuanlan.zhihu.com/p/33159508</a></li>
-<li>Linux fork()所谓的写时复制(COW)到最后还是要先复制再写吗？<a href="https://www.zhihu.com/question/265400460" target="_blank" rel="noopener">www.zhihu.com/question/26…</a></li>
-<li>写时拷贝（copy－on－write） COW技术<a href="https://blog.csdn.net/u012333003/article/details/25117457" target="_blank" rel="noopener">blog.csdn.net/u012333003/…</a></li>
-<li>Copy-On-Write 写时复制原理<a href="https://blog.csdn.net/ppppppppp2009/article/details/22750939" target="_blank" rel="noopener">blog.csdn.net/ppppppppp20…</a></li>
-</ul>
-<h2 id="二、解释一下Redis的COW"><a href="#二、解释一下Redis的COW" class="headerlink" title="二、解释一下Redis的COW"></a>二、解释一下Redis的COW</h2><p>基于上面的基础，我们应该已经了解COW这么一项技术了。</p>
-<p>下面我来说一下我对《Redis设计与实现》那段话的理解：</p>
-<ul>
-<li>Redis在持久化时，如果是采用BGSAVE命令或者BGREWRITEAOF的方式，那Redis会<strong>fork出一个子进程来读取数据，从而写到磁盘中</strong>。</li>
-<li>总体来看，Redis还是读操作比较多。如果子进程存在期间，发生了大量的写操作，那可能就会出现<strong>很多的分页错误(页异常中断page-fault)</strong>，这样就得耗费不少性能在复制上。</li>
-<li>而在<strong>rehash阶段上，写操作是无法避免</strong>的。所以Redis在fork出子进程之后，<strong>将负载因子阈值提高</strong>，尽量减少写操作，避免不必要的内存写入操作，最大限度地节约内存。</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>fork()后copy on write的一些特性：<a href="https://zhoujianshi.github.io/articles/2017/fork(" target="_blank" rel="noopener">zhoujianshi.github.io/articles/20…</a>后copy on write的一些特性/index.html)</li>
-<li>写时复制：<a href="https://miao1007.github.io/gitbook/java/juc/cow/" target="_blank" rel="noopener">miao1007.github.io/gitbook/jav…</a></li>
-</ul>
-<h1 id="三、文件系统的COW"><a href="#三、文件系统的COW" class="headerlink" title="三、文件系统的COW"></a>三、文件系统的COW</h1><p>下面来看看文件系统中的COW是啥意思：</p>
-<p>Copy-on-write在对数据进行修改的时候，<strong>不会直接在原来的数据位置上进行操作</strong>，而是重新找个位置修改，这样的好处是一旦系统突然断电，重启之后不需要做Fsck。好处就是能<strong>保证数据的完整性，掉电的话容易恢复</strong>。</p>
-<ul>
-<li>比如说：要修改数据块A的内容，先把A读出来，写到B块里面去。如果这时候断电了，原来A的内容还在！</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>文件系统中的 copy-on-write 模式有什么具体的好处？<a href="https://www.zhihu.com/question/19782224/answers/created" target="_blank" rel="noopener">www.zhihu.com/question/19…</a></li>
-<li>新一代 Linux 文件系统 btrfs 简介:<a href="https://www.ibm.com/developerworks/cn/linux/l-cn-btrfs/" target="_blank" rel="noopener">www.ibm.com/developerwo…</a></li>
-</ul>
-<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>最后我们再来看一下写时复制的思想(摘录自维基百科)：</p>
-<blockquote>
-<p>写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。</p>
-</blockquote>
-<p>至少从本文我们可以总结出：</p>
-<ul>
-<li>Linux通过Copy On Write技术极大地<strong>减少了Fork的开销</strong>。</li>
-<li>文件系统通过Copy On Write技术一定程度上保证<strong>数据的完整性</strong>。</li>
-</ul>
-<p>其实在Java里边，也有Copy On Write技术，称为延迟拷贝。</p>
-<p>Java中有三种类型的对象拷贝：浅拷贝(Shallow Copy)、深拷贝(Deep Copy)、延迟拷贝(Lazy Copy)。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1b8a75f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Java中的COW"></p>
-<p>这部分留到下一篇来说，敬请期待~</p>
-<p>参考资料：</p>
-<ul>
-<li>写时复制，写时拷贝，写时分裂，Copy on write：<a href="https://my.oschina.net/dubenju/blog/815836" target="_blank" rel="noopener">my.oschina.net/dubenju/blo…</a></li>
-<li>不会产奶的COW(Copy-On-Write)<a href="https://www.jianshu.com/p/b2fb2ee5e3a0" target="_blank" rel="noopener">www.jianshu.com/p/b2fb2ee5e…</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E9%80%89%E6%8B%A9%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E9%80%89%E6%8B%A9%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">为什么 Redis 选择单线程模型</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-19 06:06:21 / 修改时间：14:10:15" itemprop="dateCreated datePublished" datetime="2020-05-19T06:06:21+08:00">2020-05-19</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://draveness.me/whys-the-design-redis-single-thread/" target="_blank" rel="noopener">原文链接</a> 作者:Draven</p>
-<p>Redis 作为广为人知的内存数据库，在玩具项目和复杂的工业级别项目中都看到它的身影，然而 Redis 却是使用单线程模型进行设计的，这与很多人固有的观念有所冲突，为什么单线程的程序能够抗住每秒几百万的请求量呢？这也是我们今天要讨论的问题之一。</p>
-<p>除此之外，Redis 4.0 之后的版本却抛弃了单线程模型这一设计，原本使用单线程运行的 Redis 也开始选择性使用多线程模型，这一看似有些矛盾的设计决策是今天需要讨论的另一个问题。</p>
-<blockquote>
-<p>However with Redis 4.0 we started to make Redis more threaded. For now this is limited to deleting objects in the background, and to blocking commands implemented via Redis modules. For the next releases, the plan is to make Redis more and more threaded.</p>
-</blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>就像在介绍中说的，这一篇文章想要讨论的两个与 Redis 有关的问题就是：</p>
-<ul>
-<li>为什么 Redis 在最初的版本中选择单线程模型？</li>
-<li>为什么 Redis 在 4.0 之后的版本中加入了多线程的支持？</li>
-</ul>
-<p>这两个看起来有些矛盾的问题实际上并不冲突，我们会分别阐述对这个看起来完全相反的设计决策作出分析和解释，不过在具体分析它们的设计之前，我们先来看一下不同版本 Redis 顶层的设计：</p>
-<p><img src="https://img.draveness.me/redis-io-multiplexing.png" alt="redis-io-multiplexing"></p>
-<p>Redis 作为一个内存服务器，它需要处理很多来自外部的网络请求，它使用 I/O 多路复用机制同时监听多个文件描述符的可读和可写状态，一旦收到网络请求就会在内存中快速处理，由于绝大多数的操作都是纯内存的，所以处理的速度会非常地快。</p>
-<p>在 <a href="https://raw.githubusercontent.com/antirez/redis/4.0/00-RELEASENOTES" target="_blank" rel="noopener">Redis 4.0</a> 之后的版本，情况就有了一些变动，新版的 Redis 服务在执行一些命令时就会使用『主处理线程』之外的其他线程，例如 <code>UNLINK</code>、<code>FLUSHALL ASYNC</code>、<code>FLUSHDB ASYNC</code> 等非阻塞的删除操作。</p>
-<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>无论是使用单线程模型还是多线程模型，这两个设计上的决定都是为了更好地提升 Redis 的开发效率、运行性能，想要理解两个看起来矛盾的设计决策，我们首先需要重新梳理做出决定的上下文和大前提，从下面的角度来看，使用单线程模型和多线程模型其实也并不矛盾。</p>
-<p>虽然 Redis 在较新的版本中引入了多线程，不过是在<strong>部分命令</strong>上引入的，其中包括非阻塞的删除操作，在整体的架构设计上，主处理程序还是单线程模型的；由此看来，我们今天想要分析的两个问题可以简化成：</p>
-<ul>
-<li>为什么 Redis 服务使用单线程模型处理绝大多数的网络请求？</li>
-<li>为什么 Redis 服务增加了多个非阻塞的删除操作，例如：<code>UNLINK</code>、<code>FLUSHALL ASYNC</code> 和 <code>FLUSHDB ASYNC</code>？</li>
-</ul>
-<p>接下来的两个小节将从多个角度分析这两个问题。</p>
-<h3 id="单线程模型"><a href="#单线程模型" class="headerlink" title="单线程模型"></a>单线程模型</h3><p>Redis 从一开始就选择使用单线程模型处理来自客户端的绝大多数网络请求，这种考虑其实是多方面的，作者分析了相关的资料，发现其中最重要的几个原因如下：</p>
-<ol>
-<li>使用单线程模型能带来更好的可维护性，方便开发和调试；</li>
-<li>使用单线程模型也能并发的处理客户端的请求；</li>
-<li>Redis 服务中运行的绝大多数操作的性能瓶颈都不是 CPU；</li>
-</ol>
-<p>上述三个原因中的最后一个是最终使用单线程模型的决定性因素，其他的两个原因都是使用单线程模型额外带来的好处，在这里我们会按顺序介绍上述的几个原因。</p>
-<h4 id="可维护性"><a href="#可维护性" class="headerlink" title="可维护性"></a>可维护性</h4><p>可维护性对于一个项目来说非常重要，如果代码难以调试和测试，问题也经常难以复现，这对于任何一个项目来说都会严重地影响项目的可维护性。多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，代码的执行过程不再是串行的，多个线程同时访问的变量如果没有谨慎处理就会带来诡异的问题。</p>
-<p><img src="https://img.draveness.me/multi-threading.png" alt="multi-threading"></p>
-<p>在网络上有一个调侃多线程模型的段子，就很好地展示了多线程模型带来的潜在问题：<a href="https://en.wikipedia.org/wiki/Race_condition" target="_blank" rel="noopener">竞争条件 (race condition)</a> —— 如果计算机中的两个进程（线程同理）同时尝试修改一个共享内存的内容，在没有并发控制的情况下，最终的结果依赖于两个进程的执行顺序和时机，如果发生了并发访问冲突，最后的结果就会是不正确的。</p>
-<blockquote>
-<p>Some people, when confronted with a problem, think, “I know, I’ll use threads,” and then two they hav erpoblesms.</p>
-</blockquote>
-<p>引入了多线程，我们就必须要同时引入并发控制来保证在多个线程同时访问数据时程序行为的正确性，这就需要工程师额外维护并发控制的相关代码，例如，我们会需要在可能被并发读写的变量上增加互斥锁：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">    mu Mutex <span class="comment">// cost</span></span><br><span class="line">    data <span class="keyword">int</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// thread 1</span></span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mu.Lock()</span><br><span class="line">    data += <span class="number">1</span></span><br><span class="line">    mu.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// thread 2</span></span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mu.Lock()</span><br><span class="line">    data -= <span class="number">1</span></span><br><span class="line">    mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在访问这些变量或者内存之前也需要先对获取互斥锁，一旦忘记获取锁或者忘记释放锁就可能会导致各种诡异的问题，管理相关的并发控制机制也需要付出额外的研发成本和负担。</p>
-<h4 id="并发处理"><a href="#并发处理" class="headerlink" title="并发处理"></a>并发处理</h4><p>使用单线程模型也并不意味着程序不能并发的处理任务，Redis 虽然使用单线程模型处理用户的请求，但是它却使用 I/O 多路复用机制<strong>并发</strong>处理来自客户端的多个连接，同时等待多个连接发送的请求。</p>
-<p>在 I/O 多路复用模型中，最重要的函数调用就是 <code>select</code> 以及类似函数，该方法的能够同时监控多个文件描述符（也就是客户端的连接）的可读可写情况，当其中的某些文件描述符可读或者可写时，<code>select</code> 方法就会返回可读以及可写的文件描述符个数。</p>
-<p>使用 I/O 多路复用技术能够极大地减少系统的开销，系统不再需要额外创建和维护进程和线程来监听来自客户端的大量连接，减少了服务器的开发成本和维护成本。</p>
-<h4 id="性能瓶颈"><a href="#性能瓶颈" class="headerlink" title="性能瓶颈"></a>性能瓶颈</h4><p>最后要介绍的其实就是 Redis 选择单线程模型的决定性原因 —— 多线程技术能够帮助我们充分利用 CPU 的计算资源来并发的执行不同的任务，但是 CPU 资源往往都不是 Redis 服务器的性能瓶颈。哪怕我们在一个普通的 Linux 服务器上启动 Redis 服务，它也能在 1s 的时间内处理 1,000,000 个用户请求。</p>
-<blockquote>
-<p>It’s not very frequent that CPU becomes your bottleneck with Redis, as usually Redis is either memory or network bound. For instance, using pipelining Redis running on an average Linux system can deliver even 1 million requests per second, so if your application mainly uses O(N) or O(log(N)) commands, it is hardly going to use too much CPU.</p>
-</blockquote>
-<p>如果这种吞吐量不能满足我们的需求，更推荐的做法是使用分片的方式将不同的请求交给不同的 Redis 服务器来处理，而不是在同一个 Redis 服务中引入大量的多线程操作。</p>
-<p>简单总结一下，Redis 并不是 CPU 密集型的服务，如果不开启 AOF 备份，所有 Redis 的操作都会在内存中完成不会涉及任何的 I/O 操作，这些数据的读写由于只发生在内存中，所以处理速度是非常快的；整个服务的瓶颈在于网络传输带来的延迟和等待客户端的数据传输，也就是网络 I/O，所以使用多线程模型处理全部的外部请求可能不是一个好的方案。</p>
-<blockquote>
-<p>AOF 是 Redis 的一种持久化机制，它会在每次收到来自客户端的写请求时，将其记录到日志中，每次 Redis 服务器启动时都会重放 AOF 日志构建原始的数据集，保证数据的持久性。</p>
-</blockquote>
-<p>多线程虽然会帮助我们更充分地利用 CPU 资源，但是操作系统上线程的切换也不是免费的，线程切换其实会带来额外的开销，其中包括：</p>
-<ol>
-<li>保存线程 1 的执行上下文；</li>
-<li>加载线程 2 的执行上下文；</li>
-</ol>
-<p>频繁的对线程的上下文进行切换可能还会导致性能地急剧下降，这可能会导致我们不仅没有提升请求处理的平均速度，反而进行了负优化，所以这也是为什么 Redis 对于使用多线程技术非常谨慎。</p>
-<h3 id="引入多线程"><a href="#引入多线程" class="headerlink" title="引入多线程"></a>引入多线程</h3><p>Redis 在最新的几个版本中加入了一些可以被其他线程异步处理的删除操作，也就是我们在上面提到的 <code>UNLINK</code>、<code>FLUSHALL ASYNC</code> 和 <code>FLUSHDB ASYNC</code>，我们为什么会需要这些删除操作，而它们为什么需要通过多线程的方式异步处理？</p>
-<h4 id="删除操作"><a href="#删除操作" class="headerlink" title="删除操作"></a>删除操作</h4><p>我们可以在 Redis 在中使用 <code>DEL</code> 命令来删除一个键对应的值，如果待删除的键值对占用了较小的内存空间，那么哪怕是<strong>同步地</strong>删除这些键值对也不会消耗太多的时间。</p>
-<p>但是对于 Redis 中的一些超大键值对，几十 MB 或者几百 MB 的数据并不能在几毫秒的时间内处理完，Redis 可能会需要在释放内存空间上消耗较多的时间，这些操作就会阻塞待处理的任务，影响 Redis 服务处理请求的 PCT99 和可用性。</p>
-<p><img src="https://img.draveness.me/redis-unlink.png" alt="redis-unlink"></p>
-<p>然而释放内存空间的工作其实可以由后台线程异步进行处理，这也就是 <code>UNLINK</code> 命令的实现原理，它只会将键从元数据中删除，真正的删除操作会在后台异步执行。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Redis 选择使用单线程模型处理客户端的请求主要还是因为 CPU 不是 Redis 服务器的瓶颈，所以使用多线程模型带来的性能提升并不能抵消它带来的开发成本和维护成本，系统的性能瓶颈也主要在网络 I/O 操作上；而 Redis 引入多线程操作也是出于性能上的考虑，对于一些大键值对的删除操作，通过多线程非阻塞地释放内存空间也能减少对 Redis 主线程阻塞的时间，提高执行的效率。</p>
-<blockquote>
-<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
-</blockquote>
-<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
-<li><a href="https://redis.io/topics/faq#redis-is-single-threaded-how-can-i-exploit-multiple-cpu--cores" target="_blank" rel="noopener">Redis is single threaded. How can I exploit multiple CPU / cores?</a></li>
-<li><a href="https://stackoverflow.com/questions/10489298/redis-is-single-threaded-then-how-does-it-do-concurrent-i-o" target="_blank" rel="noopener">Redis is single-threaded, then how does it do concurrent I/O?</a></li>
-<li><a href="https://www.quora.com/Why-isnt-Redis-designed-to-benefit-from-multi-threading" target="_blank" rel="noopener">Why isn’t Redis designed to benefit from multi-threading?</a></li>
-<li><a href="https://blog.golang.org/concurrency-is-not-parallelism" target="_blank" rel="noopener">Concurrency is not parallelism</a></li>
-<li><a href="http://www.odbms.org/2018/03/the-little-known-feature-of-redis-4-0-that-will-speed-up-your-applications/" target="_blank" rel="noopener">The little-known feature of Redis 4.0 that will speed up your applications</a></li>
-<li><a href="https://draveness.me/redis-io-multiplexing" target="_blank" rel="noopener">Redis 和 I/O 多路复用</a></li>
-<li><a href="https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/6_CPU_Scheduling.html" target="_blank" rel="noopener">CPU Scheduling</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/17/LeetCode654/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/17/LeetCode654/" class="post-title-link" itemprop="url">LeetCode654</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-18 06:28:08 / 修改时间：14:31:38" itemprop="dateCreated datePublished" datetime="2020-05-18T06:28:08+08:00">2020-05-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>给定一个不含重复元素的整数数组。一个以此数组构建的最大二叉树定义如下：</p>
-<p>二叉树的根是数组中的最大元素。<br>左子树是通过数组中最大值左边部分构造出的最大二叉树。<br>右子树是通过数组中最大值右边部分构造出的最大二叉树。<br>通过给定的数组构建最大二叉树，并且输出这个树的根节点。</p>
-<p>示例 ：</p>
-<p>输入：[3,2,1,6,0,5]<br>输出：返回下面这棵树的根节点：</p>
-<pre><code>   6
- /   \   
-3     5
- \    / 
-  2  0   
-    \
-      1</code></pre><p>提示：</p>
-<p>给定的数组的大小在 [1, 1000] 之间。</p>
-<p>递归建树.</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    TreeNode left;</span><br><span class="line">    TreeNode right;</span><br><span class="line">    TreeNode(<span class="keyword">int</span> x) &#123;</span><br><span class="line">        val = x;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> TreeNode <span class="title">constructMaximumBinaryTree</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (nums == <span class="keyword">null</span> || nums.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> maxId = getMaxId(nums);</span><br><span class="line">        <span class="keyword">int</span> max = nums[maxId];</span><br><span class="line">        TreeNode node = <span class="keyword">new</span> TreeNode(max);</span><br><span class="line">        <span class="keyword">if</span> (maxId - <span class="number">1</span> &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">            node.left = constructMaximumBinaryTree(Arrays.copyOfRange(nums, <span class="number">0</span>, maxId));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            node.left = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (maxId + <span class="number">1</span> &lt; nums.length) &#123;</span><br><span class="line">            node.right = constructMaximumBinaryTree(Arrays.copyOfRange(nums, maxId + <span class="number">1</span>, nums.length));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            node.right = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> node;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">getMaxId</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> maxId = <span class="number">0</span>, max = nums[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i] &gt; max) &#123;</span><br><span class="line">                maxId = i;</span><br><span class="line">                max = nums[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> maxId;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/17/LeetCode617/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/17/LeetCode617/" class="post-title-link" itemprop="url">LeetCode617</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-18 05:53:43 / 修改时间：13:56:31" itemprop="dateCreated datePublished" datetime="2020-05-18T05:53:43+08:00">2020-05-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>947</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>给定两个二叉树，想象当你将它们中的一个覆盖到另一个上时，两个二叉树的一些节点便会重叠。</p>
-<p>你需要将他们合并为一个新的二叉树。合并的规则是如果两个节点重叠，那么将他们的值相加作为节点合并后的新值，否则不为 NULL 的节点将直接作为新二叉树的节点。</p>
-<p>示例 1:</p>
-<p>输入:<br>    Tree 1                  Tree 2<br>         1                         2<br>         / \                       / \<br>        3   2                  1   3<br>       /                           \   \<br>      5                             4   7<br>输出:<br>合并后的树:<br>        3<br>        / <br>      4   5<br>      / \     \<br>     5   4    7<br>注意: 合并必须从两个树的根节点开始。</p>
-<p>递归遍历:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> val;</span><br><span class="line">        TreeNode left;</span><br><span class="line">        TreeNode right;</span><br><span class="line"></span><br><span class="line">        TreeNode(<span class="keyword">int</span> x) &#123;</span><br><span class="line">            val = x;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> TreeNode <span class="title">mergeTrees</span><span class="params">(TreeNode t1, TreeNode t2)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (t1==<span class="keyword">null</span>&amp;&amp;t2==<span class="keyword">null</span>)&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (t1!=<span class="keyword">null</span>&amp;&amp;t2!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t1.val+t2.val);</span><br><span class="line">                node.left=mergeTrees(t1.left,t2.left);</span><br><span class="line">                node.right=mergeTrees(t1.right,t2.right);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (t1!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t1.val);</span><br><span class="line">                node.left=mergeTrees(t1.left,<span class="keyword">null</span>);</span><br><span class="line">                node.right=mergeTrees(t1.right,<span class="keyword">null</span>);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line"><span class="comment">//                if (t2!=null)</span></span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t2.val);</span><br><span class="line">                node.left=mergeTrees(<span class="keyword">null</span>,t2.left);</span><br><span class="line">                node.right=mergeTrees(<span class="keyword">null</span>,t2.right);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1565,20 +1378,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">129</span>
+          <span class="site-state-item-count">133</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1622,7 +1435,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">333k</span>
+    <span title="站点总字数">349k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="equals和hashCode都是Object对象中的非final方法，它们设计的目的就是被用来覆盖(override)的，所以在程序设计中还是经常需要处理这两个方法的。而掌握这两个方法的覆盖准则以及它们的区别还是很必要的，相关问题也不少。  下面我们继续以一次面试的问答，来考察对equals和hashCode的掌握情况。 Java里面有&#x3D;&#x3D;运算符了，为什么还需要equals equals()的作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="equals()与hashCode()">
+<meta property="og:url" content="http://yoursite.com/2020/06/11/equals()%E4%B8%8EhashCode()/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="equals和hashCode都是Object对象中的非final方法，它们设计的目的就是被用来覆盖(override)的，所以在程序设计中还是经常需要处理这两个方法的。而掌握这两个方法的覆盖准则以及它们的区别还是很必要的，相关问题也不少。  下面我们继续以一次面试的问答，来考察对equals和hashCode的掌握情况。 Java里面有&#x3D;&#x3D;运算符了，为什么还需要equals equals()的作">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2017/12/27/16098428b73f5bd0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="article:published_time" content="2020-06-11T18:56:30.000Z">
+<meta property="article:modified_time" content="2020-06-12T03:19:36.008Z">
+<meta property="article:author" content="EricMa">
+<meta property="article:tag" content="Java Object">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2017/12/27/16098428b73f5bd0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/11/equals()%E4%B8%8EhashCode()/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>equals()与hashCode() | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/equals()%E4%B8%8EhashCode()/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          equals()与hashCode()
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-12 02:56:30 / 修改时间：11:19:36" itemprop="dateCreated datePublished" datetime="2020-06-12T02:56:30+08:00">2020-06-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>equals和hashCode都是Object对象中的非final方法，它们设计的目的就是被用来覆盖(override)的，所以在程序设计中还是经常需要处理这两个方法的。而掌握这两个方法的覆盖准则以及它们的区别还是很必要的，相关问题也不少。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/12/27/16098428b73f5bd0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>下面我们继续以一次面试的问答，来考察对equals和hashCode的掌握情况。</p>
+<h2 id="Java里面有-运算符了，为什么还需要equals"><a href="#Java里面有-运算符了，为什么还需要equals" class="headerlink" title="Java里面有==运算符了，为什么还需要equals"></a>Java里面有<code>==</code>运算符了，为什么还需要equals</h2><hr>
+<p>equals()的作用是用来判断两个对象是否相等，在Object里面的定义是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这说明在我们实现自己的equals方法之前，equals等价于<code>==</code>,而<code>==</code>运算符是判断两个对象是不是同一个对象，即他们的<strong>地址是否相等</strong>。而覆写equals更多的是追求两个对象在<strong>逻辑上的相等</strong>，你可以说是<strong>值相等</strong>，也可说是<strong>内容相等</strong>。</p>
+<p>在以下几种条件中，不覆写equals就能达到目的：</p>
+<ul>
+<li><strong>类的每个实例本质上是唯一的</strong>：强调活动实体的而不关心值得，比如Thread，我们在乎的是哪一个线程，这时候用equals就可以比较了。</li>
+<li><strong>不关心类是否提供了逻辑相等的测试功能</strong>：有的类的使用者不会用到它的比较值得功能，比如Random类，基本没人会去比较两个随机值吧</li>
+<li><strong>超类已经覆盖了equals，子类也只需要用到超类的行为</strong>：比如AbstractMap里已经覆写了equals，那么继承的子类行为上也就需要这个功能，那也不需要再实现了。</li>
+<li><strong>类是私有的或者包级私有的，那也用不到equals方法</strong>：这时候需要覆写equals方法来禁用它：<code>@Override public boolean equals(Object obj) { throw new AssertionError();}</code></li>
+</ul>
+<h2 id="覆写equals时有哪些准则？"><a href="#覆写equals时有哪些准则？" class="headerlink" title="覆写equals时有哪些准则？"></a>覆写equals时有哪些准则？</h2><hr>
+<p>这个我在Effective Java上看过，没记错的话应该是：</p>
+<blockquote>
+<p><strong>自反性</strong>：对于任何非空引用值 x，x.equals(x) 都应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>对称性</strong>：对于任何非空引用值 x 和 y，当且仅当 y.equals(x) 返回 true 时，x.equals(y) 才应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>传递性</strong>：对于任何非空引用值 x、y 和 z，如果 x.equals(y) 返回 true， 并且 y.equals(z) 返回 true，那么 x.equals(z) 应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>一致性</strong>：对于任何非空引用值 x 和 y，多次调用 x.equals(y) 始终返回 true 或始终返回 false， 前提是对象上 equals 比较中所用的信息没有被修改。</p>
+</blockquote>
+<blockquote>
+<p><strong>非空性</strong>：对于任何非空引用值 x，x.equals(null) 都应返回 false。</p>
+</blockquote>
+<h2 id="哪些情况下会违反对称性和传递性"><a href="#哪些情况下会违反对称性和传递性" class="headerlink" title="哪些情况下会违反对称性和传递性"></a>哪些情况下会违反对称性和传递性</h2><hr>
+<h4 id="违反对称性"><a href="#违反对称性" class="headerlink" title="违反对称性"></a>违反对称性</h4><p>对称性就是x.equals(y)时，y也得equals x，很多时候，我们自己覆写equals时，让自己的类可以兼容等于一个已知类，比如下面的例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">CaseInsensitiveString</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String s;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CaseInsensitiveString</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">        <span class="keyword">this</span>.s = s;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> CaseInsensiticeString)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase(((CaseInsensitiveString)o).s);</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> String)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase((String) o);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个想法很好，想创建一个无视大小写的String，并且还能够兼容String作为参数，假设我们创建一个CaseInsensitiveString:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CaseInsensitiveString cis = <span class="keyword">new</span> CaseInsensitiveString(<span class="string">"Case"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>那么肯定有<code>cis.equals(&quot;case&quot;)</code>,问题来了，<code>&quot;case&quot;.equals(cis)</code>吗？String并没有兼容CaseInsensiticeString，所以String的equals也不接受CaseInsensiticeString作为参数。</p>
+<p>所以有个准则，一般在覆写equals<strong>只兼容同类型的变量</strong>。</p>
+<h4 id="违反传递性"><a href="#违反传递性" class="headerlink" title="违反传递性"></a>违反传递性</h4><p>传递性就是A等于B，B等于C，那么A也应该等于C。</p>
+<p>假设我们定义一个类Cat。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class <span class="title">Cat</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> height;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> weight;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Cat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.height = h;</span><br><span class="line">        <span class="keyword">this</span>.weight = w;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!(o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        Cat c = (Cat) o;</span><br><span class="line">        <span class="keyword">return</span> c.height == height &amp;&amp; c.weight == weight; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>名人有言，不管黑猫白猫抓住老鼠就是好猫，我们又定义一个类ColorCat:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class ColorCat <span class="title">extends</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String color;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ColorCat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w, String color)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(h, w);</span><br><span class="line">        <span class="keyword">this</span>.color = color;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们在实现equals方法时，可以加上颜色比较，但是加上颜色就不兼容和普通猫作对比了，这里我们忘记上面要求只兼容同类型变量的建议，定义一个兼容普通猫的equals方法，在“混合比较”时忽略颜色。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>; <span class="comment">//不是Cat或者ColorCat，直接false</span></span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> ColorCat))</span><br><span class="line">        <span class="keyword">return</span> o.equals(<span class="keyword">this</span>);<span class="comment">//不是彩猫，那一定是普通猫，忽略颜色对比</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.equals(o)&amp;&amp;((ColorCat)o).color.equals(color); <span class="comment">//这时候才比较颜色</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设我们定义了猫：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ColorCat whiteCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"white"</span>);</span><br><span class="line">Cat cat = <span class="keyword">new</span> Cat(<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">ColorCat blackCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"black"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>此时有whiteCat等于cat，cat等于blackCat，但是whiteCat不等于blackCat，所以不满足传递性要求。</p>
+<p>所以在覆写equals时，一定要遵守上述的5大军规，不然总是有麻烦事找上门来。</p>
+<h2 id="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"><a href="#有覆写equals方法的诀窍吗，比如写一下String里面的equals？" class="headerlink" title="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"></a>有覆写equals方法的诀窍吗，比如写一下String里面的equals？</h2><hr>
+<p>手写：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">           String anotherString = (String)anObject;</span><br><span class="line">           <span class="keyword">int</span> n = value.length;</span><br><span class="line">           <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">               <span class="keyword">char</span> v1[] = value;</span><br><span class="line">               <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">               <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">               <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                   <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                   i++;</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的equals有以下几点诀窍：</p>
+<ul>
+<li><strong>使用==操作符检查“参数是否为这个对象的引用”</strong>：如果是对象本身，则直接返回，拦截了对本身调用的情况，算是一种性能优化。</li>
+<li><strong>使用instanceof操作符检查“参数是否是正确的类型”</strong>：如果不是，就返回false，正如对称性和传递性举例子中说得，不要想着兼容别的类型，很容易出错。在实践中检查的类型多半是equals所在类的类型，或者是该类实现的接口的类型，比如Set、List、Map这些集合接口。</li>
+<li><strong>把参数转化为正确的类型</strong>： 经历了上一步的检测，基本会成功。</li>
+<li><strong>对于该类中的“关键域”，检查参数中的域是否与对象中的对应域相等</strong>：基本类型的域就用<code>==</code>比较，float域用Float.compare方法，double域用Double.compare方法，至于别的引用域，我们一般递归调用它们的equals方法比较，加上判空检查和对自身引用的检查，一般会写成这样：<code>(field == o.field || (field != null &amp;&amp; field.equals(o.field)))</code>,而上面的String里使用的是数组，所以只要把数组中的每一位拿出来比较就可以了。</li>
+<li><strong>编写完成后思考是否满足上面提到的对称性，传递性，一致性等等</strong>。</li>
+</ul>
+<p>还有一些注意点。</p>
+<p><strong>覆盖equals时一定要覆盖hashCode</strong></p>
+<p><strong>equals函数里面一定要是Object类型作为参数</strong></p>
+<p><strong>equals方法本身不要过于智能，只要判断一些值相等即可。</strong></p>
+<h2 id="hashCode什么用"><a href="#hashCode什么用" class="headerlink" title="hashCode什么用"></a>hashCode什么用</h2><hr>
+<p>hashCode用于返回对象的hash值，主要用于查找的快捷性，因为hashCode也是在Object对象中就有的，所以所有Java对象都有hashCode，在HashTable和HashMap这一类的散列结构中，都是通过hashCode来查找在散列表中的位置的。</p>
+<p><strong>如果两个对象equals，那么它们的hashCode必然相等，</strong></p>
+<p><strong>但是hashCode相等，equals不一定相等。(有哈希碰撞)</strong></p>
+<p>以HashMap为例，使用的是链地址法来处理散列，假设有一个长度为8的散列表</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span></span><br></pre></td></tr></table></figure>
+
+<p>那么，当往里面插数据时，是以hashCode作为key插入的，一般hashCode%8得到所在的索引，如果所在索引处有元素了，则使用一个链表，把多的元素不断链接到该位置，这边也就是大概提一下HashMap原理。所以hashCode的作用就是找到索引的位置，然后再用equals去比较元素是不是相等，形象一点就是先找到桶（bucket），然后再在里面找东西。</p>
+<blockquote>
+<p>hashCode 的常规协定是：<br> 在 Java 应用程序执行期间，在同一对象上多次调用 hashCode 方法时，必须一致地返回相同的整数，前提是对象上 equals 比较中所用的信息没有被修改。从某一应用程序的一次执行到同一应用程序的另一次执行，该整数无需保持一致。</p>
+<p>以下情况不 是必需的：如果根据 equals(java.lang.Object) 方法，两个对象不相等，那么在两个对象中的任一对象上调用 hashCode 方法必定会生成不同的整数结果。但是，程序员应该知道，为不相等的对象生成不同整数结果可以提高哈希表的性能。</p>
+<p>实际上，由 Object 类定义的 hashCode 方法确实会针对不同的对象返回不同的整数。（这一般是通过将该对象的内部地址转换成一个整数来实现的，但是 JavaTM 编程语言不需要这种实现技巧。）</p>
+<p>当equals方法被重写时，通常有必要重写 hashCode 方法，以维护 hashCode 方法的常规协定，该协定声明相等对象必须具有相等的哈希码。</p>
+</blockquote>
+<p>具体的例子:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">  Stu s1 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  Stu s2 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  System.out.println(<span class="string">"stu:"</span> + s1.equals(s2));</span><br><span class="line"></span><br><span class="line">  Set&lt;Stu&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">  set.add(s1);</span><br><span class="line">  System.out.println(<span class="string">"s1 hashCode:"</span> + s1.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s1 size:"</span> + set.size());</span><br><span class="line">  set.add(s2);</span><br><span class="line">  System.out.println(<span class="string">"s2 hashCode:"</span> + s2.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s2 size::"</span> + set.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1317241155</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:463175162</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>Java中的Set是不允许有重复元素的，所以这里set的size由1变成了2，因为两个Stu都是new出来的，分配的地址不一样，那么Set是通过equals来定义重复的吗？</p>
+<p>首先重写Stu的equals方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (obj == <span class="keyword">null</span>)&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (obj.getClass() != getClass())&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> ((Stu)obj).getName().equals(getName());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:713679046</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1107557627</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>重写equals方法，name相同就让equals返回true了，但是Set的size还是发生了改变，就说明不是有equals方法来定义重复的，现在仅仅重写hashCode方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getName().hashCode();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>仅重写了hashCode方法，所以equals返回false，然后hashCode由name属性的hashCode方法得到，所以hashCode相等，但是Set的size还是改变了，这说明Set也不是仅仅依据hashCode来定义重复。</p>
+<p>那么现在将上述equals和hashCode两者同时重写，输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::1</span></span><br></pre></td></tr></table></figure>
+
+<p>结合上面引用的案例，可以类推，hash类存储结构（HashSet、HashMap等等）添加元素会有重复性校验，校验的方式就是<strong>先取hashCode判断是否相等</strong>（找到对应的位置，该位置可能存在多个元素），然后<strong>再取equals方法比较</strong>（极大缩小比较范围，高效判断），最终判定该存储结构中是否有重复元素。</p>
+<h2 id="有哪些覆写hashCode的诀窍？"><a href="#有哪些覆写hashCode的诀窍？" class="headerlink" title="有哪些覆写hashCode的诀窍？"></a>有哪些覆写hashCode的诀窍？</h2><hr>
+<p>一个好的hashCode的方法的目标：<strong>为不相等的对象产生不相等的散列码</strong>，同样的，相等的对象必须拥有相等的散列码。</p>
+<p>好的散列函数要把实例均匀的分布到所有散列值上，结合前人的经验可以采取以下方法：</p>
+<blockquote>
+<p>引自Effective Java</p>
+<ol>
+<li><p>把某个非零的常数值，比如17，保存在一个int型的result中；</p>
+</li>
+<li><p>对于每个关键域f（equals方法中设计到的每个域），作以下操作：</p>
+<p><strong>a</strong>. 为该域计算int类型的散列码；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">i.如果该域是boolean类型，则计算(f?1:0),</span><br><span class="line">ii.如果该域是byte,char,short或者int类型,计算(int)f,</span><br><span class="line">iii.如果是long类型，计算(int)(f^(f&gt;&gt;&gt;32)).</span><br><span class="line">iv.如果是float类型，计算Float.floatToIntBits(f).</span><br><span class="line">v.如果是double类型，计算Double.doubleToLongBits(f),然后再计算long型的hash值</span><br><span class="line">vi.如果是对象引用，则递归的调用域的hashCode，如果是更复杂的比较，则需要为这个域计算一个范式，然后针对范式调用hashCode，如果为null，返回0</span><br><span class="line">vii. 如果是一个数组，则把每一个元素当成一个单独的域来处理。</span><br></pre></td></tr></table></figure>
+
+<p><strong>b</strong>.result = 31 * result + c;</p>
+</li>
+<li><p>返回result</p>
+</li>
+<li><p>编写单元测试验证有没有实现所有相等的实例都有相等的散列码。</p>
+</li>
+</ol>
+</blockquote>
+<p>这里再说下2.b中为什么采用<code>31*result + c</code>,乘法使hash值依赖于域的顺序，如果没有乘法那么所有顺序不同的字符串String对象都会有一样的hash值，而31是一个奇素数，如果是偶数，并且乘法溢出的话，信息会丢失，31有个很好的特性是<code>31*i ==(i&lt;&lt;5)-i</code>,即2的5次方减1，虚拟机会优化乘法操作为移位操作的。</p>
+<p>给个简单的例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result = <span class="number">17</span>;</span><br><span class="line">  result = <span class="number">31</span> * result + getName().hashCode();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5a4379d4f265da432003874c" target="_blank" rel="noopener">面试官爱问的equals与hashCode</a></p>
+<p><a href="https://www.jianshu.com/p/5b7fe120bf94" target="_blank" rel="noopener">equals和hashCode的区别和联系</a></p>
+<p>遵循CC 4.0 BY-SA版权协议</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java-Object/" rel="tag"># Java Object</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/11/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BARPC%E5%8E%9F%E7%90%86/" rel="prev" title="深入浅出RPC原理">
+      <i class="fa fa-chevron-left"></i> 深入浅出RPC原理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/11/UML%E7%B1%BB%E5%9B%BE%E7%AE%80%E4%BB%8B/" rel="next" title="UML类图简介">
+      UML类图简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Java里面有-运算符了，为什么还需要equals"><span class="nav-number">1.</span> <span class="nav-text">Java里面有&#x3D;&#x3D;运算符了，为什么还需要equals</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#覆写equals时有哪些准则？"><span class="nav-number">2.</span> <span class="nav-text">覆写equals时有哪些准则？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#哪些情况下会违反对称性和传递性"><span class="nav-number">3.</span> <span class="nav-text">哪些情况下会违反对称性和传递性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#违反对称性"><span class="nav-number">3.0.1.</span> <span class="nav-text">违反对称性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#违反传递性"><span class="nav-number">3.0.2.</span> <span class="nav-text">违反传递性</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#有覆写equals方法的诀窍吗，比如写一下String里面的equals？"><span class="nav-number">4.</span> <span class="nav-text">有覆写equals方法的诀窍吗，比如写一下String里面的equals？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hashCode什么用"><span class="nav-number">5.</span> <span class="nav-text">hashCode什么用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#有哪些覆写hashCode的诀窍？"><span class="nav-number">6.</span> <span class="nav-text">有哪些覆写hashCode的诀窍？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">133</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">349k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
