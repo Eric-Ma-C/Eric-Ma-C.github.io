@@ -186,6 +186,128 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/02/WebSocket%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/02/WebSocket%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">WebSocket简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-03 06:31:24" itemprop="dateCreated datePublished" datetime="2020-05-03T06:31:24+08:00">2020-05-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-11 16:43:08" itemprop="dateModified" datetime="2020-05-11T16:43:08+08:00">2020-05-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="为什么需要-WebSocket？"><a href="#为什么需要-WebSocket？" class="headerlink" title="为什么需要 WebSocket？"></a>为什么需要 WebSocket？</h2><p>答案很简单，因为 HTTP 协议有一个缺陷：通信只能由客户端发起。举例来说，我们想了解今天的天气，只能是客户端向服务器发出请求，服务器返回查询结果。HTTP协议做不到服务器主动向客户端推送信息。<br>这种单向请求的特点，注定了如果服务器有连续的状态变化，客户端要获知就非常麻烦。我们只能使用<strong>轮询</strong>：每隔一段时候，就发出一个询问，了解服务器有没有新的信息。最典型的场景就是聊天室。<br>轮询的效率低，非常浪费资源（因为必须不停连接，或者HTTP连接始终打开）。因此，工程师们一直在思考，有没有更好的方法。<br><img src="http://www.ruanyifeng.com/blogimg/asset/2017/bg2017051502.png" alt=""><br>websocket是HTML5的一个新协议，它允许服务端向客户端传递信息，实现浏览器和客户端双工通信。WebSocket协议在2008年诞生，2011年成为国际标准，所有浏览器都已经支持了。它的最大特点就是，服务器可以主动向客户端推送信息，客户端也可以主动向服务器发送信息，是真正的双向平等对话，属于服务器推送技术的一种。</p>
+<p>##WebSocket特点</p>
+<p>（1）建立在 TCP 协议之上，服务器端的实现比较容易。</p>
+<p>（2）与 HTTP 协议有着良好的兼容性。默认端口也是80和443，并且握手阶段采用 HTTP 协议，因此握手时不容易屏蔽，能通过各种 HTTP 代理服务器。</p>
+<p>（3）数据格式比较轻量，性能开销小，通信高效。</p>
+<p>（4）可以发送文本，也可以发送二进制数据。</p>
+<p>（5）没有同源限制，客户端可以与任意服务器通信。</p>
+<p>（6）协议标识符是ws（如果加密，则为wss），服务器网址就是 URL。</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/2017/bg2017051503.jpg" alt=""></p>
+<h2 id="WebSocket生命周期"><a href="#WebSocket生命周期" class="headerlink" title="WebSocket生命周期"></a>WebSocket生命周期</h2><h3 id="打开事件"><a href="#打开事件" class="headerlink" title="打开事件"></a>打开事件</h3><p>端点上建立新链接时，该事件是先于其他任何事件发生之前。该事件发生会产生三部分信息。</p>
+<ul>
+<li>创建WebSocket Session对象: 用于表示已经建立好的链接</li>
+<li>配置对象: 包含配置端点的信息。</li>
+<li>一组路径参数: 用于打开节点握手时，WebSocket端入栈匹配的URI</li>
+</ul>
+<h3 id="消息事件"><a href="#消息事件" class="headerlink" title="消息事件"></a>消息事件</h3><p>主要是接收WebSocket对话中，另一端发送的消息。链接上的消息将会有三种形式抵达客户端。</p>
+<ul>
+<li><p>文本消息 用String处理</p>
+</li>
+<li><p>二进制消息 用byteBuffer或者byte[]处理</p>
+</li>
+<li><p>pong消息 用Java WebSocket API中的pong.message接口的实例来处理</p>
+</li>
+</ul>
+<h3 id="错误事件"><a href="#错误事件" class="headerlink" title="错误事件"></a>错误事件</h3><p>WebSocket链接或者端点发生错误时产生。可以处理入栈消息时发生的各种异常。入栈消息可能产生的三种异常。</p>
+<ul>
+<li>WebSocket建立链接时发生错误 SessionException类型</li>
+<li>WebSocket试图将入栈消息解码成开发人员使用的对象时 EncodeException类型</li>
+<li>WebSocket端点的其他方法运行时产生的错误，WebSocket实现将记录端点操作过程中产生的任何运行时异常</li>
+</ul>
+<h3 id="关闭事件"><a href="#关闭事件" class="headerlink" title="关闭事件"></a>关闭事件</h3><p>WebSocket链接端点关闭，做一些清理工作，可以由参与连接的任意一个端点发出。</p>
+<ul>
+<li>服务器关闭底层TCP连接</li>
+<li>客户端发起TCP Close</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/03/JavaIO%E5%88%86%E7%B1%BB/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1227,113 +1349,6 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/15/java%E5%85%B3%E4%BA%8E%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/15/java%E5%85%B3%E4%BA%8E%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于多线程的总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-15 14:42:38" itemprop="dateCreated datePublished" datetime="2019-10-15T14:42:38+08:00">2019-10-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-16 13:42:41" itemprop="dateModified" datetime="2020-05-16T13:42:41+08:00">2020-05-16</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="进程与线程"><a href="#进程与线程" class="headerlink" title="进程与线程"></a>进程与线程</h2><h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><ul>
-<li><p>进程是==程序的执行过程==（动态性），持有<strong>资源</strong>（共享内存、共享文件）和<strong>线程</strong>（是资源和线程的载体）</p>
-</li>
-<li><p><strong>线程</strong>是系统中==最小的执行单元==</p>
-<h2 id="线程间交互"><a href="#线程间交互" class="headerlink" title="线程间交互"></a>线程间交互</h2></li>
-</ul>
-<ol>
-<li><p><strong>互斥</strong> 资源有限，需抢占</p>
-</li>
-<li><p><strong>同步</strong> 协作完成一项任务，有先后顺序</p>
-<h1 id="java线程初探"><a href="#java线程初探" class="headerlink" title="java线程初探"></a>java线程初探</h1><h2 id="java对线程的支持"><a href="#java对线程的支持" class="headerlink" title="java对线程的支持"></a>java对线程的支持</h2><p><code>Thread</code>类和<code>Runnable</code>接口，以及共同的<code>run()</code>方法。<br><img src="https://img-blog.csdnimg.cn/20191203220122134.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="java对线程的支持"></p>
-<h2 id="Thread类"><a href="#Thread类" class="headerlink" title="Thread类"></a>Thread类</h2><p><code>join()</code>使当前运行线程<strong>等待调用线程的终止</strong>，再继续运行<br><code>yield()</code>使当前运行线程<strong>释放处理器资源</strong><br>停止线程的错误方法 1.<del>stop()</del>         2.<del>interrupt()</del><br>使用退出标志（<code>volatile bool keepRunning</code>）停止线程循环<br><img src="https://img-blog.csdnimg.cn/20191203221138225.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h2 id="Thread和Runnable示例"><a href="#Thread和Runnable示例" class="headerlink" title="Thread和Runnable示例"></a>Thread和Runnable示例</h2><p>Thread和Runnable各自每运行10次暂停1s，交替运行。一个.java文件可有多个类（不包括内部类），但只能有一个public类。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Actor</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(getName()+<span class="string">"是一个演员！"</span>);</span><br><span class="line">		<span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">boolean</span> keepRunning = <span class="keyword">true</span>;</span><br><span class="line">	</span><br><span class="line">		<span class="keyword">while</span>(keepRunning)&#123;</span><br><span class="line">			System.out.println(getName()+<span class="string">"登台演出："</span>+ (++count));</span><br><span class="line">			<span class="keyword">if</span>(count == <span class="number">100</span>)&#123;</span><br><span class="line">				keepRunning = <span class="keyword">false</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">			<span class="keyword">if</span>(count%<span class="number">10</span>== <span class="number">0</span>)&#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">				&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">					e.printStackTrace();</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		System.out.println(getName()+<span class="string">"的演出结束了！"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">		Thread actor = <span class="keyword">new</span> Actor();</span><br><span class="line">		actor.setName(<span class="string">"Mr. Thread"</span>);</span><br><span class="line">		actor.start();</span><br><span class="line">		Thread actressThread = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Actress(),<span class="string">"Ms. Runnable"</span>);</span><br><span class="line">		actressThread.start();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Actress</span> <span class="keyword">implements</span> <span class="title">Runnable</span></span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(Thread.currentThread().getName()+<span class="string">"是一个演员！"</span>);</span><br><span class="line">		<span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">boolean</span> keepRunning = <span class="keyword">true</span>;</span><br><span class="line">		<span class="keyword">while</span>(keepRunning)&#123;</span><br><span class="line">System.out.println(Thread.currentThread().getName()+<span class="string">"登台演出："</span>+ (++count));	</span><br><span class="line">			<span class="keyword">if</span>(count == <span class="number">100</span>)&#123;</span><br><span class="line">				keepRunning = <span class="keyword">false</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span>(count%<span class="number">10</span>== <span class="number">0</span>)&#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">				&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">					e.printStackTrace();</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">System.out.println(Thread.currentThread().getName()+<span class="string">"的演出结束了！"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>总结一下:<br><img src="https://img-blog.csdnimg.cn/2019120513395094.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205134111771.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h1 id="线程的生命周期"><a href="#线程的生命周期" class="headerlink" title="线程的生命周期"></a>线程的生命周期</h1><p><img src="https://img-blog.csdnimg.cn/20191205140153638.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>阻塞事件:如<code>sleep(),wait(),join()</code>方法被调用</p>
-<h1 id="java守护线程"><a href="#java守护线程" class="headerlink" title="java守护线程"></a>java守护线程</h1><p>java线程分两类:<br>1.用户线程<br>2.守护线程   一旦所有用户线程都结束了,守护线程也就结束了<br><img src="https://img-blog.csdnimg.cn/20191205140656498.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140834109.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140852906.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140938132.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h1 id="jstack生成线程快照"><a href="#jstack生成线程快照" class="headerlink" title="jstack生成线程快照"></a>jstack生成线程快照</h1><p><img src="https://img-blog.csdnimg.cn/20191205142146779.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205142411386.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1405,7 +1420,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">133</span>
+          <span class="site-state-item-count">134</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1417,7 +1432,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-count">11</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1461,7 +1476,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">349k</span>
+    <span title="站点总字数">351k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
