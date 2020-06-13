@@ -186,6 +186,116 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/" class="post-title-link" itemprop="url">Object类的方法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 11:26:02 / 修改时间：20:28:33" itemprop="dateCreated datePublished" datetime="2020-06-05T11:26:02+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Object有几种方法呢？</p>
+<blockquote>
+<p>Java语言是一种单继承结构语言，Java中所有的类都有一个共同的祖先。这个祖先就是Object类。</p>
+<p>如果一个类没有用extends明确指出继承于某个类，那么它默认继承Object类。</p>
+</blockquote>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>Object类是Java中所有类的基类。位于java.lang包中，一共有13个方法。如下图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XC97BDOiblPU3PjicVfd5IIXibJr1EPadLZ2U28FVeSfBEpDhmYwHHiceviaxzZvOZX99Z8BZWehcSiaupA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="具体解答"><a href="#具体解答" class="headerlink" title="具体解答"></a>具体解答</h2><h3 id="1-Object"><a href="#1-Object" class="headerlink" title="1.Object()"></a>1.Object()</h3><p>这个没什么可说的，Object类的构造方法。(非重点)</p>
+<h3 id="2-registerNatives"><a href="#2-registerNatives" class="headerlink" title="2.registerNatives()"></a>2.registerNatives()</h3><p>为了使JVM发现本机功能，他们被一定的方式命名。例如，对于java.lang.Object.registerNatives，对应的C函数命名为Java_java_lang_Object_registerNatives。</p>
+<p>通过使用registerNatives（或者更确切地说，JNI函数RegisterNatives），可以命名任何你想要你的C函数。(非重点)</p>
+<h3 id="3-clone"><a href="#3-clone" class="headerlink" title="3.clone()"></a>3.clone()</h3><p>clone()函数的用途是用来另存一个当前存在的对象。只有实现了Cloneable接口才可以调用该方法，否则抛出CloneNotSupportedException异常。（注意：回答这里时可能会引出设计模式的提问）</p>
+<h3 id="4-getClass"><a href="#4-getClass" class="headerlink" title="4.getClass()"></a>4.getClass()</h3><p>final方法，用于获得运行时的类型。该方法返回的是此Object对象的类对象/运行时类对象Class。效果与Object.class相同。（注意：回答这里时可能会引出类加载，反射等知识点的提问）</p>
+<h3 id="5-equals"><a href="#5-equals" class="headerlink" title="5.equals()"></a>5.equals()</h3><p>equals用来比较两个对象的内容是否相等。默认情况下(继承自Object类)，equals和==是一样的，除非被覆写(override)了。（注意：这里可能引出更常问的“equals与==的区别”及hashmap实现原理的提问）</p>
+<h3 id="6-hashCode"><a href="#6-hashCode" class="headerlink" title="6.hashCode()"></a>6.hashCode()</h3><p>该方法用来返回其所在对象的物理地址（哈希码值），常会和equals方法同时重写，确保相等的两个对象拥有相等的hashCode。（同样，可能引出hashmap实现原理的提问）</p>
+<h3 id="7-toString"><a href="#7-toString" class="headerlink" title="7.toString()"></a>7.toString()</h3><p>toString()方法返回该对象的字符串表示，这个方法没什么可说的。</p>
+<h3 id="8-wait"><a href="#8-wait" class="headerlink" title="8.wait()"></a>8.wait()</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="9-wait-long-timeout"><a href="#9-wait-long-timeout" class="headerlink" title="9.wait(long timeout)"></a>9.wait(long timeout)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者超过指定的时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="10-wait-long-timeout-int-nanos"><a href="#10-wait-long-timeout-int-nanos" class="headerlink" title="10.wait(long timeout, int nanos)"></a>10.wait(long timeout, int nanos)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者其他某个线程中断当前线程，或者已超过某个实际时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="11-notify"><a href="#11-notify" class="headerlink" title="11.notify()"></a>11.notify()</h3><p>唤醒在此对象监视器上等待的单个线程。（引出线程通信的提问）</p>
+<h3 id="12-notifyAll"><a href="#12-notifyAll" class="headerlink" title="12. notifyAll()"></a>12. notifyAll()</h3><p>唤醒在此对象监视器上等待的所有线程。（引出线程通信的提问）</p>
+<h3 id="13-finalize"><a href="#13-finalize" class="headerlink" title="13.finalize()"></a>13.finalize()</h3><p>当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法。（非重点，但小心引出垃圾回收的提问）</p>
+<h2 id="引申常见问题"><a href="#引申常见问题" class="headerlink" title="引申常见问题"></a>引申常见问题</h2><ul>
+<li>equals() 与 == 的区别是什么？</li>
+<li>hashCode() 和 equals() 之间有什么联系？</li>
+<li>wait()方法与sleep()方法的区别</li>
+<li>为什么重写了equals就必须重写hashCode</li>
+<li>HashMap的实现原理</li>
+<li>谈谈类加载机制</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1543,111 +1653,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/03/%E8%A1%A8%E7%A4%BA%E6%95%B0%E5%80%BC%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/03/%E8%A1%A8%E7%A4%BA%E6%95%B0%E5%80%BC%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2/" class="post-title-link" itemprop="url">表示数值的字符串</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-04 03:38:19 / 修改时间：15:00:44" itemprop="dateCreated datePublished" datetime="2020-06-04T03:38:19+08:00">2020-06-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>请实现一个函数用来判断字符串是否表示数值（包括整数和小数）。例如，字符串”+100”,”5e2”,”-123”,”3.1416”和”-1E-16”都表示数值。 但是”12e”,”1a3.14”,”1.2.3”,”+-5”和”12e+4.3”都不是。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>结合正则表达式</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">    String s = <span class="keyword">new</span> String(str);</span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"+"</span>) || s.startsWith(<span class="string">"-"</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (s.matches(<span class="string">"[0-9]+.*"</span>)) &#123;</span><br><span class="line">        s = s.replaceFirst(<span class="string">"[0-9]+"</span>, <span class="string">""</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="string">""</span>.equals(s)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"."</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (!s.matches(<span class="string">"[0-9]+.*"</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        s = s.replaceFirst(<span class="string">"[0-9]+"</span>, <span class="string">""</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (<span class="string">""</span>.equals(s)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"e"</span>) || s.startsWith(<span class="string">"E"</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (s.startsWith(<span class="string">"+"</span>) || s.startsWith(<span class="string">"-"</span>)) &#123;</span><br><span class="line">            s = s.substring(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!s.matches(<span class="string">"[0-9]+"</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我不服,也写了个正则表达式,好像也能通过</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">    String pattern = <span class="string">"[+-]?\\d*(\\.\\d+)?([eE][+-]?\\d+)?"</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> String(str).matches(pattern);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/6f8c901d091949a5837e24bb82a731f2?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/6f8c901d091949a5837e24bb82a731f2?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>来玩正则表达式吧！~</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">        String pattern = <span class="string">"^[-+]?\\d*(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?$"</span>;</span><br><span class="line">        String s = <span class="keyword">new</span> String(str);</span><br><span class="line">        <span class="keyword">return</span> Pattern.matches(pattern,s);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p> ^ 和 美元符号框定正则表达式，它指引这个正则表达式对文本中的所有字符都进行匹配。如果省略这些标识，那么只要一个字符串中包含一个数字这个正则表达式就会进行匹配。如果仅包含 ^ ，它将匹配以一个数字开头的字符串。如果仅包含$ ，则匹配以一个数字结尾的字符串。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[-+]?</span><br></pre></td></tr></table></figure>
-
-<p>正负号后面的 ? 后缀表示这个负号是可选的,表示有0到1个负号或者正号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\\d*</span><br></pre></td></tr></table></figure>
-
-<p>\d的含义和[0-9]一样。它匹配一个数字。后缀 * 指引它可匹配零个或者多个数字。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(?:\\.\\d*)?</span><br></pre></td></tr></table></figure>
-
-<p>(?: …)?表示一个可选的非捕获型分组。* 指引这个分组会匹配后面跟随的0个或者多个数字的小数点。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(?:[eE][+\\-]?\d+)?</span><br></pre></td></tr></table></figure>
-
-<p>这是另外一个可选的非捕获型分组。它会匹配一个e(或E)、一个可选的正负号以及一个或多个数字。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1719,7 +1724,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-count">135</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1731,7 +1736,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-count">12</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1775,7 +1780,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">351k</span>
+    <span title="站点总字数">362k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
