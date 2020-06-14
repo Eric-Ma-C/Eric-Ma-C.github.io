@@ -186,6 +186,1304 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">Copy On Write机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-19 06:35:22" itemprop="dateCreated datePublished" datetime="2020-05-19T06:35:22+08:00">2020-05-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-24 17:20:34" itemprop="dateModified" datetime="2020-05-24T17:20:34+08:00">2020-05-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="https://juejin.im/post/5bd96bcaf265da396b72f855" target="_blank" rel="noopener">原文链接</a> 作者:Java3y</p>
+<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在读《Redis设计与实现》关于哈希表扩容的时候，发现这么一段话：</p>
+<blockquote>
+<p>执行BGSAVE命令或者BGREWRITEAOF命令的过程中，Redis需要创建当前服务器进程的子进程，而大多数操作系统都采用<strong>写时复制（copy-on-write）来优化子进程的使用效率</strong>，所以在子进程存在期间，服务器会提高负载因子的阈值，从而避免在子进程存在期间进行哈希表扩展操作，避免不必要的内存写入操作，最大限度地节约内存。</p>
+</blockquote>
+<p>触及到知识的盲区了，于是就去搜了一下copy-on-write写时复制这个技术究竟是怎么样的。发现涉及的东西蛮多的，也挺难读懂的。于是就写下这篇笔记来记录一下我学习copy-on-write的过程。</p>
+<p>本文<strong>力求简单讲清copy-on-write这个知识点</strong>，希望大家看完能有所收获。</p>
+<h1 id="一、Linux下的copy-on-write"><a href="#一、Linux下的copy-on-write" class="headerlink" title="一、Linux下的copy-on-write"></a>一、Linux下的copy-on-write</h1><p>在说明Linux下的copy-on-write机制前，我们首先要知道两个函数：<code>fork()</code>和<code>exec()</code>。需要注意的是<code>exec()</code>并不是一个特定的函数, 它是<strong>一组函数的统称</strong>, 它包括了<code>execl()</code>、<code>execlp()</code>、<code>execv()</code>、<code>execle()</code>、<code>execve()</code>、<code>execvp()</code>。</p>
+<h2 id="1-1简单来用用fork"><a href="#1-1简单来用用fork" class="headerlink" title="1.1简单来用用fork"></a>1.1简单来用用fork</h2><p>首先我们来看一下<code>fork()</code>函数是什么鬼：</p>
+<blockquote>
+<p>fork is an operation whereby a process creates a copy of itself.</p>
+</blockquote>
+<p>fork是类Unix操作系统上<strong>创建进程</strong>的主要方法。fork用于<strong>创建子进程</strong>(等同于当前进程的副本)。</p>
+<ul>
+<li>新的进程要通过老的进程复制自身得到，这就是fork！</li>
+</ul>
+<p>如果接触过Linux，我们会知道Linux下<strong>init进程是所有进程的爹</strong>(相当于Java中的Object对象)</p>
+<ul>
+<li>Linux的进程都通过init进程或init的子进程fork(vfork)出来的。</li>
+</ul>
+<p>下面以例子说明一下fork吧：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;  </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;  </span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">()</span>   </span></span><br><span class="line"><span class="function"></span>&#123;   </span><br><span class="line">    <span class="keyword">pid_t</span> fpid; <span class="comment">//fpid表示fork函数返回的值  </span></span><br><span class="line">    <span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 调用fork，创建出子进程  </span></span><br><span class="line">    fpid=fork();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 所以下面的代码有两个进程执行！</span></span><br><span class="line">    <span class="keyword">if</span> (fpid &lt; <span class="number">0</span>)   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"创建进程失败!/n"</span>);   </span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (fpid == <span class="number">0</span>) &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是子进程，由父进程fork出来/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">else</span> &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是父进程/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"统计结果是: %d/n"</span>,count);  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>得到的结果输出为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">我是子进程，由父进程fork出来</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br><span class="line"></span><br><span class="line">我是父进程</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br></pre></td></tr></table></figure>
+
+<p>解释一下：</p>
+<ul>
+<li>fork作为一个函数被调用。这个函数会有<strong>两次返回</strong>，将<strong>子进程的PID返回给父进程，0返回给子进程</strong>。(如果小于0，则说明创建子进程失败)。</li>
+<li>再次说明：当前进程调用<code>fork()</code>，会创建一个跟当前进程完全相同的子进程(除了pid)，所以子进程同样是会执行<code>fork()</code>之后的代码。</li>
+</ul>
+<p>所以说：</p>
+<ul>
+<li>父进程在执行if代码块的时候，<code>fpid变量</code>的值是子进程的pid</li>
+<li>子进程在执行if代码块的时候，<code>fpid变量</code>的值是0</li>
+</ul>
+<h2 id="1-2再来看看exec-函数"><a href="#1-2再来看看exec-函数" class="headerlink" title="1.2再来看看exec()函数"></a>1.2再来看看exec()函数</h2><p>从上面我们已经知道了fork会创建一个子进程。<strong>子进程的是父进程的副本</strong>。</p>
+<p>exec函数的作用就是：<strong>装载一个新的程序</strong>（可执行映像）覆盖<strong>当前进程</strong>内存空间中的映像，<strong>从而执行不同的任务</strong>。</p>
+<ul>
+<li>exec系列函数在执行时会<strong>直接替换掉当前进程的地址空间</strong>。</li>
+</ul>
+<p>我去画张图来理解一下：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1728f4e?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="exec函数的作用"></p>
+<p>参考资料：</p>
+<ul>
+<li>程序员必备知识——fork和exec函数详解<a href="https://blog.csdn.net/bad_good_man/article/details/49364947" target="_blank" rel="noopener">blog.csdn.net/bad_good_ma…</a></li>
+<li>linux中fork（）函数详解（原创！！实例讲解）：<a href="https://blog.csdn.net/jason314/article/details/5640969" target="_blank" rel="noopener">blog.csdn.net/jason314/ar…</a></li>
+<li>linux c语言 fork() 和 exec 函数的简介和用法：<a href="https://blog.csdn.net/nvd11/article/details/8856278" target="_blank" rel="noopener">blog.csdn.net/nvd11/artic…</a></li>
+<li>Linux下Fork与Exec使用：<a href="https://www.cnblogs.com/hicjiajia/archive/2011/01/20/1940154.html" target="_blank" rel="noopener">www.cnblogs.com/hicjiajia/a…</a></li>
+<li>Linux 系统调用 —— fork()内核源码剖析：<a href="https://blog.csdn.net/chen892704067/article/details/76596225" target="_blank" rel="noopener">blog.csdn.net/chen8927040…</a></li>
+</ul>
+<h2 id="1-3回头来看Linux下的COW是怎么一回事"><a href="#1-3回头来看Linux下的COW是怎么一回事" class="headerlink" title="1.3回头来看Linux下的COW是怎么一回事"></a>1.3回头来看Linux下的COW是怎么一回事</h2><blockquote>
+<p>fork()会产生一个和父进程完全相同的子进程(除了pid)</p>
+</blockquote>
+<p>如果按<strong>传统</strong>的做法，会<strong>直接</strong>将父进程的数据拷贝到子进程中，拷贝完之后，父进程和子进程之间的数据段和堆栈是<strong>相互独立的</strong>。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1818295?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="父进程的数据拷贝到子进程中"></p>
+<p>但是，以我们的使用经验来说：往往子进程都会执行<code>exec()</code>来做自己想要实现的功能。</p>
+<ul>
+<li>所以，如果按照上面的做法的话，创建子进程时复制过去的数据是没用的(因为子进程执行<code>exec()</code>，原有的数据会被清空)</li>
+</ul>
+<p>既然很多时候复制给子进程的数据是无效的，于是就有了Copy On Write这项技术了，原理也很简单：</p>
+<ul>
+<li>fork创建出的子进程，<strong>与父进程共享内存空间</strong>。也就是说，如果子进程<strong>不对内存空间进行写入操作的话，内存空间中的数据并不会复制给子进程</strong>，这样创建子进程的速度就很快了！(不用复制，直接引用父进程的物理空间)。</li>
+<li>并且如果在fork函数返回之后，子进程<strong>第一时间</strong>exec一个新的可执行映像，那么也不会浪费时间和内存空间了。</li>
+</ul>
+<p>另外的表达方式：</p>
+<blockquote>
+<p>在fork之后exec之前两个进程<strong>用的是相同的物理空间</strong>（内存区），子进程的代码段、数据段、堆栈都是指向父进程的物理空间，也就是说，两者的虚拟空间不同，但其对应的<strong>物理空间是同一个</strong>。</p>
+</blockquote>
+<blockquote>
+<p>当父子进程中<strong>有更改相应段的行为发生时</strong>，再<strong>为子进程相应的段分配物理空间</strong>。</p>
+</blockquote>
+<blockquote>
+<p>如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。</p>
+</blockquote>
+<blockquote>
+<p>而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
+</blockquote>
+<p>Copy On Write技术<strong>实现原理：</strong></p>
+<blockquote>
+<p>fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。中断例程中，kernel就会<strong>把触发的异常的页复制一份</strong>，于是父子进程各自持有独立的一份。</p>
+</blockquote>
+<p>Copy On Write技术<strong>好处</strong>是什么？</p>
+<ul>
+<li>COW技术可<strong>减少</strong>分配和复制大量资源时带来的<strong>瞬间延时</strong>。</li>
+<li>COW技术可减少<strong>不必要的资源分配</strong>。比如fork进程时，并不是所有的页面都需要复制，父进程的<strong>代码段和只读数据段都不被允许修改，所以无需复制</strong>。</li>
+</ul>
+<p>Copy On Write技术<strong>缺点</strong>是什么？</p>
+<ul>
+<li>如果在fork()之后，父子进程都还需要继续进行写操作，<strong>那么会产生大量的分页错误(页异常中断page-fault)</strong>，这样就得不偿失。</li>
+</ul>
+<p>几句话总结Linux的Copy On Write技术：</p>
+<ul>
+<li>fork出的子进程共享父进程的物理空间，当父子进程<strong>有内存写入操作时</strong>，read-only内存页发生中断，<strong>将触发的异常的内存页复制一份</strong>(其余的页还是共享父进程的)。</li>
+<li>fork出的子进程功能实现和父进程是一样的。如果有需要，我们会用<code>exec()</code>把当前进程映像替换成新的进程文件，完成自己想要实现的功能。</li>
+</ul>
+<p>参考资料：</p>
+<ul>
+<li>Linux进程基础：<a href="http://www.cnblogs.com/vamei/archive/2012/09/20/2694466.html" target="_blank" rel="noopener">www.cnblogs.com/vamei/archi…</a></li>
+<li>Linux写时拷贝技术(copy-on-write)<a href="http://www.cnblogs.com/biyeymyhjob/archive/2012/07/20/2601655.html" target="_blank" rel="noopener">www.cnblogs.com/biyeymyhjob…</a></li>
+<li>当你在 Linux 上启动一个进程时会发生什么？<a href="https://zhuanlan.zhihu.com/p/33159508" target="_blank" rel="noopener">zhuanlan.zhihu.com/p/33159508</a></li>
+<li>Linux fork()所谓的写时复制(COW)到最后还是要先复制再写吗？<a href="https://www.zhihu.com/question/265400460" target="_blank" rel="noopener">www.zhihu.com/question/26…</a></li>
+<li>写时拷贝（copy－on－write） COW技术<a href="https://blog.csdn.net/u012333003/article/details/25117457" target="_blank" rel="noopener">blog.csdn.net/u012333003/…</a></li>
+<li>Copy-On-Write 写时复制原理<a href="https://blog.csdn.net/ppppppppp2009/article/details/22750939" target="_blank" rel="noopener">blog.csdn.net/ppppppppp20…</a></li>
+</ul>
+<h2 id="二、解释一下Redis的COW"><a href="#二、解释一下Redis的COW" class="headerlink" title="二、解释一下Redis的COW"></a>二、解释一下Redis的COW</h2><p>基于上面的基础，我们应该已经了解COW这么一项技术了。</p>
+<p>下面我来说一下我对《Redis设计与实现》那段话的理解：</p>
+<ul>
+<li>Redis在持久化时，如果是采用BGSAVE命令或者BGREWRITEAOF的方式，那Redis会<strong>fork出一个子进程来读取数据，从而写到磁盘中</strong>。</li>
+<li>总体来看，Redis还是读操作比较多。如果子进程存在期间，发生了大量的写操作，那可能就会出现<strong>很多的分页错误(页异常中断page-fault)</strong>，这样就得耗费不少性能在复制上。</li>
+<li>而在<strong>rehash阶段上，写操作是无法避免</strong>的。所以Redis在fork出子进程之后，<strong>将负载因子阈值提高</strong>，尽量减少写操作，避免不必要的内存写入操作，最大限度地节约内存。</li>
+</ul>
+<p>参考资料：</p>
+<ul>
+<li>fork()后copy on write的一些特性：<a href="https://zhoujianshi.github.io/articles/2017/fork(" target="_blank" rel="noopener">zhoujianshi.github.io/articles/20…</a>后copy on write的一些特性/index.html)</li>
+<li>写时复制：<a href="https://miao1007.github.io/gitbook/java/juc/cow/" target="_blank" rel="noopener">miao1007.github.io/gitbook/jav…</a></li>
+</ul>
+<h1 id="三、文件系统的COW"><a href="#三、文件系统的COW" class="headerlink" title="三、文件系统的COW"></a>三、文件系统的COW</h1><p>下面来看看文件系统中的COW是啥意思：</p>
+<p>Copy-on-write在对数据进行修改的时候，<strong>不会直接在原来的数据位置上进行操作</strong>，而是重新找个位置修改，这样的好处是一旦系统突然断电，重启之后不需要做Fsck。好处就是能<strong>保证数据的完整性，掉电的话容易恢复</strong>。</p>
+<ul>
+<li>比如说：要修改数据块A的内容，先把A读出来，写到B块里面去。如果这时候断电了，原来A的内容还在！</li>
+</ul>
+<p>参考资料：</p>
+<ul>
+<li>文件系统中的 copy-on-write 模式有什么具体的好处？<a href="https://www.zhihu.com/question/19782224/answers/created" target="_blank" rel="noopener">www.zhihu.com/question/19…</a></li>
+<li>新一代 Linux 文件系统 btrfs 简介:<a href="https://www.ibm.com/developerworks/cn/linux/l-cn-btrfs/" target="_blank" rel="noopener">www.ibm.com/developerwo…</a></li>
+</ul>
+<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>最后我们再来看一下写时复制的思想(摘录自维基百科)：</p>
+<blockquote>
+<p>写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。</p>
+</blockquote>
+<p>至少从本文我们可以总结出：</p>
+<ul>
+<li>Linux通过Copy On Write技术极大地<strong>减少了Fork的开销</strong>。</li>
+<li>文件系统通过Copy On Write技术一定程度上保证<strong>数据的完整性</strong>。</li>
+</ul>
+<p>其实在Java里边，也有Copy On Write技术，称为延迟拷贝。</p>
+<p>Java中有三种类型的对象拷贝：浅拷贝(Shallow Copy)、深拷贝(Deep Copy)、延迟拷贝(Lazy Copy)。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1b8a75f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Java中的COW"></p>
+<p>这部分留到下一篇来说，敬请期待~</p>
+<p>参考资料：</p>
+<ul>
+<li>写时复制，写时拷贝，写时分裂，Copy on write：<a href="https://my.oschina.net/dubenju/blog/815836" target="_blank" rel="noopener">my.oschina.net/dubenju/blo…</a></li>
+<li>不会产奶的COW(Copy-On-Write)<a href="https://www.jianshu.com/p/b2fb2ee5e3a0" target="_blank" rel="noopener">www.jianshu.com/p/b2fb2ee5e…</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E9%80%89%E6%8B%A9%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E9%80%89%E6%8B%A9%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">为什么 Redis 选择单线程模型</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-19 06:06:21 / 修改时间：14:10:15" itemprop="dateCreated datePublished" datetime="2020-05-19T06:06:21+08:00">2020-05-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="https://draveness.me/whys-the-design-redis-single-thread/" target="_blank" rel="noopener">原文链接</a> 作者:Draven</p>
+<p>Redis 作为广为人知的内存数据库，在玩具项目和复杂的工业级别项目中都看到它的身影，然而 Redis 却是使用单线程模型进行设计的，这与很多人固有的观念有所冲突，为什么单线程的程序能够抗住每秒几百万的请求量呢？这也是我们今天要讨论的问题之一。</p>
+<p>除此之外，Redis 4.0 之后的版本却抛弃了单线程模型这一设计，原本使用单线程运行的 Redis 也开始选择性使用多线程模型，这一看似有些矛盾的设计决策是今天需要讨论的另一个问题。</p>
+<blockquote>
+<p>However with Redis 4.0 we started to make Redis more threaded. For now this is limited to deleting objects in the background, and to blocking commands implemented via Redis modules. For the next releases, the plan is to make Redis more and more threaded.</p>
+</blockquote>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>就像在介绍中说的，这一篇文章想要讨论的两个与 Redis 有关的问题就是：</p>
+<ul>
+<li>为什么 Redis 在最初的版本中选择单线程模型？</li>
+<li>为什么 Redis 在 4.0 之后的版本中加入了多线程的支持？</li>
+</ul>
+<p>这两个看起来有些矛盾的问题实际上并不冲突，我们会分别阐述对这个看起来完全相反的设计决策作出分析和解释，不过在具体分析它们的设计之前，我们先来看一下不同版本 Redis 顶层的设计：</p>
+<p><img src="https://img.draveness.me/redis-io-multiplexing.png" alt="redis-io-multiplexing"></p>
+<p>Redis 作为一个内存服务器，它需要处理很多来自外部的网络请求，它使用 I/O 多路复用机制同时监听多个文件描述符的可读和可写状态，一旦收到网络请求就会在内存中快速处理，由于绝大多数的操作都是纯内存的，所以处理的速度会非常地快。</p>
+<p>在 <a href="https://raw.githubusercontent.com/antirez/redis/4.0/00-RELEASENOTES" target="_blank" rel="noopener">Redis 4.0</a> 之后的版本，情况就有了一些变动，新版的 Redis 服务在执行一些命令时就会使用『主处理线程』之外的其他线程，例如 <code>UNLINK</code>、<code>FLUSHALL ASYNC</code>、<code>FLUSHDB ASYNC</code> 等非阻塞的删除操作。</p>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>无论是使用单线程模型还是多线程模型，这两个设计上的决定都是为了更好地提升 Redis 的开发效率、运行性能，想要理解两个看起来矛盾的设计决策，我们首先需要重新梳理做出决定的上下文和大前提，从下面的角度来看，使用单线程模型和多线程模型其实也并不矛盾。</p>
+<p>虽然 Redis 在较新的版本中引入了多线程，不过是在<strong>部分命令</strong>上引入的，其中包括非阻塞的删除操作，在整体的架构设计上，主处理程序还是单线程模型的；由此看来，我们今天想要分析的两个问题可以简化成：</p>
+<ul>
+<li>为什么 Redis 服务使用单线程模型处理绝大多数的网络请求？</li>
+<li>为什么 Redis 服务增加了多个非阻塞的删除操作，例如：<code>UNLINK</code>、<code>FLUSHALL ASYNC</code> 和 <code>FLUSHDB ASYNC</code>？</li>
+</ul>
+<p>接下来的两个小节将从多个角度分析这两个问题。</p>
+<h3 id="单线程模型"><a href="#单线程模型" class="headerlink" title="单线程模型"></a>单线程模型</h3><p>Redis 从一开始就选择使用单线程模型处理来自客户端的绝大多数网络请求，这种考虑其实是多方面的，作者分析了相关的资料，发现其中最重要的几个原因如下：</p>
+<ol>
+<li>使用单线程模型能带来更好的可维护性，方便开发和调试；</li>
+<li>使用单线程模型也能并发的处理客户端的请求；</li>
+<li>Redis 服务中运行的绝大多数操作的性能瓶颈都不是 CPU；</li>
+</ol>
+<p>上述三个原因中的最后一个是最终使用单线程模型的决定性因素，其他的两个原因都是使用单线程模型额外带来的好处，在这里我们会按顺序介绍上述的几个原因。</p>
+<h4 id="可维护性"><a href="#可维护性" class="headerlink" title="可维护性"></a>可维护性</h4><p>可维护性对于一个项目来说非常重要，如果代码难以调试和测试，问题也经常难以复现，这对于任何一个项目来说都会严重地影响项目的可维护性。多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，代码的执行过程不再是串行的，多个线程同时访问的变量如果没有谨慎处理就会带来诡异的问题。</p>
+<p><img src="https://img.draveness.me/multi-threading.png" alt="multi-threading"></p>
+<p>在网络上有一个调侃多线程模型的段子，就很好地展示了多线程模型带来的潜在问题：<a href="https://en.wikipedia.org/wiki/Race_condition" target="_blank" rel="noopener">竞争条件 (race condition)</a> —— 如果计算机中的两个进程（线程同理）同时尝试修改一个共享内存的内容，在没有并发控制的情况下，最终的结果依赖于两个进程的执行顺序和时机，如果发生了并发访问冲突，最后的结果就会是不正确的。</p>
+<blockquote>
+<p>Some people, when confronted with a problem, think, “I know, I’ll use threads,” and then two they hav erpoblesms.</p>
+</blockquote>
+<p>引入了多线程，我们就必须要同时引入并发控制来保证在多个线程同时访问数据时程序行为的正确性，这就需要工程师额外维护并发控制的相关代码，例如，我们会需要在可能被并发读写的变量上增加互斥锁：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">    mu Mutex <span class="comment">// cost</span></span><br><span class="line">    data <span class="keyword">int</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// thread 1</span></span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mu.Lock()</span><br><span class="line">    data += <span class="number">1</span></span><br><span class="line">    mu.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// thread 2</span></span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mu.Lock()</span><br><span class="line">    data -= <span class="number">1</span></span><br><span class="line">    mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在访问这些变量或者内存之前也需要先对获取互斥锁，一旦忘记获取锁或者忘记释放锁就可能会导致各种诡异的问题，管理相关的并发控制机制也需要付出额外的研发成本和负担。</p>
+<h4 id="并发处理"><a href="#并发处理" class="headerlink" title="并发处理"></a>并发处理</h4><p>使用单线程模型也并不意味着程序不能并发的处理任务，Redis 虽然使用单线程模型处理用户的请求，但是它却使用 I/O 多路复用机制<strong>并发</strong>处理来自客户端的多个连接，同时等待多个连接发送的请求。</p>
+<p>在 I/O 多路复用模型中，最重要的函数调用就是 <code>select</code> 以及类似函数，该方法的能够同时监控多个文件描述符（也就是客户端的连接）的可读可写情况，当其中的某些文件描述符可读或者可写时，<code>select</code> 方法就会返回可读以及可写的文件描述符个数。</p>
+<p>使用 I/O 多路复用技术能够极大地减少系统的开销，系统不再需要额外创建和维护进程和线程来监听来自客户端的大量连接，减少了服务器的开发成本和维护成本。</p>
+<h4 id="性能瓶颈"><a href="#性能瓶颈" class="headerlink" title="性能瓶颈"></a>性能瓶颈</h4><p>最后要介绍的其实就是 Redis 选择单线程模型的决定性原因 —— 多线程技术能够帮助我们充分利用 CPU 的计算资源来并发的执行不同的任务，但是 CPU 资源往往都不是 Redis 服务器的性能瓶颈。哪怕我们在一个普通的 Linux 服务器上启动 Redis 服务，它也能在 1s 的时间内处理 1,000,000 个用户请求。</p>
+<blockquote>
+<p>It’s not very frequent that CPU becomes your bottleneck with Redis, as usually Redis is either memory or network bound. For instance, using pipelining Redis running on an average Linux system can deliver even 1 million requests per second, so if your application mainly uses O(N) or O(log(N)) commands, it is hardly going to use too much CPU.</p>
+</blockquote>
+<p>如果这种吞吐量不能满足我们的需求，更推荐的做法是使用分片的方式将不同的请求交给不同的 Redis 服务器来处理，而不是在同一个 Redis 服务中引入大量的多线程操作。</p>
+<p>简单总结一下，Redis 并不是 CPU 密集型的服务，如果不开启 AOF 备份，所有 Redis 的操作都会在内存中完成不会涉及任何的 I/O 操作，这些数据的读写由于只发生在内存中，所以处理速度是非常快的；整个服务的瓶颈在于网络传输带来的延迟和等待客户端的数据传输，也就是网络 I/O，所以使用多线程模型处理全部的外部请求可能不是一个好的方案。</p>
+<blockquote>
+<p>AOF 是 Redis 的一种持久化机制，它会在每次收到来自客户端的写请求时，将其记录到日志中，每次 Redis 服务器启动时都会重放 AOF 日志构建原始的数据集，保证数据的持久性。</p>
+</blockquote>
+<p>多线程虽然会帮助我们更充分地利用 CPU 资源，但是操作系统上线程的切换也不是免费的，线程切换其实会带来额外的开销，其中包括：</p>
+<ol>
+<li>保存线程 1 的执行上下文；</li>
+<li>加载线程 2 的执行上下文；</li>
+</ol>
+<p>频繁的对线程的上下文进行切换可能还会导致性能地急剧下降，这可能会导致我们不仅没有提升请求处理的平均速度，反而进行了负优化，所以这也是为什么 Redis 对于使用多线程技术非常谨慎。</p>
+<h3 id="引入多线程"><a href="#引入多线程" class="headerlink" title="引入多线程"></a>引入多线程</h3><p>Redis 在最新的几个版本中加入了一些可以被其他线程异步处理的删除操作，也就是我们在上面提到的 <code>UNLINK</code>、<code>FLUSHALL ASYNC</code> 和 <code>FLUSHDB ASYNC</code>，我们为什么会需要这些删除操作，而它们为什么需要通过多线程的方式异步处理？</p>
+<h4 id="删除操作"><a href="#删除操作" class="headerlink" title="删除操作"></a>删除操作</h4><p>我们可以在 Redis 在中使用 <code>DEL</code> 命令来删除一个键对应的值，如果待删除的键值对占用了较小的内存空间，那么哪怕是<strong>同步地</strong>删除这些键值对也不会消耗太多的时间。</p>
+<p>但是对于 Redis 中的一些超大键值对，几十 MB 或者几百 MB 的数据并不能在几毫秒的时间内处理完，Redis 可能会需要在释放内存空间上消耗较多的时间，这些操作就会阻塞待处理的任务，影响 Redis 服务处理请求的 PCT99 和可用性。</p>
+<p><img src="https://img.draveness.me/redis-unlink.png" alt="redis-unlink"></p>
+<p>然而释放内存空间的工作其实可以由后台线程异步进行处理，这也就是 <code>UNLINK</code> 命令的实现原理，它只会将键从元数据中删除，真正的删除操作会在后台异步执行。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Redis 选择使用单线程模型处理客户端的请求主要还是因为 CPU 不是 Redis 服务器的瓶颈，所以使用多线程模型带来的性能提升并不能抵消它带来的开发成本和维护成本，系统的性能瓶颈也主要在网络 I/O 操作上；而 Redis 引入多线程操作也是出于性能上的考虑，对于一些大键值对的删除操作，通过多线程非阻塞地释放内存空间也能减少对 Redis 主线程阻塞的时间，提高执行的效率。</p>
+<blockquote>
+<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
+</blockquote>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
+<li><a href="https://redis.io/topics/faq#redis-is-single-threaded-how-can-i-exploit-multiple-cpu--cores" target="_blank" rel="noopener">Redis is single threaded. How can I exploit multiple CPU / cores?</a></li>
+<li><a href="https://stackoverflow.com/questions/10489298/redis-is-single-threaded-then-how-does-it-do-concurrent-i-o" target="_blank" rel="noopener">Redis is single-threaded, then how does it do concurrent I/O?</a></li>
+<li><a href="https://www.quora.com/Why-isnt-Redis-designed-to-benefit-from-multi-threading" target="_blank" rel="noopener">Why isn’t Redis designed to benefit from multi-threading?</a></li>
+<li><a href="https://blog.golang.org/concurrency-is-not-parallelism" target="_blank" rel="noopener">Concurrency is not parallelism</a></li>
+<li><a href="http://www.odbms.org/2018/03/the-little-known-feature-of-redis-4-0-that-will-speed-up-your-applications/" target="_blank" rel="noopener">The little-known feature of Redis 4.0 that will speed up your applications</a></li>
+<li><a href="https://draveness.me/redis-io-multiplexing" target="_blank" rel="noopener">Redis 和 I/O 多路复用</a></li>
+<li><a href="https://www.cs.uic.edu/~jbell/CourseNotes/OperatingSystems/6_CPU_Scheduling.html" target="_blank" rel="noopener">CPU Scheduling</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/17/LeetCode654/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/17/LeetCode654/" class="post-title-link" itemprop="url">LeetCode654</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-18 06:28:08 / 修改时间：14:31:38" itemprop="dateCreated datePublished" datetime="2020-05-18T06:28:08+08:00">2020-05-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>给定一个不含重复元素的整数数组。一个以此数组构建的最大二叉树定义如下：</p>
+<p>二叉树的根是数组中的最大元素。<br>左子树是通过数组中最大值左边部分构造出的最大二叉树。<br>右子树是通过数组中最大值右边部分构造出的最大二叉树。<br>通过给定的数组构建最大二叉树，并且输出这个树的根节点。</p>
+<p>示例 ：</p>
+<p>输入：[3,2,1,6,0,5]<br>输出：返回下面这棵树的根节点：</p>
+<pre><code>   6
+ /   \   
+3     5
+ \    / 
+  2  0   
+    \
+      1</code></pre><p>提示：</p>
+<p>给定的数组的大小在 [1, 1000] 之间。</p>
+<p>递归建树.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> val;</span><br><span class="line">    TreeNode left;</span><br><span class="line">    TreeNode right;</span><br><span class="line">    TreeNode(<span class="keyword">int</span> x) &#123;</span><br><span class="line">        val = x;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> TreeNode <span class="title">constructMaximumBinaryTree</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (nums == <span class="keyword">null</span> || nums.length == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> maxId = getMaxId(nums);</span><br><span class="line">        <span class="keyword">int</span> max = nums[maxId];</span><br><span class="line">        TreeNode node = <span class="keyword">new</span> TreeNode(max);</span><br><span class="line">        <span class="keyword">if</span> (maxId - <span class="number">1</span> &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">            node.left = constructMaximumBinaryTree(Arrays.copyOfRange(nums, <span class="number">0</span>, maxId));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            node.left = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (maxId + <span class="number">1</span> &lt; nums.length) &#123;</span><br><span class="line">            node.right = constructMaximumBinaryTree(Arrays.copyOfRange(nums, maxId + <span class="number">1</span>, nums.length));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            node.right = <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> node;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">getMaxId</span><span class="params">(<span class="keyword">int</span>[] nums)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> maxId = <span class="number">0</span>, max = nums[<span class="number">0</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i] &gt; max) &#123;</span><br><span class="line">                maxId = i;</span><br><span class="line">                max = nums[i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> maxId;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/17/LeetCode617/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/17/LeetCode617/" class="post-title-link" itemprop="url">LeetCode617</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-18 05:53:43 / 修改时间：13:56:31" itemprop="dateCreated datePublished" datetime="2020-05-18T05:53:43+08:00">2020-05-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>947</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>给定两个二叉树，想象当你将它们中的一个覆盖到另一个上时，两个二叉树的一些节点便会重叠。</p>
+<p>你需要将他们合并为一个新的二叉树。合并的规则是如果两个节点重叠，那么将他们的值相加作为节点合并后的新值，否则不为 NULL 的节点将直接作为新二叉树的节点。</p>
+<p>示例 1:</p>
+<p>输入:<br>    Tree 1                  Tree 2<br>         1                         2<br>         / \                       / \<br>        3   2                  1   3<br>       /                           \   \<br>      5                             4   7<br>输出:<br>合并后的树:<br>        3<br>        / <br>      4   5<br>      / \     \<br>     5   4    7<br>注意: 合并必须从两个树的根节点开始。</p>
+<p>递归遍历:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> val;</span><br><span class="line">        TreeNode left;</span><br><span class="line">        TreeNode right;</span><br><span class="line"></span><br><span class="line">        TreeNode(<span class="keyword">int</span> x) &#123;</span><br><span class="line">            val = x;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> TreeNode <span class="title">mergeTrees</span><span class="params">(TreeNode t1, TreeNode t2)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (t1==<span class="keyword">null</span>&amp;&amp;t2==<span class="keyword">null</span>)&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (t1!=<span class="keyword">null</span>&amp;&amp;t2!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t1.val+t2.val);</span><br><span class="line">                node.left=mergeTrees(t1.left,t2.left);</span><br><span class="line">                node.right=mergeTrees(t1.right,t2.right);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (t1!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t1.val);</span><br><span class="line">                node.left=mergeTrees(t1.left,<span class="keyword">null</span>);</span><br><span class="line">                node.right=mergeTrees(t1.right,<span class="keyword">null</span>);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;<span class="keyword">else</span> &#123;</span><br><span class="line"><span class="comment">//                if (t2!=null)</span></span><br><span class="line">                TreeNode node=<span class="keyword">new</span> TreeNode(t2.val);</span><br><span class="line">                node.left=mergeTrees(<span class="keyword">null</span>,t2.left);</span><br><span class="line">                node.right=mergeTrees(<span class="keyword">null</span>,t2.right);</span><br><span class="line">                <span class="keyword">return</span> node;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/Java%E4%B8%AD%E7%9A%84%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E4%B8%8E%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/16/Java%E4%B8%AD%E7%9A%84%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86%E4%B8%8E%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/" class="post-title-link" itemprop="url">Java中的静态代理与动态代理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-17 06:26:17" itemprop="dateCreated datePublished" datetime="2020-05-17T06:26:17+08:00">2020-05-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-27 10:47:50" itemprop="dateModified" datetime="2020-05-27T10:47:50+08:00">2020-05-27</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="https://chenjiayang.me/2018/10/05/dynamic-proxy/" target="_blank" rel="noopener">原文地址</a> 作者:<a href="https://www.yuque.com/chenjiayang" target="_blank" rel="noopener"><strong>YoungChen</strong></a></p>
+<h2 id="什么是代理模式"><a href="#什么是代理模式" class="headerlink" title="什么是代理模式"></a>什么是代理模式</h2><p>人话来讲就是由代理对象来执行目标对象的方法，且还可以在代理对象中增强目标对象方法的一种设计模式。类比生活，像是房产中介。代理模式存在的意义和一个架构设计原则息息相关 —— 开闭原则（对扩展开放，对修改关闭），即一种好的设计模式，都是在不修改原有形态的基础上扩展出新的功能。</p>
+<h2 id="为什么需要代理"><a href="#为什么需要代理" class="headerlink" title="为什么需要代理"></a>为什么需要代理</h2><p>代理模式的概念很容易理解，但是早期的我即使读懂了代理模式的概念，对为什么要使用代理模式，还是一头雾水。为什么我不直接调用目标对象的方法，非得要借助个代理对象呢？</p>
+<h3 id="1-调用的目标对象在远程主机上，并不在你本地"><a href="#1-调用的目标对象在远程主机上，并不在你本地" class="headerlink" title="1. 调用的目标对象在远程主机上，并不在你本地"></a>1. 调用的目标对象在远程主机上，并不在你本地</h3><p>类似中介就是房东出国了，联系不上，你只能跟我沟通。对应到我们程序设计的时候就是：客户端无法直接操作实际目标对象。为什么无法直接操作？一种情况是你需要调用的对象在另外一台机器上，你需要跨越网络才能访问，如果让你直接编码实现远程调用，你需要处理网络连接、处理打包、解包等等非常复杂的步骤，所以为了简化客户端的处理，我们使用代理模式，在客户端建立一个远程目标对象的代理，客户端就象调用本地对象一样调用该代理，再由代理去跟实际对象联系，对于客户端来说背后这个通信过程是透明的。</p>
+<h3 id="2-你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去"><a href="#2-你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去" class="headerlink" title="2. 你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去"></a>2. 你不想理会目标类繁杂的功能，只希望增加一些自己的行为进去</h3><p>例如常见的例子就是 Spring AOP 实现日志功能，你不必关心目标类究竟如何繁杂，你只是想要在前后调用的时候打印一下日志，那么你就可以使用代理模式，通过 AOP 提供的切面进行编码实现，你通过代理模式达到了在目标对象的方法前后增加了一些自定义行为的目的。类似的例子还有权限校验。这样做的好处有很多，一方面你需要在意目标类的代码，二来你维护了目标类功能的单一性，而不是将日志或者权限校验的功能硬编码到目标类的方法中。</p>
+<h2 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a>静态代理</h2><p>静态代理非常简单，就是实现类和代理类均实现同样的接口，然后在代理类中通过构造器将接口或者实现类注入进来，然后就可以在代理类的方法实现中增加一些自己的逻辑。看个 <a href="https://www.cnblogs.com/daniels/p/8242592.html" target="_blank" rel="noopener">例子</a> 就懂了：</p>
+<h3 id="静态代理的例子"><a href="#静态代理的例子" class="headerlink" title="静态代理的例子"></a>静态代理的例子</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BuyHouseImpl</span> <span class="keyword">implements</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 代理类</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BuyHouseProxy</span> <span class="keyword">implements</span> <span class="title">BuyHouse</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> BuyHouse buyHouse;</span><br><span class="line">    <span class="comment">// 将接口引入</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BuyHouseProxy</span><span class="params">(<span class="keyword">final</span> BuyHouse buyHouse)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.buyHouse = buyHouse;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">buyHosue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 增加一些自己的逻辑</span></span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">        buyHouse.buyHosue();</span><br><span class="line">        System.out.println(<span class="string">"66666"</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="静态代理的缺点"><a href="#静态代理的缺点" class="headerlink" title="静态代理的缺点"></a>静态代理的缺点</h3><p>很明显，静态代理中，一个代理类只能对一个业务接口的实现类进行包装，如果有多个业务接口的话就要定义很多实现类和代理类才行。而且，如果代理类对业务方法的预处理、调用后操作都是一样的（比如：调用前输出提示、调用后自动关闭连接），则多个代理类就会有很多重复代码。这时我们可以定义这样一个代理类，它能代理所有实现类的方法调用：根据传进来的业务实现类和方法名进行具体调用。即动态代理模式。Java 中常见的有 JDK 动态代理和 CGLib 动态代理，前者只能代理接口，后者可以代理实现类。</p>
+<h2 id="JDK-动态代理"><a href="#JDK-动态代理" class="headerlink" title="JDK 动态代理"></a>JDK 动态代理</h2><p>JDK 的动态代理使用到 Java reflect 包下的 Proxy 类和 InvocationHandler 接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicProxyHandler</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object object;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">DynamicProxyHandler</span><span class="params">(<span class="keyword">final</span> Object object)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.object = object;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"HHHHH"</span>);</span><br><span class="line">        Object result = method.invoke(object, args);</span><br><span class="line">        System.out.println(<span class="string">"66666"</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DynamicProxyTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        BuyHouse buyHouse = <span class="keyword">new</span> BuyHouseImpl();</span><br><span class="line">        BuyHouse proxyBuyHouse = (BuyHouse) Proxy.newProxyInstance(BuyHouse.class.getClassLoader(), new Class[]&#123;BuyHouse.class&#125;, new DynamicProxyHandler(buyHouse));</span><br><span class="line">        proxyBuyHouse.buyHosue();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DynamicProxyHandler 实现了 InvocationHandler 接口，并复写其 invoke 方法，我们可以看到 invoke 方法的参数是实现类和方法参数列表。测试类中通过 newProxyInstance 这个静态工厂方法创建了代理对象，代理对象的每个执行方法都会替换执行InvocationHandler 中的 invoke 方法。这个方法总共有3个参数：</p>
+<ol>
+<li>ClassLoader loader用来指明生成代理对象使用哪个类装载器</li>
+<li>Class&lt;?&gt;[] interfaces用来指明生成哪个对象的代理对象，通过接口指定，这就是为什么 JDK 动态代理必须要通过接口的方式</li>
+<li>InvocationHandler 用来指明产生的这个代理对象要做什么事情。</li>
+</ol>
+<p>newProxyInstance 内部本质上是根据反射机制生成了一个新类。</p>
+<h2 id="CGLib-动态代理"><a href="#CGLib-动态代理" class="headerlink" title="CGLib 动态代理"></a>CGLib 动态代理</h2><p>CGLib 是针对类来实现代理的，原理是对指定的实现类生成一个子类，并覆盖其中的方法实现代理。因为采用的是继承，所以不能对final 修饰的类进行代理。<a href="https://www.cnblogs.com/ygj0930/p/6542259.html" target="_blank" rel="noopener">例子</a> 如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 实现类，有没有实现接口无所谓</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookFacadeImpl</span> </span>&#123;  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addBook</span><span class="params">()</span> </span>&#123;  </span><br><span class="line">        System.out.println(<span class="string">"新增图书..."</span>);  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookFacadeCglib</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;  </span><br><span class="line">    <span class="comment">// 业务类对象，供代理方法中进行真正的业务方法调用</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 相当于JDK动态代理中的绑定</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getInstance</span><span class="params">(Object target)</span> </span>&#123;  </span><br><span class="line">        <span class="comment">// 给业务对象赋值</span></span><br><span class="line">        <span class="keyword">this</span>.target = target;  </span><br><span class="line">        <span class="comment">// 创建加强器，用来创建动态代理类</span></span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer(); </span><br><span class="line">        <span class="comment">// 为加强器指定要代理的业务类（即：为下面生成的代理类指定父类）</span></span><br><span class="line">        enhancer.setSuperclass(<span class="keyword">this</span>.target.getClass());  </span><br><span class="line">        <span class="comment">// 设置回调：对于代理类上所有方法的调用，都会调用CallBack，而Callback则需要实现intercept()方法进行拦</span></span><br><span class="line">        enhancer.setCallback(<span class="keyword">this</span>); </span><br><span class="line">       <span class="comment">// 创建动态代理类对象并返回 </span></span><br><span class="line">       <span class="keyword">return</span> enhancer.create(); </span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 实现回调方法 </span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object obj, Method method, Object[] args, MethodProxy proxy)</span> </span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> Throwable </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"预处理——————"</span>);</span><br><span class="line">        <span class="comment">//调用业务类（父类中）的方法</span></span><br><span class="line">        proxy.invokeSuper(obj, args); </span><br><span class="line">        System.out.println(<span class="string">"调用后操作——————"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>; </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 测试类</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;      </span><br><span class="line">    BookFacadeImpl bookFacade = <span class="keyword">new</span> BookFacadeImpl()；</span><br><span class="line">    BookFacadeCglib cglib = <span class="keyword">new</span> BookFacadeCglib();  </span><br><span class="line">    BookFacadeImpl bookCglib = (BookFacadeImpl)cglib.getInstance(bookFacade);  </span><br><span class="line">    bookCglib.addBook(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a href="https://www.cnblogs.com/ygj0930/p/6542259.html" target="_blank" rel="noopener">Java动态代理之JDK实现和CGlib实现（简单易懂）</a></li>
+<li><a href="https://www.cnblogs.com/xiaoluo501395377/p/3383130.html" target="_blank" rel="noopener">java的动态代理机制详解</a></li>
+<li><a href="https://www.cnblogs.com/gonjan-blog/p/6685611.html" target="_blank" rel="noopener">java动态代理实现与原理详细分析</a></li>
+</ol>
+<h2 id="License"><a href="#License" class="headerlink" title="License"></a>License</h2><ul>
+<li>本文遵守创作共享 <a href="https://link.zhihu.com/?target=https%3A//creativecommons.org/licenses/by-nc-sa/3.0/cn/">CC BY-NC-SA 3.0协议</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/UNIX%E4%B8%8B%E7%9A%84IO%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/16/UNIX%E4%B8%8B%E7%9A%84IO%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">UNIX下的I/O模型</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-17 03:44:34 / 修改时间：11:56:07" itemprop="dateCreated datePublished" datetime="2020-05-17T03:44:34+08:00">2020-05-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="开篇"><a href="#开篇" class="headerlink" title="开篇"></a>开篇</h2><p>RPC 中很重要的部分就是网络通信，因此这篇叙述一下 Unix 下为解决不同 I/O 问题所设计的 I/O 模型。首先要说明的是，I/O 是个很宽泛的概念，常见的有网络 I/O、磁盘 I/O、内存 I/O 等。</p>
+<p>在 Unix 系统下，不论是标准输入还是借助套接字接受网络输入，其实都会有两个步骤，很多文章都提到：</p>
+<ol>
+<li>等待数据准备好（Waiting for the data to be ready）</li>
+<li>从内核向进程复制数据（Copying the data from the kernel to the process）</li>
+</ol>
+<p><img src="https://pic4.zhimg.com/80/v2-89272a2047be6b90fff1893615a22a99_hd.jpg" alt="img"></p>
+<p>这两个阶段涉及到用户空间和内核空间</p>
+<h2 id="用户空间和内核空间"><a href="#用户空间和内核空间" class="headerlink" title="用户空间和内核空间"></a>用户空间和内核空间</h2><p>对 32 位 OS 而言，它的寻址空间（虚拟存储空间）为 4G。OS 的核心是内核，可以访问底层硬件设备，为了保证用户进程不能直接操作内核从而保证内核的安全，OS 将虚拟空间划分为两部分，一部分为内核空间，一部分为用户空间。</p>
+<p>内核空间中存放的是内核代码和数据，例如 Linux 的 OS 和驱动便运行在内核空间，可以操作底层硬件，如果从磁盘读取数据，那么数据会被先载入内核空间的缓冲区中；而进程的用户空间中存放的是用户程序的代码和数据，通常来讲就是应用程序常驻的区域。</p>
+<p>因此整个 Linux 内部结构可以分为三部分，从最底层到最上层依次是：硬件、内核空间、用户空间。如下图：</p>
+<p><img src="https://pic4.zhimg.com/80/v2-0800f36d38f800111c76f362ea30daf2_hd.jpg" alt="img"></p>
+<p>二者间无法直接通信，必须通过系统调用，一般来说系统调用的成本很高。</p>
+<h2 id="内核态和用户态"><a href="#内核态和用户态" class="headerlink" title="内核态和用户态"></a>内核态和用户态</h2><ul>
+<li>当一个进程经过系统调用而陷入内核代码中执行时，称进程处于内核运行态，简称内核态</li>
+<li>当进程在执行用户自己的代码时，则称其处于用户运行态，简称用户态</li>
+</ul>
+<h2 id="高性能的Server有什么特点"><a href="#高性能的Server有什么特点" class="headerlink" title="高性能的Server有什么特点"></a>高性能的Server有什么特点</h2><p>说完上面的之后，你可能疑惑这和 RPC 的通信设计有什么关系呢？其实正是由于这种内存空间的划分，所以 I/O 一般会在两个地方阻塞，一个是等待数据报到达时，一个是从内核空间拷贝到用户空间时，而阻塞多数情况下我们是无法接受的，因为其损耗性能，而高性能的 server 到底在关注什么？一句话总结：用尽可能少的系统开销处理尽可能多的连接请求。因此诞生了不同的 I/O 模型，它们的不同点总结起来就是对这两个阻塞阶段的处理方式不同</p>
+<h2 id="Unix-下的-I-O-模型"><a href="#Unix-下的-I-O-模型" class="headerlink" title="Unix 下的 I/O 模型"></a>Unix 下的 I/O 模型</h2><p>Unix 下存在五种 I/O 模型：</p>
+<ol>
+<li>阻塞 I/O</li>
+<li>非阻塞 I/O</li>
+<li>I/O 复用（select和poll）</li>
+<li>信号驱动 I/O（SIGIO）</li>
+<li>异步 I/O</li>
+</ol>
+<p>以下的例子，我们以 UDP 套接字中的 recvfrom 函数作为系统调用来说明I/O模型。recvfrom 函数类似于标准的 read 函数，它的作用是从指定的套接字中读取数据报。</p>
+<h3 id="1-、阻塞-I-O"><a href="#1-、阻塞-I-O" class="headerlink" title="1 、阻塞 I/O"></a>1 、阻塞 I/O</h3><p><img src="https://pic4.zhimg.com/80/v2-a2576248ff4c0a7b6bfeb00cd34f6619_hd.jpg" alt="img"></p>
+<p>可以看到阻塞 I/O 在两个步骤阶段都是阻塞的，等到数据报准备好和数据报从内核空间拷贝到用户空间之后，才会向用户侧的进程返回结果，此时用户侧的进程才能继续工作。</p>
+<h3 id="2-、非阻塞-I-O"><a href="#2-、非阻塞-I-O" class="headerlink" title="2 、非阻塞 I/O"></a>2 、非阻塞 I/O</h3><p><img src="https://pic4.zhimg.com/80/v2-00e47334a74e9ad8eb66a5ca36181289_hd.jpg" alt="img"></p>
+<p>非阻塞 I/O 的优化点在于第一阶段不是阻塞的，而是采取轮询的形式，如果数据报没有准备好，立刻返回一个错误 EWOULDBLOCK，此时用户侧进程不需要等待而是立刻得知此次询问的结果，然后进行重试直到数据报准备好再开始，但是再第二阶段拷贝数据报的时候依旧是阻塞的。</p>
+<h3 id="3、-I-O-复用"><a href="#3、-I-O-复用" class="headerlink" title="3、 I/O 复用"></a>3、 I/O 复用</h3><p><img src="https://pic3.zhimg.com/80/v2-50bc7968407818f78ab3baab5b29b102_hd.jpg" alt="img"></p>
+<p>本质上 I/O 复用的优化点在于让内核来负责非阻塞 I/O 时用户侧进程进行的反复重试操作，当内核发现某个套接字的数据报已经就绪时就通知进程。但是这里细心的你会发现，有两个系统调用，select 和 revfrom，但是由于 I/O 复用可以处理多个连接，性能还是有提升。</p>
+<h2 id="4-、信号驱动-I-O"><a href="#4-、信号驱动-I-O" class="headerlink" title="4 、信号驱动 I/O"></a>4 、信号驱动 I/O</h2><p><img src="https://pic4.zhimg.com/80/v2-fd31b6ac102826ce9ac6cb6e629a24a0_hd.jpg" alt="img"></p>
+<p>进程先创建一个信号处理 handler，然后内核立刻返回，进程可以去处理其他事情，等到数据报就绪，内核通过发送信号给之前的 handler 通知进程，然后进程在拷贝数据报期间阻塞。</p>
+<h3 id="5-、异步-I-O"><a href="#5-、异步-I-O" class="headerlink" title="5 、异步 I/O"></a>5 、异步 I/O</h3><p><img src="https://pic1.zhimg.com/80/v2-1092eeaa0f367bb4bc0d4fd9c3b52e7a_hd.jpg" alt="img"></p>
+<p>调用 aio_read 函数发起读取操作时其实是告诉内核 “当整个I/O操作完成后通知我们”。该系统调用会立即返回，进程不会被阻塞。当 I/O 阶段两个步骤完成后，内核会产生一个信号通知应用进程对数据报进行处理。</p>
+<p>跟信号驱动 I/O 相比是告知进程何时进行数据拷贝操作，而异步 I/O 则是通知进程何时整个 I/O 操作完毕。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a href="http://www.tianshouzhi.com/api/tutorials/netty/221" target="_blank" rel="noopener">Unix五种IO模型</a></li>
+<li><a href="http://www.rowkey.me/blog/2016/01/18/io-model/" target="_blank" rel="noopener">也谈IO模型</a></li>
+<li><a href="https://blog.csdn.net/lihao21/article/details/51620374" target="_blank" rel="noopener">图解UNIX的I/O模型</a></li>
+</ol>
+<h2 id="License"><a href="#License" class="headerlink" title="License"></a>License</h2><ul>
+<li>本文遵守创作共享 <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/cn/" target="_blank" rel="noopener"><strong>CC BY-NC-SA 3.0协议</strong></a></li>
+</ul>
+<p><a href="https://chenjiayang.me/2018/10/01/unix-io-model/" target="_blank" rel="noopener">原文链接</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/%E6%99%BA%E5%8A%9B%E9%A2%98-%E8%BD%AC%E8%BD%BD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/16/%E6%99%BA%E5%8A%9B%E9%A2%98-%E8%BD%AC%E8%BD%BD/" class="post-title-link" itemprop="url">智力题-转载</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-17 02:32:13 / 修改时间：10:35:42" itemprop="dateCreated datePublished" datetime="2020-05-17T02:32:13+08:00">2020-05-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%80%BB%E8%BE%91%E6%80%9D%E7%BB%B4/" itemprop="url" rel="index"><span itemprop="name">逻辑思维</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>13k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>目录： </p>
+<p>  1.赛马找最快&lt;腾讯高频&gt; </p>
+<p>  2.砝码称轻重 </p>
+<p>  3.药瓶毒白鼠&lt;腾讯&gt; </p>
+<p>  4.绳子两头烧 </p>
+<p>  5.犯人猜颜色 </p>
+<p>  6.猴子搬香蕉 </p>
+<p>  7.高楼扔鸡蛋&lt;谷歌&gt; </p>
+<p>  8.轮流拿石子&lt;头条&gt; </p>
+<p>  9.蚂蚁走树枝 </p>
+<p>   10.海盗分金币&lt;不常见&gt;  </p>
+<p>   11.三个火枪手  </p>
+<p>   12.囚犯拿豆子  </p>
+<p>13.学生猜生日&lt;笔试高频&gt;</p>
+<h2 id="1-赛马找最快-lt-腾讯高频题-gt"><a href="#1-赛马找最快-lt-腾讯高频题-gt" class="headerlink" title="1. 赛马找最快&lt;腾讯高频题&gt;"></a><strong>1. 赛马找最快&lt;腾讯高频题&gt;</strong></h2><p>  **<br>**   </p>
+<p>  一般有这么几种问法： </p>
+<p>   25匹马5条跑道找最快的3匹马，需要跑几次？答案：7  </p>
+<p>   64匹马8条跑道找最快的4匹马，需要跑几次？答案：11  </p>
+<p>   25匹马5条跑道找最快的5匹马，需要跑几次？答案：最少8次最多9次  </p>
+<p>  接下来我们看看详细解法： </p>
+<h3 id="25匹马5条跑道找最快的3匹马，需要跑几次？"><a href="#25匹马5条跑道找最快的3匹马，需要跑几次？" class="headerlink" title="25匹马5条跑道找最快的3匹马，需要跑几次？"></a><strong>25</strong>匹马<strong>5</strong>条跑道找最快的<strong>3</strong>匹马，需要跑几次？</h3><p>  <img src="https://uploadfiles.nowcoder.com/files/20190917/7563541_1568691598838_720994-20181030103143923-1280332452.png" alt="img">  </p>
+<p>   将25匹马分成ABCDE5组，假设每组的排名就是A1&gt;A2&gt;A3&gt;A4&gt;A5,用边相连，这里比赛5次  </p>
+<p>   第6次，每组的第一名进行比赛，可以找出最快的马，这里假设A1&gt;B1&gt;C1&gt;D1&gt;E1  </p>
+<p>   D1，E1肯定进不了前3，直接排除掉  </p>
+<p>   第7次，B1 C1 A2 B2 A3比赛，可以找出第二，第三名  </p>
+<p>   所以最少比赛需要7次  </p>
+<h3 id="64匹马8条跑道找最快的4匹马，需要跑几次？"><a href="#64匹马8条跑道找最快的4匹马，需要跑几次？" class="headerlink" title="64匹马8条跑道找最快的4匹马，需要跑几次？"></a>64匹马8条跑道找最快的4匹马，需要跑几次？</h3><p>  第一步<br> 全部马分为8组，每组8匹，每组各跑一次，然后淘汰掉每组的后四名，如下图（需要比赛8场） </p>
+<p>  <img src="https://uploadfiles.nowcoder.com/files/20190917/7563541_1568691598560_24_4WV2U6UWKG3PXRT.png" alt="img">  </p>
+<p>  第二步<br> 取每组第一名进行一次比赛，然后淘汰最后四名所在组的所有马，如下图（需要比赛1场） </p>
+<p>  <img src="https://uploadfiles.nowcoder.com/files/20190917/7563541_1568691598554_24_8P9WKWKVGGEPHJ6.png" alt="img">  </p>
+<p>  这个时候总冠军已经诞生，它就是A1，蓝<strong><em>域（它不需要比赛了），而其他可能跑得最快的三匹马只可能是下图中的黄</em></strong>域了（A2,A3,A4,B1,B2,B3,C1,C2,D1，共9匹马） </p>
+<p>  <img src="https://uploadfiles.nowcoder.com/files/20190917/7563541_1568691598535_24_Z8Y5GCU8G2AZA9W.png" alt="img">  </p>
+<p>  第三步<br> 只要从上面的9匹马中找出跑得最快的三匹马就可以了，但是现在只要8个跑道，怎么办？那就随机选出8匹马进行一次比赛吧（需要比赛一场） </p>
+<p>  第四步<br> 上面比赛完，选出了前三名，但是9匹马中还有一匹马没跑呢，它可能是一个潜力股啊，那就和前三名比一比吧，这四匹马比一场，选出前三名。最后加上总冠军，跑得最快的四匹马诞生了！！！（需要一场比赛） </p>
+<p>  最后，一共需要比赛的场次：8 + 1 + 1 + 1 = 11 场 </p>
+<p>  来源：<a href="https://blog.csdn.net/u013829973/article/details/80787928" target="_blank" rel="noopener">https://blog.csdn.net/u013829973/article/details/80787928</a>  </p>
+<h3 id="25匹马5条跑道找最快的5匹马，需要跑几次？"><a href="#25匹马5条跑道找最快的5匹马，需要跑几次？" class="headerlink" title="25匹马5条跑道找最快的5匹马，需要跑几次？"></a><strong>25</strong>匹马<strong>5</strong>条跑道找最快的<strong>5</strong>匹马，需要跑几次？</h3><p>  (1) 首先将25匹马分成5组，并分别进行5场比赛之后得到的名次排列如下： </p>
+<p>  A组： [A1 A2 A3  A4 A5] </p>
+<p>  B组： [B1 B2 B3  B4 B5] </p>
+<p>  C组： [C1 C2 C3 C4 C5] </p>
+<p>  D组： [D1 D2 D3 D4 D5] </p>
+<p>  E组： [E1 E2 E3  E4 E5] </p>
+<p>  其中，每个小组最快的马为[A1、B1、C1、D1、E1]。 </p>
+<p>  (2) 将[A1、B1、C1、D1、E1]进行第6场，选出第1名的马，不妨设 A1&gt;B1&gt;C1&gt;D1&gt;E1. 此时第1名的马为A1。 </p>
+<p>  (3) 将[A2、B1、C1、D1、E1]进行第7场，此时选择出来的必定是第2名的马，不妨假设为B1。因为这5匹马是除去A1之外每个小组当前最快的马。 </p>
+<p>  (3) 进行第8场，选择[A2、B2、C1、D1、E1]角逐出第3名的马。 </p>
+<p>  (4) 依次类推，第9，10场可以分别决出第4，5名的吗。 </p>
+<p>  因此，依照这种竞标赛排序思想，需要10场比赛是一定可以取出前5名的。 </p>
+<p>  <strong>仔细想一下，如果需要减少比赛场次，就一定需要在某一次比赛中同时决出2个名次，而且每一场比赛之后，有一些不可能进入前5名的马可以提前出局。</strong> 当然要做到这一点，就必须小心选择每一场比赛的马匹。我们在上面的方法基础上进一步思考这个问题，希望能够得到解决。 </p>
+<p>  (1) 首先利用5场比赛角逐出每个小组的排名次序是绝对必要的。 </p>
+<p>  (2) 第6场比赛选出第1名的马也是必不可少的。假如仍然是A1马(A1&gt;B1&gt;C1&gt;D1&gt;E1)。那么此时我们可以得到一个重要的结论：有一些马在前6场比赛之后就决定出局的命运了(下面粉色字体标志出局)。  </p>
+<p>  A组： [A1 A2 A3  A4 A5] </p>
+<p>  B组： [B1 B2 B3  B4 B5 ] </p>
+<p>  C组： [C1 C2 C3  C4 C5 ] </p>
+<p>  D组： [D1 D2 D3 D4 D5 ] </p>
+<p>  E组： [E1  E2 E3  E4 E5 ] </p>
+<p>  (3) 第7场比赛是关键，能否同时决出第2，3名的马呢？我们首先做下分析： </p>
+<p>  在上面的方法中，第7场比赛[A2、B1、C1、D1、E1]是为了决定第2名的马。但是在第6场比赛中我们已经得到(B1&gt;C1&gt;D1&gt;E1)，试问？有B1在的比赛，C1、D1、E1还有可能争夺第2名吗？ 当然不可能，也就是说第2名只能在A2、B1中出现。实际上只需要2条跑道就可以决出第2名，剩下C1、D1、E1的3条跑道都只能用来凑热闹的吗？ </p>
+<p>   能够优化的关键出来了，我们是否能够通过剩下的3个跑道来决出第3名呢？当然可以，我们来进一步分析第3名的情况？  </p>
+<p>  ● 如果A2&gt;B1(即第2名为A2)，那么根据第6场比赛中的(B1&gt;C1&gt;D1&gt;E1)。 可以断定第3名只能在A3和B1中产生。  </p>
+<p>  ● 如果B1&gt;A2(即第2名为B1)，那么可以断定的第3名只能在A2, B2,C1 中产生。  </p>
+<p>  好了，结论也出来了，只要我们把[A2、B1、A3、B2、C1]作为第7场比赛的马，那么这场比赛的第2，3名一定是整个25匹马中的第2，3名。 </p>
+<p>  我们在这里列举出第7场的2，3名次的所有可能情况： </p>
+<p>  ① 第2名=A2，第3名=A3 </p>
+<p>  ② 第2名=A2，第3名=B1 </p>
+<p>  ③ 第2名=B1，第3名=A2 </p>
+<p>  ④ 第2名=B1，第3名=B2 </p>
+<p>  ⑤ 第2名=B1，第3名=C1 </p>
+<p>  (4) 第8场比赛很复杂，我们要根据第7场的所有可能的比赛情况进行分析。 </p>
+<p>  ① 第2名=A2，第3名=A3。那么此种情况下第4名只能在A4和B1中产生。 </p>
+<p>  ● 如果第4名=A4，那么第5名只能在A5、B1中产生。 </p>
+<p>  ● 如果第4名=B1，那么第5名只能在A4、B2、C1中产生。 </p>
+<p>  不管结果如何，此种情况下，第4、5名都可以在第8场比赛中决出。其中比赛马匹为[A4、A5、B1、B2、C1]  </p>
+<p>  ② 第2名=A2，第3名=B1。那么此种情况下第4名只能在A3、B2、C1中产生。 </p>
+<p>  ● 如果第4名=A3，那么第5名只能在A4、B2、C1中产生。 </p>
+<p>  ● 如果第4名=B2，那么第5名只能在A3、B3、C1中产生。 </p>
+<p>  ● 如果第4名=C1，那么第5名只能在A3、B2、C2、D1中产生。 </p>
+<p>  那么，第4、5名需要在马匹[A3、B2、B3、C1、A4、C2、D1]七匹马中产生，则必须比赛两场才行，也就是到第9场角逐出全部的前5名。  </p>
+<p>  ③ 第2名=B1，第3名=A2。那么此种情况下第4名只能在A3、B2、C1中产生。 </p>
+<p>  情况和②一样，必须角逐第9场 </p>
+<p>  ④ 第2名=B1，第3名=B2。 那么此种情况下第4名只能在A2、B3、C1中产生。 </p>
+<p>  ● 如果第4名=A2，那么第5名只能在A3、B3、C1中产生。 </p>
+<p>  ● 如果第4名=B3，那么第5名只能在A2、B4、C1中产生。 </p>
+<p>  ● 如果第4名=C1，那么第5名只能在A2、B3、C2、D1中产生。 </p>
+<p>  那么，第4、5名需要在马匹[A2、B3、B4、C1、A3、C2、D1]七匹马中产 生，则必须比赛两场才行，也就是到第9场角逐出全部的前5名。  </p>
+<p>  ⑤ 第2名=B1，第3名=C1。那么此种情况下第4名只能在A2、B2、C2、D1中产生。 </p>
+<p>  ● 如果第4名=A2，那么第5名只能在A3、B2、C2、D1中产生。 </p>
+<p>  ● 如果第4名=B2，那么第5名只能在A2、B3、C2、D1中产生。 </p>
+<p>  ● 如果第4名=C2，那么第5名只能在A2、B2、C3、D1中产生。 </p>
+<p>  ● 如果第4名=D1，那么第5名只能在A2、B2、C2、D2、E2中产生。 </p>
+<p>  那么，第4、5名需要在马匹[A2、B2、C2、D1、A3、B3、C3、D2、E1]九匹马中 产 生，因此也必须比赛两场，也就是到第9长决出胜负。  </p>
+<p>  总结：最好情况可以在第8场角逐出前5名，最差也可以在第9场搞定。  </p>
+<p>  来源：iteye.com/blog/hxraid-662643  </p>
+<h2 id="2-砝码称轻重"><a href="#2-砝码称轻重" class="headerlink" title="2. 砝码称轻重"></a><strong>2. 砝码称轻重</strong></h2><p>  这一类的题目有很多  这里只举几个经典的： </p>
+<p>  \1. 有一个天平，九个砝码，其中一个砝码比另八个要轻一些，问至少要用天平称几次才能将轻的那个找出来？ 答案：2次  </p>
+<p>  \2. 十组砝码每组十个，每个砝码都是10g重，但是现在其中有一组砝码每个都只有9g重，现有一个能显示克数的秤，最少称几次能找到轻的那组？ 答案：1次  </p>
+<h3 id="有一个天平，九个砝码，一个轻一些，用天平至少几次能找到轻的？"><a href="#有一个天平，九个砝码，一个轻一些，用天平至少几次能找到轻的？" class="headerlink" title="有一个天平，九个砝码，一个轻一些，用天平至少几次能找到轻的？"></a><strong>有一个天平，九个砝码，一个轻一些，用天平至少几次能找到轻的？</strong></h3><p>  <strong>至少2次：第一次，一边3个，哪边轻就在哪边，一样重就是剩余的3个；<br> 第二次，一边1个，哪边轻就是哪个，一样重就是剩余的那个；<br> 答：至少称2次．</strong>  </p>
+<p>​    </p>
+<h3 id="有十组砝码每组十个，每个砝码重10g，其中一组每个只有9g，有能显示克数的秤最少几次能找到轻的那一组砝码？"><a href="#有十组砝码每组十个，每个砝码重10g，其中一组每个只有9g，有能显示克数的秤最少几次能找到轻的那一组砝码？" class="headerlink" title="有十组砝码每组十个，每个砝码重10g，其中一组每个只有9g，有能显示克数的秤最少几次能找到轻的那一组砝码？"></a><strong>有十组砝码每组十个，每个砝码重10g，其中一组每个只有9g，有能显示克数的秤最少几次能找到轻的那一组砝码？</strong></h3><p>  <strong>将砝码分组1~10，第一组拿一个，第二组拿两个以此类推。。第十组拿十个放到秤上称出克数x，则y = 550 - x，第y组就是轻的那组</strong>  </p>
+<h2 id=""><a href="#" class="headerlink" title=""></a></h2><h2 id="3-药瓶毒白鼠"><a href="#3-药瓶毒白鼠" class="headerlink" title="3. 药瓶毒白鼠"></a><strong>3. 药瓶毒白鼠</strong></h2><p>  有1000个一模一样的瓶子，其中有999瓶是普通的水，有1瓶是毒药。任何喝下毒药的生命都会在一星期之后死亡。现在你只有10只小白鼠和1个星期的时间，如何检验出哪个瓶子有毒药？ </p>
+<p>  答案： </p>
+<p>  1、将10只老鼠剁成馅儿，分到1000个瓶盖中，每个瓶盖倒入适量相应瓶子的液体，置于户外，并每天补充适量相应的液体，观察一周，看哪个瓶盖中的肉馅没有腐烂或生蛆。（最好不要这样回答） </p>
+<h3 id="2"><a href="#2" class="headerlink" title="2."></a>2.</h3><p>  首先一共有1000瓶，2的10次方是1024，刚好大于1000，也就是说，1000瓶药品可以使用10位二进制数就可以表示。从第一个开始： </p>
+<p>  第一瓶 ：    00 0000 0001 </p>
+<p>  第二瓶：    00 0000 0010 </p>
+<p>  第三瓶：    00 0000 0011 </p>
+<p>  …… </p>
+<p>  第999瓶：    11 1111 0010 </p>
+<p>  第1000瓶：   11 1111 0011 </p>
+<p>  需要十只老鼠，如果按顺序编号，ABCDEFGHIJ分别代表从低位到高位每一个位。 每只老鼠对应一个二进制位，如果该位上的数字为1，则给老鼠喝瓶里的药。 </p>
+<p>  观察，若死亡的老鼠编号为：ACFGJ，一共死去五只老鼠，则对应的编号为  10 0110 0101，则有毒的药品为该编号的药品，转为十进制数为：613号。（这才是正解，当然前提是老鼠还没被撑死） </p>
+<h2 id="4-绳子两头烧"><a href="#4-绳子两头烧" class="headerlink" title="4. 绳子两头烧"></a><strong>4. 绳子两头烧</strong></h2><p>  现有若干不均匀的绳子，烧完这根绳子需要一个小时，问如何准确计时15分钟，30分钟，45分钟，75分钟。。。 </p>
+<h3 id="15：对折之后两头烧-要求对折之后绑的够紧，否则看45分钟解法"><a href="#15：对折之后两头烧-要求对折之后绑的够紧，否则看45分钟解法" class="headerlink" title="15：对折之后两头烧(要求对折之后绑的够紧，否则看45分钟解法)"></a>15：对折之后两头烧(要求对折之后绑的够紧，否则看45分钟解法)</h3><h3 id="30：两头烧-45：两根，一根两头烧一根一头烧，两头烧完过了30分钟，立即将第二根另一头点燃，到烧完又过15分钟，加起来45分钟-75：-30-45"><a href="#30：两头烧-45：两根，一根两头烧一根一头烧，两头烧完过了30分钟，立即将第二根另一头点燃，到烧完又过15分钟，加起来45分钟-75：-30-45" class="headerlink" title="30：两头烧  45：两根，一根两头烧一根一头烧，两头烧完过了30分钟，立即将第二根另一头点燃，到烧完又过15分钟，加起来45分钟  75：=30+45"></a>30：两头烧  45：两根，一根两头烧一根一头烧，两头烧完过了30分钟，立即将第二根另一头点燃，到烧完又过15分钟，加起来45分钟  75：=30+45</h3><p>  。。。 </p>
+<h2 id="5-犯人猜颜色"><a href="#5-犯人猜颜色" class="headerlink" title="5. 犯人猜颜色"></a><strong>5. 犯人猜颜色</strong></h2><p>​    </p>
+<p>  一百个犯人站成一纵列，每人头上随机带上黑色或白色的帽子，各人不知道自己帽子的颜色，但是能看见自己前面所有人帽子的颜色．<br> 然后从最后一个犯人开始，每人只能用同一种声调和音量说一个字：”黑”或”白”，<br> 如果说中了自己帽子的颜色，就存活，说错了就拉出去斩了，<br> 说的答案所有犯人都能听见，<br> 是否说对，其他犯人不知道，<br> 在这之前，所有犯人可以聚在一起商量策略，<br> 问如果犯人都足够聪明而且反应足够快，100个人最大存活率是多少？  </p>
+<p>  答案：这是一道经典推理题  </p>
+<p>  1、最后一个人如果看到奇数顶黑帽子报“黑”否则报“白”，他可能死  </p>
+<p>  2、其他人记住这个值（实际是黑帽奇偶数），在此之后当再听到黑时，黑帽数量减一  </p>
+<p>  3、从倒数第二人开始，就有两个信息：记住的值与看到的值，相同报“白”，不同报“黑”  </p>
+<p>  99人能100%存活，1人50%能活 </p>
+<p>  除此以外，此题还有变种：每个犯人只能看见前面一个人帽子颜色又能最多存活多少人？ </p>
+<p>  答案：在上题基础上，限制了条件，这时上次的方法就不管用了，此时只能约定偶数位犯人说他前一个人的帽子颜色，奇数犯人获取信息100%存活，偶数犯人50几率存活。 </p>
+<h2 id="6-猴子搬香蕉"><a href="#6-猴子搬香蕉" class="headerlink" title="6. 猴子搬香蕉"></a><strong>6. 猴子搬香蕉</strong></h2><p>  一个小猴子边上有100根香蕉，它要走过50米才能到家，每次它最多搬50根香蕉，（多了就被压死了），它每走 </p>
+<p>  1米就要吃掉一根，请问它最多能把多少根香蕉搬到家里。（提示：他可以把香蕉放下往返的走，但是必须保证它每走一米都能有香蕉吃。也可以走到n米时，放下一些香蕉，拿着n根香蕉走回去重新搬50根。） </p>
+<p>  答案：这种试题通常有一个迷惑点，让人看不懂题目的意图。此题迷惑点在于：走一米吃一根香蕉，一共走50米，那不是把50根香蕉吃完了吗？如果要回去搬另外50根香蕉，则往回走的时候也要吃香蕉，这样每走一米需要吃掉三根香蕉，走50米岂不是需要150根香蕉？ </p>
+<p>  其实不然，本题关键点在于：猴子搬箱子的过程其实分为两个阶段，第一阶段：来回搬，当香蕉数目大于50根时，猴子每搬一米需要吃掉三根香蕉。第二阶段：香蕉数《=50，直接搬回去。每走一米吃掉1根。 </p>
+<p>  我们分析第一阶段：假如把100根香蕉分为两箱。一箱50根。 </p>
+<p>  第一步，把A箱搬一米，吃一根。 </p>
+<p>  第二步，往回走一米，吃一根。 </p>
+<p>  第三步，把B箱搬一米，吃一根。 </p>
+<p>  这样，把所有香蕉搬走一米需要吃掉三根香蕉。 </p>
+<p>  这样走到第几米的时候，香蕉数刚好小于50呢？ </p>
+<p>  100-(n<em>3)&lt;50 &amp;&amp; 100-(n-1</em>3)&gt;50 </p>
+<p>  走到16米的时候，吃掉48根香蕉，剩52根香蕉。这步很有意思，它可以直接搬50往前走，也可以再来回搬一次，但结果都是一样的。到17米的时候，猴子还有49根香蕉。这时猴子就轻松啦。直接背着走就行。 </p>
+<p>  第二阶段： </p>
+<p>  走一米吃一根。 </p>
+<p>  把剩下的50-17=33米走完。还剩49-33=16根香蕉。 </p>
+<h2 id="7-高楼扔鸡蛋"><a href="#7-高楼扔鸡蛋" class="headerlink" title="7. 高楼扔鸡蛋"></a><strong>7. 高楼扔鸡蛋</strong></h2><p>  有2个鸡蛋，从100层楼上往下扔，以此来测试鸡蛋的硬度。比如鸡蛋在第9层没有摔碎，在第10层摔碎了，那么鸡蛋不会摔碎的临界点就是9层。 </p>
+<p>  问：如何用最少的尝试次数，测试出鸡蛋不会摔碎的临界点？ </p>
+<p>  首先要说明的是这道题你要是一上来就说出正确答案，那说明你的智商不是超过160就是你做过这题。 </p>
+<p>  所以建议你循序渐进的回答，一上来就说最优解可能结果不会让你和面试官满意。 </p>
+<p>  答案： </p>
+<p>  1.暴力法  </p>
+<p>  举个栗子，最笨的测试方法，是什么样的呢？把其中一个鸡蛋，从第1层开始往下扔。如果在第1层没碎，换到第2层扔；如果在第2层没碎，换到第3层扔…….如果第59层没碎，换到第60层扔；如果第60层碎了，说明不会摔碎的临界点是第59层。 </p>
+<p>  在最坏情况下，这个方法需要扔100次。 </p>
+<ol start="2">
+<li><p>二分法  </p>
+<p>采用类似于二分查找的方法，把鸡蛋从一半楼层（50层）往下扔。 </p>
+<p>如果第一枚鸡蛋，在50层碎了，第二枚鸡蛋，就从第1层开始扔，一层一层增长，一直扔到第49层。 </p>
+<p>如果第一枚鸡蛋在50层没碎了，则继续使用二分法，在剩余楼层的一半（75层）往下扔…… </p>
+<p>这个方法在最坏情况下，需要尝试50次。 </p>
+<p>3.均匀法  </p>
+<p>如何让第一枚鸡蛋和第二枚鸡蛋的尝试次数，尽可能均衡呢？ </p>
+<p>很简单，做一个平方根运算，100的平方根是10。 </p>
+<p>因此，我们尝试每10层扔一次，第一次从10层扔，第二次从20层扔，第三次从30层……一直扔到100层。 </p>
+<p>这样的最好情况是在第10层碎掉，尝试次数为 1 + 9 = 10次。 </p>
+<p>最坏的情况是在第100层碎掉，尝试次数为 10 + 9 = 19次。 </p>
+</li>
+</ol>
+<p>  不过，这里有一个小小的优化点，我们可以从15层开始扔，接下来从25层、35层扔……一直到95层。 </p>
+<p>  这样最坏情况是在第95层碎掉，尝试次数为 9 + 9 = 18次。 </p>
+<p>  4.最优解法  </p>
+<p>  最优解法是反向思考的经典：如果最优解法在最坏情况下需要扔X次，那第一次在第几层扔最好呢？ </p>
+<p>  答案是：从X层扔 </p>
+<p>  假设最优的尝试次数的x次，为什么第一次扔就要选择第x层呢？ </p>
+<p>  这里的解释会有些烧脑，请小伙伴们坐稳扶好： </p>
+<p>  <strong>假设第一次扔在第x+1层：</strong>  </p>
+<p>  如果第一个鸡蛋碎了，那么第二个鸡蛋只能从第1层开始一层一层扔，一直扔到第x层。 </p>
+<p>  这样一来，我们总共尝试了x+1次，和假设尝试x次相悖。由此可见，第一次扔的楼层必须小于x+1层。 </p>
+<p>  <strong>假设第一次扔在第x-1层：</strong>  </p>
+<p>  如果第一个鸡蛋碎了，那么第二个鸡蛋只能从第1层开始一层一层扔，一直扔到第x-2层。 </p>
+<p>  这样一来，我们总共尝试了x-2+1 = x-1次，虽然没有超出假设次数，但似乎有些过于保守。 </p>
+<p>  <strong>假设第一次扔在第x层：</strong>  </p>
+<p>  如果第一个鸡蛋碎了，那么第二个鸡蛋只能从第1层开始一层一层扔，一直扔到第x-1层。 </p>
+<p>  这样一来，我们总共尝试了x-1+1 = x次，刚刚好没有超出假设次数。 </p>
+<p>  因此，要想尽量楼层跨度大一些，又要保证不超过假设的尝试次数x，那么第一次扔鸡蛋的最优选择就是第x层。 </p>
+<p>  那么算最坏情况，第二次你只剩下x-1次机会，按照上面的说法，你第二次尝试的位置必然是X+（X-1）； </p>
+<p>  以此类推我们可得： </p>
+<p>  x + (x-1) + (x-2) + … + 1 = 100 </p>
+<p>  这个方程式不难理解： </p>
+<p>  左边的多项式是各次扔鸡蛋的楼层跨度之和。由于假设尝试x次，所以这个多项式共有x项。 </p>
+<p>  右边是总的楼层数100。 </p>
+<p>  下面我们来解这个方程： </p>
+<p>  x + (x-1) + (x-2) + … + 1 = 100 转化为 </p>
+<p>  (x+1)*x/2 = 100 </p>
+<p>  最终x向上取整，得到 x = 14 </p>
+<p>  因此，最优解在最坏情况的尝试次数是14次，第一次扔鸡蛋的楼层也是14层。 </p>
+<p>  最后，让我们把第一个鸡蛋没碎的情况下，所尝试的楼层数完整列举出来： </p>
+<p>  14，27， 39， 50， 60， 69， 77， 84， 90， 95， 99， 100 </p>
+<p>  举个栗子验证下： </p>
+<p>  假如鸡蛋不会碎的临界点是65层，那么第一个鸡蛋扔出的楼层是14，27，50，60，69。这时候啪的一声碎了。 </p>
+<p>  第二个鸡蛋继续，从61层开始，61，62，63，64，65，66，啪的一声碎了。 </p>
+<p>  因此得到不会碎的临界点65层，总尝试次数是 6 + 6 = 12 &lt; 14 。 </p>
+<p>  下面是我个人的理解：这个更像是优化版的均匀法，均匀法让你第二次尝试不超过10，但是第一次的位置无法保证（最多要9次，最好一次），这个由于每多一次尝试，楼层间隔就-1，最终使得第一次与第二次的和完全均匀（最差情况）。 </p>
+<p>  但是核心思路是逆向思考，因为即使理解了需要两次的和均匀也很难得到第一次要在哪层楼扔。 </p>
+<p>  一旦理解了这种方法，多少层楼你都不会怕啦~ </p>
+<p>  来源：<a href="https://blog.csdn.net/qq_38316721/article/details/81351297" target="_blank" rel="noopener">https://blog.csdn.net/qq_38316721/article/details/81351297</a>  </p>
+<h2 id="8-轮流拿石子-lt-头条问过-gt"><a href="#8-轮流拿石子-lt-头条问过-gt" class="headerlink" title="8. 轮流拿石子&lt;头条问过&gt;"></a><strong>8. 轮流拿石子&lt;头条问过&gt;</strong></h2><p>  问题：一共有N颗石子（或者其他乱七八糟的东西），每次最多取M颗最少取1颗，A，B轮流取，谁最后会获胜？（假设他们每次都取最优解）。 </p>
+<p>  答案：简单的巴什博奕：<a href="https://www.cnblogs.com/StrayWolf/p/5396427.html" target="_blank" rel="noopener">https://www.cnblogs.com/StrayWolf/p/5396427.html</a>  </p>
+<p>  问题：有若干堆石子，每堆石子的数量是有限的，二个人依次从这些石子堆中拿取任意的石子，至少一个（不能不取），最后一个拿光石子的人胜利。  </p>
+<p>  答案：较复杂的尼姆博弈：<a href="https://blog.csdn.net/BBHHTT/article/details/80199541" target="_blank" rel="noopener">https://blog.csdn.net/BBHHTT/article/details/80199541</a>  </p>
+<h2 id="9-蚂蚁走树枝"><a href="#9-蚂蚁走树枝" class="headerlink" title="9. 蚂蚁走树枝"></a><strong>9. 蚂蚁走树枝</strong></h2><p>  问题：放N只蚂蚁在一条长度为M树枝上，蚂蚁与蚂蚁之间碰到就各自往反方向走，问总距离或者时间。 </p>
+<p>  答案：这个其实就一个诀窍：蚂蚁相碰就往反方向走，可以直接看做没有发生任何事：大家都相当于独立的 </p>
+<p>  A蚂蚁与B蚂蚁相碰后你可以看做没有发生这次碰撞，这样无论是求时间还是距离都很简单了。 </p>
+<h2 id="10-海盗分金币"><a href="#10-海盗分金币" class="headerlink" title="10. 海盗分金币"></a><strong>10. 海盗分金币</strong></h2><p>   问题：5个海盗抢到了100枚金币，每一颗都一样的大小和价值。  </p>
+<p>   他们决定这么分：  </p>
+<ol>
+<li><p>​     抽签决定自己的号码（1，2，3，4，5）    </p>
+</li>
+<li><p>​     首先，由1号提出分配方案，然后大家5人进行表决，当半数以上的人同意时（不包括半数，这是重点），按照他的提案进行分配，否则将被扔入大海喂鲨鱼。    </p>
+</li>
+<li><p>​     如果1号死后，再由2号提出分配方案，然后大家4人进行表决，当且仅当半超过半数的人同意时，按照他的提案进行分配，否则将被扔入大海喂鲨鱼。    </p>
+</li>
+<li><p>​     依次类推……    </p>
+<p>假设每一位海盗都足够聪明，并且利益至上，能多分一枚金币绝不少分，那么1号海盗该怎么分金币才能使自己分到最多的金币呢？  </p>
+<p>答案：  </p>
+<p>从后向前推，如果1至3号强盗都喂了<a href="https://baike.baidu.com/item/鲨鱼/40174" target="_blank" rel="noopener">鲨鱼</a>，只剩4号和5号的话，5号一定投反对票让4号喂鲨鱼，以独吞全部金币。所以，4号惟有支持3号才能保命。  </p>
+</li>
+</ol>
+<p>   3号知道这一点，就会提出“100，0，0”的分配方案，对4号、5号一毛不拔而将全部金币归为已有，因为他知道4号一无所获但还是会投赞成票，再加上自己一票，他的方案即可通过。  </p>
+<p>   不过，2号推知3号的方案，就会提出“98，0，1，1”的方案，即放弃3号，而给予4号和5号各一枚金币。由于该方案对于4号和5号来说比在3号分配时更为有利，他们将支持他而不希望他出局而由3号来分配。这样，2号将拿走98枚金币。  </p>
+<p>   同样，2号的方案也会被1号所洞悉，1号并将提出（97，0，1，2，0）或（97，0，1，0，2）的方案，即放弃2号，而给3号一枚金币，同时给4号（或5号）2枚金币。由于1号的这一方案对于3号和4号（或5号）来说，相比2号分配时更优，他们将投1号的赞成票，再加上1号自己的票，1号的方案可获通过，97枚金币可轻松落入囊中。这无疑是1号能够获取最大收益的方案了！答案是：1号强盗分给3号1枚金币，分给4号或5号强盗2枚，自己独得97枚。分配方案可写成（97，0，1，2，0）或（97，0，1，0，2）。  </p>
+<p>   此题还有变种：就是只需要一半人同意即可，不需要一半人以上同意方案就可以通过，在其他条件不变的情况下，1号该怎么分配才能获得最多的金币？  </p>
+<p>   答案：类似的推理过程  </p>
+<p>   4号：4号提出的方案的时候肯定是最终方案，因为不管5号同意不同意都能通过，所以4号5号不必担心自己被投入大海。那此时5号获得的金币为0，4号获得的金币为100。  </p>
+<p>   5号：因为4号提方案的时候 ，自己获取的金币为0 。所以只要4号之前的人分配给自己的金币大于0就同意该方案。  </p>
+<p>   4号：如果3号提的方案一定能获得通过（原因：3号给5号的金币大于0， 5号就同意 因此就能通过），那自己获得的金币就为0，所以只要2号让自己获得的金币大于0就会同意。  </p>
+<p>   3号：因为到了自己提方案的时候可以给5号一金币，自己的方案就能通过，但考虑到2号提方案的时候给4号一个金币，2号的方案就会通过，那自己获得的金币就为0。所以只要1号让自己获得的金币大于0就会同意。  </p>
+<p>   2号：因为到了自己提方案的时候只要给4号一金币，就能获得通过，根本就不用顾及3 号 5号同意不同意，所以不管1号怎么提都不会同意。  </p>
+<p>   1号：2号肯定不会同意。但只要给3号一块金币，5号一块金币（因为5号如果不同意，那么4号分配的时候，他什么都拿不到）就能获得通过。  </p>
+<p>   所以答案是 98，0，1，0，1。  </p>
+<p>   类似的问题也可用类似的推理，并不难  </p>
+<h2 id="11-三个火枪手"><a href="#11-三个火枪手" class="headerlink" title="11. 三个火枪手"></a><strong>11. 三个火枪手</strong></h2><p>   问题：彼此痛恨的甲、乙、丙三个枪手准备决斗。甲枪法最好，十发八中；乙枪法次之，十发六中；丙枪法最差，十发四中。如果三人同时***，并且每人每轮只发一枪；那么枪战后，谁活下来的机会大一些？   </p>
+<p>   答案：   </p>
+<p>​     一般人认为甲的枪法好，活下来的可能性大一些。但合乎推理的结论是，枪法最糟糕的丙活下来的几率最大。    </p>
+<p>​     那么我们先来分析一下各个枪手的策略。    </p>
+<p>​     如同田忌赛马一般，枪手甲一定要对枪手乙先***。因为乙对甲的威胁要比丙对甲的威胁更大，甲应该首先干掉乙，这是甲的最佳策略。    </p>
+<p>​     同样的道理，枪手乙的最佳策略是第一枪瞄准甲。乙一旦将甲干掉，乙和丙进行对决，乙胜算的概率自然大很多。    </p>
+<p>​     枪手丙的最佳策略也是先对甲***。乙的枪法毕竟比甲差一些，丙先把甲干掉再与乙进行对决，丙的存活概率还是要高一些。    </p>
+<p>​     我们根据分析来计算一下三个枪手在上述情况下的存活几率：<br> 第一轮：甲射乙，乙射甲，丙射甲。<br> 甲的活率为24%（40% X 60%）    </p>
+<p>​     乙的活率为20%(100% - 80%)    </p>
+<p>​     丙的活率为100%（无人射丙）。    </p>
+<p>​     由于丙100％存活率，因此根据上轮甲乙存活的情况来计算三人第二轮的存活几率：    </p>
+<p>​     情况1：甲活乙死（24% X 80% = 19.2%）<br> 甲射丙，丙射甲：甲的活率为60%，丙的活率为20%。<br> 情况2：乙活甲死（20% X 76% = 15.2%）<br> 乙射丙，丙射乙：乙的活率为60%，丙的活率为40%。<br> 情况3：甲乙同活（24% X 20% = 4.8%）<br> 重复第一轮。<br> 情况4：甲乙同死（76% X 80% = 60.8%）<br> 枪战结束。    </p>
+<p>​     据此来计算三人活率：<br> 甲的活率为(19.2% X 60%) + (4.8% X 24%) = 12.672%<br> 乙的活率为(15.2% X 60%) + (4.8% X 20%) = 10.08%<br> 丙的活率为(19.2% X 20%) + (15.2% X 40%) + (4.8% X 100%) + (60.8% X 100%) = 75.52%    </p>
+<p>​     通过对两轮枪战的详细概率计算，我们发现枪法最差的丙存活的几率最大，枪法较好的甲和乙的存活几率却远低于丙的存活几率。    </p>
+<p>   来自：<a href="https://www.zhihu.com/question/288093713/answer/482192781" target="_blank" rel="noopener">https://www.zhihu.com/question/288093713/answer/482192781</a>   </p>
+<h2 id="12-囚犯拿豆子"><a href="#12-囚犯拿豆子" class="headerlink" title="12. 囚犯拿豆子"></a><strong>12. 囚犯拿豆子</strong></h2><p>   问题：有5个囚犯被***，他们请求上诉，于是法官愿意给他们一个机会。   </p>
+<p>   犯人抽签分好顺序，按序每人从100粒豆子中随意抓取，最多可以全抓，最少可以不抓，可以和别人抓的一样多。   </p>
+<p>   最终，抓的最多的和最少的要被处死。   </p>
+<p>​      </p>
+<p>   1、他们都是非常聪明且自私的人。  </p>
+<p>   2、他们的原则是先求保命。如果不能保命，就拉人陪葬。  </p>
+<p>   3、100颗不必都分完。  </p>
+<p>   4、若有重复的情况，则也算最大或最小，一并处死（中间重复不算）。  </p>
+<p>   假设每个犯人都足够聪明，但每个犯人并不知道其他犯人足够聪明。那么，谁活下来的可能性最大？   </p>
+<p>   答案：   </p>
+<p>​     不存在“谁活下来的可能性比较大”的问题。实际情况是5个人都要死。答案看起来很扯淡，但推理分析后却发现十分符合逻辑。    </p>
+<p>​<br>​    </p>
+<p>​     根据题意，一号知道有五个人抓豆子，为保性命，他只要让豆子在20颗以内就可以了。但是他足够聪明的话他一定拿20颗，因为无论多拿一颗：2,3,4号的人一定会拿20颗最后死的人就会是最多的1号和最少的5号  还是少拿一颗：2,3,4号拿20个后，5号选择也拿20个拉上1234号垫背。（下面会说为什么多拿少拿也只会相差一颗）    </p>
+<p>​     2号是知道1号抓了几颗豆子(20)的。那么，对于2号来说，只有2种选择：与1号一样多，或者不一样多。我们就从这里入手。    </p>
+<p>​     情况一，假如2号选择与1号的豆子数不一样多，也就是说2号选择比1号多或者比1号少。    </p>
+<p>​     我们先要证明，如果2号选择比1号多或者比1号少，那么他一定会选择比1号只多1颗或者只少1颗。    </p>
+<p>​     要证明这个并不算太难。因为每个囚犯的第一选择是先求保命，要保命就要尽量使自己的豆子数既不是最多也不是最少。当2号决定选择比1号多的时候，他已经可以保证自己不是最少，为了尽量使自己不是最多，当然比1号多出来的数量越小越好。因为这个数量如果与一号相差大于1的话，那么3号就有机会抓到的居中数，相差越大，二号成为最多的可能性也就越大。反之，当2号决定选择比1号少的时候，也是同样的道理，他会选择只比1号少1颗。既然2号只会会选择比1号多1颗或者比1号少1颗，那么1、2号的豆子数一定是2个连续的自然数，和一定是2n+1（其中1个人是n,另1人是n+1）。    </p>
+<p>​     轮到3号的时候，他可以从剩下的豆子数知道1、2号的数量和，也就不难计算出n的值。而3号也只有2个选择：n颗或者n+1颗。为什么呢？这与上面的证明是一样的道理，保命原则，取最接近的数量，这里不再赘述。    </p>
+<p>​     不过，3号选择的时候会有一个特殊情况，在这一情况下，他一定会选择较小的n，而不是较大的n+1。这一特殊情况就是，当3号知道自己选择了n后(已保证自己不是最多)，剩下的豆子数由于数量有限，4、5号中一定有人比n要少，这样自己一定可以活下来。计算的话就是 [100-(3n+1)]/2&lt;=n ，不难算出，在这个特殊情况下，n&gt;=20。也就是说，当1、2号选择了20或21颗的时候，3号只要选择20颗，就可以保证自己活下来。    </p>
+<p>​     这样一来剩下的豆子只剩39颗，4、5号至少有一人少于20颗的（这个人当然是后选的5号），这样死的将是5号和1、2号中选21颗的那个人。当然，1号、2号肯定不会有人选择21这一“倒霉”的数字（因为他们都是聪明人），这样的话，上述“特殊情况（即3号选择n）”就不会发生了。    </p>
+<p>​     综上所述，2345这四个人不难从剩下的豆子数知道前面几个人的数量总和，也就不难进而计算出n的值，而这样一来他们也只有n或者n+1这两种选择。最后的5号也是不难算出n的。在前4个人只选择了2个数字(n和n+1)的情况下，5号已是必死无疑，这时,根据“死也要拉几个垫背”的条件，5号会选择n或n+1，选择5个人一起完蛋。    </p>
+<p>​<br>​    </p>
+<p>​     情况二，如果2号选择了与1号不一样多的话，最终结果是5个人一起死，那么2号只有选择与1号一样多了。    </p>
+<p>​     那么1、2号的和就是2n，而3号如果选择n+1或者n -1的话，就又回到第一点的情况去了(前3个人的和是3m+1或3m+2)，于是3号也只能选择n ，当然，4号还是只能选n，最后的结果仍旧是5个人一起完蛋。    </p>
+<p>​<br>​    </p>
+<p>​     “最后处死抓的最多和最少的囚犯”严格执行这句话的话，除非有人舍己为人，死二留三。但这是足够聪明且自私的囚犯，所以这五个聪明人的下场是全死，这道题只不过是找了一个处死所有人的借口罢了. . . . . .    </p>
+<p>​<br>​    </p>
+<p>​     变种问题：如果每个囚犯都知道其他囚犯足够聪明，事情会怎么发展？    </p>
+<p>​     答案：    </p>
+<p>​     这样的情况下囚犯一也会像我们一样推导出前面的结论，那么根据自私的规定，他会直接拿完100个，大家一起完蛋(反正结局已定)    </p>
+<h2 id="13-学生猜生日-lt-笔试高频-gt"><a href="#13-学生猜生日-lt-笔试高频-gt" class="headerlink" title="13. 学生猜生日&lt;笔试高频&gt;"></a><strong>13. 学生猜生日&lt;笔试高频&gt;</strong></h2><p>   这种题目笔试中出现的次数比较多，用排除法比较好解决  </p>
+<h3 id="1"><a href="#1" class="headerlink" title="1."></a>1.</h3><p>   小明和小强都是张老师的学生，张老师的生日是M月N日,  </p>
+<p>   2人都知道张老师的生日是下列10组中的一天，张老师把M值告诉了小明,  </p>
+<p>   把N值告诉了小强，张老师问他们知道他的生日是那一天吗?  </p>
+<p>   3月4日 3月5日 3月8日  </p>
+<p>   6月4日 6月7日  </p>
+<p>   9月1日 9月5日  </p>
+<p>   12月1日 12月2日 12月8日  </p>
+<p>   小明说:如果我不知道的话，小强肯定也不知道.  </p>
+<p>   小强说:本来我也不知道，但是现在我知道了.  </p>
+<p>   小明说:哦，那我也知道了.  </p>
+<p>   请根据以上对话推断出张老师的生日是哪一天?  </p>
+<p>   答案：9月1日  </p>
+<p>   排除法：  </p>
+<p>   1.小明肯定小强不知道是哪天，排除所有月份里有单独日的月份：6月和12月&lt;因为如果小强的M是2或者7的话，小强就知道了，所以把6月7日与12月2日排除&gt;，所以小明拿到的是3或者9  </p>
+<p>   2.小强本来不知道，所以小强拿到的不是2或者7，但是小强现在知道了，说明把6月与12月排除后，小强拿到的是1,4,8中的一个&lt;这里小强肯定没拿到5，否则他不会知道是哪天的&gt;  </p>
+<p>   3.小明现在也知道了，说明小明拿到的不是3，否则他不会知道是3月4日还是3月8日的，所以小明拿到的是9才能唯一确定生日  </p>
+<p>   综上，答案是9月1日  </p>
+<h3 id="2-1"><a href="#2-1" class="headerlink" title="2."></a>2.</h3><p>   小明和小强是赵老师的学生，张老师的生日是M月N日，张老师  </p>
+<p>   把M值告诉小明，N值告诉小强  </p>
+<p>   给他们六个选项  </p>
+<p>   3月1日 3月3日 7月3日 7月5日   </p>
+<p>   9月1日 11月7日  </p>
+<p>   小明说:我猜不出来  </p>
+<p>   小强说:本来我也猜不出来，但是现在我知道了  </p>
+<p>   问:张老师生日多少  </p>
+<p>   答案：3月1日  </p>
+<p>   排除法：  </p>
+<p>   1.小明说猜不出来，说明小明拿到的不是单独出现的9或者11，说明老师生日只能是3月或者7月  </p>
+<p>   2.小强原本不知道，说明小强拿到的不是单独出现的5或者7，说明老是生日是1日或3日  </p>
+<p>   3.小强现在知道了，说明小强拿到的是1，因为如果拿到的是3，那么小强就不知道是3月3日还是7月3日了  </p>
+<p>   综上，老师生日是3月1日</p>
+<p>作者：代码不规范，测试两行泪<br>链接：<a href="https://www.nowcoder.com/discuss/262595" target="_blank" rel="noopener">https://www.nowcoder.com/discuss/262595</a><br>来源：牛客网</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/LeetCode226/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/16/LeetCode226/" class="post-title-link" itemprop="url">LeetCode226</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-17 02:26:09 / 修改时间：10:29:48" itemprop="dateCreated datePublished" datetime="2020-05-17T02:26:09+08:00">2020-05-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>575</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>翻转一棵二叉树。</p>
+<p>示例：</p>
+<p>输入：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">     4</span><br><span class="line">   &#x2F;   \</span><br><span class="line">  2     7</span><br><span class="line"> &#x2F; \   &#x2F; \</span><br><span class="line">1   3 6   9</span><br></pre></td></tr></table></figure>
+
+<p>输出：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">     4</span><br><span class="line">   &#x2F;   \</span><br><span class="line">  7     2</span><br><span class="line"> &#x2F; \   &#x2F; \</span><br><span class="line">9   6 3   1</span><br></pre></td></tr></table></figure>
+
+<p>备注:<br>这个问题是受到 Max Howell 的 原问题 启发的 ：</p>
+<blockquote>
+<p>谷歌：我们90％的工程师使用您编写的软件(Homebrew)，但是您却无法在面试时在白板上写出翻转二叉树这道题，这太糟糕了。</p>
+</blockquote>
+<p>递归求解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span> </span>&#123;</span><br><span class="line">      <span class="keyword">int</span> val;</span><br><span class="line">      TreeNode left;</span><br><span class="line">      TreeNode right;</span><br><span class="line">      TreeNode(<span class="keyword">int</span> x) &#123; val = x; &#125;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> TreeNode <span class="title">invertTree</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root==<span class="keyword">null</span>||(root.left==<span class="keyword">null</span>&amp;&amp;root.right==<span class="keyword">null</span>))&#123;</span><br><span class="line">            <span class="keyword">return</span> root;</span><br><span class="line">        &#125;</span><br><span class="line">        TreeNode tmp=root.left;</span><br><span class="line">        root.left=root.right;</span><br><span class="line">        root.right=tmp;</span><br><span class="line">        invertTree(root.left);</span><br><span class="line">        invertTree(root.right);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> root;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/16/LeetCode70/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -418,854 +1716,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/" class="post-title-link" itemprop="url">为什么 TCP 协议有粘包问题-转载</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-16 03:15:30 / 修改时间：13:46:07" itemprop="dateCreated datePublished" datetime="2020-05-16T03:15:30+08:00">2020-05-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>TCP/IP 协议簇建立了互联网中通信协议的概念模型，该协议簇中的两个主要协议就是 TCP 和 IP 协议。TCP/ IP 协议簇中的 TCP 协议能够保证数据段（Segment）的可靠性和顺序，有了可靠的传输层协议之后，应用层协议就可以直接使用 TCP 协议传输数据，不在需要关心数据段的丢失和重复问题<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:1" target="_blank" rel="noopener">1</a>。</p>
-<p><img src="https://img.draveness.me/2020-03-05-15834216958567-tcp-and-application-protocols.png" alt="tcp-and-application-protocols"></p>
-<p><strong>图 1 - TCP 协议与应用层协议</strong></p>
-<p>IP 协议解决了数据包（Packet）的路由和传输，上层的 TCP 协议不再关注路由和寻址<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:2" target="_blank" rel="noopener">2</a>，那么 TCP 协议解决的是传输的可靠性和顺序问题，上层不需要关心数据能否传输到目标进程，只要写入 TCP 协议的缓冲区的数据，协议栈几乎都能保证数据的送达。</p>
-<p>当应用层协议使用 TCP 协议传输数据时，TCP 协议可能会将应用层发送的数据分成多个包依次发送，而数据的接收方收到的数据段可能有多个『应用层数据包』组成，所以当应用层从 TCP 缓冲区中读取数据时发现粘连的数据包时，需要对收到的数据进行拆分。</p>
-<p>粘包并不是 TCP 协议造成的，它的出现是因为应用层协议设计者对 TCP 协议的错误理解，忽略了 TCP 协议的定义并且缺乏设计应用层协议的经验。本文将从 TCP 协议以及应用层协议出发，分析我们经常提到的 TCP 协议中的粘包是如何发生的：</p>
-<ul>
-<li>TCP 协议是面向字节流的协议，它可能会组合或者拆分应用层协议的数据；</li>
-<li>应用层协议的没有定义消息的边界导致数据的接收方无法拼接数据；</li>
-</ul>
-<p>很多人可能会认为粘包是一个比较低级的甚至不值得讨论的问题，但是在作者看来这个问题还是很有趣的，不是所有人都系统性地学过基于 TCP 的应用层协议设计，也不是所有人对 TCP 协议也没有那么深入的理解，相信很多人学习编程的过程都是自底向上的，所以作者认为这是一个值得回答的问题，我们应该传递正确的知识，而不是负面的和居高临下的情绪。</p>
-<h2 id="面向字节流"><a href="#面向字节流" class="headerlink" title="面向字节流"></a>面向字节流</h2><p>TCP 协议是面向连接的、可靠的、基于字节流的传输层通信协议<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:3" target="_blank" rel="noopener">3</a>，应用层交给 TCP 协议的数据并不会以消息为单位向目的主机传输，这些数据在某些情况下会被组合成一个数据段发送给目标的主机。</p>
-<p>Nagle 算法是一种通过减少数据包的方式提高 TCP 传输性能的算法<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:4" target="_blank" rel="noopener">4</a>。因为网络 带宽有限，它不会将小的数据块直接发送到目的主机，而是会在本地缓冲区中等待更多待发送的数据，这种批量发送数据的策略虽然会影响实时性和网络延迟，但是能够降低网络拥堵的可能性并减少额外开销。</p>
-<p>在早期的互联网中，Telnet 是被广泛使用的应用程序，然而使用 Telnet 会产生大量只有 1 字节负载的有效数据，每个数据包都会有 40 字节的额外开销，带宽的利用率只有 ~2.44%，Nagle 算法就是在当时的这种场景下设计的。</p>
-<p>当应用层协议通过 TCP 协议传输数据时，实际上待发送的数据先被写入了 TCP 协议的缓冲区，如果用户开启了 Nagle 算法，那么 TCP 协议可能不会立刻发送写入的数据，它会等待缓冲区中数据超过最大数据段（MSS）或者上一个数据段被 ACK 时才会发送缓冲区中的数据。</p>
-<p><img src="https://img.draveness.me/2020-03-05-15834216958612-nagle-algorithm.png" alt="nagle-algorithm"></p>
-<p><strong>图 2 - Nagle 算法</strong></p>
-<p>几十年前还会发生网络拥塞的问题，但是今天的网络带宽资源不再像过去那么紧张，在默认情况下，Linux 内核都会使用如下的方式默认关闭 Nagle 算法：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP_NODELAY = <span class="number">1</span></span><br></pre></td></tr></table></figure>
-
-<p>Linux 内核中使用如下所示的 <a href="https://github.com/torvalds/linux/blob/bd2463ac7d7ec51d432f23bf0e893fb371a908cd/net/ipv4/tcp_output.c#L1897" target="_blank" rel="noopener"><code>tcp_nagle_test</code></a> 函数测试我们是否应该发送当前的 TCP 数据段，感兴趣的读者可以以这段代码为入口详细了解 Nagle 算法在今天的实现：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">tcp_nagle_test</span><span class="params">(<span class="keyword">const</span> struct tcp_sock *tp, <span class="keyword">const</span> struct sk_buff *skb,</span></span></span><br><span class="line"><span class="function"><span class="params">				  <span class="keyword">unsigned</span> <span class="keyword">int</span> cur_mss, <span class="keyword">int</span> nonagle)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (nonagle &amp; TCP_NAGLE_PUSH)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tcp_urg_mode(tp) || (TCP_SKB_CB(skb)-&gt;tcp_flags &amp; TCPHDR_FIN))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!tcp_nagle_check(skb-&gt;len &lt; cur_mss, tp, nonagle))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Nagle 算法确实能够在数据包较小时提高网络带宽的利用率并减少 TCP 和 IP 协议头带来的额外开销，但是使用该算法也可能会导致应用层协议多次写入的数据被合并或者拆分发送，当接收方从 TCP 协议栈中读取数据时会发现不相关的数据出现在了同一个数据段中，应用层协议可能没有办法对它们进行拆分和重组。</p>
-<p>除了 Nagle 算法之外，TCP 协议栈中还有另一个用于延迟发送数据的选项 <code>TCP_CORK</code>，如果我们开启该选项，那么当发送的数据小于 MSS 时，TCP 协议就会延迟 200ms 发送该数据或者等待缓冲区中的数据超过 MSS<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:5" target="_blank" rel="noopener">5</a>。</p>
-<p>无论是 <code>TCP_NODELAY</code> 还是 <code>TCP_CORK</code>，它们都会通过延迟发送数据来提高带宽的利用率，它们会对应用层协议写入的数据进行拆分和重组，而这些机制和配置能够出现的最重要原因是 — TCP 协议是基于字节流的协议，其本身没有数据包的概念，不会按照数据包发送数据。</p>
-<h2 id="消息边界"><a href="#消息边界" class="headerlink" title="消息边界"></a>消息边界</h2><p>如果我们系统性地学习过 TCP 协议以及基于 TCP 的应用层协议设计，那么设计一个能够被 TCP 协议栈任意拆分和组装数据包的应用层协议就不会有什么问题。既然 TCP 协议是基于字节流的，这其实就意味着应用层协议要自己划分消息的边界。</p>
-<p>如果我们能在应用层协议中定义消息的边界，那么无论 TCP 协议如何对应用层协议的数据包进程拆分和重组，接收方都能根据协议的规则恢复对应的消息。在应用层协议中，最常见的两种解决方案就是基于长度或者基于终结符（Delimiter）。</p>
-<p><img src="https://img.draveness.me/2020-03-05-15834216958643-message-framing.png" alt="message-framing"></p>
-<p><strong>图 3 - 实现消息边界的方法</strong></p>
-<p>基于长度的实现有两种方式，一种是使用固定长度，所有的应用层消息都使用统一的大小，另一种方式是使用不固定长度，但是需要在应用层协议的协议头中增加表示负载长度的字段，这样接收方才可以从字节流中分离出不同的消息，HTTP 协议的消息边界就是基于长度实现的：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: text/html; charset=UTF-8</span><br><span class="line"><span class="attribute">Content-Length</span>: 138</span><br><span class="line">...</span><br><span class="line"><span class="attribute">Connection</span>: close</span><br><span class="line"></span><br><span class="line">&lt;html&gt;</span><br><span class="line">  &lt;head&gt;</span><br><span class="line">    &lt;title&gt;An Example Page&lt;/title&gt;</span><br><span class="line">  &lt;/head&gt;</span><br><span class="line">  &lt;body&gt;</span><br><span class="line">    &lt;p&gt;Hello World, this is a very simple HTML document.&lt;/p&gt;</span><br><span class="line">  &lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
-
-<p>在上述 HTTP 消息中，我们使用 <code>Content-Length</code> 头表示 HTTP 消息的负载大小，当应用层协议解析到足够的字节数后，就能从中分离出完整的 HTTP 消息，无论发送方如何处理对应的数据包，我们都可以遵循这一规则完成 HTTP 消息的重组<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:6" target="_blank" rel="noopener">6</a>。</p>
-<p>不过 HTTP 协议除了使用基于长度的方式实现边界，也会使用基于终结符的策略，当 HTTP 使用块传输（Chunked Transfer）机制时，HTTP 头中就不再包含 <code>Content-Length</code> 了，它会使用负载大小为 0 的 HTTP 消息作为终结符表示消息的边界。</p>
-<p>当然除了这两种方式之外，我们可以基于特定的规则实现消息的边界，例如：使用 TCP 协议发送 JSON 数据，接收方可以根据接收到的数据是否能够被解析成合法的 JSON 判断消息是否终结。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TCP 协议粘包问题是因为应用层协议开发者的错误设计导致的，他们忽略了 TCP 协议数据传输的核心机制 — 基于字节流，其本身不包含消息、数据包等概念，所有数据的传输都是流式的，需要应用层协议自己设计消息的边界，即消息帧（Message Framing），我们重新回顾一下粘包问题出现的核心原因：</p>
-<ol>
-<li>TCP 协议是基于字节流的传输层协议，其中不存在消息和数据包的概念；</li>
-<li>应用层协议没有使用基于长度或者基于终结符的消息边界，导致多个消息的粘连；</li>
-</ol>
-<p>网络协议的学习过程非常有趣，不断思考背后的问题能够让我们对定义有更深的认识。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
-<ul>
-<li>基于 UDP 协议的应用层协议应该如何设计？会出现粘包的问题么？</li>
-<li>有哪些应用层协议使用基于长度的分帧？又有哪些使用基于终结符的分帧？</li>
-</ul>
-<blockquote>
-<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
-</blockquote>
-<h2 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h2><ul>
-<li><a href="https://draveness.me/whys-the-design-tcp-three-way-handshake" target="_blank" rel="noopener">为什么 TCP 建立连接需要三次握手</a></li>
-<li><a href="https://draveness.me/whys-the-design-tcp-segment-ip-packet" target="_blank" rel="noopener">为什么 TCP/IP 协议会拆分数据</a></li>
-</ul>
-<h2 id="推荐阅读"><a href="#推荐阅读" class="headerlink" title="推荐阅读"></a>推荐阅读</h2><ul>
-<li>JC Mogul. “Rethinking the TCP Nagle Algorithm” <a href="http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf" target="_blank" rel="noopener">http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf</a></li>
-<li>Stephen Cleary. Apr 30, 2009. “Message Framing” <a href="https://blog.stephencleary.com/2009/04/message-framing.html" target="_blank" rel="noopener">https://blog.stephencleary.com/2009/04/message-framing.html</a></li>
-</ul>
-<hr>
-<ol>
-<li>Wikipedia: Internet protocol suite <a href="https://en.wikipedia.org/wiki/Internet_protocol_suite" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Internet_protocol_suite</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:1" target="_blank" rel="noopener">↩︎</a></li>
-<li>What is the Internet Protocol? <a href="https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/" target="_blank" rel="noopener">https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:2" target="_blank" rel="noopener">↩︎</a></li>
-<li>Wikipedia: Transmission Control Procol <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Transmission_Control_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:3" target="_blank" rel="noopener">↩︎</a></li>
-<li>Nagle, J., “Congestion Control in IP/TCP Internetworks”, RFC 896, DOI 10.17487/RFC0896, January 1984, <a href="https://www.rfc-editor.org/info/rfc896" target="_blank" rel="noopener">https://www.rfc-editor.org/info/rfc896</a>. <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:4" target="_blank" rel="noopener">↩︎</a></li>
-<li>Is there any significant difference between TCP_CORK and TCP_NODELAY in this use-case? <a href="https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use" target="_blank" rel="noopener">https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:5" target="_blank" rel="noopener">↩︎</a></li>
-<li>Wikipedia: Hypertext Transfer Protocol <a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:6" target="_blank" rel="noopener">↩︎</a></li>
-</ol>
-<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/" target="_blank" rel="noopener">原文地址</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20MD5%20%E4%B8%8D%E8%83%BD%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%AF%86%E7%A0%81-%E8%BD%AC%E8%BD%BD/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20MD5%20%E4%B8%8D%E8%83%BD%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%AF%86%E7%A0%81-%E8%BD%AC%E8%BD%BD/" class="post-title-link" itemprop="url">为什么 MD5 不能用于存储密码-转载</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-05-15 13:08:08" itemprop="dateCreated datePublished" datetime="2020-05-15T13:08:08+08:00">2020-05-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-16 13:43:11" itemprop="dateModified" datetime="2020-05-16T13:43:11+08:00">2020-05-16</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AE%89%E5%85%A8/" itemprop="url" rel="index"><span itemprop="name">安全</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>很多软件工程师都认为 MD5 是一种加密算法，然而这种观点其实是大错特错并且十分危险的，作为一个 1992 年第一次被公开的算法，到今天为止已经被发现了一些致命的漏洞，我们在生产环境的任何场景都不应该继续使用 MD5 算法，无论是对数据或者文件的内容进行校验还是用于所谓的『加密』。</p>
-<p>这篇文章的主要目的是帮助读者理解 MD5 到底是什么，为什么我们不应该继续使用它，尤其是不应该使用它在数据库中存储密码，作者也希望使用过 MD5 或者明文存储密码的开发者们能够找到更加合理和安全的方式对用户的这些机密信息进行存储（这样也可以间接提高我在各类网站中存储密码的安全性）。</p>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>与『为什么我们不能使用 MD5 来存储密码？』这一问题相似的其实还有『为什么我们不能使用明文来存储密码？』，使用明文来存储密码是一种看起来就不可行的方案，除非我们能够 100% 保证数据库中的密码字段不会被<strong>任何人</strong>访问到，不仅包括潜在的攻击者，还包括系统的开发者和管理员。</p>
-<p>不过这是一个非常理想的情况，在实际的生产环境中，我们不能抵御来自黑客的所有攻击，甚至也不能完全阻挡开发者和管理员的访问，因为我们总需要信任并授权一些人或者程序具有当前数据库的所有访问权限，这也就给攻击者留下了可以利用的漏洞，在抵御外部攻击时我们没有办法做到全面，只能尽可能提高攻击者的成本，这也就是使用 MD5 或者其他方式存储密码的原因了。</p>
-<p><img src="https://img.draveness.me/md5-hashed-values.png" alt="md5-hashed-values"></p>
-<p>很多开发者对于 MD5 的作用和定义都有着非常大的误解，<strong>MD5 并不是一种加密算法，而是一种摘要算法</strong>，我们也可以叫它哈希函数，哈希函数可以将无限键值空间中的所有键都均匀地映射到一个指定大小的键值空间中；一个好的摘要算法能够帮助我们保证文件的完整性，避免攻击者的恶意篡改，但是加密算法或者加密的功能是 —— 通过某种特定的方式来编码消息或者信息，只有授权方可以访问原始数据，而没有被授权的人无法从密文中获取原文。</p>
-<p>由于加密需要同时保证消息的秘密性和完整性，所以加密的过程使用一系列的算法，MD5 确实可以在加密的过程中作为哈希函数使用来保证消息的完整性，但是我们还需要另一个算法来保证消息的秘密性，所以由于 MD5 哈希的信息无法被还原，只依靠 MD5 是无法完成加密的。</p>
-<blockquote>
-<p>在任何场景下，我们都应该避免 MD5 的使用，可以选择更好的摘要算法替代 MD5，例如 SHA256、SHA512。</p>
-</blockquote>
-<p>聊了这么多对于 MD5 的误解，我们重新回到今天最开始的题目，『为什么 MD5 不能用于存储密码』，对于这个问题有一个最简单的答案，也就是 <strong>MD5 不够安全</strong>。当整个系统中的数据库被攻击者入侵之后，存储密码的摘要而不是明文是我们能够对所有用户的最大保护。需要知道的是，不够安全的不只是 MD5，任何摘要算法在存储密码这一场景下都不够安全，我们在这篇文章中就会哈希函数『为什么哈希函数不能用于存储密码』以及其他相关机制的安全性。</p>
-<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>既然我们已经对哈希函数和加密算法有了一些简单的了解，接下来的这一节中分析使用以下几种不同方式存储密码的安全性：</p>
-<ul>
-<li>使用哈希存储密码；</li>
-<li>使用哈希加盐存储密码；</li>
-<li>使用加密算法存储密码；</li>
-<li>使用 bcrypt 存储密码；</li>
-</ul>
-<p>在分析的过程中可能会涉及到一些简单的密码学知识，也会谈到一些密码学历史上的一些事件，不过这对于理解不同方式的安全性不会造成太大的障碍。</p>
-<h3 id="哈希"><a href="#哈希" class="headerlink" title="哈希"></a>哈希</h3><p>在今天，如果我们直接使用哈希来存储密码，那其实跟存储明文没有太多的区别，所有的攻击者在今天都已经掌握了彩虹表这个工具，我们可以将彩虹表理解成一张预计算的大表，其中存储着一些常见密码的哈希，当攻击者通过入侵拿到某些网站的数据库之后就可以通过预计算表中存储的映射来查找原始密码。</p>
-<p><img src="https://img.draveness.me/attack-against-hashed-password.png" alt="attack-against-hashed-password"></p>
-<p>攻击者只需要将一些常见密码提前计算一些哈希就可以找到数据库中很多用于存储的密码，Wikipedia 上有一份关于最常见密码的 <a href="https://en.wikipedia.org/wiki/List_of_the_most_common_passwords" target="_blank" rel="noopener">列表</a>，在 2016 年的统计中发现使用情况最多的前 25 个密码占了调查总数的 10%，虽然这不能排除统计本身的不准确因素，但是也足以说明仅仅使用哈希的方式存储密码是不够安全的。</p>
-<h3 id="哈希加盐"><a href="#哈希加盐" class="headerlink" title="哈希加盐"></a>哈希加盐</h3><p>仅仅使用哈希来存储密码无法抵御来自彩虹表的攻击，在上世纪 70 到 80 年代，早期版本的 Unix 系统就在 <code>/etc/passwrd</code> 中存储加盐的哈希密码，密码加盐后的哈希与盐会被一起存储在 <code>/etc/passwd</code> 文件中，今天哈希加盐的策略与几十年前的也没有太多的不同，差异可能在于盐的生成和选择：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">md5(salt, password), salt</span><br></pre></td></tr></table></figure>
-
-<p>加盐的方式主要还是为了增加攻击者的计算成本，当攻击者顺利拿到数据库中的数据时，由于每个密码都使用了随机的盐进行哈希，所以预先计算的彩虹表就没有办法立刻破译出哈希之前的原始数据，攻击者对每一个哈希都需要单独进行计算，这样能够增加了攻击者的成本，减少原始密码被大范围破译的可能性。</p>
-<p><img src="https://img.draveness.me/attack-against-hashes-of-salted-password.png" alt="attack-against-hashes-of-salted-password"></p>
-<p>在这种情况下，攻击者破解一个用户密码的成本其实就等于发现哈希碰撞的概率，因为攻击者其实不需要知道用户的密码是什么，他只需要找到一个值 <code>value</code>，这个值加盐后的哈希与密码加盐后的哈希完全一致就能登录用户的账号：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hash(salt, value) = hash(salt, password)</span><br></pre></td></tr></table></figure>
-
-<p>这种情况在密码学中叫做哈希碰撞，也就是两个不同值对应哈希相同，一个哈希函数或者摘要算法被找到哈希碰撞的概率决定了该算法的安全性，早在几十年前，我们就在 MD5 的设计中发现了缺陷并且在随后的发展中找到了低成本快速制造哈希碰撞的方法。</p>
-<ol>
-<li>1996 年 <a href="https://www.semanticscholar.org/paper/The-Status-of-MD5-After-a-Recent-Attack-Dobbertin/c51288ac5d2a5b8f5c8d20e94fe999ea6379bc65" target="_blank" rel="noopener">The Status of MD5 After a Recent Attack</a> —— 发现了 MD5 设计中的缺陷，但是并没有被认为是致命的缺点，密码学专家开始推荐使用其他的摘要算法；</li>
-<li>2004 年 <a href="http://merlot.usc.edu/csac-f06/papers/Wang05a.pdf" target="_blank" rel="noopener">How to Break MD5 and Other Hash Functions</a> —— 发现了 MD5 摘要算法不能抵抗哈希碰撞，我们不能在数字安全领域使用 MD5 算法；</li>
-<li>2006 年 <a href="https://www.cs.colorado.edu/~jrblack/papers/md5e-full.pdf" target="_blank" rel="noopener">A Study of the MD5 Attacks: Insights and Improvements</a> —— 创建一组具有相同 MD5 摘要的文件；</li>
-<li>2008 年 <a href="https://www.win.tue.nl/hashclash/rogue-ca/" target="_blank" rel="noopener">MD5 considered harmful today</a> —— 创建伪造的 SSL 证书；</li>
-<li>2010 年 <a href="https://en.wikipedia.org/wiki/MD5#cite_note-31" target="_blank" rel="noopener">MD5 vulnerable to collision attacks</a> —— CMU 软件工程机构认为 MD5 摘要算法已经在密码学上被破译并且不适合使用;</li>
-<li>2012 年 <a href="https://en.wikipedia.org/wiki/Flame_(malware)" target="_blank" rel="noopener">Flame</a> —— 恶意软件利用了 MD5 的漏洞并伪造了微软的数字签名；</li>
-</ol>
-<p>从过往的历史来看，为了保证用户敏感信息的安全，我们不应该使用 MD5 加盐的方式来存储用户的密码，那么我们是否可以使用更加安全的摘要算法呢？不可以，哈希函数并不是专门用来设计存储用户密码的，所以它的计算可能相对来说还是比较快，攻击者今天可以<strong>通过 GPU 每秒执行上亿次的计算来破解用户的密码</strong>，所以不能使用这种方式存储用户的密码，感兴趣的读者可以了解一下用于恢复密码的工具 <a href="https://hashcat.net/hashcat/" target="_blank" rel="noopener">Hashcat</a>。</p>
-<h3 id="加密"><a href="#加密" class="headerlink" title="加密"></a>加密</h3><p>既然今天的硬件已经能够很快地帮助攻击者破解用户的密码，那么我们能否通过其他的方式来取代哈希函数来存储密码呢？有些工程师想到使用加密算法来替代哈希函数，这样能够从源头上避免哈希碰撞的的发生，这种方式看起来非常美好，但是有一个致命的缺点，就是我们<strong>如何存储用于加密密码的秘钥</strong>。</p>
-<p>既然存储密码的仓库能被泄露，那么用于存储秘钥的服务也可能会被攻击，我们永远都没有办法保证我们的数据库和服务器是安全的，一旦秘钥被攻击者获取，他们就可以轻而易举地恢复用户的密码，因为核对用户密码的过程需要在内存对密码进行解密，这时明文的密码就可能暴露在内存中，依然有导致用户密码泄露的风险。</p>
-<p><img src="https://img.draveness.me/encrypted-password.png" alt="encrypted-password"></p>
-<p>使用加密的方式存储密码相比于哈希加盐的方式，在一些安全意识和能力较差的公司和网站反而更容易导致密码的泄露和安全事故。</p>
-<h3 id="bcrypt"><a href="#bcrypt" class="headerlink" title="bcrypt"></a>bcrypt</h3><p>哈希加盐的方式确实能够增加攻击者的成本，但是今天来看还远远不够，我们需要一种更加安全的方式来存储用户的密码，这也就是今天被广泛使用的 <code>bcrypt</code>，使用 <code>bcrypt</code> 相比于直接使用哈希加盐是一种更加安全的方式，也是我们目前推荐使用的方法，为了增加攻击者的成本，<code>bcrypt</code> 引入了计算成本这一可以调节的参数，能够调节执行 <code>bcrypt</code> 函数的成本。</p>
-<p><img src="https://img.draveness.me/cost-of-user-and-attackers.png" alt="cost-of-user-and-attackers"></p>
-<p>当我们将验证用户密码的成本提高几个数量级时，攻击者的成本其实也相应的提升了几个数量级，只要我们让攻击者的攻击成本大于硬件的限制，同时保证正常请求的耗时在合理范围内，我们就能够保证用户密码的相对安全。</p>
-<blockquote>
-<p>“<code>bcrypt</code> was designed for password hashing hence it is a slow algorithm. This is good for password hashing as it reduces the number of passwords by second an attacker could hash when crafting a dictionary attack. “</p>
-</blockquote>
-<p><code>bcrypt</code> 这一算法就是为哈希密码而专门设计的，所以它是一个执行相对较慢的算法，这也就能够减少攻击者每秒能够处理的密码数量，从而避免攻击者的字典攻击。</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> cost := <span class="number">10</span>; cost &lt;= <span class="number">15</span>; cost++ &#123;</span><br><span class="line">		startedAt := time.Now()</span><br><span class="line">		bcrypt.GenerateFromPassword([]<span class="keyword">byte</span>(<span class="string">"password"</span>), cost)</span><br><span class="line">		duration := time.Since(startedAt)</span><br><span class="line">		fmt.Printf(<span class="string">"cost: %d, duration: %v\n"</span>, cost, duration)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ <span class="keyword">go</span> run bcrypt.<span class="keyword">go</span></span><br><span class="line">cost: <span class="number">10</span>, duration: <span class="number">51.483401</span>ms</span><br><span class="line">cost: <span class="number">11</span>, duration: <span class="number">100.639251</span>ms</span><br><span class="line">cost: <span class="number">12</span>, duration: <span class="number">202.788492</span>ms</span><br><span class="line">cost: <span class="number">13</span>, duration: <span class="number">399.552731</span>ms</span><br><span class="line">cost: <span class="number">14</span>, duration: <span class="number">801.041128</span>ms</span><br><span class="line">cost: <span class="number">15</span>, duration: <span class="number">1.579692689</span>s</span><br></pre></td></tr></table></figure>
-
-<p>运行上述 <a href="https://play.golang.org/p/uCNm-qckWxQ" target="_blank" rel="noopener">代码片段</a> 时就能发现 <code>cost</code> 和运行时间的关系，算法运行的成本每 <code>+1</code>，当前算法最终的耗时就会翻一倍，这与 <code>bcrypt</code> 算法的实现原理有关，你可以在 <a href="https://en.wikipedia.org/wiki/Bcrypt" target="_blank" rel="noopener">Wikipedia</a> 上找到算法执行过程的伪代码，这可以帮助我们快速理解算法背后的设计。</p>
-<p>如果硬件的发展使攻击者能够对使用 <code>bcrypt</code> 存储的密码进行攻击时，我们就可以直接提升 <code>bcrypt</code> 算法的 <code>cost</code> 参数以增加攻击者的成本，这也是 <code>bcrypt</code> 设计上的精妙之处，所以使用 <code>bcrypt</code> 是一种在存储用户密码时比较安全的方式。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇文章分析的问题其实是 —— 当数据库被攻击者获取时，我们怎么能够保证用户的密码很难被攻击者『破译』，作为保护用户机密信息的最后手段，选择安全并且合适的方法至关重要。攻击者能否破解用户的密码一般取决于两个条件：</p>
-<ul>
-<li>使用的加密算法是否足够安全，使用暴力破解的方式时间成本极高；</li>
-<li>足够好的硬件支持，能够支持大规模地高速计算哈希；</li>
-</ul>
-<p>抵御攻击者的攻击的方式其实就是提高单次算法运行的成本，当我们将用户的验证耗时从 <code>0.1ms</code> 提升到了 <code>500ms</code>，攻击者的计算成本也就提升了 5000 倍，这种结果就是之前需要几小时破解的密码现在需要几年的时间。</p>
-<p>不论如何，<strong>使用 MD5、MD5 加盐或者其他哈希的方式来存储密码都是不安全的</strong>，希望各位工程师能够避免在这样的场景下使用 MD5，在其他必须使用哈希函数的场景下也建议使用其他算法代替，例如 SHA-512 等。</p>
-<p>当然，如何保证用户机密信息的安全不只是一个密码学问题，它还是一个工程问题，任何工程开发商的疏漏都可能导致安全事故，所以我们作为开发者在与用于敏感信息打交道时也应该小心谨慎、怀有敬畏之心。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
-<ol>
-<li>使用 GPU 每秒可以计算多少 MD5 哈希（数量级）？能够在多长时间破解使用 MD5 加盐存储的密码？</li>
-<li>假设计算一次哈希耗时 <code>500ms</code>，破解 <code>bcrypt</code> 算法生成的哈希需要多长时间？</li>
-<li>MD5 哈希 <code>23cdc18507b52418db7740cbb5543e54</code> 对应的原文可能是？谈谈你使用的工具和破译的过程。</li>
-</ol>
-<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
-<li><a href="https://security.stackexchange.com/questions/61489/is-salted-md5-or-salted-sha-considered-secure" target="_blank" rel="noopener">Is salted MD5 or salted SHA considered secure?</a></li>
-<li><a href="https://security.stackexchange.com/questions/211/how-to-securely-hash-passwords?noredirect=1&lq=1" target="_blank" rel="noopener">How to securely hash passwords?</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Rainbow_table" target="_blank" rel="noopener">Rainbow table</a></li>
-<li><a href="https://tools.ietf.org/html/rfc1321" target="_blank" rel="noopener">The MD5 Message-Digest Algorithm · RFC1321</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Collision_(computer_science)" target="_blank" rel="noopener">Collision (computer science)</a></li>
-<li><a href="https://www.sitepoint.com/why-you-should-use-bcrypt-to-hash-stored-passwords/" target="_blank" rel="noopener">Why You Should Use Bcrypt to Hash Stored Passwords</a></li>
-<li><a href="https://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts" target="_blank" rel="noopener">How can bcrypt have built-in salts?</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Bcrypt" target="_blank" rel="noopener">bcrypt</a></li>
-</ul>
-<p>转载自<a href="https://draveness.me/whys-the-design-password-with-md5/" target="_blank" rel="noopener">https://draveness.me/whys-the-design-password-with-md5/</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/15/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/" class="post-title-link" itemprop="url">分布式ID生成方案</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-15 12:03:06 / 修改时间：20:17:39" itemprop="dateCreated datePublished" datetime="2020-05-15T12:03:06+08:00">2020-05-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p><img src="C:%5CUsers%5Ceric3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200515201720558.png" alt="image-20200515201720558"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/14/LeetCode173/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/14/LeetCode173/" class="post-title-link" itemprop="url">LeetCode173</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-14 13:16:58 / 修改时间：21:18:59" itemprop="dateCreated datePublished" datetime="2020-05-14T13:16:58+08:00">2020-05-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>实现一个二叉搜索树迭代器。你将使用二叉搜索树的根节点初始化迭代器。</p>
-<p>调用 next() 将返回二叉搜索树中的下一个最小的数。</p>
-<p>示例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">BSTIterator iterator &#x3D; new BSTIterator(root);</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 3</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 7</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 9</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 15</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 20</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 false</span><br></pre></td></tr></table></figure>
-
-<p>提示：<br>next() 和 hasNext() 操作的时间复杂度是 O(1)，并使用 O(h) 内存，其中 h 是树的高度。<br>你可以假设 next() 调用总是有效的，也就是说，当调用 next() 时，BST 中至少存在一个下一个最小的数。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BSTIterator</span> </span>&#123;</span><br><span class="line">       </span><br><span class="line">         Stack&lt;TreeNode&gt; iter;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="title">BSTIterator</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">                       iter=<span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line"></span><br><span class="line">           pushStack(root);</span><br><span class="line">          </span><br><span class="line">           </span><br><span class="line">       &#125;</span><br><span class="line">       </span><br><span class="line">       <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">pushStack</span><span class="params">(TreeNode node)</span></span>&#123;</span><br><span class="line">           TreeNode tmp=node;</span><br><span class="line">           <span class="keyword">while</span> (tmp!=<span class="keyword">null</span>)&#123;</span><br><span class="line">               iter.push(tmp);</span><br><span class="line">               tmp=tmp.left;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">/** <span class="doctag">@return</span> the next smallest number */</span></span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">if</span> (!iter.isEmpty())&#123;</span><br><span class="line">               TreeNode ans=iter.pop();</span><br><span class="line">               <span class="keyword">if</span> (ans.right!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                   pushStack(ans.right);</span><br><span class="line">               &#125;</span><br><span class="line">               </span><br><span class="line">               <span class="keyword">return</span> ans.val;</span><br><span class="line">           &#125;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">/** <span class="doctag">@return</span> whether we have a next smallest number */</span></span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">return</span> !iter.isEmpty();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/11/%E5%B8%B8%E8%A7%81%E7%94%B5%E5%95%86%E7%A7%8D%E7%B1%BB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/11/%E5%B8%B8%E8%A7%81%E7%94%B5%E5%95%86%E7%A7%8D%E7%B1%BB/" class="post-title-link" itemprop="url">常见电商种类</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-11 08:42:05 / 修改时间：16:56:14" itemprop="dateCreated datePublished" datetime="2020-05-11T08:42:05+08:00">2020-05-11</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E4%B8%9A%E5%8A%A1/" itemprop="url" rel="index"><span itemprop="name">业务</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="B2B"><a href="#B2B" class="headerlink" title="B2B"></a>B2B</h1><p>B2B = Business to Business<br>商家（泛指企业）对商家的电子商务，即企业与企业之间通过互联网进行产品、服务及信息的交换。通俗的说法是指进行电子商务交易的供需双方都是商家（或企业、公司），他们使用 Internet 的技术或各种商务网络平台（如拓商网），完成商务交易的过程。这些过程包括：发布供求信息，订货及确认订货，支付过程，票据的签发、传送和接收，确定配送方案并监控配送过程等。如<strong>阿里巴巴，慧聪网</strong>。</p>
-<h1 id="B2C"><a href="#B2C" class="headerlink" title="B2C"></a>B2C</h1><p>B2C = Business to Customer<br>B2C 模式是中国最早产生的电子商务模式，如今的 B2C 电子商务网站非常的多，比较大型的有<strong>唯品会、一号店、亚马逊、苏宁易购、国美在线</strong>等。</p>
-<h1 id="B2B2C"><a href="#B2B2C" class="headerlink" title="B2B2C"></a>B2B2C</h1><p>B2B2C = Business To Business To Customers<br>所谓 B2B2C 是一种新的网络通信销售方式。第一个 B 指广义的卖方（即成品、半成品、材料提供商等），第二个 B 指交易平台，即提供卖方与买方的联系平台，同时提供优质的附加服务，C 即指买方。卖方可以是公司，也可以是个人，即一种逻辑上的买卖关系中的卖方。如<strong>天猫商城、京东商城</strong>。</p>
-<h1 id="C2C"><a href="#C2C" class="headerlink" title="C2C"></a>C2C</h1><p>C2C = Consumer to Consumer<br>C2C 同 B2B、B2C 一样，都是电子商务的几种模式之一。不同的是 C2C 是用户对用户的模式，C2C 商务平台就是通过为买卖双方提供一个在线交易平台，使卖方可以主动提供商品上网拍卖，而买方可以自行选择商品进行竞价。如<strong>淘宝，易趣，瓜子二手车</strong>等</p>
-<h1 id="O2O"><a href="#O2O" class="headerlink" title="O2O"></a>O2O</h1><p>O2O = Online to Offline<br>O2O 是新兴起的一种电子商务新商业模式，即将线下商务的机会与互联网结合在了一起，让互联网成为线下交易的前台。这样线下服务就可以用线上来揽客，消费者可以用线上来筛选服务，还有成交可以在线结算，很快达到规模。该模式最重要的特点是：推广效果可查，每笔交易可跟踪。如<strong>美团，饿了么</strong>。</p>
-<h1 id="C2B"><a href="#C2B" class="headerlink" title="C2B"></a>C2B</h1><p>C2B = Customer to Business<br>C2B 是电子商务模式的一种，即消费者对企业。最先由美国流行起来的 C2B 模式也许是一个值得关注的尝试。C2B 模式的核心，是通过聚合分散分布但数量庞大的用户形成一个强大的采购集团，以此来改变 B2C 模式中用户一对一出价的弱势地位，使之享受到以大批发商的价格买单件商品的利益。如<strong>海尔商城，尚品宅配，某些装修类电商平台</strong>，注重个性化服务。</p>
-<h1 id="F2C"><a href="#F2C" class="headerlink" title="F2C"></a>F2C</h1><p>F2C = Factory to customer<br>即从厂商到消费者的电子商务模式，如<strong>拼多多</strong>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/05/InterruptedException%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/05/InterruptedException%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/" class="post-title-link" itemprop="url">InterruptedException异常处理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-06 06:18:08 / 修改时间：14:37:53" itemprop="dateCreated datePublished" datetime="2020-05-06T06:18:08+08:00">2020-05-06</time>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><strong>当阻塞方法(如<code>sleep()</code>)收到中断请求的时候就会抛出InterruptedException异常</strong></p>
-<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>线程在一定的条件下会发生状态的改变，下面是线程的一些状态</p>
-<p><img src="https://img-blog.csdnimg.cn/20181120173640764.jpeg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3BhbmdlMTk5MQ==,size_16,color_FFFFFF,t_70" alt="img"></p>
-<ul>
-<li><p>初始(NEW)：新建一个线程的对象，还未调用start方法</p>
-</li>
-<li><p>运行(RUNNABLE)：java线程中将已经准备就绪(Ready)和正在运行中(Running)的两种状态都统称为“Runnable”。准备就绪的线程会被放在线程池中等待被调用</p>
-</li>
-<li><p>阻塞(BLOCKED)：是因为某种的原因而放弃了CPU的使用权，暂时的停止了运行。直到线程进入准备就绪(Ready)状态才会有机会转到运行状态</p>
-</li>
-<li><p>等待(WAITING)：该状态的线程需要等待其他线程做出一些特定的动作（通知或者是中断）</p>
-</li>
-<li><p>超时等待(TIME_WAITING)：该状态和上面的等待不同，他可以在指定的时间内自行返回</p>
-</li>
-<li><p>终止(TERMINATED)：线程任务执行完毕</p>
-</li>
-</ul>
-<h2 id="线程阻塞"><a href="#线程阻塞" class="headerlink" title="线程阻塞"></a>线程阻塞</h2><p>线程阻塞通常是指一个线程在执行过程中暂停，以<strong>等待某个条件的触发</strong>。而什么情况才会使得线程进入阻塞的状态呢？</p>
-<ul>
-<li><strong>等待阻塞</strong>：运行的线程执行<strong>wait()方法</strong>，该线程会释放占用的所有资源，JVM会把该线程放入“等待池”中。进入这个状态后，是不能自动唤醒的，必须依靠其他线程调用notify()或notifyAll()方法才能被唤醒</li>
-<li><strong>同步阻塞</strong>：运行的线程在获取对象的<strong>同步锁</strong>时，若该同步锁被别的线程占用，则JVM会把该线程放入“锁池”中</li>
-<li><strong>其他阻塞</strong>：运行的线程执行<strong>sleep()或join()方法</strong>，或者发出了<strong>I/O请求</strong>时，JVM会把该线程置为阻塞状态。当sleep()状态超时、join()等待线程终止或者超时、或者I/O处理完毕时，线程重新转入就绪状态</li>
-</ul>
-<h2 id="线程中断"><a href="#线程中断" class="headerlink" title="线程中断"></a>线程中断</h2><p>每一个线程都有一个boolean类型的标志，此标志意思是当前的请求<strong>是否请求中断</strong>，默认为false。当一个线程A调用了线程B的interrupt方法时，那么线程B的是否请求的中断标志变为true。而线程B可以调用方法检测到此标志的变化。</p>
-<ol>
-<li>阻塞方法：如果线程B调用了造成阻塞的方法，如果是否请求中断标志变为了true，那么它会抛出<code>InterruptedException</code>异常。<strong>抛出异常的同时它会将线程B的是否请求中断标志置为false</strong></li>
-<li>非阻塞方法：可以通过线程B的<code>isInterrupted()</code>方法进行检测是否请求中断标志为true还是false，另外还有一个静态的方法interrupted方法也可以检测标志。<strong>但是这个静态方法检测完以后会自动的将是否请求中断标志位置为false</strong>。例如线程A调用了线程B的interrupt的方法，那么如果此时线程B中用静态interrupted方法进行检测标志位的变化的话，那么第一次为true，第二次就为false。</li>
-</ol>
-<p>线程可以检测到自身的标志位的变化，但是他只是一个标志，如果线程本身不处理的话，那么程序还是会执行下去。<strong><code>interrupt()</code> 方法并不能立即中断线程</strong>，该方法仅仅告诉线程外部已经有中断请求，至于是否中断还取决于线程自己。</p>
-<h2 id="正确处理InterruptedException"><a href="#正确处理InterruptedException" class="headerlink" title="正确处理InterruptedException"></a>正确处理<code>InterruptedException</code></h2><p>有时候阻塞的方法抛出(<code>throw</code>)<code>InterruptedException</code>异常并不合适，例如在Runnable中调用了可中断的方法，因为你的程序是实现了Runnable接口，然后在重写Runnable接口的run方法的时候，那么子类抛出的异常要小于等于父类的异常。而<strong>在Runnable中run方法是没有抛异常的,所以此时不能抛出<code>InterruptedException</code>异常</strong>。如果此时你只是记录日志的话，那么就是一个不负责任的做法，因为<strong>在捕获InterruptedException异常的时候自动的将是否请求中断标志置为了false</strong>。至少在捕获了InterruptedException异常之后，如果你什么也不想做，那么就<strong>将标志重新置为true，以便栈中更高层的代码能知道中断，并且对中断作出响应</strong>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TaskRunner</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> BlockingQueue&lt;Task&gt; queue;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">TaskRunner</span><span class="params">(BlockingQueue&lt;Task&gt; queue)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.queue = queue; </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">             <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                 Task task = queue.take(<span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">                 task.execute();</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">catch</span> (InterruptedException e) &#123; </span><br><span class="line">             <span class="comment">// Restore the interrupted status</span></span><br><span class="line">             Thread.currentThread().interrupt();</span><br><span class="line">         &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/03/Notes/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/03/Notes/" class="post-title-link" itemprop="url">Notes</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-04 01:40:57 / 修改时间：09:42:23" itemprop="dateCreated datePublished" datetime="2020-05-04T01:40:57+08:00">2020-05-04</time>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>207</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="公钥与私钥"><a href="#公钥与私钥" class="headerlink" title="公钥与私钥"></a>公钥与私钥</h1><h2 id="公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？"><a href="#公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？" class="headerlink" title="公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？"></a>公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？</h2><p>私钥加密的数据确实没有安全性可言，因为用私钥加密数据根本就不是为了安全性，而是作为一种验证身份的手段。<br>因为私钥是唯一的，一旦使用公钥对私钥加密的数据解密成功，服务端S就可以完全确定这条消息是由拥有对应私钥的客户端C发出的，而不是第三方伪装者发出的。<br>所以，<strong>公钥加密私钥解密，是为了数据的安全性，而私钥加密公钥解密，则是为了验证数据发送者的身份</strong>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/03/Netty%E5%85%A5%E9%97%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/03/Netty%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Netty介绍</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-03 16:42:31 / 修改时间：16:24:29" itemprop="dateCreated datePublished" datetime="2020-05-03T16:42:31+08:00">2020-05-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>897</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="Java原生NIO的缺陷"><a href="#Java原生NIO的缺陷" class="headerlink" title="Java原生NIO的缺陷"></a>Java原生NIO的缺陷</h1><ul>
-<li>类库和API繁杂</li>
-<li>入门门槛高，需要其他额外的知识做铺垫</li>
-<li>工作量和难度大，客户端会面临断开，重连，网络闪断，失败缓存，网络拥堵等问题</li>
-<li>JDK NIO存在臭名昭著的epoll bug，导致Selector空轮询：这个bug会导致linux上cpu 100%</li>
-</ul>
-<h1 id="Netty的优势"><a href="#Netty的优势" class="headerlink" title="Netty的优势"></a>Netty的优势</h1><ul>
-<li>业界流行的NIO框架之一，健壮性，功能，可定制性，可扩展性都比较好，得到了业界的认可与证明。比如在dubbo框架中的底层应用</li>
-<li>API使用简单，定制能力强，可以灵活扩展</li>
-<li>入门门槛低，易学，功能强大，预置了多种编解码功能，支持多种主流通信协议（http,tpc,udp,socket）</li>
-<li>性能高，成熟，稳定</li>
-</ul>
-<h1 id="Netty介绍"><a href="#Netty介绍" class="headerlink" title="Netty介绍"></a>Netty介绍</h1><p><strong>Netty is a NIO client server framework which enables quick and easy development of network applications such as protocol servers and clients.</strong>It greatly simplifies and streamlines network programming such as TCP and UDP socket server.<br><img src="https://netty.io/images/components.png" alt="Netty框架"><br><img src="https://user-gold-cdn.xitu.io/2018/11/1/166ccbbdc8614c8f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt=""></p>
-<h1 id="Netty使用场景"><a href="#Netty使用场景" class="headerlink" title="Netty使用场景"></a>Netty使用场景</h1><p>Netty常见的使用场景如下：</p>
-<h2 id="互联网行业"><a href="#互联网行业" class="headerlink" title="互联网行业"></a>互联网行业</h2><p>在分布式系统中，各个节点之间需要远程服务调用，高性能的RPC框架必不可少，Netty作为异步高新能的通信框架,往往作为基础通信组件被这些RPC框架使用。<br>典型的应用有：阿里分布式服务框架Dubbo的RPC框架使用Dubbo协议进行节点间通信，Dubbo协议默认使用Netty作为基础通信组件，用于实现各进程节点之间的内部通信。</p>
-<h2 id="游戏行业"><a href="#游戏行业" class="headerlink" title="游戏行业"></a>游戏行业</h2><p>无论是手游服务端还是大型的网络游戏，Java语言得到了越来越广泛的应用。Netty作为高性能的基础通信组件，它本身提供了TCP/UDP和HTTP协议栈。<br>非常方便定制和开发私有协议栈，账号登录服务器，地图服务器之间可以方便的通过Netty进行高性能的通信</p>
-<h2 id="大数据领域"><a href="#大数据领域" class="headerlink" title="大数据领域"></a>大数据领域</h2><p>经典的Hadoop的高性能通信和序列化组件Avro的RPC框架，默认采用Netty进行跨界点通信，它的Netty Service基于Netty框架二次封装实现</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/11/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/13/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/11/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><span class="page-number current">12</span><a class="page-number" href="/page/13/">13</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/13/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1333,7 +1787,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">135</span>
+          <span class="site-state-item-count">143</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1345,7 +1799,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-count">15</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1389,7 +1843,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">417k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

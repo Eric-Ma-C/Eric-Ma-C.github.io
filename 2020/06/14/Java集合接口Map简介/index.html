@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="使用Map我们知道，List是一种顺序列表，如果有一个存储学生Student实例的List，要在List中根据name查找某个指定的Student的分数，应该怎么办？ 最简单的方法是遍历List并判断name是否相等，然后返回指定元素： 123456789List&lt;Student&gt; list &#x3D; ...Student target &#x3D; null;for (Student s : lis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java集合接口Map简介">
+<meta property="og:url" content="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Map%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="使用Map我们知道，List是一种顺序列表，如果有一个存储学生Student实例的List，要在List中根据name查找某个指定的Student的分数，应该怎么办？ 最简单的方法是遍历List并判断name是否相等，然后返回指定元素： 123456789List&lt;Student&gt; list &#x3D; ...Student target &#x3D; null;for (Student s : lis">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-14T00:10:04.000Z">
+<meta property="article:modified_time" content="2020-06-14T09:27:02.003Z">
+<meta property="article:author" content="EricMa">
+<meta property="article:tag" content="集合">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Map%E7%AE%80%E4%BB%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java集合接口Map简介 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Map%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java集合接口Map简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 08:10:04 / 修改时间：17:27:02" itemprop="dateCreated datePublished" datetime="2020-06-14T08:10:04+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="使用Map"><a href="#使用Map" class="headerlink" title="使用Map"></a>使用Map</h2><p>我们知道，<code>List</code>是一种顺序列表，如果有一个存储学生<code>Student</code>实例的<code>List</code>，要在<code>List</code>中根据<code>name</code>查找某个指定的<code>Student</code>的分数，应该怎么办？</p>
+<p>最简单的方法是遍历<code>List</code>并判断<code>name</code>是否相等，然后返回指定元素：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Student&gt; list = ...</span><br><span class="line">Student target = <span class="keyword">null</span>;</span><br><span class="line"><span class="keyword">for</span> (Student s : list) &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="string">"Xiao Ming"</span>.equals(s.name)) &#123;</span><br><span class="line">        target = s;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">System.out.println(target.score);</span><br></pre></td></tr></table></figure>
+
+<p>这种需求其实非常常见，即通过一个键去查询对应的值。使用<code>List</code>来实现存在效率非常低的问题，因为平均需要扫描一半的元素才能确定，而<code>Map</code>这种键值（key-value）映射表的数据结构，作用就是能高效通过<code>key</code>快速查找<code>value</code>（元素）。</p>
+<p><code>Map</code>是一种键-值映射表，当我们调用<code>put(K key, V value)</code>方法时，就把<code>key</code>和<code>value</code>做了映射并放入<code>Map</code>。当我们调用<code>V get(K key)</code>时，就可以通过<code>key</code>获取到对应的<code>value</code>。如果<code>key</code>不存在，则返回<code>null</code>。和<code>List</code>类似，<code>Map</code>也是一个接口，<strong>最常用的实现类是<code>HashMap</code></strong>。</p>
+<p>如果只是想查询某个<code>key</code>是否存在，可以调用<code>boolean containsKey(K key)</code>方法。</p>
+<p>如果我们在存储<code>Map</code>映射关系的时候，对同一个key调用两次<code>put()</code>方法，分别放入不同的<code>value</code>，会有什么问题呢？</p>
+<p>重复放入<code>key-value</code>并不会有任何问题，但是一个<code>key</code>只能关联一个<code>value</code>。<code>put()</code>方法的签名是<code>V put(K key, V value)</code>，如果放入的<code>key</code>已经存在，<code>put()</code>方法会返回被删除的旧的<code>value</code>，否则，返回<code>null</code>。</p>
+<p> 始终牢记：<strong>Map中不存在重复的key</strong>，因为放入相同的key，只会把原有的key-value对应的value给替换掉。</p>
+<p>此外，在一个<code>Map</code>中，虽然<code>key</code>不能重复，但<code>value</code>是可以重复的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; map &#x3D; new HashMap&lt;&gt;();</span><br><span class="line">map.put(&quot;apple&quot;, 123);</span><br><span class="line">map.put(&quot;pear&quot;, 123); &#x2F;&#x2F; ok</span><br></pre></td></tr></table></figure>
+
+<h3 id="遍历Map"><a href="#遍历Map" class="headerlink" title="遍历Map"></a>遍历Map</h3><p>对<code>Map</code>来说，要遍历<code>key</code>可以使用<code>for each</code>循环遍历<code>Map</code>实例的<code>keySet()</code>方法返回的<code>Set</code>集合，它包含不重复的<code>key</code>的集合：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, Integer&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">"apple"</span>, <span class="number">123</span>);</span><br><span class="line">        map.put(<span class="string">"pear"</span>, <span class="number">456</span>);</span><br><span class="line">        map.put(<span class="string">"banana"</span>, <span class="number">789</span>);</span><br><span class="line">        <span class="keyword">for</span> (String key : map.keySet()) &#123;</span><br><span class="line">            Integer value = map.get(key);</span><br><span class="line">            System.out.println(key + <span class="string">" = "</span> + value);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同时遍历<code>key</code>和<code>value</code>可以使用<code>for each</code>循环遍历<code>Map</code>对象的<code>entrySet()</code>集合，它包含每一个<code>key-value</code>映射：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Map&lt;String, Integer&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">"apple"</span>, <span class="number">123</span>);</span><br><span class="line">        map.put(<span class="string">"pear"</span>, <span class="number">456</span>);</span><br><span class="line">        map.put(<span class="string">"banana"</span>, <span class="number">789</span>);</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, Integer&gt; entry : map.entrySet()) &#123;</span><br><span class="line">            String key = entry.getKey();</span><br><span class="line">            Integer value = entry.getValue();</span><br><span class="line">            System.out.println(key + <span class="string">" = "</span> + value);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Map</code>存储的是<code>key-value</code>的映射关系，并且，它<em>不保证顺序</em>。在遍历的时候，遍历的顺序既不一定是<code>put()</code>时放入的<code>key</code>的顺序，也不一定是<code>key</code>的排序顺序。使用<code>Map</code>时，任何依赖顺序的逻辑都是不可靠的。以<code>HashMap</code>为例，假设我们放入<code>&quot;A&quot;</code>，<code>&quot;B&quot;</code>，<code>&quot;C&quot;</code>这3个<code>key</code>，<strong>遍历的时候，每个<code>key</code>会保证被遍历一次且仅遍历一次，但顺序完全没有保证</strong>，甚至对于不同的JDK版本，相同的代码遍历的输出顺序都是不同的！</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p><code>Map</code>是一种映射表，可以通过<code>key</code>快速查找<code>value</code>。</p>
+<p>可以通过<code>for each</code>遍历<code>keySet()</code>，也可以通过<code>for each</code>遍历<code>entrySet()</code>，直接获取<code>key-value</code>。</p>
+<p>最常用的一种<code>Map</code>实现是<code>HashMap</code>。</p>
+<h2 id="编写equals和hashCode"><a href="#编写equals和hashCode" class="headerlink" title="编写equals和hashCode"></a>编写equals和hashCode</h2><p>我们知道Map是一种键-值（key-value）映射表，可以通过key快速查找对应的value。</p>
+<p>以HashMap为例，观察下面的代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Person&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">map.put(<span class="string">"a"</span>, <span class="keyword">new</span> Person(<span class="string">"Xiao Ming"</span>));</span><br><span class="line">map.put(<span class="string">"b"</span>, <span class="keyword">new</span> Person(<span class="string">"Xiao Hong"</span>));</span><br><span class="line">map.put(<span class="string">"c"</span>, <span class="keyword">new</span> Person(<span class="string">"Xiao Jun"</span>));</span><br><span class="line"></span><br><span class="line">map.get(<span class="string">"a"</span>); <span class="comment">// Person("Xiao Ming")</span></span><br><span class="line">map.get(<span class="string">"x"</span>); <span class="comment">// null</span></span><br></pre></td></tr></table></figure>
+
+<p><code>HashMap</code>之所以能根据<code>key</code>直接拿到<code>value</code>，原因是它内部通过空间换时间的方法，用一个大数组存储所有<code>value</code>，并根据key直接计算出<code>value</code>应该存储在哪个索引：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">  ┌───┐</span><br><span class="line">0 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">1 │ ●─┼───&gt; Person(&quot;Xiao Ming&quot;)</span><br><span class="line">  ├───┤</span><br><span class="line">2 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">3 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">4 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">5 │ ●─┼───&gt; Person(&quot;Xiao Hong&quot;)</span><br><span class="line">  ├───┤</span><br><span class="line">6 │ ●─┼───&gt; Person(&quot;Xiao Jun&quot;)</span><br><span class="line">  ├───┤</span><br><span class="line">7 │   │</span><br><span class="line">  └───┘</span><br></pre></td></tr></table></figure>
+
+<p>如果<code>key</code>的值为<code>&quot;a&quot;</code>，计算得到的索引总是<code>1</code>，因此返回<code>value</code>为<code>Person(&quot;Xiao Ming&quot;)</code>，如果<code>key</code>的值为<code>&quot;b&quot;</code>，计算得到的索引总是<code>5</code>，因此返回<code>value</code>为<code>Person(&quot;Xiao Hong&quot;)</code>，这样，就不必遍历整个数组，即可直接读取<code>key</code>对应的<code>value</code>。</p>
+<p>当我们使用<code>key</code>存取<code>value</code>的时候，就会引出一个问题：</p>
+<p>我们放入<code>Map</code>的<code>key</code>是字符串<code>&quot;a&quot;</code>，但是，当我们获取<code>Map</code>的<code>value</code>时，传入的变量不一定就是放入的那个<code>key</code>对象。</p>
+<p>换句话讲，两个<code>key</code>应该是内容相同，但不一定是同一个对象。测试代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        String key1 = <span class="string">"a"</span>;</span><br><span class="line">        Map&lt;String, Integer&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        map.put(key1, <span class="number">123</span>);</span><br><span class="line"></span><br><span class="line">        String key2 = <span class="keyword">new</span> String(<span class="string">"a"</span>);</span><br><span class="line">        map.get(key2); <span class="comment">// 123</span></span><br><span class="line"></span><br><span class="line">        System.out.println(key1 == key2); <span class="comment">// false</span></span><br><span class="line">        System.out.println(key1.equals(key2)); <span class="comment">// true</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为在<code>Map</code>的内部，对<code>key</code>做比较是通过<code>equals()</code>实现的，这一点和<code>List</code>查找元素需要正确覆写<code>equals()</code>是一样的，即正确使用<code>Map</code>必须保证：作为<code>key</code>的对象必须正确覆写<code>equals()</code>方法。</p>
+<p>我们经常使用<code>String</code>作为<code>key</code>，因为<code>String</code>已经正确覆写了<code>equals()</code>方法。但如果我们放入的<code>key</code>是一个自己写的类，就必须保证正确覆写了<code>equals()</code>方法。</p>
+<p>我们再思考一下<code>HashMap</code>为什么能通过<code>key</code>直接计算出<code>value</code>存储的索引。相同的<code>key</code>对象（使用<code>equals()</code>判断时返回<code>true</code>）必须要计算出相同的索引，否则，相同的<code>key</code>每次取出的<code>value</code>就不一定对。</p>
+<p>通过<code>key</code>计算索引的方式就是调用<code>key</code>对象的<code>hashCode()</code>方法，它返回一个<code>int</code>整数。<code>HashMap</code>正是通过这个方法直接定位<code>key</code>对应的<code>value</code>的索引，继而直接返回<code>value</code>。</p>
+<p>因此，正确使用<code>Map</code>必须保证：</p>
+<ol>
+<li>作为<code>key</code>的对象必须正确覆写<code>equals()</code>方法，相等的两个<code>key</code>实例调用<code>equals()</code>必须返回<code>true</code>；</li>
+<li>作为<code>key</code>的对象还必须正确覆写<code>hashCode()</code>方法，且<code>hashCode()</code>方法要严格遵循以下规范：</li>
+</ol>
+<ul>
+<li><strong>如果两个对象相等，则两个对象的<code>hashCode()</code>必须相等；</strong></li>
+<li><strong>如果两个对象不相等，则两个对象的<code>hashCode()</code>尽量不要相等。</strong>(减少hash碰撞)</li>
+</ul>
+<p>即对应两个实例<code>a</code>和<code>b</code>：</p>
+<ul>
+<li>如果<code>a</code>和<code>b</code>相等，那么<code>a.equals(b)</code>一定为<code>true</code>，则<code>a.hashCode()</code>必须等于<code>b.hashCode()</code>；</li>
+<li>如果<code>a</code>和<code>b</code>不相等，那么<code>a.equals(b)</code>一定为<code>false</code>，则<code>a.hashCode()</code>和<code>b.hashCode()</code>尽量不要相等。</li>
+</ul>
+<p>上述第一条规范是正确性，必须保证实现，否则<code>HashMap</code>不能正常工作。</p>
+<p>而第二条如果尽量满足，则可以保证查询效率，因为不同的对象，如果返回相同的<code>hashCode()</code>，会造成<code>Map</code>内部存储冲突，使存取的效率下降。</p>
+<p>正确编写<code>equals()</code>的方法我们已经在<a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265116446975264" target="_blank" rel="noopener">编写equals方法</a>一节中讲过了，以<code>Person</code>类为例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public class Person &#123;</span><br><span class="line">    String firstName;</span><br><span class="line">    String lastName;</span><br><span class="line">    int age;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>把需要比较的字段找出来：</p>
+<ul>
+<li>firstName</li>
+<li>lastName</li>
+<li>age</li>
+</ul>
+<p>然后，引用类型使用<code>Objects.equals()</code>比较，基本类型使用<code>==</code>比较。</p>
+<p>在正确实现<code>equals()</code>的基础上，我们还需要正确实现<code>hashCode()</code>，即上述3个字段分别相同的实例，<code>hashCode()</code>返回的<code>int</code>必须相同：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public class Person &#123;</span><br><span class="line">    String firstName;</span><br><span class="line">    String lastName;</span><br><span class="line">    int age;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    int hashCode() &#123;</span><br><span class="line">        int h &#x3D; 0;</span><br><span class="line">        h &#x3D; 31 * h + firstName.hashCode();</span><br><span class="line">        h &#x3D; 31 * h + lastName.hashCode();</span><br><span class="line">        h &#x3D; 31 * h + age;</span><br><span class="line">        return h;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意到<code>String</code>类已经正确实现了<code>hashCode()</code>方法，我们在计算<code>Person</code>的<code>hashCode()</code>时，<strong>反复使用<code>31*h</code>，这样做的目的是为了尽量把不同的<code>Person</code>实例的<code>hashCode()</code>均匀分布到整个<code>int</code>范围。</strong></p>
+<p>和实现<code>equals()</code>方法遇到的问题类似，如果<code>firstName</code>或<code>lastName</code>为<code>null</code>，<strong>上述代码工作起来就会抛<code>NullPointerException</code></strong>。为了解决这个问题，我们在计算<code>hashCode()</code>的时候，经常<strong>借助<code>Objects.hash()</code>来计算</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int hashCode() &#123;</span><br><span class="line">    return Objects.hash(firstName, lastName, age);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以，编写<code>equals()</code>和<code>hashCode()</code>遵循的原则是：</p>
+<p><strong><code>equals()</code>用到的用于比较的每一个字段，都必须在<code>hashCode()</code>中用于计算；<code>equals()</code>中没有使用到的字段，绝不可放在<code>hashCode()</code>中计算。</strong></p>
+<p>另外注意，对于放入<code>HashMap</code>的<code>value</code>对象，没有任何要求。</p>
+<h3 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h3><p>既然<code>HashMap</code>内部使用了数组，通过计算<code>key</code>的<code>hashCode()</code>直接定位<code>value</code>所在的索引，那么第一个问题来了：hashCode()返回的<code>int</code>范围高达±21亿，先不考虑负数，<code>HashMap</code>内部使用的数组得有多大？</p>
+<p>实际上<code>HashMap</code>初始化时默认的数组大小只有16，任何<code>key</code>，无论它的<code>hashCode()</code>有多大，都可以简单地通过：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int index &#x3D; key.hashCode() &amp; 0xf; &#x2F;&#x2F; 0xf &#x3D; 15</span><br></pre></td></tr></table></figure>
+
+<p>把索引确定在0～15，即永远不会超出数组范围，上述算法只是一种最简单的实现。</p>
+<p>第二个问题：如果添加超过16个<code>key-value</code>到<code>HashMap</code>，数组不够用了怎么办？</p>
+<p>添加超过一定数量的<code>key-value</code>时，<code>HashMap</code>会在内部自动扩容，每次扩容一倍，即长度为16的数组扩展为长度32，相应地，需要重新确定<code>hashCode()</code>计算的索引位置。例如，对长度为32的数组计算<code>hashCode()</code>对应的索引，计算方式要改为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int index &#x3D; key.hashCode() &amp; 0x1f; &#x2F;&#x2F; 0x1f &#x3D; 31</span><br></pre></td></tr></table></figure>
+
+<p>由于扩容会导致重新分布已有的<code>key-value</code>，所以，频繁扩容对<code>HashMap</code>的性能影响很大。如果我们确定要使用一个容量为<code>10000</code>个<code>key-value</code>的<code>HashMap</code>，更好的方式是创建<code>HashMap</code>时就指定容量：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Integer&gt; map &#x3D; new HashMap&lt;&gt;(10000);</span><br></pre></td></tr></table></figure>
+
+<p>虽然指定容量是<code>10000</code>，但<code>HashMap</code>内部的数组长度总是2n，因此，实际数组长度被初始化为比<code>10000</code>大的<code>16384</code>（214）。</p>
+<p>在<code>HashMap</code>内部，可能存在不同的<code>key</code>，映射到相同的<code>hashCode()</code>，即相同的数组索引上，肿么办？</p>
+<p>我们就假设<code>&quot;a&quot;</code>和<code>&quot;b&quot;</code>这两个<code>key</code>最终计算出的索引都是5，那么，在<code>HashMap</code>的数组中，实际存储的不是一个<code>Person</code>实例，而是一个<code>List</code>，它包含两个<code>Entry</code>，一个是<code>&quot;a&quot;</code>的映射，一个是<code>&quot;b&quot;</code>的映射：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">  ┌───┐</span><br><span class="line">0 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">1 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">2 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">3 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">4 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">5 │ ●─┼───&gt; List&lt;Entry&lt;String, Person&gt;&gt;</span><br><span class="line">  ├───┤</span><br><span class="line">6 │   │</span><br><span class="line">  ├───┤</span><br><span class="line">7 │   │</span><br><span class="line">  └───┘</span><br></pre></td></tr></table></figure>
+
+<p>在查找的时候，例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Person p &#x3D; map.get(&quot;a&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>HashMap内部通过<code>&quot;a&quot;</code>找到的实际上是<code>List&gt;</code>，它还需要遍历这个<code>List</code>，并找到一个<code>Entry</code>，它的<code>key</code>字段是<code>&quot;a&quot;</code>，才能返回对应的<code>Person</code>实例。</p>
+<p>我们把<strong>不同的<code>key</code>具有相同的<code>hashCode()</code>的情况称之为哈希冲突</strong>。在冲突的时候，一种最简单的解决办法是用<code>List</code>存储<code>hashCode()</code>相同的<code>key-value</code>。显然，如果冲突的概率越大，这个<code>List</code>就越长，<code>Map</code>的<code>get()</code>方法效率就越低，这就是为什么要尽量满足条件二：</p>
+<p> 如果两个对象不相等，则两个对象的hashCode()尽量不要相等。</p>
+<p><strong><code>hashCode()</code>方法编写得越好，<code>HashMap</code>工作的效率就越高。</strong></p>
+<h3 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h3><p>要正确使用<code>HashMap</code>，作为<code>key</code>的类必须正确覆写<code>equals()</code>和<code>hashCode()</code>方法；</p>
+<p>一个类如果覆写了<code>equals()</code>，就必须覆写<code>hashCode()</code>，并且覆写规则是：</p>
+<ul>
+<li>如果<code>equals()</code>返回<code>true</code>，则<code>hashCode()</code>返回值必须相等；</li>
+<li>如果<code>equals()</code>返回<code>false</code>，则<code>hashCode()</code>返回值尽量不要相等。</li>
+</ul>
+<p>实现<code>hashCode()</code>方法可以通过<code>Objects.hashCode()</code>辅助方法实现。</p>
+<h2 id="使用EnumMap"><a href="#使用EnumMap" class="headerlink" title="使用EnumMap"></a>使用EnumMap</h2><p>因为<code>HashMap</code>是一种通过对key计算<code>hashCode()</code>，通过空间换时间的方式，直接定位到value所在的内部数组的索引，因此，查找效率非常高。</p>
+<p>如果作为key的对象是<code>enum</code>类型，那么，还可以使用Java集合库提供的一种<code>EnumMap</code>，它在内部以一个非常紧凑的数组存储value，并且根据<code>enum</code>类型的key直接定位到内部数组的索引，并不需要计算<code>hashCode()</code>，不但效率最高，而且没有额外的空间浪费。</p>
+<p>我们以<code>DayOfWeek</code>这个枚举类型为例，为它做一个“翻译”功能：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Map&lt;DayOfWeek, String&gt; map = <span class="keyword">new</span> EnumMap&lt;&gt;(DayOfWeek<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        map.put(DayOfWeek.MONDAY, <span class="string">"星期一"</span>);</span><br><span class="line">        map.put(DayOfWeek.TUESDAY, <span class="string">"星期二"</span>);</span><br><span class="line">        map.put(DayOfWeek.WEDNESDAY, <span class="string">"星期三"</span>);</span><br><span class="line">        map.put(DayOfWeek.THURSDAY, <span class="string">"星期四"</span>);</span><br><span class="line">        map.put(DayOfWeek.FRIDAY, <span class="string">"星期五"</span>);</span><br><span class="line">        map.put(DayOfWeek.SATURDAY, <span class="string">"星期六"</span>);</span><br><span class="line">        map.put(DayOfWeek.SUNDAY, <span class="string">"星期日"</span>);</span><br><span class="line">        System.out.println(map);</span><br><span class="line">        System.out.println(map.get(DayOfWeek.MONDAY));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>EnumMap</code>的时候，我们总是用<code>Map</code>接口来引用它，因此，实际上把<code>HashMap</code>和<code>EnumMap</code>互换，在客户端看来没有任何区别。</p>
+<h3 id="小结-2"><a href="#小结-2" class="headerlink" title="小结"></a>小结</h3><p>如果<code>Map</code>的key是<code>enum</code>类型，推荐使用<code>EnumMap</code>，既保证速度，也不浪费空间。</p>
+<p>使用<code>EnumMap</code>的时候，根据面向抽象编程的原则，应持有<code>Map</code>接口。</p>
+<h2 id="使用TreeMap"><a href="#使用TreeMap" class="headerlink" title="使用TreeMap"></a>使用TreeMap</h2><p>我们已经知道，<code>HashMap</code>是一种以空间换时间的映射表，它的实现原理决定了内部的Key是无序的，即遍历<code>HashMap</code>的Key时，其顺序是不可预测的（但每个Key都会遍历一次且仅遍历一次）。</p>
+<p>还有一种<code>Map</code>，它在内部会对Key进行排序，这种<code>Map</code>就是<code>SortedMap</code>。注意到<strong><code>SortedMap</code>是接口</strong>，它的实现类是<code>TreeMap</code>。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">       ┌───┐</span><br><span class="line">       │Map│</span><br><span class="line">       └───┘</span><br><span class="line">         ▲</span><br><span class="line">    ┌────┴─────┐</span><br><span class="line">    │          │</span><br><span class="line">┌───────┐ ┌─────────┐</span><br><span class="line">│HashMap│ │SortedMap│</span><br><span class="line">└───────┘ └─────────┘</span><br><span class="line">               ▲</span><br><span class="line">               │</span><br><span class="line">          ┌─────────┐</span><br><span class="line">          │ TreeMap │</span><br><span class="line">          └─────────┘</span><br></pre></td></tr></table></figure>
+
+<p><code>SortedMap</code>保证遍历时以Key的顺序来进行排序。例如，放入的Key是<code>&quot;apple&quot;</code>、<code>&quot;pear&quot;</code>、<code>&quot;orange&quot;</code>，遍历的顺序一定是<code>&quot;apple&quot;</code>、<code>&quot;orange&quot;</code>、<code>&quot;pear&quot;</code>，因为<code>String</code>默认按字母排序.</p>
+<p><strong>使用<code>TreeMap</code>时，放入的Key必须实现<code>Comparable</code>接口。</strong><code>String</code>、<code>Integer</code>这些类已经实现了<code>Comparable</code>接口，因此可以直接作为Key使用。作为Value的对象则没有任何要求。</p>
+<p>如果作为Key的class没有实现<code>Comparable</code>接口，那么，必须在创建<code>TreeMap</code>时同时指定一个自定义排序算法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Map&lt;Person, Integer&gt; map = <span class="keyword">new</span> TreeMap&lt;&gt;(<span class="keyword">new</span> Comparator&lt;Person&gt;() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(Person p1, Person p2)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> p1.name.compareTo(p2.name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        map.put(<span class="keyword">new</span> Person(<span class="string">"Tom"</span>), <span class="number">1</span>);</span><br><span class="line">        map.put(<span class="keyword">new</span> Person(<span class="string">"Bob"</span>), <span class="number">2</span>);</span><br><span class="line">        map.put(<span class="keyword">new</span> Person(<span class="string">"Lily"</span>), <span class="number">3</span>);</span><br><span class="line">        <span class="keyword">for</span> (Person key : map.keySet()) &#123;</span><br><span class="line">            System.out.println(key);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// &#123;Person: Bob&#125;, &#123;Person: Lily&#125;, &#123;Person: Tom&#125;</span></span><br><span class="line">        System.out.println(map.get(<span class="keyword">new</span> Person(<span class="string">"Bob"</span>))); <span class="comment">// 2</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Person</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line">    Person(String name) &#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"&#123;Person: "</span> + name + <span class="string">"&#125;"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意到<code>Comparator</code>接口要求实现一个比较方法，它负责比较传入的两个元素<code>a</code>和<code>b</code>，如果<code>a&lt;b</code>，则返回负数，通常是<code>-1</code>，如果<code>a==b</code>，则返回<code>0</code>，如果<code>a&gt;b</code>，则返回正数，通常是<code>1</code>。<code>TreeMap</code>内部根据比较结果对Key进行排序。</p>
+<p>从上述代码执行结果可知，打印的Key确实是按照<code>Comparator</code>定义的顺序排序的。如果要根据Key查找Value，我们可以传入一个<code>new Person(&quot;Bob&quot;)</code>作为Key，它会返回对应的<code>Integer</code>值<code>2</code>。</p>
+<p>另外，注意到<code>Person</code>类并未覆写<code>equals()</code>和<code>hashCode()</code>，<strong>因为<code>TreeMap</code>不使用<code>equals()</code>和<code>hashCode()</code></strong>。</p>
+<p>我们来看一个稍微复杂的例子：这次我们定义了<code>Student</code>类，并用分数<code>score</code>进行排序，高分在前：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Map&lt;Student, Integer&gt; map = <span class="keyword">new</span> TreeMap&lt;&gt;(<span class="keyword">new</span> Comparator&lt;Student&gt;() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(Student p1, Student p2)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> p1.score &gt; p2.score ? -<span class="number">1</span> : <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        map.put(<span class="keyword">new</span> Student(<span class="string">"Tom"</span>, <span class="number">77</span>), <span class="number">1</span>);</span><br><span class="line">        map.put(<span class="keyword">new</span> Student(<span class="string">"Bob"</span>, <span class="number">66</span>), <span class="number">2</span>);</span><br><span class="line">        map.put(<span class="keyword">new</span> Student(<span class="string">"Lily"</span>, <span class="number">99</span>), <span class="number">3</span>);</span><br><span class="line">        <span class="keyword">for</span> (Student key : map.keySet()) &#123;</span><br><span class="line">            System.out.println(key);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(map.get(<span class="keyword">new</span> Student(<span class="string">"Bob"</span>, <span class="number">66</span>))); <span class="comment">// null?</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Student</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> String name;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> score;</span><br><span class="line">    Student(String name, <span class="keyword">int</span> score) &#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.score = score;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> String.format(<span class="string">"&#123;%s: score=%d&#125;"</span>, name, score);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>for</code>循环中，我们确实得到了正确的顺序。但是，且慢！根据相同的Key：<code>new Student(&quot;Bob&quot;, 66)</code>进行查找时，结果为<code>null</code>！</p>
+<p>这是怎么肥四？难道<code>TreeMap</code>有问题？遇到<code>TreeMap</code>工作不正常时，我们首先回顾Java编程基本规则：出现问题，不要怀疑Java标准库，要从自身代码找原因。</p>
+<p>在这个例子中，<code>TreeMap</code>出现问题，原因其实出在这个<code>Comparator</code>上：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public int compare(Student p1, Student p2) &#123;</span><br><span class="line">    return p1.score &gt; p2.score ? -1 : 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>p1.score</code>和<code>p2.score</code>不相等的时候，它的返回值是正确的，<strong>但是，在<code>p1.score</code>和<code>p2.score</code>相等的时候，它并没有返回<code>0</code>！</strong>这就是为什么<code>TreeMap</code>工作不正常的原因：<code>TreeMap</code>在比较两个Key是否相等时，依赖Key的<code>compareTo()</code>方法或者<code>Comparator.compare()</code>方法。在两个Key相等时，必须返回<code>0</code>。因此，修改代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(Student p1, Student p2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (p1.score == p2.score) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> p1.score &gt; p2.score ? -<span class="number">1</span> : <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>或者直接借助<code>Integer.compare(int, int)</code>也可以返回正确的比较结果。</p>
+<h3 id="小结-3"><a href="#小结-3" class="headerlink" title="小结"></a>小结</h3><p><code>SortedMap</code>在遍历时严格按照Key的顺序遍历，最常用的实现类是<code>TreeMap</code>；</p>
+<p>作为<code>SortedMap</code>的Key必须实现<code>Comparable</code>接口，或者传入<code>Comparator</code>；</p>
+<p>要严格按照<code>compare()</code>规范实现比较逻辑，否则，<code>TreeMap</code>将不能正常工作。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265118019954528" target="_blank" rel="noopener">使用Map</a></p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265117217944672" target="_blank" rel="noopener">编写equals和hashCode</a></p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1300277678309410" target="_blank" rel="noopener">使用EnumMap</a></p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265117109276544" target="_blank" rel="noopener">使用TreeMap</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9B%86%E5%90%88/" rel="tag"># 集合</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/13/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3List%E7%AE%80%E4%BB%8B/" rel="prev" title="Java集合接口List简介">
+      <i class="fa fa-chevron-left"></i> Java集合接口List简介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/14/Java%E4%B8%ADProperties%E7%AE%80%E4%BB%8B/" rel="next" title="Java中Properties简介">
+      Java中Properties简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#使用Map"><span class="nav-number">1.</span> <span class="nav-text">使用Map</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#遍历Map"><span class="nav-number">1.1.</span> <span class="nav-text">遍历Map</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">1.2.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编写equals和hashCode"><span class="nav-number">2.</span> <span class="nav-text">编写equals和hashCode</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#延伸阅读"><span class="nav-number">2.1.</span> <span class="nav-text">延伸阅读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结-1"><span class="nav-number">2.2.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用EnumMap"><span class="nav-number">3.</span> <span class="nav-text">使用EnumMap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#小结-2"><span class="nav-number">3.1.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用TreeMap"><span class="nav-number">4.</span> <span class="nav-text">使用TreeMap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#小结-3"><span class="nav-number">4.1.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">417k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

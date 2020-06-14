@@ -186,6 +186,850 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20TCP%20%E5%8D%8F%E8%AE%AE%E6%9C%89%E7%B2%98%E5%8C%85%E9%97%AE%E9%A2%98-%E8%BD%AC%E8%BD%BD/" class="post-title-link" itemprop="url">为什么 TCP 协议有粘包问题-转载</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-16 03:15:30 / 修改时间：13:46:07" itemprop="dateCreated datePublished" datetime="2020-05-16T03:15:30+08:00">2020-05-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>TCP/IP 协议簇建立了互联网中通信协议的概念模型，该协议簇中的两个主要协议就是 TCP 和 IP 协议。TCP/ IP 协议簇中的 TCP 协议能够保证数据段（Segment）的可靠性和顺序，有了可靠的传输层协议之后，应用层协议就可以直接使用 TCP 协议传输数据，不在需要关心数据段的丢失和重复问题<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:1" target="_blank" rel="noopener">1</a>。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958567-tcp-and-application-protocols.png" alt="tcp-and-application-protocols"></p>
+<p><strong>图 1 - TCP 协议与应用层协议</strong></p>
+<p>IP 协议解决了数据包（Packet）的路由和传输，上层的 TCP 协议不再关注路由和寻址<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:2" target="_blank" rel="noopener">2</a>，那么 TCP 协议解决的是传输的可靠性和顺序问题，上层不需要关心数据能否传输到目标进程，只要写入 TCP 协议的缓冲区的数据，协议栈几乎都能保证数据的送达。</p>
+<p>当应用层协议使用 TCP 协议传输数据时，TCP 协议可能会将应用层发送的数据分成多个包依次发送，而数据的接收方收到的数据段可能有多个『应用层数据包』组成，所以当应用层从 TCP 缓冲区中读取数据时发现粘连的数据包时，需要对收到的数据进行拆分。</p>
+<p>粘包并不是 TCP 协议造成的，它的出现是因为应用层协议设计者对 TCP 协议的错误理解，忽略了 TCP 协议的定义并且缺乏设计应用层协议的经验。本文将从 TCP 协议以及应用层协议出发，分析我们经常提到的 TCP 协议中的粘包是如何发生的：</p>
+<ul>
+<li>TCP 协议是面向字节流的协议，它可能会组合或者拆分应用层协议的数据；</li>
+<li>应用层协议的没有定义消息的边界导致数据的接收方无法拼接数据；</li>
+</ul>
+<p>很多人可能会认为粘包是一个比较低级的甚至不值得讨论的问题，但是在作者看来这个问题还是很有趣的，不是所有人都系统性地学过基于 TCP 的应用层协议设计，也不是所有人对 TCP 协议也没有那么深入的理解，相信很多人学习编程的过程都是自底向上的，所以作者认为这是一个值得回答的问题，我们应该传递正确的知识，而不是负面的和居高临下的情绪。</p>
+<h2 id="面向字节流"><a href="#面向字节流" class="headerlink" title="面向字节流"></a>面向字节流</h2><p>TCP 协议是面向连接的、可靠的、基于字节流的传输层通信协议<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:3" target="_blank" rel="noopener">3</a>，应用层交给 TCP 协议的数据并不会以消息为单位向目的主机传输，这些数据在某些情况下会被组合成一个数据段发送给目标的主机。</p>
+<p>Nagle 算法是一种通过减少数据包的方式提高 TCP 传输性能的算法<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:4" target="_blank" rel="noopener">4</a>。因为网络 带宽有限，它不会将小的数据块直接发送到目的主机，而是会在本地缓冲区中等待更多待发送的数据，这种批量发送数据的策略虽然会影响实时性和网络延迟，但是能够降低网络拥堵的可能性并减少额外开销。</p>
+<p>在早期的互联网中，Telnet 是被广泛使用的应用程序，然而使用 Telnet 会产生大量只有 1 字节负载的有效数据，每个数据包都会有 40 字节的额外开销，带宽的利用率只有 ~2.44%，Nagle 算法就是在当时的这种场景下设计的。</p>
+<p>当应用层协议通过 TCP 协议传输数据时，实际上待发送的数据先被写入了 TCP 协议的缓冲区，如果用户开启了 Nagle 算法，那么 TCP 协议可能不会立刻发送写入的数据，它会等待缓冲区中数据超过最大数据段（MSS）或者上一个数据段被 ACK 时才会发送缓冲区中的数据。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958612-nagle-algorithm.png" alt="nagle-algorithm"></p>
+<p><strong>图 2 - Nagle 算法</strong></p>
+<p>几十年前还会发生网络拥塞的问题，但是今天的网络带宽资源不再像过去那么紧张，在默认情况下，Linux 内核都会使用如下的方式默认关闭 Nagle 算法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TCP_NODELAY = <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>Linux 内核中使用如下所示的 <a href="https://github.com/torvalds/linux/blob/bd2463ac7d7ec51d432f23bf0e893fb371a908cd/net/ipv4/tcp_output.c#L1897" target="_blank" rel="noopener"><code>tcp_nagle_test</code></a> 函数测试我们是否应该发送当前的 TCP 数据段，感兴趣的读者可以以这段代码为入口详细了解 Nagle 算法在今天的实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">tcp_nagle_test</span><span class="params">(<span class="keyword">const</span> struct tcp_sock *tp, <span class="keyword">const</span> struct sk_buff *skb,</span></span></span><br><span class="line"><span class="function"><span class="params">				  <span class="keyword">unsigned</span> <span class="keyword">int</span> cur_mss, <span class="keyword">int</span> nonagle)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (nonagle &amp; TCP_NAGLE_PUSH)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (tcp_urg_mode(tp) || (TCP_SKB_CB(skb)-&gt;tcp_flags &amp; TCPHDR_FIN))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!tcp_nagle_check(skb-&gt;len &lt; cur_mss, tp, nonagle))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Nagle 算法确实能够在数据包较小时提高网络带宽的利用率并减少 TCP 和 IP 协议头带来的额外开销，但是使用该算法也可能会导致应用层协议多次写入的数据被合并或者拆分发送，当接收方从 TCP 协议栈中读取数据时会发现不相关的数据出现在了同一个数据段中，应用层协议可能没有办法对它们进行拆分和重组。</p>
+<p>除了 Nagle 算法之外，TCP 协议栈中还有另一个用于延迟发送数据的选项 <code>TCP_CORK</code>，如果我们开启该选项，那么当发送的数据小于 MSS 时，TCP 协议就会延迟 200ms 发送该数据或者等待缓冲区中的数据超过 MSS<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:5" target="_blank" rel="noopener">5</a>。</p>
+<p>无论是 <code>TCP_NODELAY</code> 还是 <code>TCP_CORK</code>，它们都会通过延迟发送数据来提高带宽的利用率，它们会对应用层协议写入的数据进行拆分和重组，而这些机制和配置能够出现的最重要原因是 — TCP 协议是基于字节流的协议，其本身没有数据包的概念，不会按照数据包发送数据。</p>
+<h2 id="消息边界"><a href="#消息边界" class="headerlink" title="消息边界"></a>消息边界</h2><p>如果我们系统性地学习过 TCP 协议以及基于 TCP 的应用层协议设计，那么设计一个能够被 TCP 协议栈任意拆分和组装数据包的应用层协议就不会有什么问题。既然 TCP 协议是基于字节流的，这其实就意味着应用层协议要自己划分消息的边界。</p>
+<p>如果我们能在应用层协议中定义消息的边界，那么无论 TCP 协议如何对应用层协议的数据包进程拆分和重组，接收方都能根据协议的规则恢复对应的消息。在应用层协议中，最常见的两种解决方案就是基于长度或者基于终结符（Delimiter）。</p>
+<p><img src="https://img.draveness.me/2020-03-05-15834216958643-message-framing.png" alt="message-framing"></p>
+<p><strong>图 3 - 实现消息边界的方法</strong></p>
+<p>基于长度的实现有两种方式，一种是使用固定长度，所有的应用层消息都使用统一的大小，另一种方式是使用不固定长度，但是需要在应用层协议的协议头中增加表示负载长度的字段，这样接收方才可以从字节流中分离出不同的消息，HTTP 协议的消息边界就是基于长度实现的：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: text/html; charset=UTF-8</span><br><span class="line"><span class="attribute">Content-Length</span>: 138</span><br><span class="line">...</span><br><span class="line"><span class="attribute">Connection</span>: close</span><br><span class="line"></span><br><span class="line">&lt;html&gt;</span><br><span class="line">  &lt;head&gt;</span><br><span class="line">    &lt;title&gt;An Example Page&lt;/title&gt;</span><br><span class="line">  &lt;/head&gt;</span><br><span class="line">  &lt;body&gt;</span><br><span class="line">    &lt;p&gt;Hello World, this is a very simple HTML document.&lt;/p&gt;</span><br><span class="line">  &lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br></pre></td></tr></table></figure>
+
+<p>在上述 HTTP 消息中，我们使用 <code>Content-Length</code> 头表示 HTTP 消息的负载大小，当应用层协议解析到足够的字节数后，就能从中分离出完整的 HTTP 消息，无论发送方如何处理对应的数据包，我们都可以遵循这一规则完成 HTTP 消息的重组<a href="https://draveness.me/whys-the-design-tcp-message-frame/#fn:6" target="_blank" rel="noopener">6</a>。</p>
+<p>不过 HTTP 协议除了使用基于长度的方式实现边界，也会使用基于终结符的策略，当 HTTP 使用块传输（Chunked Transfer）机制时，HTTP 头中就不再包含 <code>Content-Length</code> 了，它会使用负载大小为 0 的 HTTP 消息作为终结符表示消息的边界。</p>
+<p>当然除了这两种方式之外，我们可以基于特定的规则实现消息的边界，例如：使用 TCP 协议发送 JSON 数据，接收方可以根据接收到的数据是否能够被解析成合法的 JSON 判断消息是否终结。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>TCP 协议粘包问题是因为应用层协议开发者的错误设计导致的，他们忽略了 TCP 协议数据传输的核心机制 — 基于字节流，其本身不包含消息、数据包等概念，所有数据的传输都是流式的，需要应用层协议自己设计消息的边界，即消息帧（Message Framing），我们重新回顾一下粘包问题出现的核心原因：</p>
+<ol>
+<li>TCP 协议是基于字节流的传输层协议，其中不存在消息和数据包的概念；</li>
+<li>应用层协议没有使用基于长度或者基于终结符的消息边界，导致多个消息的粘连；</li>
+</ol>
+<p>网络协议的学习过程非常有趣，不断思考背后的问题能够让我们对定义有更深的认识。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
+<ul>
+<li>基于 UDP 协议的应用层协议应该如何设计？会出现粘包的问题么？</li>
+<li>有哪些应用层协议使用基于长度的分帧？又有哪些使用基于终结符的分帧？</li>
+</ul>
+<blockquote>
+<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
+</blockquote>
+<h2 id="相关文章"><a href="#相关文章" class="headerlink" title="相关文章"></a>相关文章</h2><ul>
+<li><a href="https://draveness.me/whys-the-design-tcp-three-way-handshake" target="_blank" rel="noopener">为什么 TCP 建立连接需要三次握手</a></li>
+<li><a href="https://draveness.me/whys-the-design-tcp-segment-ip-packet" target="_blank" rel="noopener">为什么 TCP/IP 协议会拆分数据</a></li>
+</ul>
+<h2 id="推荐阅读"><a href="#推荐阅读" class="headerlink" title="推荐阅读"></a>推荐阅读</h2><ul>
+<li>JC Mogul. “Rethinking the TCP Nagle Algorithm” <a href="http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf" target="_blank" rel="noopener">http://ccr.sigcomm.org/archive/2001/jan01/ccr-200101-mogul.pdf</a></li>
+<li>Stephen Cleary. Apr 30, 2009. “Message Framing” <a href="https://blog.stephencleary.com/2009/04/message-framing.html" target="_blank" rel="noopener">https://blog.stephencleary.com/2009/04/message-framing.html</a></li>
+</ul>
+<hr>
+<ol>
+<li>Wikipedia: Internet protocol suite <a href="https://en.wikipedia.org/wiki/Internet_protocol_suite" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Internet_protocol_suite</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:1" target="_blank" rel="noopener">↩︎</a></li>
+<li>What is the Internet Protocol? <a href="https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/" target="_blank" rel="noopener">https://www.cloudflare.com/learning/ddos/glossary/internet-protocol/</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:2" target="_blank" rel="noopener">↩︎</a></li>
+<li>Wikipedia: Transmission Control Procol <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Transmission_Control_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:3" target="_blank" rel="noopener">↩︎</a></li>
+<li>Nagle, J., “Congestion Control in IP/TCP Internetworks”, RFC 896, DOI 10.17487/RFC0896, January 1984, <a href="https://www.rfc-editor.org/info/rfc896" target="_blank" rel="noopener">https://www.rfc-editor.org/info/rfc896</a>. <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:4" target="_blank" rel="noopener">↩︎</a></li>
+<li>Is there any significant difference between TCP_CORK and TCP_NODELAY in this use-case? <a href="https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use" target="_blank" rel="noopener">https://stackoverflow.com/questions/22124098/is-there-any-significant-difference-between-tcp-cork-and-tcp-nodelay-in-this-use</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:5" target="_blank" rel="noopener">↩︎</a></li>
+<li>Wikipedia: Hypertext Transfer Protocol <a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol</a> <a href="https://draveness.me/whys-the-design-tcp-message-frame/#fnref:6" target="_blank" rel="noopener">↩︎</a></li>
+</ol>
+<p><a href="https://draveness.me/whys-the-design-tcp-message-frame/" target="_blank" rel="noopener">原文地址</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20MD5%20%E4%B8%8D%E8%83%BD%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%AF%86%E7%A0%81-%E8%BD%AC%E8%BD%BD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/15/%E4%B8%BA%E4%BB%80%E4%B9%88%20MD5%20%E4%B8%8D%E8%83%BD%E7%94%A8%E4%BA%8E%E5%AD%98%E5%82%A8%E5%AF%86%E7%A0%81-%E8%BD%AC%E8%BD%BD/" class="post-title-link" itemprop="url">为什么 MD5 不能用于存储密码-转载</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-15 13:08:08" itemprop="dateCreated datePublished" datetime="2020-05-15T13:08:08+08:00">2020-05-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-16 13:43:11" itemprop="dateModified" datetime="2020-05-16T13:43:11+08:00">2020-05-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%89%E5%85%A8/" itemprop="url" rel="index"><span itemprop="name">安全</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>很多软件工程师都认为 MD5 是一种加密算法，然而这种观点其实是大错特错并且十分危险的，作为一个 1992 年第一次被公开的算法，到今天为止已经被发现了一些致命的漏洞，我们在生产环境的任何场景都不应该继续使用 MD5 算法，无论是对数据或者文件的内容进行校验还是用于所谓的『加密』。</p>
+<p>这篇文章的主要目的是帮助读者理解 MD5 到底是什么，为什么我们不应该继续使用它，尤其是不应该使用它在数据库中存储密码，作者也希望使用过 MD5 或者明文存储密码的开发者们能够找到更加合理和安全的方式对用户的这些机密信息进行存储（这样也可以间接提高我在各类网站中存储密码的安全性）。</p>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>与『为什么我们不能使用 MD5 来存储密码？』这一问题相似的其实还有『为什么我们不能使用明文来存储密码？』，使用明文来存储密码是一种看起来就不可行的方案，除非我们能够 100% 保证数据库中的密码字段不会被<strong>任何人</strong>访问到，不仅包括潜在的攻击者，还包括系统的开发者和管理员。</p>
+<p>不过这是一个非常理想的情况，在实际的生产环境中，我们不能抵御来自黑客的所有攻击，甚至也不能完全阻挡开发者和管理员的访问，因为我们总需要信任并授权一些人或者程序具有当前数据库的所有访问权限，这也就给攻击者留下了可以利用的漏洞，在抵御外部攻击时我们没有办法做到全面，只能尽可能提高攻击者的成本，这也就是使用 MD5 或者其他方式存储密码的原因了。</p>
+<p><img src="https://img.draveness.me/md5-hashed-values.png" alt="md5-hashed-values"></p>
+<p>很多开发者对于 MD5 的作用和定义都有着非常大的误解，<strong>MD5 并不是一种加密算法，而是一种摘要算法</strong>，我们也可以叫它哈希函数，哈希函数可以将无限键值空间中的所有键都均匀地映射到一个指定大小的键值空间中；一个好的摘要算法能够帮助我们保证文件的完整性，避免攻击者的恶意篡改，但是加密算法或者加密的功能是 —— 通过某种特定的方式来编码消息或者信息，只有授权方可以访问原始数据，而没有被授权的人无法从密文中获取原文。</p>
+<p>由于加密需要同时保证消息的秘密性和完整性，所以加密的过程使用一系列的算法，MD5 确实可以在加密的过程中作为哈希函数使用来保证消息的完整性，但是我们还需要另一个算法来保证消息的秘密性，所以由于 MD5 哈希的信息无法被还原，只依靠 MD5 是无法完成加密的。</p>
+<blockquote>
+<p>在任何场景下，我们都应该避免 MD5 的使用，可以选择更好的摘要算法替代 MD5，例如 SHA256、SHA512。</p>
+</blockquote>
+<p>聊了这么多对于 MD5 的误解，我们重新回到今天最开始的题目，『为什么 MD5 不能用于存储密码』，对于这个问题有一个最简单的答案，也就是 <strong>MD5 不够安全</strong>。当整个系统中的数据库被攻击者入侵之后，存储密码的摘要而不是明文是我们能够对所有用户的最大保护。需要知道的是，不够安全的不只是 MD5，任何摘要算法在存储密码这一场景下都不够安全，我们在这篇文章中就会哈希函数『为什么哈希函数不能用于存储密码』以及其他相关机制的安全性。</p>
+<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>既然我们已经对哈希函数和加密算法有了一些简单的了解，接下来的这一节中分析使用以下几种不同方式存储密码的安全性：</p>
+<ul>
+<li>使用哈希存储密码；</li>
+<li>使用哈希加盐存储密码；</li>
+<li>使用加密算法存储密码；</li>
+<li>使用 bcrypt 存储密码；</li>
+</ul>
+<p>在分析的过程中可能会涉及到一些简单的密码学知识，也会谈到一些密码学历史上的一些事件，不过这对于理解不同方式的安全性不会造成太大的障碍。</p>
+<h3 id="哈希"><a href="#哈希" class="headerlink" title="哈希"></a>哈希</h3><p>在今天，如果我们直接使用哈希来存储密码，那其实跟存储明文没有太多的区别，所有的攻击者在今天都已经掌握了彩虹表这个工具，我们可以将彩虹表理解成一张预计算的大表，其中存储着一些常见密码的哈希，当攻击者通过入侵拿到某些网站的数据库之后就可以通过预计算表中存储的映射来查找原始密码。</p>
+<p><img src="https://img.draveness.me/attack-against-hashed-password.png" alt="attack-against-hashed-password"></p>
+<p>攻击者只需要将一些常见密码提前计算一些哈希就可以找到数据库中很多用于存储的密码，Wikipedia 上有一份关于最常见密码的 <a href="https://en.wikipedia.org/wiki/List_of_the_most_common_passwords" target="_blank" rel="noopener">列表</a>，在 2016 年的统计中发现使用情况最多的前 25 个密码占了调查总数的 10%，虽然这不能排除统计本身的不准确因素，但是也足以说明仅仅使用哈希的方式存储密码是不够安全的。</p>
+<h3 id="哈希加盐"><a href="#哈希加盐" class="headerlink" title="哈希加盐"></a>哈希加盐</h3><p>仅仅使用哈希来存储密码无法抵御来自彩虹表的攻击，在上世纪 70 到 80 年代，早期版本的 Unix 系统就在 <code>/etc/passwrd</code> 中存储加盐的哈希密码，密码加盐后的哈希与盐会被一起存储在 <code>/etc/passwd</code> 文件中，今天哈希加盐的策略与几十年前的也没有太多的不同，差异可能在于盐的生成和选择：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">md5(salt, password), salt</span><br></pre></td></tr></table></figure>
+
+<p>加盐的方式主要还是为了增加攻击者的计算成本，当攻击者顺利拿到数据库中的数据时，由于每个密码都使用了随机的盐进行哈希，所以预先计算的彩虹表就没有办法立刻破译出哈希之前的原始数据，攻击者对每一个哈希都需要单独进行计算，这样能够增加了攻击者的成本，减少原始密码被大范围破译的可能性。</p>
+<p><img src="https://img.draveness.me/attack-against-hashes-of-salted-password.png" alt="attack-against-hashes-of-salted-password"></p>
+<p>在这种情况下，攻击者破解一个用户密码的成本其实就等于发现哈希碰撞的概率，因为攻击者其实不需要知道用户的密码是什么，他只需要找到一个值 <code>value</code>，这个值加盐后的哈希与密码加盐后的哈希完全一致就能登录用户的账号：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hash(salt, value) = hash(salt, password)</span><br></pre></td></tr></table></figure>
+
+<p>这种情况在密码学中叫做哈希碰撞，也就是两个不同值对应哈希相同，一个哈希函数或者摘要算法被找到哈希碰撞的概率决定了该算法的安全性，早在几十年前，我们就在 MD5 的设计中发现了缺陷并且在随后的发展中找到了低成本快速制造哈希碰撞的方法。</p>
+<ol>
+<li>1996 年 <a href="https://www.semanticscholar.org/paper/The-Status-of-MD5-After-a-Recent-Attack-Dobbertin/c51288ac5d2a5b8f5c8d20e94fe999ea6379bc65" target="_blank" rel="noopener">The Status of MD5 After a Recent Attack</a> —— 发现了 MD5 设计中的缺陷，但是并没有被认为是致命的缺点，密码学专家开始推荐使用其他的摘要算法；</li>
+<li>2004 年 <a href="http://merlot.usc.edu/csac-f06/papers/Wang05a.pdf" target="_blank" rel="noopener">How to Break MD5 and Other Hash Functions</a> —— 发现了 MD5 摘要算法不能抵抗哈希碰撞，我们不能在数字安全领域使用 MD5 算法；</li>
+<li>2006 年 <a href="https://www.cs.colorado.edu/~jrblack/papers/md5e-full.pdf" target="_blank" rel="noopener">A Study of the MD5 Attacks: Insights and Improvements</a> —— 创建一组具有相同 MD5 摘要的文件；</li>
+<li>2008 年 <a href="https://www.win.tue.nl/hashclash/rogue-ca/" target="_blank" rel="noopener">MD5 considered harmful today</a> —— 创建伪造的 SSL 证书；</li>
+<li>2010 年 <a href="https://en.wikipedia.org/wiki/MD5#cite_note-31" target="_blank" rel="noopener">MD5 vulnerable to collision attacks</a> —— CMU 软件工程机构认为 MD5 摘要算法已经在密码学上被破译并且不适合使用;</li>
+<li>2012 年 <a href="https://en.wikipedia.org/wiki/Flame_(malware)" target="_blank" rel="noopener">Flame</a> —— 恶意软件利用了 MD5 的漏洞并伪造了微软的数字签名；</li>
+</ol>
+<p>从过往的历史来看，为了保证用户敏感信息的安全，我们不应该使用 MD5 加盐的方式来存储用户的密码，那么我们是否可以使用更加安全的摘要算法呢？不可以，哈希函数并不是专门用来设计存储用户密码的，所以它的计算可能相对来说还是比较快，攻击者今天可以<strong>通过 GPU 每秒执行上亿次的计算来破解用户的密码</strong>，所以不能使用这种方式存储用户的密码，感兴趣的读者可以了解一下用于恢复密码的工具 <a href="https://hashcat.net/hashcat/" target="_blank" rel="noopener">Hashcat</a>。</p>
+<h3 id="加密"><a href="#加密" class="headerlink" title="加密"></a>加密</h3><p>既然今天的硬件已经能够很快地帮助攻击者破解用户的密码，那么我们能否通过其他的方式来取代哈希函数来存储密码呢？有些工程师想到使用加密算法来替代哈希函数，这样能够从源头上避免哈希碰撞的的发生，这种方式看起来非常美好，但是有一个致命的缺点，就是我们<strong>如何存储用于加密密码的秘钥</strong>。</p>
+<p>既然存储密码的仓库能被泄露，那么用于存储秘钥的服务也可能会被攻击，我们永远都没有办法保证我们的数据库和服务器是安全的，一旦秘钥被攻击者获取，他们就可以轻而易举地恢复用户的密码，因为核对用户密码的过程需要在内存对密码进行解密，这时明文的密码就可能暴露在内存中，依然有导致用户密码泄露的风险。</p>
+<p><img src="https://img.draveness.me/encrypted-password.png" alt="encrypted-password"></p>
+<p>使用加密的方式存储密码相比于哈希加盐的方式，在一些安全意识和能力较差的公司和网站反而更容易导致密码的泄露和安全事故。</p>
+<h3 id="bcrypt"><a href="#bcrypt" class="headerlink" title="bcrypt"></a>bcrypt</h3><p>哈希加盐的方式确实能够增加攻击者的成本，但是今天来看还远远不够，我们需要一种更加安全的方式来存储用户的密码，这也就是今天被广泛使用的 <code>bcrypt</code>，使用 <code>bcrypt</code> 相比于直接使用哈希加盐是一种更加安全的方式，也是我们目前推荐使用的方法，为了增加攻击者的成本，<code>bcrypt</code> 引入了计算成本这一可以调节的参数，能够调节执行 <code>bcrypt</code> 函数的成本。</p>
+<p><img src="https://img.draveness.me/cost-of-user-and-attackers.png" alt="cost-of-user-and-attackers"></p>
+<p>当我们将验证用户密码的成本提高几个数量级时，攻击者的成本其实也相应的提升了几个数量级，只要我们让攻击者的攻击成本大于硬件的限制，同时保证正常请求的耗时在合理范围内，我们就能够保证用户密码的相对安全。</p>
+<blockquote>
+<p>“<code>bcrypt</code> was designed for password hashing hence it is a slow algorithm. This is good for password hashing as it reduces the number of passwords by second an attacker could hash when crafting a dictionary attack. “</p>
+</blockquote>
+<p><code>bcrypt</code> 这一算法就是为哈希密码而专门设计的，所以它是一个执行相对较慢的算法，这也就能够减少攻击者每秒能够处理的密码数量，从而避免攻击者的字典攻击。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> cost := <span class="number">10</span>; cost &lt;= <span class="number">15</span>; cost++ &#123;</span><br><span class="line">		startedAt := time.Now()</span><br><span class="line">		bcrypt.GenerateFromPassword([]<span class="keyword">byte</span>(<span class="string">"password"</span>), cost)</span><br><span class="line">		duration := time.Since(startedAt)</span><br><span class="line">		fmt.Printf(<span class="string">"cost: %d, duration: %v\n"</span>, cost, duration)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$ <span class="keyword">go</span> run bcrypt.<span class="keyword">go</span></span><br><span class="line">cost: <span class="number">10</span>, duration: <span class="number">51.483401</span>ms</span><br><span class="line">cost: <span class="number">11</span>, duration: <span class="number">100.639251</span>ms</span><br><span class="line">cost: <span class="number">12</span>, duration: <span class="number">202.788492</span>ms</span><br><span class="line">cost: <span class="number">13</span>, duration: <span class="number">399.552731</span>ms</span><br><span class="line">cost: <span class="number">14</span>, duration: <span class="number">801.041128</span>ms</span><br><span class="line">cost: <span class="number">15</span>, duration: <span class="number">1.579692689</span>s</span><br></pre></td></tr></table></figure>
+
+<p>运行上述 <a href="https://play.golang.org/p/uCNm-qckWxQ" target="_blank" rel="noopener">代码片段</a> 时就能发现 <code>cost</code> 和运行时间的关系，算法运行的成本每 <code>+1</code>，当前算法最终的耗时就会翻一倍，这与 <code>bcrypt</code> 算法的实现原理有关，你可以在 <a href="https://en.wikipedia.org/wiki/Bcrypt" target="_blank" rel="noopener">Wikipedia</a> 上找到算法执行过程的伪代码，这可以帮助我们快速理解算法背后的设计。</p>
+<p>如果硬件的发展使攻击者能够对使用 <code>bcrypt</code> 存储的密码进行攻击时，我们就可以直接提升 <code>bcrypt</code> 算法的 <code>cost</code> 参数以增加攻击者的成本，这也是 <code>bcrypt</code> 设计上的精妙之处，所以使用 <code>bcrypt</code> 是一种在存储用户密码时比较安全的方式。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这篇文章分析的问题其实是 —— 当数据库被攻击者获取时，我们怎么能够保证用户的密码很难被攻击者『破译』，作为保护用户机密信息的最后手段，选择安全并且合适的方法至关重要。攻击者能否破解用户的密码一般取决于两个条件：</p>
+<ul>
+<li>使用的加密算法是否足够安全，使用暴力破解的方式时间成本极高；</li>
+<li>足够好的硬件支持，能够支持大规模地高速计算哈希；</li>
+</ul>
+<p>抵御攻击者的攻击的方式其实就是提高单次算法运行的成本，当我们将用户的验证耗时从 <code>0.1ms</code> 提升到了 <code>500ms</code>，攻击者的计算成本也就提升了 5000 倍，这种结果就是之前需要几小时破解的密码现在需要几年的时间。</p>
+<p>不论如何，<strong>使用 MD5、MD5 加盐或者其他哈希的方式来存储密码都是不安全的</strong>，希望各位工程师能够避免在这样的场景下使用 MD5，在其他必须使用哈希函数的场景下也建议使用其他算法代替，例如 SHA-512 等。</p>
+<p>当然，如何保证用户机密信息的安全不只是一个密码学问题，它还是一个工程问题，任何工程开发商的疏漏都可能导致安全事故，所以我们作为开发者在与用于敏感信息打交道时也应该小心谨慎、怀有敬畏之心。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
+<ol>
+<li>使用 GPU 每秒可以计算多少 MD5 哈希（数量级）？能够在多长时间破解使用 MD5 加盐存储的密码？</li>
+<li>假设计算一次哈希耗时 <code>500ms</code>，破解 <code>bcrypt</code> 算法生成的哈希需要多长时间？</li>
+<li>MD5 哈希 <code>23cdc18507b52418db7740cbb5543e54</code> 对应的原文可能是？谈谈你使用的工具和破译的过程。</li>
+</ol>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
+<li><a href="https://security.stackexchange.com/questions/61489/is-salted-md5-or-salted-sha-considered-secure" target="_blank" rel="noopener">Is salted MD5 or salted SHA considered secure?</a></li>
+<li><a href="https://security.stackexchange.com/questions/211/how-to-securely-hash-passwords?noredirect=1&lq=1" target="_blank" rel="noopener">How to securely hash passwords?</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Rainbow_table" target="_blank" rel="noopener">Rainbow table</a></li>
+<li><a href="https://tools.ietf.org/html/rfc1321" target="_blank" rel="noopener">The MD5 Message-Digest Algorithm · RFC1321</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Collision_(computer_science)" target="_blank" rel="noopener">Collision (computer science)</a></li>
+<li><a href="https://www.sitepoint.com/why-you-should-use-bcrypt-to-hash-stored-passwords/" target="_blank" rel="noopener">Why You Should Use Bcrypt to Hash Stored Passwords</a></li>
+<li><a href="https://stackoverflow.com/questions/6832445/how-can-bcrypt-have-built-in-salts" target="_blank" rel="noopener">How can bcrypt have built-in salts?</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Bcrypt" target="_blank" rel="noopener">bcrypt</a></li>
+</ul>
+<p>转载自<a href="https://draveness.me/whys-the-design-password-with-md5/" target="_blank" rel="noopener">https://draveness.me/whys-the-design-password-with-md5/</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/15/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/15/%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E6%96%B9%E6%A1%88/" class="post-title-link" itemprop="url">分布式ID生成方案</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-15 12:03:06 / 修改时间：20:17:39" itemprop="dateCreated datePublished" datetime="2020-05-15T12:03:06+08:00">2020-05-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">分布式</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p><img src="C:%5CUsers%5Ceric3%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200515201720558.png" alt="image-20200515201720558"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/14/LeetCode173/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/14/LeetCode173/" class="post-title-link" itemprop="url">LeetCode173</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-14 13:16:58 / 修改时间：21:18:59" itemprop="dateCreated datePublished" datetime="2020-05-14T13:16:58+08:00">2020-05-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>实现一个二叉搜索树迭代器。你将使用二叉搜索树的根节点初始化迭代器。</p>
+<p>调用 next() 将返回二叉搜索树中的下一个最小的数。</p>
+<p>示例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">BSTIterator iterator &#x3D; new BSTIterator(root);</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 3</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 7</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 9</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 15</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 true</span><br><span class="line">iterator.next();    &#x2F;&#x2F; 返回 20</span><br><span class="line">iterator.hasNext(); &#x2F;&#x2F; 返回 false</span><br></pre></td></tr></table></figure>
+
+<p>提示：<br>next() 和 hasNext() 操作的时间复杂度是 O(1)，并使用 O(h) 内存，其中 h 是树的高度。<br>你可以假设 next() 调用总是有效的，也就是说，当调用 next() 时，BST 中至少存在一个下一个最小的数。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">BSTIterator</span> </span>&#123;</span><br><span class="line">       </span><br><span class="line">         Stack&lt;TreeNode&gt; iter;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="title">BSTIterator</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">                       iter=<span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line"></span><br><span class="line">           pushStack(root);</span><br><span class="line">          </span><br><span class="line">           </span><br><span class="line">       &#125;</span><br><span class="line">       </span><br><span class="line">       <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">pushStack</span><span class="params">(TreeNode node)</span></span>&#123;</span><br><span class="line">           TreeNode tmp=node;</span><br><span class="line">           <span class="keyword">while</span> (tmp!=<span class="keyword">null</span>)&#123;</span><br><span class="line">               iter.push(tmp);</span><br><span class="line">               tmp=tmp.left;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">/** <span class="doctag">@return</span> the next smallest number */</span></span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">if</span> (!iter.isEmpty())&#123;</span><br><span class="line">               TreeNode ans=iter.pop();</span><br><span class="line">               <span class="keyword">if</span> (ans.right!=<span class="keyword">null</span>)&#123;</span><br><span class="line">                   pushStack(ans.right);</span><br><span class="line">               &#125;</span><br><span class="line">               </span><br><span class="line">               <span class="keyword">return</span> ans.val;</span><br><span class="line">           &#125;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">/** <span class="doctag">@return</span> whether we have a next smallest number */</span></span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">return</span> !iter.isEmpty();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/11/%E5%B8%B8%E8%A7%81%E7%94%B5%E5%95%86%E7%A7%8D%E7%B1%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/11/%E5%B8%B8%E8%A7%81%E7%94%B5%E5%95%86%E7%A7%8D%E7%B1%BB/" class="post-title-link" itemprop="url">常见电商种类</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-11 08:42:05 / 修改时间：16:56:14" itemprop="dateCreated datePublished" datetime="2020-05-11T08:42:05+08:00">2020-05-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%B8%9A%E5%8A%A1/" itemprop="url" rel="index"><span itemprop="name">业务</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="B2B"><a href="#B2B" class="headerlink" title="B2B"></a>B2B</h1><p>B2B = Business to Business<br>商家（泛指企业）对商家的电子商务，即企业与企业之间通过互联网进行产品、服务及信息的交换。通俗的说法是指进行电子商务交易的供需双方都是商家（或企业、公司），他们使用 Internet 的技术或各种商务网络平台（如拓商网），完成商务交易的过程。这些过程包括：发布供求信息，订货及确认订货，支付过程，票据的签发、传送和接收，确定配送方案并监控配送过程等。如<strong>阿里巴巴，慧聪网</strong>。</p>
+<h1 id="B2C"><a href="#B2C" class="headerlink" title="B2C"></a>B2C</h1><p>B2C = Business to Customer<br>B2C 模式是中国最早产生的电子商务模式，如今的 B2C 电子商务网站非常的多，比较大型的有<strong>唯品会、一号店、亚马逊、苏宁易购、国美在线</strong>等。</p>
+<h1 id="B2B2C"><a href="#B2B2C" class="headerlink" title="B2B2C"></a>B2B2C</h1><p>B2B2C = Business To Business To Customers<br>所谓 B2B2C 是一种新的网络通信销售方式。第一个 B 指广义的卖方（即成品、半成品、材料提供商等），第二个 B 指交易平台，即提供卖方与买方的联系平台，同时提供优质的附加服务，C 即指买方。卖方可以是公司，也可以是个人，即一种逻辑上的买卖关系中的卖方。如<strong>天猫商城、京东商城</strong>。</p>
+<h1 id="C2C"><a href="#C2C" class="headerlink" title="C2C"></a>C2C</h1><p>C2C = Consumer to Consumer<br>C2C 同 B2B、B2C 一样，都是电子商务的几种模式之一。不同的是 C2C 是用户对用户的模式，C2C 商务平台就是通过为买卖双方提供一个在线交易平台，使卖方可以主动提供商品上网拍卖，而买方可以自行选择商品进行竞价。如<strong>淘宝，易趣，瓜子二手车</strong>等</p>
+<h1 id="O2O"><a href="#O2O" class="headerlink" title="O2O"></a>O2O</h1><p>O2O = Online to Offline<br>O2O 是新兴起的一种电子商务新商业模式，即将线下商务的机会与互联网结合在了一起，让互联网成为线下交易的前台。这样线下服务就可以用线上来揽客，消费者可以用线上来筛选服务，还有成交可以在线结算，很快达到规模。该模式最重要的特点是：推广效果可查，每笔交易可跟踪。如<strong>美团，饿了么</strong>。</p>
+<h1 id="C2B"><a href="#C2B" class="headerlink" title="C2B"></a>C2B</h1><p>C2B = Customer to Business<br>C2B 是电子商务模式的一种，即消费者对企业。最先由美国流行起来的 C2B 模式也许是一个值得关注的尝试。C2B 模式的核心，是通过聚合分散分布但数量庞大的用户形成一个强大的采购集团，以此来改变 B2C 模式中用户一对一出价的弱势地位，使之享受到以大批发商的价格买单件商品的利益。如<strong>海尔商城，尚品宅配，某些装修类电商平台</strong>，注重个性化服务。</p>
+<h1 id="F2C"><a href="#F2C" class="headerlink" title="F2C"></a>F2C</h1><p>F2C = Factory to customer<br>即从厂商到消费者的电子商务模式，如<strong>拼多多</strong>。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/05/InterruptedException%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/05/InterruptedException%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86/" class="post-title-link" itemprop="url">InterruptedException异常处理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-06 06:18:08 / 修改时间：14:37:53" itemprop="dateCreated datePublished" datetime="2020-05-06T06:18:08+08:00">2020-05-06</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><strong>当阻塞方法(如<code>sleep()</code>)收到中断请求的时候就会抛出InterruptedException异常</strong></p>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>线程在一定的条件下会发生状态的改变，下面是线程的一些状态</p>
+<p><img src="https://img-blog.csdnimg.cn/20181120173640764.jpeg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3BhbmdlMTk5MQ==,size_16,color_FFFFFF,t_70" alt="img"></p>
+<ul>
+<li><p>初始(NEW)：新建一个线程的对象，还未调用start方法</p>
+</li>
+<li><p>运行(RUNNABLE)：java线程中将已经准备就绪(Ready)和正在运行中(Running)的两种状态都统称为“Runnable”。准备就绪的线程会被放在线程池中等待被调用</p>
+</li>
+<li><p>阻塞(BLOCKED)：是因为某种的原因而放弃了CPU的使用权，暂时的停止了运行。直到线程进入准备就绪(Ready)状态才会有机会转到运行状态</p>
+</li>
+<li><p>等待(WAITING)：该状态的线程需要等待其他线程做出一些特定的动作（通知或者是中断）</p>
+</li>
+<li><p>超时等待(TIME_WAITING)：该状态和上面的等待不同，他可以在指定的时间内自行返回</p>
+</li>
+<li><p>终止(TERMINATED)：线程任务执行完毕</p>
+</li>
+</ul>
+<h2 id="线程阻塞"><a href="#线程阻塞" class="headerlink" title="线程阻塞"></a>线程阻塞</h2><p>线程阻塞通常是指一个线程在执行过程中暂停，以<strong>等待某个条件的触发</strong>。而什么情况才会使得线程进入阻塞的状态呢？</p>
+<ul>
+<li><strong>等待阻塞</strong>：运行的线程执行<strong>wait()方法</strong>，该线程会释放占用的所有资源，JVM会把该线程放入“等待池”中。进入这个状态后，是不能自动唤醒的，必须依靠其他线程调用notify()或notifyAll()方法才能被唤醒</li>
+<li><strong>同步阻塞</strong>：运行的线程在获取对象的<strong>同步锁</strong>时，若该同步锁被别的线程占用，则JVM会把该线程放入“锁池”中</li>
+<li><strong>其他阻塞</strong>：运行的线程执行<strong>sleep()或join()方法</strong>，或者发出了<strong>I/O请求</strong>时，JVM会把该线程置为阻塞状态。当sleep()状态超时、join()等待线程终止或者超时、或者I/O处理完毕时，线程重新转入就绪状态</li>
+</ul>
+<h2 id="线程中断"><a href="#线程中断" class="headerlink" title="线程中断"></a>线程中断</h2><p>每一个线程都有一个boolean类型的标志，此标志意思是当前的请求<strong>是否请求中断</strong>，默认为false。当一个线程A调用了线程B的interrupt方法时，那么线程B的是否请求的中断标志变为true。而线程B可以调用方法检测到此标志的变化。</p>
+<ol>
+<li>阻塞方法：如果线程B调用了造成阻塞的方法，如果是否请求中断标志变为了true，那么它会抛出<code>InterruptedException</code>异常。<strong>抛出异常的同时它会将线程B的是否请求中断标志置为false</strong></li>
+<li>非阻塞方法：可以通过线程B的<code>isInterrupted()</code>方法进行检测是否请求中断标志为true还是false，另外还有一个静态的方法interrupted方法也可以检测标志。<strong>但是这个静态方法检测完以后会自动的将是否请求中断标志位置为false</strong>。例如线程A调用了线程B的interrupt的方法，那么如果此时线程B中用静态interrupted方法进行检测标志位的变化的话，那么第一次为true，第二次就为false。</li>
+</ol>
+<p>线程可以检测到自身的标志位的变化，但是他只是一个标志，如果线程本身不处理的话，那么程序还是会执行下去。<strong><code>interrupt()</code> 方法并不能立即中断线程</strong>，该方法仅仅告诉线程外部已经有中断请求，至于是否中断还取决于线程自己。</p>
+<h2 id="正确处理InterruptedException"><a href="#正确处理InterruptedException" class="headerlink" title="正确处理InterruptedException"></a>正确处理<code>InterruptedException</code></h2><p>有时候阻塞的方法抛出(<code>throw</code>)<code>InterruptedException</code>异常并不合适，例如在Runnable中调用了可中断的方法，因为你的程序是实现了Runnable接口，然后在重写Runnable接口的run方法的时候，那么子类抛出的异常要小于等于父类的异常。而<strong>在Runnable中run方法是没有抛异常的,所以此时不能抛出<code>InterruptedException</code>异常</strong>。如果此时你只是记录日志的话，那么就是一个不负责任的做法，因为<strong>在捕获InterruptedException异常的时候自动的将是否请求中断标志置为了false</strong>。至少在捕获了InterruptedException异常之后，如果你什么也不想做，那么就<strong>将标志重新置为true，以便栈中更高层的代码能知道中断，并且对中断作出响应</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TaskRunner</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> BlockingQueue&lt;Task&gt; queue;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">TaskRunner</span><span class="params">(BlockingQueue&lt;Task&gt; queue)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.queue = queue; </span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">             <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                 Task task = queue.take(<span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">                 task.execute();</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">catch</span> (InterruptedException e) &#123; </span><br><span class="line">             <span class="comment">// Restore the interrupted status</span></span><br><span class="line">             Thread.currentThread().interrupt();</span><br><span class="line">         &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/03/Notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/03/Notes/" class="post-title-link" itemprop="url">Notes</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-04 01:40:57 / 修改时间：09:42:23" itemprop="dateCreated datePublished" datetime="2020-05-04T01:40:57+08:00">2020-05-04</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>207</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="公钥与私钥"><a href="#公钥与私钥" class="headerlink" title="公钥与私钥"></a>公钥与私钥</h1><h2 id="公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？"><a href="#公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？" class="headerlink" title="公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？"></a>公钥本来就是公开的，那岂不是私钥加密的数据根本没有安全性可言？</h2><p>私钥加密的数据确实没有安全性可言，因为用私钥加密数据根本就不是为了安全性，而是作为一种验证身份的手段。<br>因为私钥是唯一的，一旦使用公钥对私钥加密的数据解密成功，服务端S就可以完全确定这条消息是由拥有对应私钥的客户端C发出的，而不是第三方伪装者发出的。<br>所以，<strong>公钥加密私钥解密，是为了数据的安全性，而私钥加密公钥解密，则是为了验证数据发送者的身份</strong>。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/03/Netty%E5%85%A5%E9%97%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/03/Netty%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Netty介绍</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-03 16:42:31 / 修改时间：16:24:29" itemprop="dateCreated datePublished" datetime="2020-05-03T16:42:31+08:00">2020-05-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>897</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="Java原生NIO的缺陷"><a href="#Java原生NIO的缺陷" class="headerlink" title="Java原生NIO的缺陷"></a>Java原生NIO的缺陷</h1><ul>
+<li>类库和API繁杂</li>
+<li>入门门槛高，需要其他额外的知识做铺垫</li>
+<li>工作量和难度大，客户端会面临断开，重连，网络闪断，失败缓存，网络拥堵等问题</li>
+<li>JDK NIO存在臭名昭著的epoll bug，导致Selector空轮询：这个bug会导致linux上cpu 100%</li>
+</ul>
+<h1 id="Netty的优势"><a href="#Netty的优势" class="headerlink" title="Netty的优势"></a>Netty的优势</h1><ul>
+<li>业界流行的NIO框架之一，健壮性，功能，可定制性，可扩展性都比较好，得到了业界的认可与证明。比如在dubbo框架中的底层应用</li>
+<li>API使用简单，定制能力强，可以灵活扩展</li>
+<li>入门门槛低，易学，功能强大，预置了多种编解码功能，支持多种主流通信协议（http,tpc,udp,socket）</li>
+<li>性能高，成熟，稳定</li>
+</ul>
+<h1 id="Netty介绍"><a href="#Netty介绍" class="headerlink" title="Netty介绍"></a>Netty介绍</h1><p><strong>Netty is a NIO client server framework which enables quick and easy development of network applications such as protocol servers and clients.</strong>It greatly simplifies and streamlines network programming such as TCP and UDP socket server.<br><img src="https://netty.io/images/components.png" alt="Netty框架"><br><img src="https://user-gold-cdn.xitu.io/2018/11/1/166ccbbdc8614c8f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt=""></p>
+<h1 id="Netty使用场景"><a href="#Netty使用场景" class="headerlink" title="Netty使用场景"></a>Netty使用场景</h1><p>Netty常见的使用场景如下：</p>
+<h2 id="互联网行业"><a href="#互联网行业" class="headerlink" title="互联网行业"></a>互联网行业</h2><p>在分布式系统中，各个节点之间需要远程服务调用，高性能的RPC框架必不可少，Netty作为异步高新能的通信框架,往往作为基础通信组件被这些RPC框架使用。<br>典型的应用有：阿里分布式服务框架Dubbo的RPC框架使用Dubbo协议进行节点间通信，Dubbo协议默认使用Netty作为基础通信组件，用于实现各进程节点之间的内部通信。</p>
+<h2 id="游戏行业"><a href="#游戏行业" class="headerlink" title="游戏行业"></a>游戏行业</h2><p>无论是手游服务端还是大型的网络游戏，Java语言得到了越来越广泛的应用。Netty作为高性能的基础通信组件，它本身提供了TCP/UDP和HTTP协议栈。<br>非常方便定制和开发私有协议栈，账号登录服务器，地图服务器之间可以方便的通过Netty进行高性能的通信</p>
+<h2 id="大数据领域"><a href="#大数据领域" class="headerlink" title="大数据领域"></a>大数据领域</h2><p>经典的Hadoop的高性能通信和序列化组件Avro的RPC框架，默认采用Netty进行跨界点通信，它的Netty Service基于Netty框架二次封装实现</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/03/Netty%E4%BB%8B%E7%BB%8D/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -394,953 +1238,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/03/03/JavaIO%E5%88%86%E7%B1%BB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/03/03/JavaIO%E5%88%86%E7%B1%BB/" class="post-title-link" itemprop="url">JavaIO分类</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-03-03 16:42:31" itemprop="dateCreated datePublished" datetime="2020-03-03T16:42:31+08:00">2020-03-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-17 14:11:39" itemprop="dateModified" datetime="2020-05-17T14:11:39+08:00">2020-05-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="BIO-阻塞IO"><a href="#BIO-阻塞IO" class="headerlink" title="BIO (阻塞IO)"></a>BIO (阻塞IO)</h2><p>服务器程序一个线程负责一个连接，进行请求的处理和响应。当客户端比较多的时候，服务端的线程可能就不够了，这时候对应的请求就没法及时处理了。</p>
-<h2 id="伪异步IO（BIO增加线程池）"><a href="#伪异步IO（BIO增加线程池）" class="headerlink" title="伪异步IO（BIO增加线程池）"></a>伪异步IO（BIO增加线程池）</h2><p>服务端会维护一个线程池来处理请求端的请求,<strong>减少了线程创建销毁开销</strong>。当客户端的请求比较多的时候，线程池的线程也是不够的，此时也会出现请求处理阻塞的情况。</p>
-<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><p>同步非阻塞IO方式，服务端通过<strong>缓存区</strong>、<strong>通道</strong>、<strong>多路复用</strong>等技术，允许客户端的请求成千上万。读写都首先通过缓冲区来承接，然后通过通道（双向，区别于需要两个<code>InputStream</code>和<code>OutputStream</code>）来传输信息。通过多路复用器轮询通道(<code>select/poll,epoll</code>)，看看是否存在读或者写时间，然后再进行处理，大大提升了IO处理的性能和稳定性.<strong>由于操作复杂，Netty横空出世。</strong></p>
-<h2 id="AIO"><a href="#AIO" class="headerlink" title="AIO"></a>AIO</h2><p>AIO又称为NIO2.0，在JDK7才开始支持<strong>(但Linux平台下没有真正的异步IO实现,如windows下的IOCP技术,只能用epoll模拟异步IO)</strong>。真正的异步IO，简化了NIO的通信模型。它是连接注册读写事件和回调函数，读写方法异步，同时它是主动通知程序。<br>AIO异步通信提供了两种方式获取操作结果：第一种方式是通过<code>java.util.concurrent</code>的<code>Future</code>类来表示异步操作的结果；第二种方式是在执行异步操作的时候传入一个<code>java.nio.channels.CompletionHandler</code>接口的实现类作为操作完成回调。<br>AIO的异步套接字回调，是真正的异步非阻塞IO, .对应于Unix网络编程中的事件驱动IO，不需要通过多路复用器对被注册的通道进行轮询操作即可实现异步读写，从而简化NIO的编程模型。</p>
-<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><table>
-<thead>
-<tr>
-<th>IO通信方式</th>
-<th>客户端:处理线程</th>
-<th>IO类型</th>
-<th>可靠性</th>
-<th>调试难度</th>
-<th>吞吐量</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>BIO</td>
-<td>M:M</td>
-<td>同步阻塞</td>
-<td>差</td>
-<td>简单</td>
-<td>低</td>
-</tr>
-<tr>
-<td>伪异步IO(线程池)</td>
-<td>M:N (N&lt;M)</td>
-<td>同步阻塞</td>
-<td>比较差</td>
-<td>简单</td>
-<td>中</td>
-</tr>
-<tr>
-<td>NIO</td>
-<td>M:1</td>
-<td>同步非阻塞</td>
-<td>比较高</td>
-<td>复杂</td>
-<td>高</td>
-</tr>
-<tr>
-<td>AIO(异步NIO)</td>
-<td>M:0</td>
-<td>异步非阻塞</td>
-<td>比较高</td>
-<td>比较复杂</td>
-<td>高</td>
-</tr>
-</tbody></table>
-<p>阻塞式的I/O模型需要每个链接开一个线程（或进程），当线程数达到10k级别时，<strong>内存占用</strong>和<strong>上下文切换</strong>（context switch）导致系统的开销很大。</p>
-<h2 id="为什么Netty使用NIO而不是AIO？"><a href="#为什么Netty使用NIO而不是AIO？" class="headerlink" title="为什么Netty使用NIO而不是AIO？"></a>为什么Netty使用NIO而不是AIO？</h2><p><a href="https://www.jianshu.com/p/df1d6d8c3f9d" target="_blank" rel="noopener">参考链接</a></p>
-<ul>
-<li>Netty不看重Windows上的使用，<strong>在Linux系统上，AIO的底层实现仍使用EPOLL，没有很好实现AIO</strong>，因此在性能上没有明显的优势，而且被JDK封装了一层不容易深度优化</li>
-<li>Netty整体架构是reactor模型, 而AIO是proactor模型, 混合在一起会非常混乱,把AIO也改造成reactor模型看起来是把epoll绕个弯(Linux用epoll实现AIO)又绕回来</li>
-<li>AIO还有个缺点是接收数据需要预先分配缓存, 而不是NIO那种需要接收时才需要分配缓存.所以对连接数量非常大但流量小的情况, AIO内存浪费很多</li>
-<li>Linux上AIO不够成熟，处理回调结果速度跟不到处理需求，比如外卖员太少，顾客太多，供不应求，造成处理速度有瓶颈.</li>
-<li>Netty作者原话：<br>Not faster than NIO (epoll) on unix systems (which is true).<br>There is no daragram suppport.<br>Unnecessary threading model (too much abstraction without usage).</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/03/Linux%E5%B8%AE%E5%8A%A9%E5%91%BD%E4%BB%A4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/11/03/Linux%E5%B8%AE%E5%8A%A9%E5%91%BD%E4%BB%A4/" class="post-title-link" itemprop="url">Linux帮助命令</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-11-03 14:46:38" itemprop="dateCreated datePublished" datetime="2019-11-03T14:46:38+08:00">2019-11-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 18:48:07" itemprop="dateModified" datetime="2020-04-30T18:48:07+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>429</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="man-命令"><a href="#man-命令" class="headerlink" title="man 命令"></a>man 命令</h1><h2 id="man-命令名"><a href="#man-命令名" class="headerlink" title="man 命令名"></a><code>man 命令名</code></h2><p>man是manual的简写<br>如<code>man ls</code></p>
-<h2 id="man-f-命令名"><a href="#man-f-命令名" class="headerlink" title="man -f 命令名"></a><code>man -f 命令名</code></h2><p>man帮助文档,可以按级别查看:<br><code>man -f 命令名</code>相当于<code>whatis 命令名</code><br>举例:<br><code>shell
-man -5 passwd  #系统所有用户信息
-man -4 null  #系统黑洞
-man -8 ifconfig</code><br>如果只有一种等级的帮助文档,直接<code>man 命令名</code>即可<br><img src="https://img-blog.csdnimg.cn/20191208165450164.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h2 id="man-k-命令名"><a href="#man-k-命令名" class="headerlink" title="man -k 命令名"></a><code>man -k 命令名</code></h2><p>man查看和命令相关的所有帮助:<br><code>man -k 命令名</code>相当于<code>apropos 命令名</code><br>如:<code>apropos passwd</code><br><br></p>
-<h1 id="help-选项帮助"><a href="#help-选项帮助" class="headerlink" title="--help 选项帮助"></a>--help 选项帮助</h1><p>比较常用,通过命令选项获取帮助,如<code>ls --help</code><br><br></p>
-<h1 id="help获取shell内部命令的帮助"><a href="#help获取shell内部命令的帮助" class="headerlink" title="help获取shell内部命令的帮助"></a>help获取shell内部命令的帮助</h1><p><code>help shell内部命令</code>获取shell内部命令的帮助<br>如<br><code>shell
-whereis cd    #检查是否是shell内部命令,whereis只能找到外部命令的可执行文件位置
-help cd        #获取帮助
-help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell内部命令是最基本的命令<br><br></p>
-<h1 id="info详细命令帮助"><a href="#info详细命令帮助" class="headerlink" title="info详细命令帮助"></a>info详细命令帮助</h1><p><code>info 命令名</code>帮助文档,很详细,用得少.<br><img src="https://img-blog.csdnimg.cn/20191208172719768.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/03/Linux%E5%8E%8B%E7%BC%A9%E4%B8%8E%E8%A7%A3%E5%8E%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/11/03/Linux%E5%8E%8B%E7%BC%A9%E4%B8%8E%E8%A7%A3%E5%8E%8B/" class="post-title-link" itemprop="url">Linux压缩与解压</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-11-03 13:38:05" itemprop="dateCreated datePublished" datetime="2019-11-03T13:38:05+08:00">2019-11-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-04 10:22:06" itemprop="dateModified" datetime="2020-05-04T10:22:06+08:00">2020-05-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>731</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="zip格式"><a href="#zip格式" class="headerlink" title=".zip格式"></a>.zip格式</h2><h4 id="压缩文件"><a href="#压缩文件" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>zip 文件.zip 源文件</code></p>
-<h4 id="压缩文件夹"><a href="#压缩文件夹" class="headerlink" title="压缩文件夹"></a>压缩文件夹</h4><p><code>zip -r 文件夹.zip 源目录</code></p>
-<h4 id="解压"><a href="#解压" class="headerlink" title="解压"></a>解压</h4><p><code>unzip 文件.zip</code></p>
-<h2 id="gz格式"><a href="#gz格式" class="headerlink" title=".gz格式"></a>.gz格式</h2><h4 id="压缩文件-1"><a href="#压缩文件-1" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>gzip 源文件</code><br>压缩为.gz格式,且源文件会消失<br><code>gzip -c 源文件 &gt; 源文件.gz</code><br>压缩为.gz格式,保留源文件,不常用,”-c”表示把压缩文件输出到屏幕,”&gt;”表示输出重定向</p>
-<h4 id="压缩目录-下的所有子文件"><a href="#压缩目录-下的所有子文件" class="headerlink" title="压缩目录(下的所有子文件)"></a>压缩目录(下的所有子文件)</h4><p><code>gzip -r 目录</code><br>压缩目录下的所有子文件,但是不能压缩目录.(很不方便,不常用)</p>
-<h4 id="解压-1"><a href="#解压-1" class="headerlink" title="解压"></a>解压</h4><p><code>gzip -d 压缩文件</code>或<code>gunzip 压缩文件</code></p>
-<h5 id="解压目录-下的所有子文件"><a href="#解压目录-下的所有子文件" class="headerlink" title="解压目录(下的所有子文件)"></a>解压目录(下的所有子文件)</h5><p><code>gunzip -r 目录</code></p>
-<h2 id="bz2格式"><a href="#bz2格式" class="headerlink" title=".bz2格式"></a>.bz2格式</h2><h4 id="压缩文件-2"><a href="#压缩文件-2" class="headerlink" title="压缩文件"></a>压缩文件</h4><p><code>bzip2 源文件</code><br>不保留源文件<br><code>bzip2 -k 源文件</code><br>保留源文件</p>
-<p><strong>bzip2命令不能压缩目录!</strong></p>
-<h4 id="解压文件"><a href="#解压文件" class="headerlink" title="解压文件"></a>解压文件</h4><p><code>bzip2 -d 源文件</code>或<code>bunzip2 源文件</code><br>-k保留压缩文件<br><br></p>
-<p><strong>.gz和.bz2对目录的处理不太友好,下面介绍tar打包命令</strong></p>
-<h2 id="tar打包命令"><a href="#tar打包命令" class="headerlink" title="tar打包命令"></a>tar打包命令</h2><h4 id="打包"><a href="#打包" class="headerlink" title="打包"></a>打包</h4><h6 id="tar-cvf-打包名-源文件"><a href="#tar-cvf-打包名-源文件" class="headerlink" title="tar -cvf 打包名 源文件"></a><code>tar -cvf 打包名 源文件</code></h6><table>
-<thead>
-<tr>
-<th>选项</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>-c</td>
-<td>打包</td>
-</tr>
-<tr>
-<td>-v</td>
-<td>显示过程</td>
-</tr>
-<tr>
-<td>-f</td>
-<td>指定打包后的文件名</td>
-</tr>
-</tbody></table>
-<p>如<code>tar -cvf xxx.tar xxx</code></p>
-<h4 id="解包"><a href="#解包" class="headerlink" title="解包"></a>解包</h4><h6 id="tar-xvf-打包名"><a href="#tar-xvf-打包名" class="headerlink" title="tar -xvf 打包名"></a><code>tar -xvf 打包名</code></h6><p>如<code>tar -xvf xxx.tar</code></p>
-<h4 id="打包-压缩为-gz"><a href="#打包-压缩为-gz" class="headerlink" title="打包+压缩为.gz"></a>打包+压缩为.gz</h4><h6 id="tar-zcvf-打包名-tar-gz-源文件-源文件2-源文件3"><a href="#tar-zcvf-打包名-tar-gz-源文件-源文件2-源文件3" class="headerlink" title="tar -zcvf 打包名.tar.gz 源文件 [源文件2] [源文件3]..."></a><code>tar -zcvf 打包名.tar.gz 源文件 [源文件2] [源文件3]...</code></h6><p><code>-z</code>代表.gz,可以有多个源文件,空格隔开</p>
-<h4 id="解压缩-tar-gz"><a href="#解压缩-tar-gz" class="headerlink" title="解压缩.tar.gz"></a>解压缩.tar.gz</h4><h6 id="tar-zxvf-打包名-tar-gz-C-新位置"><a href="#tar-zxvf-打包名-tar-gz-C-新位置" class="headerlink" title="tar -zxvf 打包名.tar.gz [-C 新位置]"></a><code>tar -zxvf 打包名.tar.gz [-C 新位置]</code></h6><p><code>-z</code>代表.gz</p>
-<h4 id="打包-压缩为-bz2"><a href="#打包-压缩为-bz2" class="headerlink" title="打包+压缩为.bz2"></a>打包+压缩为.bz2</h4><h6 id="tar-jcvf-打包名-tar-bz2-源文件"><a href="#tar-jcvf-打包名-tar-bz2-源文件" class="headerlink" title="tar -jcvf 打包名.tar.bz2 源文件"></a><code>tar -jcvf 打包名.tar.bz2 源文件</code></h6><p><code>-j</code>代表.bz2,,可以有多个源文件,空格隔开</p>
-<h4 id="解压缩-tar-bz2"><a href="#解压缩-tar-bz2" class="headerlink" title="解压缩.tar.bz2"></a>解压缩.tar.bz2</h4><h6 id="tar-jxvf-打包名-tar-bz2-C-新位置"><a href="#tar-jxvf-打包名-tar-bz2-C-新位置" class="headerlink" title="tar -jxvf 打包名.tar.bz2 [-C 新位置]"></a><code>tar -jxvf 打包名.tar.bz2 [-C 新位置]</code></h6><p><code>-j</code>代表.bz2</p>
-<h4 id="查看压缩包-不解压"><a href="#查看压缩包-不解压" class="headerlink" title="查看压缩包,不解压"></a>查看压缩包,不解压</h4><h6 id="tar-ztvf-打包名-tar-gz"><a href="#tar-ztvf-打包名-tar-gz" class="headerlink" title="tar -ztvf 打包名.tar.gz"></a><code>tar -ztvf 打包名.tar.gz</code></h6><h6 id="tar-jtvf-打包名-tar-bz2"><a href="#tar-jtvf-打包名-tar-bz2" class="headerlink" title="tar -jtvf 打包名.tar.bz2"></a><code>tar -jtvf 打包名.tar.bz2</code></h6><p><code>-t</code>代表test,查看文件内容.</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/02/Linux%E6%96%87%E4%BB%B6%E5%92%8C%E7%9B%AE%E5%BD%95%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/11/02/Linux%E6%96%87%E4%BB%B6%E5%92%8C%E7%9B%AE%E5%BD%95%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Linux文件和目录总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-11-03 02:12:47" itemprop="dateCreated datePublished" datetime="2019-11-03T02:12:47+08:00">2019-11-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-06-07 10:14:43" itemprop="dateModified" datetime="2020-06-07T10:14:43+08:00">2020-06-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="目录分类"><a href="#目录分类" class="headerlink" title="目录分类"></a>目录分类</h2><p><strong>/usr</strong>    系统软件资源目录<br><strong>/bin    /usr/bin</strong>    系统命令,所有用户可执行<br><strong>/sbin    /usr/sbin</strong>    系统命令,仅root可执行<br><strong>/boot</strong>    系统启动数据<br><strong>/etc</strong>    系统默认配置文件<br><strong>/dev</strong>    硬件设备文件<br><strong>/lib</strong>    系统功能函数库,so文件<br><strong>/sys    /proc</strong>    内存挂载点,直接写入内存,不能动<br><strong>/var</strong>    系统可变文档目录</p>
-<h2 id="目录操作"><a href="#目录操作" class="headerlink" title="目录操作"></a>目录操作</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span>    <span class="comment"># 等同于 cd ~ 回家</span></span><br><span class="line"><span class="built_in">cd</span> -  <span class="comment"># 上次目录 </span></span><br><span class="line">ls  -lh  <span class="comment"># --long   --human人性化显示大小   -i查看文件inode号</span></span><br><span class="line">ll    <span class="comment"># ls -l</span></span><br><span class="line"><span class="built_in">pwd</span>   <span class="comment"># print working dir</span></span><br><span class="line">mkdir -p xxxx <span class="comment"># -p 递归创建</span></span><br><span class="line">rm -r xxxx    <span class="comment">#删除目录</span></span><br><span class="line">cp -r src dst	<span class="comment"># -r复制目录 -p同时复制文件属性(如修改时间) -d若为链接文件,则复制链接属性</span></span><br><span class="line">cp -a src dst	<span class="comment"># --all相当于 cp -rpd  </span></span><br><span class="line">mv src dst	<span class="comment">#剪切文件和目录,重命名  目录不需要-r</span></span><br></pre></td></tr></table></figure>
-
-<h2 id="链接文件"><a href="#链接文件" class="headerlink" title="链接文件"></a>链接文件</h2><ul>
-<li><code>硬链接</code>    文件索引表中拥有<strong>相同的inode号和存储block块</strong>,看做同一个文件<br>创建后文件引用计数加1<br>不能跨分区创建硬链接;目录不能创建硬链接.<br>有限制,易混淆,平时不建议用</li>
-<li><code>软链接</code>    有<strong>自己的inode号和block块</strong>,但数据块中只保存<strong>原文件的文件名和inode号</strong><br>类似win快捷方式,删除原文件,软链接不可用<br>block中文件名(路径)和inode号都符合才找得到<br><strong>软链接文件权限都为rwxrwxrwx</strong>,是否可以访问要看原文件的权限</li>
-</ul>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s src dis  # link  -s 软链接  src要写绝对路径!除非src和dst在同一目录</span><br></pre></td></tr></table></figure>
-
-<h2 id="文件搜索"><a href="#文件搜索" class="headerlink" title="文件搜索"></a>文件搜索</h2><h3 id="locate-文件名"><a href="#locate-文件名" class="headerlink" title="locate 文件名"></a><code>locate 文件名</code></h3><p>速度快,在数据库(索引)中<strong>按文件名</strong>查找文件,数据库在<code>/var/lib/mlocate</code>一般一天一更新,<code>updatedb</code>立即更新.<br>搜索时的排除项(不搜索的内容)配置在<code>/etc/updatedb.conf</code>,如</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">PRUNE_BIND_MOUNTS="yes"</span><br><span class="line"><span class="meta">#</span><span class="bash"> PRUNENAMES=<span class="string">".git .bzr .hg .svn"</span></span></span><br><span class="line">PRUNEPATHS="/tmp /var/spool /media /home/.ecryptfs /var/lib/schroot"</span><br><span class="line">PRUNEFS="NFS nfs nfs4 rpc_pipefs afs binfmt_misc proc smbfs autofs iso9660 ncpfs coda devpts ftpfs devfs mfs shfs sysfs cifs lustre tmpfs usbfs udf fuse.glusterfs fuse.sshfs curlftpfs ecryptfs fusesmb devtmpfs"</span><br></pre></td></tr></table></figure>
-
-<h3 id="whereis-命令名"><a href="#whereis-命令名" class="headerlink" title="whereis 命令名"></a><code>whereis 命令名</code></h3><p>搜索(外部)<strong>命令,配置及其帮助文档</strong>所在位置,-b仅可执行文件,-m仅帮助文档.<br>有些命令找不到,如cd,因为它是shell的内置命令.</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">whereis ls</span><br><span class="line">ls: /bin/ls /usr/share/man/man1/ls.1.gz</span><br></pre></td></tr></table></figure>
-
-<h3 id="which-命令名"><a href="#which-命令名" class="headerlink" title="which 命令名"></a><code>which 命令名</code></h3><p>类似whereis,搜索(外部)<strong>命令</strong>所在位置及其别名.</p>
-<h3 id="echo-PATH"><a href="#echo-PATH" class="headerlink" title="echo $PATH"></a><code>echo $PATH</code></h3><p>PATH环境变量定义的是系统搜索路径.</p>
-<h3 id="find-范围-选项"><a href="#find-范围-选项" class="headerlink" title="find [范围] [选项]"></a><code>find [范围] [选项]</code></h3><p>功能非常强大,可能较慢.<br><code>find / -name 文件名</code><br>文件名需<strong>完全匹配</strong>,部分匹配用通配符:</p>
-<table>
-<thead>
-<tr>
-<th>符号</th>
-<th>意义</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>*</td>
-<td>匹配任意字符</td>
-</tr>
-<tr>
-<td>?</td>
-<td>匹配任意一个字符</td>
-</tr>
-<tr>
-<td>[ ]</td>
-<td>匹配任意一个中括号内的字符</td>
-</tr>
-</tbody></table>
-<p><code>find / -iname 文件名</code>    不区分大小写<br><code>find / -user 用户名</code>    查找某用户的文件<br><code>find / -nouser</code>    查找没有所有者的文件,比如内核创建的文件,外来文件等<br><code>find /var/log/ -mtime +10</code>查找10天前修改的文件,一般是日志文件.单位也支持分钟.</p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>说明</th>
-<th>参数</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>-atime</td>
-<td>文件访问时间</td>
-<td>-10</td>
-<td>10天内</td>
-</tr>
-<tr>
-<td>-ctime</td>
-<td>文件属性修改时间</td>
-<td>10</td>
-<td>第10天</td>
-</tr>
-<tr>
-<td>-mtime</td>
-<td>文件修改时间</td>
-<td>+10</td>
-<td>10天前</td>
-</tr>
-</tbody></table>
-<p> <code>find . -size 25k</code><br>查找当前目录下大小为25k的文件<br>注意大小写:</p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>说明</th>
-<th>参数</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>-25k</td>
-<td>小于25kb</td>
-<td>-4M</td>
-<td>小于4Mb</td>
-</tr>
-<tr>
-<td>25k</td>
-<td>等于25kb</td>
-<td>4M</td>
-<td>等于4Mb</td>
-</tr>
-<tr>
-<td>+25k</td>
-<td>大于25kb</td>
-<td>+4M</td>
-<td>大于4Mb</td>
-</tr>
-</tbody></table>
-<p> <code>find /root -inum 25225</code><br>查找inode节点为25225的文件<br> <code>find /etc -size +20k -a -size -50k</code><br>多条件查询,在/etc下找大于20kb小于50kb的文件,<code>-a(and) -o(or)</code><br> <code>find /etc -size +20k -a -size -50k -exec ls -lh {} \;</code><br>显示查找结果的详细信息,多执行了<code>ls -lh</code><br>对find结果执行操作:<code>-exec/-ok 增加的命令 {} \ ;</code></p>
-<h3 id="grep-选项-quot-字符串-quot-文件名"><a href="#grep-选项-quot-字符串-quot-文件名" class="headerlink" title="grep [选项] &quot;字符串&quot; 文件名"></a><code>grep [选项] &quot;字符串&quot; 文件名</code></h3><p>在文件当中<strong>包含</strong>匹配符合条件的<strong>行</strong>,是部分匹配, -i忽略大小写  -v 排除指定字符串</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/24/TopK%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/24/TopK%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1/" class="post-title-link" itemprop="url">TopK词频统计</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-24 16:42:31" itemprop="dateCreated datePublished" datetime="2019-10-24T16:42:31+08:00">2019-10-24</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 20:45:16" itemprop="dateModified" datetime="2020-04-30T20:45:16+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/MapReduce/" itemprop="url" rel="index"><span itemprop="name">MapReduce</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="查询所有记录中搜索频次最高的30个关键词"><a href="#查询所有记录中搜索频次最高的30个关键词" class="headerlink" title="查询所有记录中搜索频次最高的30个关键词"></a>查询所有记录中搜索频次最高的30个关键词</h2><p>主要分两个步骤，首先多个mapper分别处理所有数据中的一部分关键词数据，然后汇总到reducer做词频统计。</p>
-<h2 id="CountWordMapper"><a href="#CountWordMapper" class="headerlink" title="CountWordMapper"></a>CountWordMapper</h2><p>在Mapper中处理每一小块数据，使用HashMap存储关键字及其频次，可以节省时间，key为查询的关键字。Mapper返回一个<code>&lt;Text , LongWritable&gt;</code>的列表，存储当前文件块中的关键字及其频次，传给reducer作统计。</p>
-<h2 id="CountWordReducer"><a href="#CountWordReducer" class="headerlink" title="CountWordReducer"></a>CountWordReducer</h2><p>Reducer将所有mapper得到的关键字及频次汇总，不同mapper下的相同关键字在此合并，可得到当前关键字的总频次。为了得到TopK数据，在reducer维护一个大小为K的小顶堆，每次得到一个关键词的搜索总频次即向堆中插入一个<code>Pair&lt;String, Long&gt;</code>，堆中元素排序自定义为关键词频次Long。当堆元素大于K时，将堆顶元素（即当前最小元素）删去。最后reducer可得到访问频次最大的TopK关键词。输出前将堆中元素按频次排序即可。</p>
-<p>词频统计完整代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Main.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        countWords();    <span class="comment">//统计词频前30的搜索关键词</span></span><br><span class="line">        countUrls();   <span class="comment">//被访问次数前10的网址及其次数占比</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">countWords</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        String input_dir = <span class="string">"./data/sogou.full.utf8"</span>;<span class="comment">//input</span></span><br><span class="line">        String outputDir = <span class="string">"./result/words"</span>;<span class="comment">//output</span></span><br><span class="line"></span><br><span class="line">        Configuration conf = <span class="keyword">new</span> Configuration();</span><br><span class="line">        FileSystem fs = FileSystem.get(conf);</span><br><span class="line">        fs.deleteOnExit(<span class="keyword">new</span> Path(outputDir));</span><br><span class="line">        fs.close();</span><br><span class="line"></span><br><span class="line">        Job job = <span class="keyword">new</span> Job(conf, <span class="string">"CountWords"</span>);</span><br><span class="line">        job.setMapperClass(CountWordMapper<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        job.setReducerClass(CountWordReducer<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">       </span><br><span class="line">        job.setMapOutputKeyClass(Text<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        job.setMapOutputValueClass(LongWritable<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">        job.setOutputKeyClass(Text<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        job.setOutputValueClass(LongWritable<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">        job.setInputFormatClass(TextInputFormat<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        TextInputFormat.setInputPaths(job, <span class="keyword">new</span> Path(input_dir));</span><br><span class="line"></span><br><span class="line">        job.setOutputFormatClass(TextOutputFormat<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        TextOutputFormat.setOutputPath(job, <span class="keyword">new</span> Path(outputDir));</span><br><span class="line">        job.waitForCompletion(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//CountWordMapper.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CountWordMapper</span> <span class="keyword">extends</span> <span class="title">Mapper</span>&lt;<span class="title">LongWritable</span>, <span class="title">Text</span>, <span class="title">Text</span>, <span class="title">LongWritable</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">//使用hash表存储关键词和该词的频次</span></span><br><span class="line">    HashMap&lt;String, Long&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">map</span><span class="params">(LongWritable key, Text value, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//分离各项数据，以‘\t’为间隔标志</span></span><br><span class="line">        String fields[] = value.toString().split(<span class="string">"\t"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (fields.length != <span class="number">6</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        String keyWord = fields[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">long</span> count=map.getOrDefault(keyWord,-<span class="number">1L</span>);</span><br><span class="line">        <span class="keyword">if</span> (count==-<span class="number">1L</span>)<span class="comment">//判断该词是否已存在于hash表中</span></span><br><span class="line">            map.put(keyWord,<span class="number">1L</span>);<span class="comment">//不存在，加入新词</span></span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            map.replace(keyWord,count+<span class="number">1</span>);<span class="comment">//存在，词频加一</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">cleanup</span><span class="params">(Mapper&lt;LongWritable, Text,  Text , LongWritable&gt;.Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">//将当前文件块内关键词的频度输出给reducer</span></span><br><span class="line">        <span class="keyword">for</span> (String keyWord : map.keySet()) &#123;</span><br><span class="line">            context.write(<span class="keyword">new</span> Text(keyWord), <span class="keyword">new</span> LongWritable(map.get(keyWord)));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//CountWordReducer.java</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CountWordReducer</span> <span class="keyword">extends</span> <span class="title">Reducer</span>&lt;<span class="title">Text</span>, <span class="title">LongWritable</span>, <span class="title">Text</span>, <span class="title">LongWritable</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> K = <span class="number">30</span>;<span class="comment">//选出频次最大的K条关键词</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//小顶堆，容量K，用于快速删除词频最小的元素</span></span><br><span class="line">    PriorityQueue&lt;Pair&lt;String, Long&gt;&gt; minHeap = <span class="keyword">new</span> PriorityQueue&lt;&gt;((p1, p2) -&gt; (<span class="keyword">int</span>) (p1.getValue() - p2.getValue()));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//每次传入的参数为key相同的values的集合</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reduce</span><span class="params">(Text key, Iterable&lt;LongWritable&gt; values, Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> total = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (LongWritable count : values) &#123;</span><br><span class="line">            <span class="comment">//依次取出每个mapper统计的关键词key的频次，加起来</span></span><br><span class="line">            total += count.get();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Pair&lt;String, Long&gt; tmp = <span class="keyword">new</span> Pair&lt;&gt;(key.toString(), total);</span><br><span class="line">        minHeap.add(tmp);<span class="comment">//向小顶堆插入新的关键词词频</span></span><br><span class="line">        <span class="keyword">if</span> (minHeap.size() &gt; K)<span class="comment">//若小顶堆容量达到要求的上限</span></span><br><span class="line">            minHeap.poll();<span class="comment">//删除堆顶最小的元素，保持TopK</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">cleanup</span><span class="params">(Context context)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</span><br><span class="line">        List&lt;Pair&lt;String, Long&gt;&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="comment">//从小顶堆中取出数据，便于排序</span></span><br><span class="line">        <span class="keyword">for</span> (Pair&lt;String, Long&gt; p : minHeap)</span><br><span class="line">            list.add(p);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//对搜索词频前K个元素排序</span></span><br><span class="line">        Collections.sort(list, ((p1, p2) -&gt; (<span class="keyword">int</span>) (p2.getValue() - p1.getValue())));</span><br><span class="line"></span><br><span class="line">        <span class="comment">//reducer的输出，按搜索词频排好序的TopK关键词</span></span><br><span class="line">        <span class="keyword">for</span> (Pair&lt;String, Long&gt; t : list)</span><br><span class="line">            context.write(<span class="keyword">new</span> Text(t.getKey()), <span class="keyword">new</span> LongWritable(t.getValue()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/23/I-O%E6%B5%81%E7%9A%84%E6%80%BB%E7%BB%93-%E5%AD%97%E7%AC%A6%E6%B5%81/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/23/I-O%E6%B5%81%E7%9A%84%E6%80%BB%E7%BB%93-%E5%AD%97%E7%AC%A6%E6%B5%81/" class="post-title-link" itemprop="url">I/O流的总结-字符流</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-23 14:46:38" itemprop="dateCreated datePublished" datetime="2019-10-23T14:46:38+08:00">2019-10-23</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 20:03:45" itemprop="dateModified" datetime="2020-04-30T20:03:45+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="字符流"><a href="#字符流" class="headerlink" title="字符流"></a>字符流</h2><p>java的文本<code>(char)</code>是16位无符号整数，是字符的unicode编码（双字节编码).<br>文件是byte byte byte …的数据序列,文本文件是文本<code>(char)</code>序列按照某种编码方案<code>(utf-8,utf-16be,gbk)</code>序列化为byte的存储结果.</p>
-<p>字符流(Reader Writer)—-&gt;操作的是文本文件<br>字符的处理，一次处理一个字符<br>字符的底层任然是基本的字节序列</p>
-<h3 id="字符流的基本实现"><a href="#字符流的基本实现" class="headerlink" title="字符流的基本实现"></a>字符流的基本实现</h3><p> <code>InputStreamReader</code>完成byte流到char流,按照编码规则解析<br> <code>OutputStreamWriter</code>完成char流到byte流,按照编码规则转化 </p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">FileInputStream in = <span class="keyword">new</span> FileInputStream(<span class="string">"e:\\javaio\\utf8.txt"</span>);</span><br><span class="line">InputStreamReader isr = <span class="keyword">new</span> InputStreamReader(in,<span class="string">"utf-8"</span>);<span class="comment">//默认项目的编码,操作的时候，要写文件本身的编码格式</span></span><br><span class="line">	</span><br><span class="line">FileOutputStream out = <span class="keyword">new</span> FileOutputStream(<span class="string">"e:\\javaio\\utf81.txt"</span>);</span><br><span class="line">OutputStreamWriter osw = <span class="keyword">new</span> OutputStreamWriter(out,<span class="string">"utf-8"</span>);</span><br><span class="line"><span class="keyword">char</span>[] buffer = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">8</span>*<span class="number">1024</span>];</span><br><span class="line"><span class="keyword">int</span> c;</span><br><span class="line"><span class="comment">/*批量读取，放入buffer这个字符数组，从第0个位置开始放置，最多放buffer.length个</span></span><br><span class="line"><span class="comment">  返回的是读到的字符的个数</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="keyword">while</span>(( c = isr.read(buffer,<span class="number">0</span>,buffer.length))!=-<span class="number">1</span>)&#123;</span><br><span class="line">	String s = <span class="keyword">new</span> String(buffer,<span class="number">0</span>,c);</span><br><span class="line">	System.out.print(s);</span><br><span class="line">	osw.write(buffer,<span class="number">0</span>,c);</span><br><span class="line">	osw.flush();</span><br><span class="line">&#125;</span><br><span class="line">isr.close();</span><br><span class="line">osw.close();</span><br></pre></td></tr></table></figure>
-<h3 id="FileReader-FileWriter"><a href="#FileReader-FileWriter" class="headerlink" title="FileReader/FileWriter"></a>FileReader/FileWriter</h3><p>进一步封装了文件字符流的读写,使用更方便:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">FileReader fr = <span class="keyword">new</span> FileReader(<span class="string">"e:\\javaio\\demo.txt"</span>);</span><br><span class="line">FileWriter fw = <span class="keyword">new</span> FileWriter(<span class="string">"e:\\javaio\\demo2.txt"</span>);</span><br><span class="line"><span class="comment">//FileWriter fw = new FileWriter("e:\\javaio\\demo2.txt",true);</span></span><br><span class="line"><span class="keyword">char</span>[] buffer = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">2056</span>];</span><br><span class="line"><span class="keyword">int</span> c ;</span><br><span class="line"><span class="keyword">while</span>((c = fr.read(buffer,<span class="number">0</span>,buffer.length))!=-<span class="number">1</span>)&#123;</span><br><span class="line">	fw.write(buffer,<span class="number">0</span>,c);</span><br><span class="line">	fw.flush();</span><br><span class="line">&#125;</span><br><span class="line">fr.close();</span><br><span class="line">fw.close();</span><br></pre></td></tr></table></figure>
-
-
-<h3 id="字符流的过滤器"><a href="#字符流的过滤器" class="headerlink" title="字符流的过滤器"></a>字符流的过滤器</h3><p><code>PrintWriter</code>比<code>BufferedWriter</code>使用更方便.<br><code>BufferedReader.readLine()</code>一次读一行<br><code>BufferedWriter/PrintWriter</code>一次写一行    </p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">//对文件进行读写操作 </span></span><br><span class="line">BufferedReader br = <span class="keyword">new</span> BufferedReader(</span><br><span class="line">		<span class="keyword">new</span> InputStreamReader(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(<span class="string">"e:\\javaio\\imooc.txt"</span>)));</span><br><span class="line"><span class="comment">/*BufferedWriter bw = new BufferedWriter(</span></span><br><span class="line"><span class="comment">		new OutputStreamWriter(</span></span><br><span class="line"><span class="comment">				new FileOutputStream("e:\\javaio\\imooc3.txt")));*/</span></span><br><span class="line">PrintWriter pw = <span class="keyword">new</span> PrintWriter(<span class="string">"e:\\javaio\\imooc4.txt"</span>);</span><br><span class="line"><span class="comment">//PrintWriter pw1 = new PrintWriter(outputStream,boolean autoFlush);</span></span><br><span class="line">String line ;</span><br><span class="line"><span class="keyword">while</span>((line = br.readLine())!=<span class="keyword">null</span>)&#123;</span><br><span class="line">	System.out.println(line);<span class="comment">//一次读一行，并不能识别换行</span></span><br><span class="line">	<span class="comment">/*bw.write(line);</span></span><br><span class="line"><span class="comment">	//单独写出换行操作</span></span><br><span class="line"><span class="comment">	bw.newLine();//换行操作</span></span><br><span class="line"><span class="comment">	bw.flush();*/</span></span><br><span class="line">	pw.println(line);</span><br><span class="line">	pw.flush();</span><br><span class="line">&#125;</span><br><span class="line">br.close();</span><br><span class="line"><span class="comment">//bw.close();</span></span><br><span class="line">pw.close();</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/21/Java%E5%85%B3%E4%BA%8E%E5%8F%8D%E5%B0%84%E7%9A%84%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/21/Java%E5%85%B3%E4%BA%8E%E5%8F%8D%E5%B0%84%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Java关于反射的总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-21 16:42:31" itemprop="dateCreated datePublished" datetime="2019-10-21T16:42:31+08:00">2019-10-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 20:28:51" itemprop="dateModified" datetime="2020-04-30T20:28:51+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="获取Class-Type的三种方式"><a href="#获取Class-Type的三种方式" class="headerlink" title="获取Class Type的三种方式"></a>获取Class Type的三种方式</h1><h2 id="获取"><a href="#获取" class="headerlink" title="获取"></a>获取</h2><ol>
-<li><code>Class c1 = Foo.class;</code></li>
-<li><code>Class c2 = foo.getClass();</code><br>c1 == c2  -&gt;  true  类对象唯一</li>
-<li><code>Class c3 = Class.forName(&quot;com.xxx.Foo&quot;);</code><br>推荐使用该方式，最快，但会抛异常，要try-catch</li>
-</ol>
-<h2 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Foo foo = (Foo)c1.newInstance();<span class="comment">//Foo需要有无参构造函数</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="动态加载类"><a href="#动态加载类" class="headerlink" title="动态加载类"></a>动态加载类</h1><p><strong>使用new创建对象，是静态加载类，在编译时刻就需要加载所有可能用到的类。</strong> 如果项目中大部分类暂时用不到（比如用于解决特例情况），或者为了避免因一个（模块）类的失效导致整个系统的不可用，我们可以使用动态（运行时）加载类。<br>如：<br> <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Excel</span> <span class="keyword">implements</span> <span class="title">OfficeAble</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"Excel starting..."</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Word</span> <span class="keyword">implements</span> <span class="title">OfficeAble</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"Word starting..."</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Office</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">//动态加载类，在运行时刻加载</span></span><br><span class="line">			Class <span class="class"><span class="keyword">class</span> </span>= Class.forName(args[<span class="number">0</span>]);</span><br><span class="line">			<span class="comment">//Foo需要有无参构造函数</span></span><br><span class="line">			OfficeAble oa = (OfficeAble)<span class="class"><span class="keyword">class</span>.<span class="title">newInstance</span>()</span>;</span><br><span class="line">			oa.start();</span><br><span class="line">		&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br> 编译好发布以后，后期软件更新，新的模块（如ppt）只需要实现OfficeAble接口即可。</p>
-<h1 id="获取Class-Type信息"><a href="#获取Class-Type信息" class="headerlink" title="获取Class Type信息"></a>获取Class Type信息</h1><p>我们可以通过以下代码简单地获取一个类的<strong>成员函数</strong>，<strong>成员变量</strong>和<strong>构造函数</strong>。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClassUtil</span> </span>&#123;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 打印类的信息，包括类的成员函数、成员变量</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> obj 该类的一个对象</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">printClassMethodMessage</span><span class="params">(Object obj)</span></span>&#123;</span><br><span class="line">		<span class="comment">//要获取类的信息  首先要获取类的类类型</span></span><br><span class="line">		Class c = obj.getClass();<span class="comment">//传递的是哪个子类的对象  c就是该子类的类类型</span></span><br><span class="line">		<span class="comment">//获取类的名称</span></span><br><span class="line">		System.out.println(<span class="string">"类的名称是:"</span>+c.getName());</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * Method类，方法对象</span></span><br><span class="line"><span class="comment">		 * 一个成员方法就是一个Method对象</span></span><br><span class="line"><span class="comment">		 * getMethods()方法获取的是所有的public的函数，包括父类继承而来的</span></span><br><span class="line"><span class="comment">		 * getDeclaredMethods()获取的是所有该类自己声明的方法，不问访问权限</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		Method[] ms = c.getMethods();<span class="comment">//c.getDeclaredMethods()</span></span><br><span class="line">		<span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ms.length;i++)&#123;</span><br><span class="line">			<span class="comment">//得到方法的返回值类型的类类型</span></span><br><span class="line">			Class returnType = ms[i].getReturnType();</span><br><span class="line">			System.out.print(returnType.getName()+<span class="string">" "</span>);</span><br><span class="line">			<span class="comment">//得到方法的名称</span></span><br><span class="line">			System.out.print(ms[i].getName()+<span class="string">"("</span>);</span><br><span class="line">			<span class="comment">//获取参数类型---&gt;得到的是参数列表的类型的类类型</span></span><br><span class="line">			Class[] paramTypes = ms[i].getParameterTypes();</span><br><span class="line">			<span class="keyword">for</span> (Class class1 : paramTypes) &#123;</span><br><span class="line">				System.out.print(class1.getName()+<span class="string">","</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			System.out.println(<span class="string">")"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 获取成员变量的信息</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> obj</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">printFieldMessage</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">		Class c = obj.getClass();</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * 成员变量也是对象</span></span><br><span class="line"><span class="comment">		 * java.lang.reflect.Field</span></span><br><span class="line"><span class="comment">		 * Field类封装了关于成员变量的操作</span></span><br><span class="line"><span class="comment">		 * getFields()方法获取的是所有的public的成员变量的信息</span></span><br><span class="line"><span class="comment">		 * getDeclaredFields获取的是该类自己声明的成员变量的信息</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="comment">//Field[] fs = c.getFields();</span></span><br><span class="line">		Field[] fs = c.getDeclaredFields();</span><br><span class="line">		<span class="keyword">for</span> (Field field : fs) &#123;</span><br><span class="line">			<span class="comment">//得到成员变量的类型的类类型</span></span><br><span class="line">			Class fieldType = field.getType();</span><br><span class="line">			String typeName = fieldType.getName();</span><br><span class="line">			<span class="comment">//得到成员变量的名称</span></span><br><span class="line">			String fieldName = field.getName();</span><br><span class="line">			System.out.println(typeName+<span class="string">" "</span>+fieldName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * 打印对象的构造函数的信息</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> obj</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">printConMessage</span><span class="params">(Object obj)</span></span>&#123;</span><br><span class="line">		Class c = obj.getClass();</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * 构造函数也是对象</span></span><br><span class="line"><span class="comment">		 * java.lang. Constructor中封装了构造函数的信息</span></span><br><span class="line"><span class="comment">		 * getConstructors获取所有的public的构造函数</span></span><br><span class="line"><span class="comment">		 * getDeclaredConstructors得到所有的构造函数</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">		<span class="comment">//Constructor[] cs = c.getConstructors();</span></span><br><span class="line">		Constructor[] cs = c.getDeclaredConstructors();</span><br><span class="line">		<span class="keyword">for</span> (Constructor constructor : cs) &#123;</span><br><span class="line">			System.out.print(constructor.getName()+<span class="string">"("</span>);</span><br><span class="line">			<span class="comment">//获取构造函数的参数列表---&gt;得到的是参数列表的类类型</span></span><br><span class="line">			Class[] paramTypes = constructor.getParameterTypes();</span><br><span class="line">			<span class="keyword">for</span> (Class class1 : paramTypes) &#123;</span><br><span class="line">				System.out.print(class1.getName()+<span class="string">","</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			System.out.println(<span class="string">")"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="方法的反射"><a href="#方法的反射" class="headerlink" title="方法的反射"></a>方法的反射</h1><p><strong>方法名称+参数列表</strong> 确定一个方法<br>通过<code>method.invoke();</code>实现反射调用。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MethodDemo</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">	   <span class="comment">//要获取print(int ,int )方法  1.要获取一个方法就是获取类的信息，获取类的信息首先要获取类的类类型</span></span><br><span class="line">		A a1 = <span class="keyword">new</span> A();</span><br><span class="line">		Class c = a1.getClass();</span><br><span class="line">		<span class="comment">/*</span></span><br><span class="line"><span class="comment">		 * getMethod获取的是public的方法</span></span><br><span class="line"><span class="comment">		 * getDelcaredMethod自己声明的方法</span></span><br><span class="line"><span class="comment">		 */</span></span><br><span class="line">	    <span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">// Method m =  c.getMethod("print", new Class[]&#123;int.class,int.class&#125;);</span></span><br><span class="line">	    	Method m = c.getMethod(<span class="string">"print"</span>, <span class="keyword">int</span><span class="class">.<span class="keyword">class</span>,<span class="title">int</span>.<span class="title">class</span>)</span>;</span><br><span class="line">	    	</span><br><span class="line">	    	<span class="comment">// 方法的反射操作  </span></span><br><span class="line">	    	<span class="comment">// a1.print(10, 20);方法的反射操作是用m对象来进行方法调用 和a1.print调用的效果完全相同</span></span><br><span class="line">	        <span class="comment">// 方法如果没有返回值返回null,有返回值返回具体的返回值</span></span><br><span class="line">	    	<span class="comment">// Object o = m.invoke(a1,new Object[]&#123;10,20&#125;);</span></span><br><span class="line">	    	Object o = m.invoke(a1, <span class="number">10</span>,<span class="number">20</span>);</span><br><span class="line">	    	System.out.println(<span class="string">"=================="</span>);</span><br><span class="line">	    	<span class="comment">// 获取方法print(String,String)</span></span><br><span class="line">             Method m1 = c.getMethod(<span class="string">"print"</span>,String<span class="class">.<span class="keyword">class</span>,<span class="title">String</span>.<span class="title">class</span>)</span>;</span><br><span class="line">             <span class="comment">// 用方法进行反射操作</span></span><br><span class="line">             <span class="comment">// a1.print("hello", "WORLD");</span></span><br><span class="line">             o = m1.invoke(a1, <span class="string">"hello"</span>,<span class="string">"WORLD"</span>);</span><br><span class="line">             System.out.println(<span class="string">"==================="</span>);</span><br><span class="line">             <span class="comment">// Method m2 = c.getMethod("print", new Class[]&#123;&#125;);</span></span><br><span class="line">                Method m2 = c.getMethod(<span class="string">"print"</span>);</span><br><span class="line">               <span class="comment">// m2.invoke(a1, new Object[]&#123;&#125;);</span></span><br><span class="line">                m2.invoke(a1);</span><br><span class="line">		&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">			<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">			e.printStackTrace();</span><br><span class="line">		&#125; </span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"helloworld"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">(<span class="keyword">int</span> a,<span class="keyword">int</span> b)</span></span>&#123;</span><br><span class="line">		System.out.println(a+b);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">(String a,String b)</span></span>&#123;</span><br><span class="line">		System.out.println(a.toUpperCase()+<span class="string">","</span>+b.toLowerCase());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="帮助理解泛型的本质"><a href="#帮助理解泛型的本质" class="headerlink" title="帮助理解泛型的本质"></a>帮助理解泛型的本质</h1><p>Java中集合的泛型，定义的模板是防止错误输入的，只在编译阶段有效，编译阶段以后就无效了，我们可以通过方法的反射来操作，绕过泛型模板的限制。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MethodDemo</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		ArrayList list = <span class="keyword">new</span> ArrayList();</span><br><span class="line">		</span><br><span class="line">		ArrayList&lt;String&gt; list1 = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">		list1.add(<span class="string">"hello"</span>);</span><br><span class="line">		<span class="comment">//list1.add(20);错误的</span></span><br><span class="line">		Class c1 = list.getClass();</span><br><span class="line">		Class c2 = list1.getClass();</span><br><span class="line">		System.out.println(c1 == c2);</span><br><span class="line">		<span class="comment">//反射的操作都是编译之后的操作,c1==c2结果返回true说明编译之后集合的泛型是去泛型化的， 验证：我们可以通过方法的反射来操作，绕过编译</span></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			Method m = c2.getMethod(<span class="string">"add"</span>, Object<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">			m.invoke(list1, <span class="number">20</span>);<span class="comment">//绕过编译操作就绕过了泛型</span></span><br><span class="line">			System.out.println(list1.size());</span><br><span class="line">			System.out.println(list1);</span><br><span class="line">			<span class="comment">/*for (String string : list1) &#123;</span></span><br><span class="line"><span class="comment">				System.out.println(string);</span></span><br><span class="line"><span class="comment">			&#125;*/</span><span class="comment">//现在不能这样遍历</span></span><br><span class="line">		&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">		  e.printStackTrace();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/19/java%E5%85%B3%E4%BA%8E%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E7%9A%84%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/19/java%E5%85%B3%E4%BA%8E%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于文件操作的总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-19 16:42:31" itemprop="dateCreated datePublished" datetime="2019-10-19T16:42:31+08:00">2019-10-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-04-30 20:24:07" itemprop="dateModified" datetime="2020-04-30T20:24:07+08:00">2020-04-30</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="文件的编码"><a href="#文件的编码" class="headerlink" title="文件的编码"></a>文件的编码</h1><p>文本文件就是字符(字节)序列,是原始字符串按照某种编码方式编码而成的字节序列.常见编码有</p>
-<ul>
-<li>utf-8   中文3字节  英文1字节</li>
-<li>ansi   扩展的ASCII编码 中文2字节  英文1字节</li>
-<li>GBK  中文系统下,ansi即GBK,是基于GB2312的扩展 中文2字节  英文1字节 </li>
-<li>utf-16be  java双字节编码  中文2字节  英文2字节</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">String s=<span class="string">"中文abc"</span>;</span><br><span class="line"><span class="keyword">byte</span>[] bytes=s.getBytes(<span class="string">"gbk"</span>);</span><br><span class="line"><span class="comment">//byte[] bytes=s.getBytes("utf-8");</span></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">byte</span> b:bytes)&#123;<span class="comment">//int 4 byte</span></span><br><span class="line">    System.out..println(Integer.toHexString(b &amp; <span class="number">0xff</span>) + <span class="string">" "</span>);					</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">String str=<span class="keyword">new</span> String(bytes,<span class="string">"utf-8"</span>);</span><br><span class="line">System.out..println(str);<span class="comment">//输出乱码,因为bytes是按gbk编码的</span></span><br><span class="line"><span class="comment">//String str=new String(bytes,"gbk");</span></span><br></pre></td></tr></table></figure>
-<h1 id="File类"><a href="#File类" class="headerlink" title="File类"></a>File类</h1><p>java.io.File类用于表示文件和目录,但不能访问文件的内容,用法示例:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">file.getAbsolutePath();</span><br><span class="line">file.getName();</span><br><span class="line">file.getParent();</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		<span class="comment">// 了解构造函数的情况  查帮助</span></span><br><span class="line">		File file = <span class="keyword">new</span> File(<span class="string">"E:\\javaio\\imooc"</span>);</span><br><span class="line">		<span class="comment">//System.out.println(file.exists());</span></span><br><span class="line">		<span class="keyword">if</span>(!file.exists())</span><br><span class="line">			file.mkdir(); <span class="comment">//file.mkdirs()多级目录</span></span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			file.delete();</span><br><span class="line">		<span class="comment">//是否是一个目录  如果是目录返回true,如果不是目录or目录不存在返回的是false</span></span><br><span class="line">		System.out.println(file.isDirectory());</span><br><span class="line">		<span class="comment">//是否是一个文件</span></span><br><span class="line">		System.out.println(file.isFile());</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//File file2 = new File("e:\\javaio\\日记1.txt");</span></span><br><span class="line">		File file2 = <span class="keyword">new</span> File(<span class="string">"e:\\javaio"</span>,<span class="string">"日记1.txt"</span>);</span><br><span class="line">		<span class="keyword">if</span>(!file2.exists())</span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				file2.createNewFile();</span><br><span class="line">			&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">				<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">else</span> </span><br><span class="line">			file2.delete();</span><br><span class="line">         <span class="comment">//常用的File对象的API</span></span><br><span class="line">		System.out.println(file);<span class="comment">//file.toString()的内容</span></span><br><span class="line">	    System.out.println(file.getParentFile().getAbsolutePath());</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="RandomAccessFile类"><a href="#RandomAccessFile类" class="headerlink" title="RandomAccessFile类"></a>RandomAccessFile类</h1><p>提供对文件内容的访问,支持随机读写文件.文件读写完毕应关闭<code>close()</code>.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;writeInt()&#96;&#96;&#96;写int 4个字节</span><br><span class="line">&#96;&#96;&#96;read()&#96;&#96;&#96;一次只读一个字节</span><br><span class="line">&#96;&#96;&#96;getFilePointer()&#96;&#96;&#96;获取文件指针</span><br><span class="line">&#96;&#96;&#96;seek()&#96;&#96;&#96;移动文件指针</span><br><span class="line">&#96;&#96;&#96;java</span><br><span class="line">public class RandomAccessFileSeriaDemo &#123;</span><br><span class="line">	public static void main(String[] args)throws IOException &#123;</span><br><span class="line">        File demo &#x3D; new File(&quot;demo1&quot;);</span><br><span class="line">        if (!demo.exists()) demo.mkdir();</span><br><span class="line">        File file &#x3D; new File(demo, &quot;raf.dat&quot;);</span><br><span class="line">        if (!file.exists())</span><br><span class="line">            file.createNewFile();</span><br><span class="line">        &#x2F;&#x2F;打开文件，进行随机读写</span><br><span class="line">        RandomAccessFile raf &#x3D; new RandomAccessFile(file, &quot;rw&quot;);</span><br><span class="line">        &#x2F;*序列化*&#x2F;</span><br><span class="line">        &#x2F;&#x2F;写int 4 byte</span><br><span class="line">        int i &#x3D; 0x7ffffff;</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 24);&#x2F;&#x2F;右移24位 写高8位</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 16);</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 8);</span><br><span class="line">        raf.write(i);</span><br><span class="line">&#x2F;&#x2F;        raf.writeInt(i);</span><br><span class="line">        System.out.println(raf.getFilePointer());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/12/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><span class="page-number current">13</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/14/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/12/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><span class="page-number current">13</span><a class="page-number" href="/page/14/">14</a><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/14/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1408,7 +1309,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">135</span>
+          <span class="site-state-item-count">143</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1420,7 +1321,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-count">15</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1464,7 +1365,7 @@ help ls      #ls不是内部命令,所以找不到帮助文件</code><br>shell�
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">362k</span>
+    <span title="站点总字数">417k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

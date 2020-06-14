@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="什么是集合什么是集合（Collection）？集合就是“由若干个确定的元素所构成的整体”。 在数学中，我们经常遇到集合的概念。例如：  有限集合： 一个班所有的同学构成的集合； 一个网站所有的商品构成的集合； …   无限集合： 全体自然数集合：1，2，3，…… 有理数集合； 实数集合； …    为什么要在计算机中引入集合呢？这是为了便于处理一组类似的数据，例如：  计算所有同学的总成绩和平均成">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java集合简介">
+<meta property="og:url" content="http://yoursite.com/2020/06/13/Java%E9%9B%86%E5%90%88%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="什么是集合什么是集合（Collection）？集合就是“由若干个确定的元素所构成的整体”。 在数学中，我们经常遇到集合的概念。例如：  有限集合： 一个班所有的同学构成的集合； 一个网站所有的商品构成的集合； …   无限集合： 全体自然数集合：1，2，3，…… 有理数集合； 实数集合； …    为什么要在计算机中引入集合呢？这是为了便于处理一组类似的数据，例如：  计算所有同学的总成绩和平均成">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-13T23:31:36.000Z">
+<meta property="article:modified_time" content="2020-06-14T12:33:25.922Z">
+<meta property="article:author" content="EricMa">
+<meta property="article:tag" content="集合">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/13/Java%E9%9B%86%E5%90%88%E7%AE%80%E4%BB%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java集合简介 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/13/Java%E9%9B%86%E5%90%88%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java集合简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 07:31:36 / 修改时间：20:33:25" itemprop="dateCreated datePublished" datetime="2020-06-14T07:31:36+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="什么是集合"><a href="#什么是集合" class="headerlink" title="什么是集合"></a>什么是集合</h2><p>什么是集合（Collection）？集合就是“由若干个确定的元素所构成的整体”。</p>
+<p>在数学中，我们经常遇到集合的概念。例如：</p>
+<ul>
+<li>有限集合：<ul>
+<li>一个班所有的同学构成的集合；</li>
+<li>一个网站所有的商品构成的集合；</li>
+<li>…</li>
+</ul>
+</li>
+<li>无限集合：<ul>
+<li>全体自然数集合：1，2，3，……</li>
+<li>有理数集合；</li>
+<li>实数集合；</li>
+<li>…</li>
+</ul>
+</li>
+</ul>
+<p>为什么要在计算机中引入集合呢？这是为了便于处理一组类似的数据，例如：</p>
+<ul>
+<li>计算所有同学的总成绩和平均成绩；</li>
+<li>列举所有的商品名称和价格；</li>
+<li>……</li>
+</ul>
+<p>在Java中，如果一个Java对象可以在内部持有若干其他Java对象，并对外提供访问接口，我们把这种Java对象称为集合。很显然，Java的数组可以看作是一种集合：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String[] ss = <span class="keyword">new</span> String[<span class="number">10</span>]; <span class="comment">// 可以持有10个String对象</span></span><br><span class="line">ss[<span class="number">0</span>] = <span class="string">"Hello"</span>; <span class="comment">// 可以放入String对象</span></span><br><span class="line">String first = ss[<span class="number">0</span>]; <span class="comment">// 可以获取String对象</span></span><br></pre></td></tr></table></figure>
+
+<p>既然Java提供了数组这种数据类型，可以充当集合，那么，我们为什么还需要其他集合类？这是因为数组有如下限制：</p>
+<ul>
+<li>数组初始化后大小不可变；</li>
+<li>数组只能按索引顺序存取。</li>
+</ul>
+<p>因此，我们需要各种不同类型的集合类来处理不同的数据，例如：</p>
+<ul>
+<li>可变大小的顺序链表；</li>
+<li>保证无重复元素的集合；</li>
+<li>…</li>
+</ul>
+<h3 id="Collection"><a href="#Collection" class="headerlink" title="Collection"></a>Collection</h3><p>Java标准库自带的<code>java.util</code>包提供了集合类：<code>Collection</code>，它是<strong>除<code>Map</code>外所有其他集合类的根接口</strong>。Java的<code>java.util</code>包主要提供了以下三种类型的集合：</p>
+<ul>
+<li><code>List</code>：一种有序列表的集合，例如，按索引排列的<code>Student</code>的<code>List</code>；</li>
+<li><code>Set</code>：一种保证没有重复元素的集合，例如，所有无重复名称的<code>Student</code>的<code>Set</code>；</li>
+<li><code>Map</code>：一种通过键值（key-value）查找的映射表集合，例如，根据<code>Student</code>的<code>name</code>查找对应<code>Student</code>的<code>Map</code>。</li>
+</ul>
+<p>Java集合的设计有几个特点：一是实现了接口和实现类相分离，例如，有序表的接口是<code>List</code>，具体的实现类有<code>ArrayList</code>，<code>LinkedList</code>等，二是支持泛型，我们可以限制在一个集合中只能放入同一种数据类型的元素，例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;(); <span class="comment">// 只能放入String类型</span></span><br></pre></td></tr></table></figure>
+
+<p>最后，Java访问集合总是通过统一的方式——迭代器（Iterator）来实现，它最明显的好处在于无需知道集合内部元素是按什么方式存储的。</p>
+<p>由于Java的集合设计非常久远，中间经历过大规模改进，我们要注意到有一小部分集合类是遗留类，不应该继续使用：</p>
+<ul>
+<li><code>Hashtable</code>：一种线程安全的<code>Map</code>实现；</li>
+<li><code>Vector</code>：一种线程安全的<code>List</code>实现；</li>
+<li><code>Stack</code>：基于<code>Vector</code>实现的<code>LIFO</code>的栈。</li>
+</ul>
+<p>还有一小部分接口是遗留接口，也不应该继续使用：</p>
+<ul>
+<li><code>Enumeration</code>：已被<code>Iterator</code>取代。</li>
+</ul>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>Java的集合类定义在<code>java.util</code>包中，支持泛型，主要提供了3种集合类，包括<code>List</code>，<code>Set</code>和<code>Map</code>。Java集合使用统一的<code>Iterator</code>遍历，尽量不要使用遗留接口。</p>
+<h2 id="迭代器Iterator"><a href="#迭代器Iterator" class="headerlink" title="迭代器Iterator"></a>迭代器Iterator</h2><p>Java的集合类都可以使用<code>for each</code>循环，<code>List</code>、<code>Set</code>和<code>Queue</code>会迭代每个元素，<code>Map</code>会迭代每个key。以<code>List</code>为例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list &#x3D; List.of(&quot;Apple&quot;, &quot;Orange&quot;, &quot;Pear&quot;);</span><br><span class="line">for (String s : list) &#123;</span><br><span class="line">    System.out.println(s);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际上，Java编译器并不知道如何遍历<code>List</code>。上述代码能够编译通过，只是因为<strong>编译器把<code>for each</code>循环通过<code>Iterator</code>改写为了普通的<code>for</code>循环</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (Iterator&lt;String&gt; it = list.iterator(); it.hasNext(); ) &#123;</span><br><span class="line">     String s = it.next();</span><br><span class="line">     System.out.println(s);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们把这种通过<code>Iterator</code>对象遍历集合的模式称为迭代器。</p>
+<p>使用迭代器的好处在于，调用方总是以统一的方式遍历各种集合类型，而不必关系它们内部的存储结构。</p>
+<p>例如，我们虽然知道<code>ArrayList</code>在内部是以数组形式存储元素，并且，它还提供了<code>get(int)</code>方法。虽然我们可以用<code>for</code>循环遍历：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">for (int i&#x3D;0; i&lt;list.size(); i++) &#123;</span><br><span class="line">    Object value &#x3D; list.get(i);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是这样一来，调用方就必须知道集合的内部存储结构。并且，如果把<code>ArrayList</code>换成<code>LinkedList</code>，<code>get(int)</code>方法耗时会随着index的增加而增加。如果把<code>ArrayList</code>换成<code>Set</code>，上述代码就无法编译，因为<code>Set</code>内部没有索引。</p>
+<p>用<code>Iterator</code>遍历就没有上述问题，因为<strong><code>Iterator</code>对象是集合对象自己在内部创建的，它自己知道如何高效遍历内部的数据集合</strong>，调用方则获得了统一的代码，编译器才能把标准的<code>for each</code>循环自动转换为<code>Iterator</code>遍历。</p>
+<p>如果我们自己编写了一个集合类，想要使用<code>for each</code>循环，只需满足以下条件：</p>
+<ul>
+<li>集合类实现<code>Iterable</code>接口，该接口要求返回一个<code>Iterator</code>对象；</li>
+<li>用<code>Iterator</code>对象迭代集合内部数据。</li>
+</ul>
+<p>这里的关键在于，集合类通过调用<code>iterator()</code>方法，返回一个<code>Iterator</code>对象，这个对象必须自己知道如何遍历该集合。</p>
+<p>一个简单的<code>Iterator</code>示例如下，它总是以倒序遍历集合：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ReverseList&lt;String&gt; rlist = <span class="keyword">new</span> ReverseList&lt;&gt;();</span><br><span class="line">        rlist.add(<span class="string">"Apple"</span>);</span><br><span class="line">        rlist.add(<span class="string">"Orange"</span>);</span><br><span class="line">        rlist.add(<span class="string">"Pear"</span>);</span><br><span class="line">        <span class="keyword">for</span> (String s : rlist) &#123;</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ReverseList</span>&lt;<span class="title">T</span>&gt; <span class="keyword">implements</span> <span class="title">Iterable</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> List&lt;T&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">        list.add(t);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Iterator&lt;T&gt; <span class="title">iterator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> ReverseIterator(list.size());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">ReverseIterator</span> <span class="keyword">implements</span> <span class="title">Iterator</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> index;</span><br><span class="line"></span><br><span class="line">        ReverseIterator(<span class="keyword">int</span> index) &#123;</span><br><span class="line">            <span class="keyword">this</span>.index = index;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasNext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> index &gt; <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> T <span class="title">next</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            index--;</span><br><span class="line">            <span class="keyword">return</span> ReverseList.<span class="keyword">this</span>.list.get(index);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>虽然<code>ReverseList</code>和<code>ReverseIterator</code>的实现类稍微比较复杂，但是，注意到这是底层集合库，只需编写一次。而调用方则完全按<code>for each</code>循环编写代码，根本不需要知道集合内部的存储逻辑和遍历逻辑。</p>
+<p>在编写<code>Iterator</code>的时候，我们通常可以<strong>用一个内部类来实现<code>Iterator</code>接口</strong>，这个内部类可以直接访问对应的外部类的所有字段和方法。例如，上述代码中，<strong>内部类<code>ReverseIterator</code>可以用<code>ReverseList.this</code>获得当前外部类的<code>this</code>引用</strong>，然后，通过这个<code>this</code>引用就可以访问<code>ReverseList</code>的所有字段和方法。</p>
+<h3 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h3><p><code>Iterator</code>是一种抽象的数据访问模型。使用<code>Iterator</code>模式进行迭代的好处有：</p>
+<ul>
+<li>对任何集合都采用同一种访问模型；</li>
+<li>调用者对集合内部结构一无所知；</li>
+<li>集合类返回的<code>Iterator</code>对象知道如何迭代。</li>
+</ul>
+<p>Java提供了标准的迭代器模型，即集合类实现<code>java.util.Iterable</code>接口，返回<code>java.util.Iterator</code>实例。</p>
+<h2 id="工具类Collections"><a href="#工具类Collections" class="headerlink" title="工具类Collections"></a>工具类Collections</h2><p><code>Collections</code>是JDK提供的工具类，同样位于<code>java.util</code>包中。它<strong>提供了一系列静态方法，能更方便地操作各种集合。</strong></p>
+<blockquote>
+<p> 注意Collections结尾多了一个s，不是Collection！</p>
+</blockquote>
+<p>我们一般看方法名和参数就可以确认<code>Collections</code>提供的该方法的功能。例如，对于以下静态方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public static boolean addAll(Collection&lt;? super T&gt; c, T... elements) &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>addAll()</code>方法可以给一个<code>Collection</code>类型的集合添加若干元素。因为方法签名是<code>Collection</code>，所以我们可以传入<code>List</code>，<code>Set</code>等各种集合类型。</p>
+<h3 id="创建空集合"><a href="#创建空集合" class="headerlink" title="创建空集合"></a>创建空集合</h3><p><code>Collections</code>提供了一系列方法来创建空集合：</p>
+<ul>
+<li>创建空List：<code>List emptyList()</code></li>
+<li>创建空Map：<code>Map emptyMap()</code></li>
+<li>创建空Set：<code>Set emptySet()</code></li>
+</ul>
+<p>要注意到返回的空集合是<strong>不可变集合</strong>，无法向其中添加或删除元素。</p>
+<p>此外，也可以用各个集合接口提供的<code>of(T...)</code>方法创建空集合。例如，以下创建空<code>List</code>的两个方法是等价的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list1 &#x3D; List.of();</span><br><span class="line">List&lt;String&gt; list2 &#x3D; Collections.emptyList();</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建单元素集合"><a href="#创建单元素集合" class="headerlink" title="创建单元素集合"></a>创建单元素集合</h3><p><code>Collections</code>提供了一系列方法来创建一个单元素集合：</p>
+<ul>
+<li>创建一个元素的List：<code>List singletonList(T o)</code></li>
+<li>创建一个元素的Map：<code>Map singletonMap(K key, V value)</code></li>
+<li>创建一个元素的Set：<code>Set singleton(T o)</code></li>
+</ul>
+<p>要注意到返回的单元素集合也是<strong>不可变集合</strong>，无法向其中添加或删除元素。</p>
+<p>此外，也可以用各个集合接口提供的<code>of(T...)</code>方法创建单元素集合。例如，以下创建单元素<code>List</code>的两个方法是等价的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list1 &#x3D; List.of(&quot;apple&quot;);</span><br><span class="line">List&lt;String&gt; list2 &#x3D; Collections.singletonList(&quot;apple&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>实际上，使用<code>List.of(T...)</code>更方便，因为它既可以创建空集合，也可以创建单元素集合，还可以创建任意个元素的集合：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list1 &#x3D; List.of(); &#x2F;&#x2F; empty list</span><br><span class="line">List&lt;String&gt; list2 &#x3D; List.of(&quot;apple&quot;); &#x2F;&#x2F; 1 element</span><br><span class="line">List&lt;String&gt; list3 &#x3D; List.of(&quot;apple&quot;, &quot;pear&quot;); &#x2F;&#x2F; 2 elements</span><br><span class="line">List&lt;String&gt; list4 &#x3D; List.of(&quot;apple&quot;, &quot;pear&quot;, &quot;orange&quot;); &#x2F;&#x2F; 3 elements</span><br></pre></td></tr></table></figure>
+
+<h3 id="排序"><a href="#排序" class="headerlink" title="排序"></a>排序</h3><p><code>Collections</code>可以对<code>List</code>进行排序。因为排序会直接修改<code>List</code>元素的位置，因此<strong>必须传入可变<code>List</code></strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        list.add(<span class="string">"apple"</span>);</span><br><span class="line">        list.add(<span class="string">"pear"</span>);</span><br><span class="line">        list.add(<span class="string">"orange"</span>);</span><br><span class="line">        <span class="comment">// 排序前:</span></span><br><span class="line">        System.out.println(list);</span><br><span class="line">        Collections.sort(list);</span><br><span class="line">        <span class="comment">// 排序后:</span></span><br><span class="line">        System.out.println(list);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="洗牌"><a href="#洗牌" class="headerlink" title="洗牌"></a>洗牌</h3><p><code>Collections</code>提供了洗牌算法，即传入一个有序的<code>List</code>，可以随机打乱<code>List</code>内部元素的顺序，效果相当于让计算机洗牌：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;Integer&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10</span>; i++) &#123;</span><br><span class="line">            list.add(i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 洗牌前:</span></span><br><span class="line">        System.out.println(list);</span><br><span class="line">        Collections.shuffle(list);</span><br><span class="line">        <span class="comment">// 洗牌后:</span></span><br><span class="line">        System.out.println(list);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="不可变集合"><a href="#不可变集合" class="headerlink" title="不可变集合"></a>不可变集合</h3><p><code>Collections</code>还提供了一组方法把可变集合封装成不可变集合：</p>
+<ul>
+<li>封装成不可变List：<code>List unmodifiableList(List list)</code></li>
+<li>封装成不可变Set：<code>Set unmodifiableSet(Set set)</code></li>
+<li>封装成不可变Map：<code>Map unmodifiableMap(Map m)</code></li>
+</ul>
+<p>这种封装实际上是<strong>通过创建一个代理对象，拦截掉所有修改方法实现的</strong>。我们来看看效果：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; mutable = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        mutable.add(<span class="string">"apple"</span>);</span><br><span class="line">        mutable.add(<span class="string">"pear"</span>);</span><br><span class="line">        <span class="comment">// 变为不可变集合:</span></span><br><span class="line">        List&lt;String&gt; immutable = Collections.unmodifiableList(mutable);</span><br><span class="line">        immutable.add(<span class="string">"orange"</span>); <span class="comment">// UnsupportedOperationException!</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然而，继续对原始的可变<code>List</code>进行增删是可以的，并且，会直接影响到封装后的“不可变”<code>List</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; mutable = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        mutable.add(<span class="string">"apple"</span>);</span><br><span class="line">        mutable.add(<span class="string">"pear"</span>);</span><br><span class="line">        <span class="comment">// 变为不可变集合:</span></span><br><span class="line">        List&lt;String&gt; immutable = Collections.unmodifiableList(mutable);</span><br><span class="line">        mutable.add(<span class="string">"orange"</span>);</span><br><span class="line">        System.out.println(immutable);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[apple, pear, orange]</span><br></pre></td></tr></table></figure>
+
+<p>因此，如果我们希望把一个可变<code>List</code>封装成不可变<code>List</code>，那么，返回不可变<code>List</code>后，<strong>最好立刻扔掉可变<code>List</code>的引用</strong>，这样可以保证后续操作不会意外改变原始对象，从而造成“不可变”<code>List</code>变化了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; mutable = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        mutable.add(<span class="string">"apple"</span>);</span><br><span class="line">        mutable.add(<span class="string">"pear"</span>);</span><br><span class="line">        <span class="comment">// 变为不可变集合:</span></span><br><span class="line">        List&lt;String&gt; immutable = Collections.unmodifiableList(mutable);</span><br><span class="line">        <span class="comment">// 立刻扔掉mutable的引用:</span></span><br><span class="line">        mutable = <span class="keyword">null</span>;</span><br><span class="line">        System.out.println(immutable);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="线程安全集合"><a href="#线程安全集合" class="headerlink" title="线程安全集合"></a>线程安全集合</h3><p><code>Collections</code>还提供了一组方法，可以把线程不安全的集合变为线程安全的集合：</p>
+<ul>
+<li>变为线程安全的List：<code>List synchronizedList(List list)</code></li>
+<li>变为线程安全的Set：<code>Set synchronizedSet(Set s)</code></li>
+<li>变为线程安全的Map：<code>Map synchronizedMap(Map m)</code></li>
+</ul>
+<p>多线程的概念我们会在后面讲。因为从Java 5开始，引入了更高效的并发集合类，所以上述这几个同步方法已经没有什么用了。</p>
+<h3 id="小结-2"><a href="#小结-2" class="headerlink" title="小结"></a>小结</h3><p><code>Collections</code>类提供了一组工具方法来方便使用集合类：</p>
+<ul>
+<li>创建空集合；</li>
+<li>创建单元素集合；</li>
+<li>创建不可变集合；</li>
+<li>排序／洗牌等操作。</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265109905179456" target="_blank" rel="noopener">Java集合简介</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9B%86%E5%90%88/" rel="tag"># 集合</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/13/%E6%B5%85%E6%9E%90%20Netty%20%E5%AE%9E%E7%8E%B0%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6%E4%B8%8E%E6%96%AD%E7%BA%BF%E9%87%8D%E8%BF%9E/" rel="prev" title="浅析 Netty 实现心跳机制与断线重连">
+      <i class="fa fa-chevron-left"></i> 浅析 Netty 实现心跳机制与断线重连
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/13/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3List%E7%AE%80%E4%BB%8B/" rel="next" title="Java集合接口List简介">
+      Java集合接口List简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是集合"><span class="nav-number">1.</span> <span class="nav-text">什么是集合</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Collection"><span class="nav-number">1.1.</span> <span class="nav-text">Collection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结"><span class="nav-number">1.2.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#迭代器Iterator"><span class="nav-number">2.</span> <span class="nav-text">迭代器Iterator</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#小结-1"><span class="nav-number">2.1.</span> <span class="nav-text">小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#工具类Collections"><span class="nav-number">3.</span> <span class="nav-text">工具类Collections</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#创建空集合"><span class="nav-number">3.1.</span> <span class="nav-text">创建空集合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#创建单元素集合"><span class="nav-number">3.2.</span> <span class="nav-text">创建单元素集合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排序"><span class="nav-number">3.3.</span> <span class="nav-text">排序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#洗牌"><span class="nav-number">3.4.</span> <span class="nav-text">洗牌</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不可变集合"><span class="nav-number">3.5.</span> <span class="nav-text">不可变集合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#线程安全集合"><span class="nav-number">3.6.</span> <span class="nav-text">线程安全集合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#小结-2"><span class="nav-number">3.7.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">417k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
