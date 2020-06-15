@@ -186,6 +186,317 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/19/java%E5%85%B3%E4%BA%8E%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E7%9A%84%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/19/java%E5%85%B3%E4%BA%8E%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于文件操作的总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-19 16:42:31" itemprop="dateCreated datePublished" datetime="2019-10-19T16:42:31+08:00">2019-10-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 20:24:07" itemprop="dateModified" datetime="2020-04-30T20:24:07+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="文件的编码"><a href="#文件的编码" class="headerlink" title="文件的编码"></a>文件的编码</h1><p>文本文件就是字符(字节)序列,是原始字符串按照某种编码方式编码而成的字节序列.常见编码有</p>
+<ul>
+<li>utf-8   中文3字节  英文1字节</li>
+<li>ansi   扩展的ASCII编码 中文2字节  英文1字节</li>
+<li>GBK  中文系统下,ansi即GBK,是基于GB2312的扩展 中文2字节  英文1字节 </li>
+<li>utf-16be  java双字节编码  中文2字节  英文2字节</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">String s=<span class="string">"中文abc"</span>;</span><br><span class="line"><span class="keyword">byte</span>[] bytes=s.getBytes(<span class="string">"gbk"</span>);</span><br><span class="line"><span class="comment">//byte[] bytes=s.getBytes("utf-8");</span></span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">byte</span> b:bytes)&#123;<span class="comment">//int 4 byte</span></span><br><span class="line">    System.out..println(Integer.toHexString(b &amp; <span class="number">0xff</span>) + <span class="string">" "</span>);					</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">String str=<span class="keyword">new</span> String(bytes,<span class="string">"utf-8"</span>);</span><br><span class="line">System.out..println(str);<span class="comment">//输出乱码,因为bytes是按gbk编码的</span></span><br><span class="line"><span class="comment">//String str=new String(bytes,"gbk");</span></span><br></pre></td></tr></table></figure>
+<h1 id="File类"><a href="#File类" class="headerlink" title="File类"></a>File类</h1><p>java.io.File类用于表示文件和目录,但不能访问文件的内容,用法示例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">file.getAbsolutePath();</span><br><span class="line">file.getName();</span><br><span class="line">file.getParent();</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		<span class="comment">// 了解构造函数的情况  查帮助</span></span><br><span class="line">		File file = <span class="keyword">new</span> File(<span class="string">"E:\\javaio\\imooc"</span>);</span><br><span class="line">		<span class="comment">//System.out.println(file.exists());</span></span><br><span class="line">		<span class="keyword">if</span>(!file.exists())</span><br><span class="line">			file.mkdir(); <span class="comment">//file.mkdirs()多级目录</span></span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			file.delete();</span><br><span class="line">		<span class="comment">//是否是一个目录  如果是目录返回true,如果不是目录or目录不存在返回的是false</span></span><br><span class="line">		System.out.println(file.isDirectory());</span><br><span class="line">		<span class="comment">//是否是一个文件</span></span><br><span class="line">		System.out.println(file.isFile());</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//File file2 = new File("e:\\javaio\\日记1.txt");</span></span><br><span class="line">		File file2 = <span class="keyword">new</span> File(<span class="string">"e:\\javaio"</span>,<span class="string">"日记1.txt"</span>);</span><br><span class="line">		<span class="keyword">if</span>(!file2.exists())</span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				file2.createNewFile();</span><br><span class="line">			&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">				<span class="comment">// TODO Auto-generated catch block</span></span><br><span class="line">				e.printStackTrace();</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="keyword">else</span> </span><br><span class="line">			file2.delete();</span><br><span class="line">         <span class="comment">//常用的File对象的API</span></span><br><span class="line">		System.out.println(file);<span class="comment">//file.toString()的内容</span></span><br><span class="line">	    System.out.println(file.getParentFile().getAbsolutePath());</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="RandomAccessFile类"><a href="#RandomAccessFile类" class="headerlink" title="RandomAccessFile类"></a>RandomAccessFile类</h1><p>提供对文件内容的访问,支持随机读写文件.文件读写完毕应关闭<code>close()</code>.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;writeInt()&#96;&#96;&#96;写int 4个字节</span><br><span class="line">&#96;&#96;&#96;read()&#96;&#96;&#96;一次只读一个字节</span><br><span class="line">&#96;&#96;&#96;getFilePointer()&#96;&#96;&#96;获取文件指针</span><br><span class="line">&#96;&#96;&#96;seek()&#96;&#96;&#96;移动文件指针</span><br><span class="line">&#96;&#96;&#96;java</span><br><span class="line">public class RandomAccessFileSeriaDemo &#123;</span><br><span class="line">	public static void main(String[] args)throws IOException &#123;</span><br><span class="line">        File demo &#x3D; new File(&quot;demo1&quot;);</span><br><span class="line">        if (!demo.exists()) demo.mkdir();</span><br><span class="line">        File file &#x3D; new File(demo, &quot;raf.dat&quot;);</span><br><span class="line">        if (!file.exists())</span><br><span class="line">            file.createNewFile();</span><br><span class="line">        &#x2F;&#x2F;打开文件，进行随机读写</span><br><span class="line">        RandomAccessFile raf &#x3D; new RandomAccessFile(file, &quot;rw&quot;);</span><br><span class="line">        &#x2F;*序列化*&#x2F;</span><br><span class="line">        &#x2F;&#x2F;写int 4 byte</span><br><span class="line">        int i &#x3D; 0x7ffffff;</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 24);&#x2F;&#x2F;右移24位 写高8位</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 16);</span><br><span class="line">        raf.write(i &gt;&gt;&gt; 8);</span><br><span class="line">        raf.write(i);</span><br><span class="line">&#x2F;&#x2F;        raf.writeInt(i);</span><br><span class="line">        System.out.println(raf.getFilePointer());</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/17/I-O%E6%B5%81%E7%9A%84%E6%80%BB%E7%BB%93-%E5%AD%97%E8%8A%82%E6%B5%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/17/I-O%E6%B5%81%E7%9A%84%E6%80%BB%E7%BB%93-%E5%AD%97%E8%8A%82%E6%B5%81/" class="post-title-link" itemprop="url">I/O流的总结-字节流</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-17 16:42:31" itemprop="dateCreated datePublished" datetime="2019-10-17T16:42:31+08:00">2019-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-04-30 20:20:09" itemprop="dateModified" datetime="2020-04-30T20:20:09+08:00">2020-04-30</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="IO流-输入流-输出流"><a href="#IO流-输入流-输出流" class="headerlink" title="IO流(输入流,输出流)"></a>IO流(输入流,输出流)</h2><h2 id="字节流"><a href="#字节流" class="headerlink" title="字节流"></a>字节流</h2><h3 id="InputStream"><a href="#InputStream" class="headerlink" title="InputStream"></a>InputStream</h3><p>读一字节填充到int低8位:<br><code>int b = in.read();</code><br>读数据填充到字节数组:<br><code>in.read(byte[] buf);</code><br><code>in.read(byte[] buf,int start,int size);</code></p>
+<h3 id="OutputStream"><a href="#OutputStream" class="headerlink" title="OutputStream"></a>OutputStream</h3><p>写int的低8位写入到流:<br><code>out.write(int b)</code><br>将字节数组写入到流:<br><code>out.write(byte[] buf);</code><br><code>out.write(byte[] buf,int start,int size);</code></p>
+<h3 id="FileInputStream"><a href="#FileInputStream" class="headerlink" title="FileInputStream"></a>FileInputStream</h3><p>FileInputStream是InputStream的子类<br>把文件作为字节流进行读操作<br>读取指定文件内容，按照16进制输出到控制台<br>每输出10个byte换行<br><strong>单字节读取不适合大文件，大文件效率很低</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">FileInputStream in = <span class="keyword">new</span> FileInputStream(fileName);</span><br><span class="line"><span class="keyword">int</span> b ;<span class="comment">//存储每次读到的一个字节</span></span><br><span class="line"><span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">while</span>((b = in.read())!=-<span class="number">1</span>)&#123;</span><br><span class="line">	<span class="keyword">if</span>(b &lt;= <span class="number">0xf</span>)&#123;</span><br><span class="line">		<span class="comment">//单位数前面补0</span></span><br><span class="line">		System.out.print(<span class="string">"0"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	System.out.print(Integer.toHexString(b)+<span class="string">"  "</span>);</span><br><span class="line">	<span class="keyword">if</span>(i++%<span class="number">10</span>==<span class="number">0</span>)&#123;</span><br><span class="line">		System.out.println();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line">in.close();</span><br></pre></td></tr></table></figure>
+
+<p>批量读取文件并输出,对大文件而言效率高:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">   FileInputStream in = <span class="keyword">new</span> FileInputStream(fileName);</span><br><span class="line"><span class="keyword">byte</span>[] buf = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">8</span> * <span class="number">1024</span>];</span><br><span class="line"><span class="keyword">int</span> bytes = <span class="number">0</span>;<span class="comment">//读到的字节的个数</span></span><br><span class="line"><span class="keyword">int</span> j = <span class="number">1</span>;</span><br><span class="line"><span class="comment">//一次可能读不满,只要读到数据,bytes就不可能是-1</span></span><br><span class="line"><span class="keyword">while</span>((bytes = in.read(buf,<span class="number">0</span>,buf.length))!=-<span class="number">1</span>)&#123;</span><br><span class="line"> <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span> ; i &lt; bytes;i++)&#123;</span><br><span class="line">  System.out.print(Integer.toHexString(buf[i] &amp; <span class="number">0xff</span>)+<span class="string">"  "</span>);</span><br><span class="line">  <span class="keyword">if</span>(j++%<span class="number">10</span>==<span class="number">0</span>)&#123;</span><br><span class="line">	  System.out.println();</span><br><span class="line">  &#125;</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br><span class="line">in.close();</span><br></pre></td></tr></table></figure>
+<h3 id="FileOutputStream"><a href="#FileOutputStream" class="headerlink" title="FileOutputStream"></a>FileOutputStream</h3><p>FileOutputStream是OutputStream的子类<br>将字节流写入文件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//如果该文件不存在，则直接创建，如果存在，删除后创建</span></span><br><span class="line">FileOutputStream out = <span class="keyword">new</span> FileOutputStream(<span class="string">"demo/out.dat"</span>);</span><br><span class="line">out.write(<span class="string">'A'</span>);<span class="comment">//写出了'A'的低八位</span></span><br><span class="line">out.write(<span class="string">'B'</span>);<span class="comment">//写出了'B'的低八位</span></span><br><span class="line"><span class="keyword">int</span> a = <span class="number">10</span>;<span class="comment">//write只能写八位,那么写一个int需要些4次每次8位</span></span><br><span class="line">out.write(a &gt;&gt;&gt; <span class="number">24</span>);</span><br><span class="line">out.write(a &gt;&gt;&gt; <span class="number">16</span>);</span><br><span class="line">out.write(a &gt;&gt;&gt; <span class="number">8</span>);</span><br><span class="line">out.write(a);</span><br><span class="line"><span class="keyword">byte</span>[] gbk = <span class="string">"中国"</span>.getBytes(<span class="string">"gbk"</span>);</span><br><span class="line">out.write(gbk);</span><br><span class="line">out.close();</span><br><span class="line"></span><br><span class="line">IOUtil.printHex(<span class="string">"demo/out.dat"</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="DataOutputStream"><a href="#DataOutputStream" class="headerlink" title="DataOutputStream"></a>DataOutputStream</h3><p>对”流”功能的拓展,可以更方便地写<code>int,long,double,char</code>等,常见用法如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">String file = <span class="string">"demo/dos.dat"</span>;</span><br><span class="line">DataOutputStream dos = <span class="keyword">new</span> DataOutputStream(</span><br><span class="line">		         <span class="keyword">new</span> FileOutputStream(file));</span><br><span class="line">dos.writeInt(<span class="number">10</span>);</span><br><span class="line">dos.writeInt(-<span class="number">10</span>);</span><br><span class="line">dos.writeLong(<span class="number">10l</span>);</span><br><span class="line">dos.writeDouble(<span class="number">10.5</span>);</span><br><span class="line"><span class="comment">//采用utf-8编码写出</span></span><br><span class="line">dos.writeUTF(<span class="string">"中国"</span>);</span><br><span class="line"><span class="comment">//采用utf-16be编码写出</span></span><br><span class="line">dos.writeChars(<span class="string">"中国"</span>);</span><br><span class="line">dos.close();</span><br><span class="line">IOUtil.printHex(file);</span><br></pre></td></tr></table></figure>
+<h3 id="DataInputStream"><a href="#DataInputStream" class="headerlink" title="DataInputStream"></a>DataInputStream</h3><p>常见用法如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">   String file = <span class="string">"demo/dos.dat"</span>;</span><br><span class="line">IOUtil.printHex(file);</span><br><span class="line">DataInputStream dis = <span class="keyword">new</span> DataInputStream(</span><br><span class="line">  <span class="keyword">new</span> FileInputStream(file));</span><br><span class="line"><span class="keyword">int</span> i = dis.readInt();</span><br><span class="line">System.out.println(i);</span><br><span class="line">i = dis.readInt();</span><br><span class="line">System.out.println(i);</span><br><span class="line"><span class="keyword">long</span> l = dis.readLong();</span><br><span class="line">System.out.println(l);</span><br><span class="line"><span class="keyword">double</span> d = dis.readDouble();</span><br><span class="line">System.out.println(d);</span><br><span class="line">String s = dis.readUTF();</span><br><span class="line">System.out.println(s);</span><br><span class="line"></span><br><span class="line">   dis.close();</span><br></pre></td></tr></table></figure>
+<h3 id="BufferedInputStream-amp-BufferedOutputStream"><a href="#BufferedInputStream-amp-BufferedOutputStream" class="headerlink" title="BufferedInputStream &amp; BufferedOutputStream"></a>BufferedInputStream &amp; BufferedOutputStream</h3><p> 这两个流类位IO提供了带缓冲区的操作，一般打开文件进行写入或读取操作时，都会加上缓冲，这种流模式提高了IO的性能.<br> 从应用程序中把输入放入文件，相当于将一缸水倒入到另一个缸中:<br><code>FileOutputStream.write()</code>方法相当于一滴一滴地把水“转移”过去.<br><code>DataOutputStream.writeXxx()</code>方法会方便一些，相当于一瓢一瓢把水“转移”过去.<br> <code>BufferedOutputStream.write()</code>方法更方便，相当于一瓢一瓢先放入桶中，再从桶中倒入到另一个缸中，性能提高了.<br>利用带缓冲的字节流, 进行文件的拷贝:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyFileByBuffer</span><span class="params">(File srcFile,File destFile)</span><span class="keyword">throws</span> IOException</span>&#123;</span><br><span class="line">		<span class="keyword">if</span>(!srcFile.exists())&#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"文件:"</span>+srcFile+<span class="string">"不存在"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(!srcFile.isFile())&#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(srcFile+<span class="string">"不是文件"</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		BufferedInputStream bis = <span class="keyword">new</span> BufferedInputStream(</span><br><span class="line">				<span class="keyword">new</span> FileInputStream(srcFile));</span><br><span class="line">		BufferedOutputStream bos = <span class="keyword">new</span> BufferedOutputStream(</span><br><span class="line">				<span class="keyword">new</span> FileOutputStream(destFile));</span><br><span class="line">		<span class="keyword">int</span> c ;</span><br><span class="line">		<span class="keyword">while</span>((c = bis.read())!=-<span class="number">1</span>)&#123;</span><br><span class="line">			bos.write(c);</span><br><span class="line">			bos.flush();<span class="comment">//刷新缓冲区</span></span><br><span class="line">		&#125;</span><br><span class="line">		bis.close();</span><br><span class="line">		bos.close();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/15/java%E5%85%B3%E4%BA%8E%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/10/15/java%E5%85%B3%E4%BA%8E%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">java关于多线程的总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-10-15 14:42:38" itemprop="dateCreated datePublished" datetime="2019-10-15T14:42:38+08:00">2019-10-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-16 13:42:41" itemprop="dateModified" datetime="2020-05-16T13:42:41+08:00">2020-05-16</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="进程与线程"><a href="#进程与线程" class="headerlink" title="进程与线程"></a>进程与线程</h2><h3 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h3><ul>
+<li><p>进程是==程序的执行过程==（动态性），持有<strong>资源</strong>（共享内存、共享文件）和<strong>线程</strong>（是资源和线程的载体）</p>
+</li>
+<li><p><strong>线程</strong>是系统中==最小的执行单元==</p>
+<h2 id="线程间交互"><a href="#线程间交互" class="headerlink" title="线程间交互"></a>线程间交互</h2></li>
+</ul>
+<ol>
+<li><p><strong>互斥</strong> 资源有限，需抢占</p>
+</li>
+<li><p><strong>同步</strong> 协作完成一项任务，有先后顺序</p>
+<h1 id="java线程初探"><a href="#java线程初探" class="headerlink" title="java线程初探"></a>java线程初探</h1><h2 id="java对线程的支持"><a href="#java对线程的支持" class="headerlink" title="java对线程的支持"></a>java对线程的支持</h2><p><code>Thread</code>类和<code>Runnable</code>接口，以及共同的<code>run()</code>方法。<br><img src="https://img-blog.csdnimg.cn/20191203220122134.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="java对线程的支持"></p>
+<h2 id="Thread类"><a href="#Thread类" class="headerlink" title="Thread类"></a>Thread类</h2><p><code>join()</code>使当前运行线程<strong>等待调用线程的终止</strong>，再继续运行<br><code>yield()</code>使当前运行线程<strong>释放处理器资源</strong><br>停止线程的错误方法 1.<del>stop()</del>         2.<del>interrupt()</del><br>使用退出标志（<code>volatile bool keepRunning</code>）停止线程循环<br><img src="https://img-blog.csdnimg.cn/20191203221138225.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h2 id="Thread和Runnable示例"><a href="#Thread和Runnable示例" class="headerlink" title="Thread和Runnable示例"></a>Thread和Runnable示例</h2><p>Thread和Runnable各自每运行10次暂停1s，交替运行。一个.java文件可有多个类（不包括内部类），但只能有一个public类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Actor</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">		System.out.println(getName()+<span class="string">"是一个演员！"</span>);</span><br><span class="line">		<span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">boolean</span> keepRunning = <span class="keyword">true</span>;</span><br><span class="line">	</span><br><span class="line">		<span class="keyword">while</span>(keepRunning)&#123;</span><br><span class="line">			System.out.println(getName()+<span class="string">"登台演出："</span>+ (++count));</span><br><span class="line">			<span class="keyword">if</span>(count == <span class="number">100</span>)&#123;</span><br><span class="line">				keepRunning = <span class="keyword">false</span>;</span><br><span class="line">			&#125;	</span><br><span class="line">			<span class="keyword">if</span>(count%<span class="number">10</span>== <span class="number">0</span>)&#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">				&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">					e.printStackTrace();</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		System.out.println(getName()+<span class="string">"的演出结束了！"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</span><br><span class="line">		Thread actor = <span class="keyword">new</span> Actor();</span><br><span class="line">		actor.setName(<span class="string">"Mr. Thread"</span>);</span><br><span class="line">		actor.start();</span><br><span class="line">		Thread actressThread = <span class="keyword">new</span> Thread(<span class="keyword">new</span> Actress(),<span class="string">"Ms. Runnable"</span>);</span><br><span class="line">		actressThread.start();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Actress</span> <span class="keyword">implements</span> <span class="title">Runnable</span></span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(Thread.currentThread().getName()+<span class="string">"是一个演员！"</span>);</span><br><span class="line">		<span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">boolean</span> keepRunning = <span class="keyword">true</span>;</span><br><span class="line">		<span class="keyword">while</span>(keepRunning)&#123;</span><br><span class="line">System.out.println(Thread.currentThread().getName()+<span class="string">"登台演出："</span>+ (++count));	</span><br><span class="line">			<span class="keyword">if</span>(count == <span class="number">100</span>)&#123;</span><br><span class="line">				keepRunning = <span class="keyword">false</span>;</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span>(count%<span class="number">10</span>== <span class="number">0</span>)&#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">				&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">					e.printStackTrace();</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">System.out.println(Thread.currentThread().getName()+<span class="string">"的演出结束了！"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>总结一下:<br><img src="https://img-blog.csdnimg.cn/2019120513395094.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205134111771.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h1 id="线程的生命周期"><a href="#线程的生命周期" class="headerlink" title="线程的生命周期"></a>线程的生命周期</h1><p><img src="https://img-blog.csdnimg.cn/20191205140153638.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>阻塞事件:如<code>sleep(),wait(),join()</code>方法被调用</p>
+<h1 id="java守护线程"><a href="#java守护线程" class="headerlink" title="java守护线程"></a>java守护线程</h1><p>java线程分两类:<br>1.用户线程<br>2.守护线程   一旦所有用户线程都结束了,守护线程也就结束了<br><img src="https://img-blog.csdnimg.cn/20191205140656498.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140834109.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140852906.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205140938132.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+<h1 id="jstack生成线程快照"><a href="#jstack生成线程快照" class="headerlink" title="jstack生成线程快照"></a>jstack生成线程快照</h1><p><img src="https://img-blog.csdnimg.cn/20191205142146779.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191205142411386.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
+</li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/13/java%E5%85%B3%E4%BA%8E%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%80%BB%E7%BB%93/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -605,19 +916,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">146</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">18</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -661,7 +972,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">417k</span>
+    <span title="站点总字数">438k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

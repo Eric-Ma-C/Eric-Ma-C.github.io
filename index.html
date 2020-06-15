@@ -186,6 +186,692 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/15/Java%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/" class="post-title-link" itemprop="url">Java 运行时数据区</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-15 11:07:52 / 修改时间：19:39:46" itemprop="dateCreated datePublished" datetime="2020-06-15T11:07:52+08:00">2020-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="为什么要进行内存区域划分"><a href="#为什么要进行内存区域划分" class="headerlink" title="为什么要进行内存区域划分"></a>为什么要进行内存区域划分</h2><p><a href="https://docs.oracle.com/javase/specs/jvms/se8/html/" target="_blank" rel="noopener">JVM规范</a> 规定，JVM 在执行 Java 程序的过程中会把它所管理的内存划分为若干个不同的数据区域。这些区域都有各自的用途。以及创建和销毁的时间，有的区域随着虚拟机进程的启动就存在了，而有些区域则依赖用户线程的启动和结束而建立和销毁。JVM 规范对 JVM 定义了运行时统一的内存划分规范，统一了标准，类似于 JDBC 规范一样。JVM 也有许多厂商的不同产品。比如下面的这些：</p>
+<table>
+<thead>
+<tr>
+<th align="center">厂商</th>
+<th>JVM</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">Oracle-SUN</td>
+<td>Hotspot</td>
+</tr>
+<tr>
+<td align="center">Oracle</td>
+<td>JRocket</td>
+</tr>
+<tr>
+<td align="center">IBM</td>
+<td>J9 JVM</td>
+</tr>
+<tr>
+<td align="center">阿里</td>
+<td>Taobao JVM</td>
+</tr>
+</tbody></table>
+<p>其内存区域划分规范对于 JVM 的含义类似于我们 Java 中的接口，都是起到了规范的作用，JVM 是一台可以运行 Java 应用程序的抽象的计算机。在 JVM 中存在三个重要的概念：</p>
+<ul>
+<li>JVM 规范：它定义了虚拟机运行的规范，但是由 Oracle（SUN）或者其它厂商实现</li>
+<li>Java 运行时环境(JRE：Java Runtime Environment)：它是 JVM 规范的具体实现</li>
+<li>JVM 实例：编写好 Java 代码之后，运行 Java 程序，此时就会创建 JMV 实例</li>
+</ul>
+<p>对于 Java 程序员来说，在虚拟机自动内存管理机制的帮助下，不再需要为每一个对象去编写内存释放的代码，不要像 C 或者 C++ 要时刻注意着内存泄漏和内存溢出的问题，这种由虚拟机去管理一切看起来都很美好。不过，也正是因为 Java 设计者把内存控制全部交给了 JVM，一旦出现了内存泄漏和溢出方面的问题，如果不了解虚拟机是怎么分配运行时内存的，那么排查错误将是一项非常艰难的工作。</p>
+<h2 id="运行时数据区域的组成"><a href="#运行时数据区域的组成" class="headerlink" title="运行时数据区域的组成"></a>运行时数据区域的组成</h2><p>为什么我们经常把运行时数据区叫做 Java 内存模型（JMM：Java Memory Model），是因为运行时数据区太过于分散，没有联系，所以才会有 JVM 内存模型这个词，让我们把这些东西联系起来，方便记忆。JVM 运行时数据区中有些数据是一直存在的，被所有线程所共享。而有些区域则是线程私有的，伴随着线程的开始而创建，线程的结束而销毁。所以我们可以把JMM 分为两类：<code>线程共享的</code>、<code>线程私有的</code>。根据 JVM 虚拟机规范的规定，JVM 虚拟机运行时数据区划分如下图所示：</p>
+<p><img src="https://segmentfault.com/img/remote/1460000020812912" alt="jmm-structure.png"></p>
+<p>运行时数据区主要分为以下五个部分：</p>
+<ul>
+<li><strong>方法区</strong></li>
+<li><strong>虚拟机栈</strong></li>
+<li><strong>本地方法栈</strong></li>
+<li><strong>堆</strong></li>
+<li><strong>程序计数器</strong></li>
+</ul>
+<p>其中，按照线程在各个区域的数据是否共享划分为：</p>
+<ul>
+<li>线程共享部分：方法区、Java 堆以及运行时常量池（归属于方法区）</li>
+<li>线程私有部分：虚拟机栈、本地方法栈、程序计数器</li>
+</ul>
+<p>接下来看看 Java 运行时数据区中各个部分的用途和特点：</p>
+<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><h5 id="什么是方法区"><a href="#什么是方法区" class="headerlink" title="什么是方法区"></a>什么是方法区</h5><p>在 JVM 中，方法区是可供各个线程共享运行时的内存区域。方法区域传统语言中的编译代码存储区或者操作系统进程的正文段的作用非常类似，它存储了每一个类的结构信息，例如运行时常量池、字段和方法数据、类的构造函数和普通方法的字节码内容、还包括一些类、实例、接口初始化的时候用到的特殊方法。</p>
+<p>在 Hotspot 虚拟机中，JDK 1.7 及以前版本用<code>永久代（Permanent Generation）</code>定义方法区，而在 JDK 1.8 以后则称为 <code>元空间（Metapace）</code>。<br>方法区有个别名叫做非堆（Non-Heap），用于区别于 Java 堆区。默认最小值为 16 MB，最大值为 64 MB，可通过 <code>-XX:PermSize</code> 和 <code>-XX:MaxPermSize</code> 参数设置方法的大小。<br>JDK 1.7 及之前的版本设置为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:PermSize&#x3D;10m</span><br><span class="line">-XX:MaxPermSize&#x3D;55m</span><br></pre></td></tr></table></figure>
+
+<p>JDK 1.8 及之后的版本设置为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:MetaspaceSize&#x3D;10m</span><br><span class="line">-XX:MaxMetaspaceSize&#x3D;55m</span><br></pre></td></tr></table></figure>
+
+<h5 id="方法区的特点"><a href="#方法区的特点" class="headerlink" title="方法区的特点"></a>方法区的特点</h5><ul>
+<li>线程共享：方法区是堆的一个逻辑部分，因此和对一样是线程共享的。整个虚拟机中只有一个方法区。</li>
+<li>永久代：方法区中的信息一般要长期存在，而且它又是堆的逻辑部分，因此用堆的划分方法，我们把方法区称作永久代（方法区是规范，永久代是实现）。</li>
+<li>内存回收少：方法区中的信息一般需要长期存在，回收一遍内存之后可能之后少量信息无效。对方法区的内存回收主要是 <code>对常量池的回收和对类型的卸载</code>。</li>
+<li>JVM 规范对方法区的定义比较宽松：和堆一样，允许固定大小，也允许可扩展大小，还允许不实现垃圾回收。</li>
+</ul>
+<p>方法区是所有都线程共享的，在一定的条件下它也会被 GC，当方法区域需要使用的内存超过其允许的大小时，会抛出 OOM（OutOfMemory）错误信息。</p>
+<h5 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h5><p>类加载后，Class 文件结构中常量池中的数据将被存储在运行时常量池中。我们一般在一个类中通过 <code>public static final</code> 来声明一个常量或者声明一个字符串 <code>String str = &quot;abc&quot;</code>。这个类编译后产生的 Class 文件，这个类的所有信息都存储在这个 class 文件中，当这个类被 JVM 加载之后，class 文件中的常量就存放在方法区的运行时常量池中。而且在运行期间，可以向常量池添加新的常量。比如，String 类的 intern() 方法就能在运行期间向常量池中添加新的常量。</p>
+<p>当运行时常量池中的某些常量没有被对象引用，同时也没有被变量引用时，那么就需要垃圾收集器回收。JVM 为每个已加载的类型维护一个常量池，常量池就是这个类型用到的常量的一个有序集合。其包括直接常量(基本类型，String)和对其他类型、方法、字段的符号引用。即字面量和符号引用，其中字面量指的是整个类中的字面量。包含成员变量、静态方法、非静态方法等中的字面量。池中的数据和数组一样通过索引访问。</p>
+<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><h5 id="什么是虚拟机栈"><a href="#什么是虚拟机栈" class="headerlink" title="什么是虚拟机栈"></a>什么是虚拟机栈</h5><p>Java 虚拟机栈是描述 Java 方法运行过程的内存模型。Java 虚拟机栈会为每一个即将运行的方法创建一块叫做 <code>栈帧</code> 的区域，这块区域用于存储用于方法在运行时所需要的一些信息，这些信息具体包括：</p>
+<ul>
+<li>局部变量表</li>
+<li>操作数栈</li>
+<li>动态链接</li>
+<li>方法出口信息</li>
+<li>其它信息</li>
+</ul>
+<p>当一个方法即将被运行时，Java 虚拟机栈首先会在 Java 虚拟机栈中为该方法创建一块”栈帧”，栈帧中包含局部变量表，操作数栈，动态链接，方法出口信息等。当方法在运行过程中需要创建局部变量时，就将局部变量的值存入栈帧的局部变量表中。当这个方法执行完毕后，这个方法所对应的栈帧将会出栈，并释放内存空间。<strong>Java 虚拟机栈上数据都是私有的</strong>，其他线程都不能访问该线程的栈数据。在函数中定义的一些基本类型的变量数据和对象的引用变量都在函数的栈内存中分配。当在一段代码块中定义一个变量时，Java 就会在栈中为这个变量分配内存空间，当该变量退出该作用域后，Java 会自动释放掉为该变量所分配的内存空间，该内存空间可以立即被另作他用。</p>
+<h5 id="虚拟机栈的特点"><a href="#虚拟机栈的特点" class="headerlink" title="虚拟机栈的特点"></a>虚拟机栈的特点</h5><ul>
+<li>局部变量表的创建是在方法被执行的时候，随着栈帧的创建而创建。局部变量表的大小在程序的编译期间就确定下来了，在创建的时候需要事先指定好大小，在方法运行的过程中局部变量表的大小是不会发生改变的。</li>
+<li>Java虚拟机栈会出现两种错误（StackOverFlowError 和 OutOfMemoryError），<code>StackOverFlowError</code>：若 Java 虚拟机栈的内存大小不允许动态扩展，那么当线程请求栈的深度超过当前 Java 虚拟机栈的最大深度的时候就会抛出 StackOverFlowError。<code>OutOfMemoryError</code>：若 Java 虚拟机栈的内存大小不允许动态扩展，那么当线程请求栈时内存用完了，无法再动态扩展了，此时就会抛出 StackOverFlowError。</li>
+<li>虚拟机栈也是线程私有的，每个线程都有各自的 Java 虚拟机栈，而且随着线程的创建而创建，随着线程的死亡而死亡。</li>
+<li>栈中的数据在线程内部是共享的，要注意这种数据的共享与两个对象引用同 时指向一个对象的这种共享是不同的。它是由编译器完成的，它有利于节省空间。</li>
+</ul>
+<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法指的是使用 Java 以外的其他语言编写的代码，因为有些时候 Java 无法直接操作一些底层资源，只能通过 C 或汇编操作。因此需要通过本地方法来实现。而本地方法栈就是设计用来调用这些非 Java 语言方法的。会存放对应的局部变量信息、返回结果等。本地方法栈和 Java 虚拟机栈实现的功能类似，只不过本地方法栈是本地方法运行的内存模型。区别是虚拟机栈为虚拟机执行 Java 方法服务，而本地方法栈则是为虚拟机用到的 Native 方法服务，本地方法被执行的时候，在本地方法栈也会创建一个栈帧，用于存放该本地方法的局部变量表、操作数栈、动态链接以及出口信息等。方法执行完毕后相应的栈帧也会出栈并释放内存空间。</p>
+<p><strong>HotSpot虚拟机将虚拟机栈和本地方法栈合并实现了.</strong></p>
+<p>本地方法栈也会抛出两种错误，StackOverFlowError 和 OutOfMemoryError。</p>
+<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><h5 id="什么是堆"><a href="#什么是堆" class="headerlink" title="什么是堆"></a>什么是堆</h5><p>堆是用来存放对象（类、接口、数组）的内存空间,<strong>是JVM管理的最大的一块内存空间</strong>。几乎所有的对象都存储在堆中（实例创建后，成员变量也随对象存在堆中，随着垃圾回收进行释放）。堆是一个运行时数据区，在程序运行时动态分配内存。<br>在堆中产生了一个数组对对象后，还可以在栈中定义一个特殊的变量，让栈用这个变量的取值等于数组或对象在堆地址内存中的首地址，栈中的这个变量就成了数组或对象的引用变量。引用变量就相当于是为数组和对象起的一个名称，以后就可以在程序中使用栈中的引用变量来访问堆中数组或对象。<br>引用变量是普通的变量，定义时在栈中分配，引用变量在程序运行到其作用域外后释放。而数组和对象本身在堆中分配，即使程序运行到使用 new 产生数组或者对象的语句所在的代码之外，数组和对象本身占据的内存空间不会被释放，数组和对象在没有引用指向它的时候才会变为垃圾，不能再被使用。仍然占据内存空间不放，在随后的一个不确定的时期被 GC 垃圾回收收走。这也是 Java 比较占用内存的原因之一，实际上，栈中的变量指向堆内存的变量，这就是 Java 中的指针。</p>
+<h5 id="堆的特点"><a href="#堆的特点" class="headerlink" title="堆的特点"></a>堆的特点</h5><ul>
+<li>线程共享：整个 JVM 只有一个堆，所有的线程都访问同一个堆。而程序计数器、Java 虚拟机栈、本地方法栈都是一个线程对应一个。</li>
+<li>在虚拟机启动的时候创建。</li>
+<li>垃圾回收的主要场所。</li>
+<li>堆的大小既可以固定也可以扩展，但主流的虚拟机堆的大小是可扩展的。</li>
+<li>堆可以分为：新生代和老年代</li>
+</ul>
+<h6 id="新生代"><a href="#新生代" class="headerlink" title="新生代"></a>新生代</h6><p>新生代程序新创建的对象都在新生代分配的，新生代由 <code>Eden Space</code> 和两块大小相同的 <code>Survivor Space</code>（通常又称 S0 和 S1或 FROM 和 To ）构成，可通过 -Xmn 参数来指定新生代的大小，也可以通过</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:SurvivorRation</span><br></pre></td></tr></table></figure>
+
+<p> 来调整 Eden Space 及 Survivor Space 的大小，因此新生代又可被分为：Eden，From Survivor，To Survivor。</p>
+<h6 id="老年代"><a href="#老年代" class="headerlink" title="老年代"></a>老年代</h6><p>老年代用户存放经过多次新生代垃圾回收仍然存活的对象，例如缓存对象，新建的对象也有可能直接进入老年代。主要有两种情况：一种是 <code>大对象</code>，可通过启动参数设置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:PretenureSizeThreshold&#x3D;1024</span><br></pre></td></tr></table></figure>
+
+<p>（单位为字节，默认为 0）来代表超过多大时就不再在新生代分配，而是直接在老年代分配。另一种是 <code>大的数组对象</code>，且数组中无引用外部对象。老年代所占的内存大小为 -Xmx 对应的值减去 -Xmn（新生代）对应的值。不同的区域存放具有不同生命周期的对象。这样可以根据不同的区域使用不同的垃圾回收算法，从而更具有针对性，从而更加高效。</p>
+<ul>
+<li>JDK 1.8 及之后版本堆的内存空间分配（老年代：三分之二的堆空间，年轻代：三分之一的堆空间）</li>
+<li>eden 区： 十分之八的年轻代空间</li>
+<li>survivor 0：十分之一的年轻代空间</li>
+<li>survivor 1：十分之一的年轻代空间</li>
+</ul>
+<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><h5 id="什么是程序计数器"><a href="#什么是程序计数器" class="headerlink" title="什么是程序计数器"></a>什么是程序计数器</h5><p>程序计数器是一块比较小的内存空间，可以把它看作当前线程正在执行的字节码的行号指示器。程序计数器里面记录的是当前线程正在执行的那一条字节码指令的地址。当然，<code>程序计数器是线程私有的</code>。但是，如果当前线程执行的是一个线程本地的方法，那么此时这个线程的程序计数器为空。</p>
+<blockquote>
+<p>本地方法为 Native Method，即由 native 修饰的方法。在定义一个 native 方法时，并不提供实现（类似 Java 中的接口或者抽象方法），因为其实现往往是由外面的 C 或者 C++ 等非 Java 语言实现的。</p>
+</blockquote>
+<h5 id="程序计数器的作用"><a href="#程序计数器的作用" class="headerlink" title="程序计数器的作用"></a>程序计数器的作用</h5><p>程序计数器主要有两个作用：</p>
+<ul>
+<li>字节码解释器通过改变程序计数器来一次读取指令，从而实现代码的流程控制，如顺序执行、选择、循环、异常处理等。</li>
+<li>在多线程的条件下，程序计数器用来记录当前线程执行的位置，从而当线程被切换回来的时候能够知道这个线程上次运行到哪个地方了。</li>
+</ul>
+<h5 id="程序计数器的特点"><a href="#程序计数器的特点" class="headerlink" title="程序计数器的特点"></a>程序计数器的特点</h5><ul>
+<li>是一块比较小的存储空间</li>
+<li>是线程私有的，即每一个线程都有一个独立程序计数器</li>
+<li>是唯一一个不会出现 OOM（OutOfMemoryError）的内存区域</li>
+<li>声明周期随着线程的开始而创建，随着线程的终止而结束</li>
+</ul>
+<h2 id="方法区、永久代和元空间的关系"><a href="#方法区、永久代和元空间的关系" class="headerlink" title="方法区、永久代和元空间的关系"></a>方法区、永久代和元空间的关系</h2><h3 id="方法区和永久代的关系"><a href="#方法区和永久代的关系" class="headerlink" title="方法区和永久代的关系"></a>方法区和永久代的关系</h3><p>涉及到内存模型，往往都会提到永久代，那么它和方法区又是什么关系呢？<br><a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.5" target="_blank" rel="noopener">JVM 虚拟机规范</a> 只是规定了有方法区这个概念和它的作用，并没有规定如何实现它。那么，在不同 JVM 上方法区的实现肯定是不同的。同时大多数公司用的 JVM 都是 Oracle 公司的 HotSpot。<strong>在 HotSpot 上把 GC 分代收集扩展至方法区，或者说使用永久代(PermGen Space)来实现方法区。</strong>因此，我们可以得到结论，<strong>永久代是 HotSpot 的概念</strong>，方式区是 JVM 规范的定义，是一种规范，而永久代是一种实现，一个是标准一个是实现。其它的虚拟机实现并没有永久代这么一说。<strong>在 JDK 1.7 及之前的实现中，HotSpot 使用永久代实现方法区</strong>，HotSpot 使用 GC 分代来实现方法区内存回收，可以使用以下参数来调准方法区的大小：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:PermSize     # 方法区初始大小</span><br><span class="line">-XX:MaxPermSize  # 方法区最大大小（超过这个值会抛出 OutOfMemoryError 异常：java.lang.OutOfMemoryError：PermGen）</span><br></pre></td></tr></table></figure>
+
+<p>永久代仍存在于JDK1.7中，并没完全移除，譬如</p>
+<ul>
+<li><p>符号引用(Symbols)转移到了native heap；</p>
+</li>
+<li><p>字面量(interned strings)转移到了java heap;</p>
+</li>
+<li><p>String.intern()方法的实现也有变化；</p>
+</li>
+<li><p>类的静态变量(class statics)转移到了java heap；</p>
+</li>
+</ul>
+<p>不断的使用String.intern()方法，在JDK1.6中会产生java.lang.OutOfMemoryError: PermGen space这个错误，在JDK1.7中就会报java.lang.OutOfMemoryError: Java Heap space，而在JDK1.8 中，也是java.lang.OutOfMemoryError: Java Heap space，但是还会多出warning;</p>
+<p>在JDK1.8中，永久代被移除，取而代之的是元空间概念，也就是使用本地内存。对参数PermSize以及MaxPermSize的设置已经从1.8中移除。</p>
+<h3 id="元空间"><a href="#元空间" class="headerlink" title="元空间"></a>元空间</h3><p>对于 Java 8，HotSpot 取消了永久代，那么是不是也就没有方法区了吗？<br>当然不是，方法区是一个规范，规范没变，它就会一直在。那么取代永久代的就是元空间。它和永久代有什么不同呢？</p>
+<ul>
+<li>存储位置不同，永久代是堆的一部分，和新生代、老年代地址是连续的，而<strong>元空间属于本地内存(直接内存)</strong></li>
+<li>存储内容不同，<strong>元空间存储类的元信息</strong>，<strong>静态变量和常量池等并入堆中。相当于永久代的数据被分到了堆和元空间中。</strong></li>
+</ul>
+<h2 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h2><p>直接内存也称本地内存或堆外内存, 不属于虚拟机运行时数据区内存，该空间划分在虚拟机外，大小不受堆内存容量限制。</p>
+<p>JDK1.4中加入新的NIO（New Input/OutPut）类，引入了一种基于通道（Channel）与缓冲区（Buffer）的I/O方式，可以通过Native函数库直接分配<strong>堆外内存</strong>，然后通过Java堆中的<code>DirectByteBuffer</code>对象来对这块内存的引用进行操作，避免数据在Java堆与Native堆中数据的来回复制。</p>
+<p>直接内存受物理机剩余可用内存、处理器寻址空间的限制。如果虚拟机堆内存分配太大，会导致剩余直接内存空间不足而出现OutOfMemoryError异常。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h6 id="1-JVM-内存模型一共有两个“栈”，分别是-Java-虚拟机栈和本地方法栈"><a href="#1-JVM-内存模型一共有两个“栈”，分别是-Java-虚拟机栈和本地方法栈" class="headerlink" title="1 JVM 内存模型一共有两个“栈”，分别是 Java 虚拟机栈和本地方法栈"></a>1 JVM 内存模型一共有两个“栈”，分别是 Java 虚拟机栈和本地方法栈</h6><p>两个“栈”功能类似，都是方法运行过程的内存模型。并且两个“栈”内部构造相同，都是方法私有的。只不过 Java 虚拟机栈描述的是 Java 方法运行过程的内存模型，而本地方法栈是描述 Java 本地方法运行过程的内存模型。</p>
+<h6 id="2-JVM-内存模型中一共有两个“堆”，分别是原本的堆和方法区"><a href="#2-JVM-内存模型中一共有两个“堆”，分别是原本的堆和方法区" class="headerlink" title="2 JVM 内存模型中一共有两个“堆”，分别是原本的堆和方法区"></a>2 JVM 内存模型中一共有两个“堆”，分别是原本的堆和方法区</h6><p>方法区本质上还是属于堆的一个逻辑部分。堆中存放对象，方法区中存放类信息、常量、静态变量，即时编译器编译后的代码等。</p>
+<h6 id="3-堆是-JVM-中最大的一块内存区域，也是垃圾收集器主要工作的地方"><a href="#3-堆是-JVM-中最大的一块内存区域，也是垃圾收集器主要工作的地方" class="headerlink" title="3 堆是 JVM 中最大的一块内存区域，也是垃圾收集器主要工作的地方"></a>3 堆是 JVM 中最大的一块内存区域，也是垃圾收集器主要工作的地方</h6><p>在创建对象的时候，非静态成员会被加载到堆内存中，并完成成员变量的初始化。也就是说所有的非静态成员（成员变量、成员方法、构造方法、构造代码块和普通代码块）都是保存在堆内存中的。但是方法调用的时候，调用的方法会在栈内存中执行，构造代码块也会在栈内存中执行。</p>
+<h6 id="4-线程私有与共享"><a href="#4-线程私有与共享" class="headerlink" title="4 线程私有与共享"></a>4 线程私有与共享</h6><p>Java 虚拟机栈、程序计数器和本地方法栈都是线程私有的，也就是说每个线程都是各自的程序计数器、Java 虚拟机栈和本地方法栈。他们的生命周期和线程的生命周期一样。而堆、方法区则是线程共享的，在 JVM 中只有一个堆，一个方法区。并在 JVM 启动的时候就创建，直到 JVM 停止的时候才销毁。</p>
+<hr>
+<p>参考文章：<br><a href="https://betsol.com/2017/06/java-memory-management-for-java-virtual-machine-jvm/" target="_blank" rel="noopener">Java Memory Management for Java Virtual Machine (JVM)</a><br><a href="https://docs.oracle.com/javase/specs/jvms/se8/html" target="_blank" rel="noopener">The Java® Virtual Machine Specification（Java SE 8 Edition）</a></p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000020812909" target="_blank" rel="noopener">Java 运行时数据区域</a></p>
+<p><a href="https://www.jianshu.com/p/fe6af43c02eb" target="_blank" rel="noopener">JVM内存管理—直接内存</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%9C%BA%E5%88%B6%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/15/Java%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%9C%BA%E5%88%B6%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Java异常处理机制总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-15 09:26:52 / 修改时间：17:30:30" itemprop="dateCreated datePublished" datetime="2020-06-15T09:26:52+08:00">2020-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h3><p>异常是发生在程序执行过程中阻碍程序正常执行的错误事件，当一个程序出现错误时，可能的情况有如下3种：</p>
+<ul>
+<li>语法错误<br> 代码的格式错了，某个字母输错了</li>
+<li><strong>运行时错误</strong><br> 空指针异常，数组越界，除数为零等</li>
+<li>逻辑错误<br> 运行结果与预想的结果不一样，这是一种很难调试的错误</li>
+</ul>
+<p>Java中的异常处理机制主要处理运行时错误。</p>
+<h3 id="异常分类"><a href="#异常分类" class="headerlink" title="异常分类"></a>异常分类</h3><p>下图是一张经典的Java异常类层次结构图，对各种异常做出了较为清晰的分类</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2091636-f506097108282cec.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/741/format/webp" alt="img"></p>
+<p>Java异常类层次结构图</p>
+<p>从上图中可以看到，所有的异常都继承自一个共同的父类Throwable，而Throwable有两个重要的子类：Exception（异常）和Error（错误）<br> 下面对这两个重要的子类进行介绍</p>
+<ul>
+<li><strong>Error（错误）</strong><br> 是程序无法处理的错误，表示运行应用程序中较严重问题。大多数错误与代码编写者执行的操作无关，而表示代码运行时 JVM（Java 虚拟机）出现的问题。例如，Java虚拟机运行错误（Virtual MachineError），当 JVM 不再有继续执行操作所需的内存资源时，将出现 OutOfMemoryError。这些异常发生时，Java虚拟机（JVM）一般会选择线程终止。<br> 这些错误表示故障发生于虚拟机自身、或者发生在虚拟机试图执行应用时，如Java虚拟机运行错误（Virtual MachineError）、类定义错误（NoClassDefFoundError）等。这些错误是不可查的，因为它们在应用程序的控制和处理能力之 外，而且绝大多数是程序运行时不允许出现的状况。对于设计合理的应用程序来说，即使确实发生了错误，本质上也不应该试图去处理它所引起的异常状况。在 Java中，错误通过Error的子类描述。</li>
+<li><strong>Exception（异常）</strong><br> 是程序本身可以处理的异常。主要包含RuntimeException等运行时异常和IOException，SQLException等非运行时异常。<br> <strong>运行时异常</strong>包括：都是RuntimeException类及其子类异常，如NullPointerException(空指针异常)、IndexOutOfBoundsException(下标越界异常)等，这些异常是不检查异常，程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的，程序应该从逻辑角度尽可能避免这类异常的发生。<br> 运行时异常的特点是Java编译器不会检查它，也就是说，当程序中可能出现这类异常，即使没有用try-catch语句捕获它，也没有用throws子句声明抛出它，也会编译通过。<br> <strong>非运行时异常（编译异常）</strong>包括：RuntimeException以外的异常，类型上都属于Exception类及其子类。从程序语法角度讲是必须进行处理的异常，如果不处理，程序就不能编译通过。如IOException、SQLException等以及用户自定义的Exception异常，一般情况下不自定义检查异常。</li>
+</ul>
+<p>从<strong>编译器是否要求强制处理</strong>的角度分类，异常类别又可分为：</p>
+<ul>
+<li>可查异常<br> 正确的程序在运行中，很容易出现的、情理可容的异常状况。可查异常虽然是异常状况，但在一定程度上它的发生是可以预计的，而且一旦发生这种异常状况，就必须采取某种方式进行处理。<br> <strong>除了RuntimeException及其子类以外，其他的Exception类及其子类都属于可查异常。</strong>这种异常的特点是Java编译器会检查它，也就是说，当程序中可能出现这类异常，要么用try-catch语句捕获它，要么用throws子句声明抛出它，否则编译不会通过。</li>
+<li>不可查异常<br> 包括运行时异常（RuntimeException与其子类）和错误（Error）。</li>
+</ul>
+<h3 id="常见异常"><a href="#常见异常" class="headerlink" title="常见异常"></a>常见异常</h3><p>ArithmeticException：数学运算异常,比如除0。<br>NullPointerException：空指针异常。<br>NegativeArraySizeException：数组大小为负值异常。<br>ArrayIndexOutOfBoundException：数组下标越界异常。<br>NumberFormatException：数字格式异常。<br>InputMismatchException：输入类型不匹配异常。<br>NoSuchMethodException：方法不存在异常。<br>DataFormatException：数据格式错误异常。<br>NoClassDefFoundError：未找到类定义错误。<br>OutOfMemoryError:内存不足错误。<br>StackOverflowError：堆栈溢出错误。<br>ThreadDeath：线程结束。<br>UnknownError：未知错误。</p>
+<h3 id="异常处理机制"><a href="#异常处理机制" class="headerlink" title="异常处理机制"></a>异常处理机制</h3><p>在 Java 应用程序中，异常处理机制为：抛出异常，捕捉异常。</p>
+<ul>
+<li><strong>抛出异常</strong><br> 当一个方法出现错误引发异常时，方法创建异常对象并交付运行时系统，异常对象中包含了异常类型和异常出现时的程序状态等异常信息。运行时系统负责寻找处置异常的代码并执行。<br> 注意：对于运行时异常、错误或可查异常，Java技术所要求的异常处理方式有所不同。<br> 由于运行时异常的不可查性，为了更合理、更容易地实现应用程序，Java规定，<strong>运行时异常将由Java运行时系统自动抛出</strong>，允许应用程序忽略运行时异常。<br> 对于方法运行中可能出现的Error，当运行方法不欲捕捉时，Java允许该方法<strong>不做任何抛出声明</strong>。因为，大多数Error异常属于永远不能被允许发生的状况，也属于合理的应用程序不该捕捉的异常。<br> 对于所有的可查异常，Java规定：一个方法必须捕捉，或者声明抛出方法之外。也就是说，当一个方法选择不捕捉可查异常时，<strong>它必须声明将抛出异常</strong>。</li>
+<li><strong>捕获异常</strong><br> 在方法抛出异常之后，运行时系统将转为寻找合适的异常处理器（exception handler）。潜在的异常处理器是异常发生时依次存留在调用栈中的方法的集合。当异常处理器所能处理的异常类型与方法抛出的异常类型相符时，即为合适 的异常处理器。运行时系统从发生异常的方法开始，依次回查调用栈中的方法，直至找到含有合适异常处理器的方法并执行。当运行时系统遍历调用栈而未找到合适 的异常处理器，则运行时系统终止。同时，意味着Java程序的终止。</li>
+</ul>
+<p>通常使用关键字try、catch、finally来捕获异常<br> 语法形式如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;  </span><br><span class="line">    <span class="comment">// 可能会发生异常的程序代码  </span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Type1 id1) &#123;  </span><br><span class="line">    <span class="comment">// 捕获并处理try抛出的异常类型Type1  </span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Type2 id2) &#123;  </span><br><span class="line">    <span class="comment">// 捕获并处理try抛出的异常类型Type2  </span></span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;  </span><br><span class="line">    <span class="comment">// 无论是否发生异常，都将执行的语句块  </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>小结：<br> <strong>try 块：</strong>用于捕获异常。其后可接零个或多个catch块，如果没有catch块，则必须跟一个finally块。<br> <strong>catch 块：</strong>用于处理try捕获到的异常。<br> <strong>finally 块：</strong>无论是否捕获或处理异常，finally块里的语句都会被执行。当在try块或catch块中遇到return语句时，finally语句块将在方法返回之前被执行。在以下4种特殊情况下，finally块不会被执行：<br> 1）在finally语句块中发生了异常。<br> 2）在前面的代码中用了System.exit()退出程序。<br> 3）程序所在的线程死亡。<br> 4）关闭CPU。</p>
+<p><strong>try、catch、finally语句块的执行顺序:</strong><br> 1)当try没有捕获到异常时：try语句块中的语句逐一被执行，程序将跳过catch语句块，执行finally语句块和其后的语句；</p>
+<p>2)当try捕获到异常，catch语句块里没有处理此异常的情况：当try语句块里的某条语句出现异常时，而没有处理此异常的catch语句块时，此异常将会抛给JVM处理，finally语句块里的语句还是会被执行，但finally语句块后的语句不会被执行；</p>
+<p>3)当try捕获到异常，catch语句块里有处理此异常的情况：在try语句块中是按照顺序来执行的，当执行到某一条语句出现异常时，程序将跳到catch语句块，并与catch语句块逐一匹配，找到与之对应的处理程序，其他的catch语句块将不会被执行，而try语句块中，出现异常之后的语句也不会被执行，catch语句块执行完后，执行finally语句块里的语句，最后执行finally语句块后的语句；<br> 流程如下图所示：</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2091636-23b6e00f0c4af75c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/744/format/webp" alt="img"></p>
+<p>try、catch、finally语句块的执行顺序</p>
+<h3 id="面试常考问题总结"><a href="#面试常考问题总结" class="headerlink" title="面试常考问题总结"></a>面试常考问题总结</h3><p>1.描述Java 7 ARM(Automatic Resource Management，自动资源管理)特征和多个catch块的使用<br> 如果一个try块中有多个异常要被捕获，catch块中的代码会变丑陋的同时还要用多余的代码来记录异常。有鉴于此，Java 7的一个新特征是：一个catch子句中可以捕获多个异常。示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">catch</span>(IOException | SQLException | Exception ex)&#123;</span><br><span class="line">     logger.error(ex);</span><br><span class="line">     <span class="keyword">throw</span> <span class="keyword">new</span> MyException(ex.getMessage());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>大多数情况下，当忘记关闭资源或因资源耗尽出现运行时异常时，我们只是用finally子句来关闭资源。这些异常很难调试，我们需要深入到资源使用的每一步来确定是否已关闭。因此，Java 7用try-with-resources进行了改进：在try子句中能创建一个资源对象，当程序的执行完try-catch之后，运行环境自动关闭资源。下面是这方面改进的示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (MyResource mr = <span class="keyword">new</span> MyResource()) &#123;</span><br><span class="line">     System.out.println(<span class="string">"MyResource created in try-with-resources"</span>);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">     e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>2.在Java中throw与throws关键字之间的区别？<br> throws用于在方法签名中声明此方法可能抛出的异常，而throw关键字则是中断程序的执行并移交异常对象到运行时进行处理。</p>
+<p>3.被检查的异常和不受检查的异常有什么区别？</p>
+<ul>
+<li>被检查的异常应该用try-catch块代码处理，或者在main方法中用throws关键字让JRE了解程序可能抛出哪些异常。不受检查的异常在程序中不要求被处理或用throws语句告知。</li>
+<li>Exception是所有被检查异常的基类，然而，<strong>RuntimeException是所有不受检查异常的基类</strong>。</li>
+<li>被检查的异常适用于那些不是因程序引起的错误情况，比如：读取文件时文件不存在引发的FileNotFoundException。然而，不被检查的异常通常都是由于糟糕的编程引起的，比如：在对象引用时没有确保对象非空而引起的NullPointerException。</li>
+</ul>
+<p>4.Java中final,finally,finalize的区别？<br> final和finally在Java中是关键字，而finalize则是一个方法。</p>
+<ul>
+<li>final关键字使得类变量不可变，避免类被其它类继承或方法被重写。</li>
+<li>finally跟try-catch块一起使用，即使是出现了异常，其子句总会被执行，通常，finally子句用来关闭相关资源。</li>
+<li>finalize方法中的对象被销毁之前会被垃圾回收。</li>
+</ul>
+<p>5.下面是一些代码相关的问题，需要回答该代码有没有问题？该怎么修改？<br> A．下面这段代码有什么问题呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;         </span><br><span class="line">        <span class="keyword">try</span> &#123;             </span><br><span class="line">            testExceptions();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (FileNotFoundException | IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testExceptions</span><span class="params">()</span> <span class="keyword">throws</span> IOException,</span></span><br><span class="line"><span class="function">            FileNotFoundException </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码的主要问题在于FileNotFoundException是IOException的子类，编译会报错：The exception FileNotFoundException is already caught by the alternative IOException.<br> 有两种办法可以解决这个问题</p>
+<ul>
+<li>用两个catch子句来处理这两个异常</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;     </span><br><span class="line">    testExceptions(); </span><br><span class="line">&#125;<span class="keyword">catch</span>(FileNotFoundException e)&#123;</span><br><span class="line">    e.printStackTrace(); </span><br><span class="line">&#125;<span class="keyword">catch</span> (IOException  e) &#123;</span><br><span class="line">    e.printStackTrace(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在catch子句中移除FileNotFoundException，只用IOException</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">     testExceptions(); </span><br><span class="line">&#125;<span class="keyword">catch</span> (IOException  e) &#123;</span><br><span class="line">     e.printStackTrace(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>B．下面这段代码又有什么问题呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException; </span><br><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException1</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 go();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (JAXBException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125;</span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">go</span><span class="params">()</span> <span class="keyword">throws</span> IOException, JAXBException, FileNotFoundException</span>&#123;</span><br><span class="line">        &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码的问题同样在于FileNotFoundException是IOException的子类，所以，FileNotFoundException的catch子句将被隐藏。编译时会报错：Unreachable catch block for FileNotFoundException.<br> 解决方案：<br> 改变catch子句的顺序来修复程序</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  go();</span><br><span class="line">&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125; <span class="keyword">catch</span> (JAXBException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>C．下面的代码同样存在问题。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException2</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span> &#123;</span><br><span class="line">             foo();</span><br><span class="line">         &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(JAXBException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(NullPointerException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;       </span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>&#123;</span><br><span class="line"> </span><br><span class="line">       &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码同样不能编译，因为JAXBException是个受检查的异常，而foo方法应该抛出此异常供调用方法捕获。你将会得到：Unreachable catch block for JAXBException这样的错误信息。这个异常不可能从try子句中抛出。为解决这个错误，只能将JAXBException从catch子句中移除。<br> 也要注意到，NullPointerException的异常捕获是有效的，因为它是个不被检查的异常。</p>
+<p>D．下面的代码存在什么问题呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException3</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span>&#123;</span><br><span class="line">         bar();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(NullPointerException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">                   foo();     </span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">()</span></span>&#123;</span><br><span class="line"> </span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">          <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> NullPointerException</span>&#123;</span><br><span class="line">         &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这代码是个幌子，根本没问题，能被正确编译。我们能捕获到一般异常或者是不被检查的异常，即使在throws语句中没被提及。<br> 同样，如果程序中的一个方法foo()在throws中声明了不被检查的异常，程序中也不一定要处理这个异常。</p>
+<p>E．下面这段代码同样存在瑕疵。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException4</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>&#123;</span><br><span class="line"> </span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> NullPointerException</span>&#123;     &#125; </span><br><span class="line">&#125;  </span><br><span class="line"> </span><br><span class="line"> <span class="class"><span class="keyword">class</span> <span class="title">TestException5</span> <span class="keyword">extends</span> <span class="title">TestException4</span></span>&#123;</span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>&#123;     &#125;</span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> RuntimeException</span>&#123;</span><br><span class="line">               &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码不能被编译，因为父类中start的方法签名与子类中的start方法签名不相同。为纠正这错误，我们可以修改子类的方法签名使之与超类相同，我们也可以像下面代码那样移除子类中throws关键字。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span>    </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>&#123;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>F．下面的代码存在什么问题呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException6</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span> &#123;</span><br><span class="line">             foo();</span><br><span class="line">         &#125; <span class="keyword">catch</span> (IOException | JAXBException e) &#123;</span><br><span class="line">             e = <span class="keyword">new</span> Exception(<span class="string">""</span>);</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e = <span class="keyword">new</span> Exception(<span class="string">""</span>);</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> IOException, JAXBException</span>&#123;</span><br><span class="line">       &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码同样不能编译，<strong>因为在多个catch子句中的异常对象是不可变的，我们不能改变其值</strong>。你会得到这样的：The parameter e of a multi-catch block cannot be assigned编译时错误信息。我们需要删掉将e赋值给新异常对象这句来修正错误。</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p>[1]<a href="https://link.jianshu.com?t=http://www.360doc.com/content/12/0102/09/1824154_176605921.shtml" target="_blank" rel="noopener">详解Java中异常处理机制</a><br> [2]<a href="https://link.jianshu.com?t=http://www.importnew.com/14688.html" target="_blank" rel="noopener">深入理解java异常处理机制</a><br> [3]<a href="https://link.jianshu.com?t=http://blog.csdn.net/zhaoqianjava/article/details/6854732" target="_blank" rel="noopener">JAVA异常处理相关面试题</a><br> [4]<a href="https://link.jianshu.com?t=http://www.importnew.com/7383.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 1</a><br> [5]<a href="https://link.jianshu.com?t=http://www.importnew.com/7541.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 2</a><br> [6]<a href="https://link.jianshu.com?t=http://www.importnew.com/7820.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 3</a></p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/872844d995c4" target="_blank" rel="noopener">Java异常处理机制总结</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/15/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/" class="post-title-link" itemprop="url">JVM垃圾回收器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-15 08:03:11 / 修改时间：16:10:40" itemprop="dateCreated datePublished" datetime="2020-06-15T08:03:11+08:00">2020-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在之前的几篇博客中，我们大致介绍了，常见的 <strong>垃圾回收算法</strong> 及 <code>JVM</code> 中常见的分类回收算法。这些都是从算法和规范上分析 <code>Java</code> 中的垃圾回收，属于方法论。在 <code>JVM</code> 中，垃圾回收的具体实现是由 <strong>垃圾回收器</strong>（<code>Garbage Collector</code>）负责的。</p>
+<h1 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在了解 <strong>垃圾回收器</strong> 之前，首先得了解一下垃圾回收器的几个名词。</p>
+<h3 id="1-吞吐量"><a href="#1-吞吐量" class="headerlink" title="1. 吞吐量"></a>1. 吞吐量</h3><p><code>CPU</code> 用于运行用户代码的时间与 <code>CPU</code> 总消耗时间的比值。比如说虚拟机总运行了 <code>100</code> 分钟，<strong>用户代码</strong> 时间 <code>99</code> 分钟，<strong>垃圾回收</strong> 时间 <code>1</code> 分钟，那么吞吐量就是 <code>99%</code>。</p>
+<blockquote>
+<p>吞吐量 = 运行用户代码时间/（运行用户代码时间 + 垃圾回收时间）</p>
+</blockquote>
+<h3 id="2-停顿时间"><a href="#2-停顿时间" class="headerlink" title="2. 停顿时间"></a>2. 停顿时间</h3><p><strong>停顿时间</strong> 指垃圾回收器正在运行时，<strong>应用程序</strong> 的 <strong>暂停时间</strong>。对于 <strong>独占回收器</strong> 而言，停顿时间可能会比较长。使用 <strong>并发回收器</strong> 时，由于垃圾回收器和应用程序 <strong>交替运行</strong>，程序的 <strong>停顿时间</strong> 会变短，但是，由于其 <strong>效率</strong> 很可能不如独占垃圾回收器，故系统的 <strong>吞吐量</strong> 可能会较低。</p>
+<h3 id="3-GC的名词"><a href="#3-GC的名词" class="headerlink" title="3. GC的名词"></a>3. GC的名词</h3><h4 id="3-1-新生代GC（Minor-GC）"><a href="#3-1-新生代GC（Minor-GC）" class="headerlink" title="3.1. 新生代GC（Minor GC）"></a>3.1. 新生代GC（Minor GC）</h4><p>指发生在 <strong>新生代</strong> 的垃圾回收动作，因为 <code>Java</code> 对象大多都具备 <strong>朝生夕死</strong> 的特性，所以 <code>Minor GC</code> 通常 <strong>非常频繁</strong>，一般回收速度也比较快。</p>
+<h4 id="3-2-老年代GC（Major-GC）"><a href="#3-2-老年代GC（Major-GC）" class="headerlink" title="3.2. 老年代GC（Major GC）"></a>3.2. 老年代GC（Major GC）</h4><p>指发生在 <strong>老年代</strong> 的垃圾回收动作，出现了 <code>Major GC</code>，经常会伴随至少一次的 <code>Minor GC</code>（发生这种情况，那么 <strong>整个堆</strong> 都 <code>GC</code> 一遍，通常称为 <code>Full GC</code>）。<code>Major GC</code> 的速度一般会比 <code>Minor GC</code> 慢 <code>10</code> 倍以上。</p>
+<h3 id="4-并发与并行"><a href="#4-并发与并行" class="headerlink" title="4. 并发与并行"></a>4. 并发与并行</h3><h4 id="4-1-串行（Parallel）"><a href="#4-1-串行（Parallel）" class="headerlink" title="4.1. 串行（Parallel）"></a>4.1. 串行（Parallel）</h4><p><strong>单线程</strong> 进行垃圾回收工作，但此时 <strong>用户线程</strong> 仍然处于 <strong>等待状态</strong>。</p>
+<h4 id="4-2-并发（Concurrent）"><a href="#4-2-并发（Concurrent）" class="headerlink" title="4.2. 并发（Concurrent）"></a>4.2. 并发（Concurrent）</h4><p>这里的并发指 <strong>用户线程</strong> 与 <strong>垃圾回收线程</strong> 交替执行。</p>
+<h4 id="4-3-并行（Parallel）"><a href="#4-3-并行（Parallel）" class="headerlink" title="4.3. 并行（Parallel）"></a>4.3. 并行（Parallel）</h4><p>这里的并行指 <strong>用户线程</strong> 和多条 <strong>垃圾回收线程</strong> 分别在不同 <code>CPU</code> 上同时工作。</p>
+<h2 id="垃圾回收算法"><a href="#垃圾回收算法" class="headerlink" title="垃圾回收算法"></a>垃圾回收算法</h2><h3 id="1-根搜索算法"><a href="#1-根搜索算法" class="headerlink" title="1. 根搜索算法"></a>1. 根搜索算法</h3><p><strong>根搜索算法</strong> 是从 <strong>离散数学</strong> 中的图论引入的，程序把所有引用关系看作一张图，从一个节点 <code>GC ROOT</code> 开始，寻找对应的 <strong>引用节点</strong>，找到这个节点后，继续寻找 <strong>这个节点</strong> 的 <strong>引用节点</strong>。当所有的引用节点寻找完毕后，<strong>剩余的节点</strong> 则被认为是 <strong>没有被引用到</strong> 的节点，即 <strong>无用</strong> 的节点。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b876b28f6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>上图 <strong>红色</strong> 为无用的节点，可以被 <strong>回收</strong>。目前 <code>Java</code> 中可以作为 <code>GC ROOT</code> 的对象有：</p>
+<ol>
+<li><strong>虚拟机栈</strong> 中引用的对象（本地变量表）；</li>
+<li><strong>方法区</strong> 中 <strong>静态变量</strong> 引用的对象；</li>
+<li><strong>方法区</strong> 中 <strong>常量</strong> 引用的对象；</li>
+<li><strong>本地方法栈</strong> 中引用的对象（<code>Native</code> 对象）。</li>
+</ol>
+<blockquote>
+<p>基本所有 <code>GC</code> 算法都引用 <strong>根搜索算法</strong> 这种概念。</p>
+</blockquote>
+<h3 id="2-标记-清除算法"><a href="#2-标记-清除算法" class="headerlink" title="2. 标记 - 清除算法"></a>2. 标记 - 清除算法</h3><p><strong>标记-清除算法</strong> 从 <strong>根集合</strong> 进行扫描，对 <strong>存活的对象</strong> 进行 <strong>标记</strong>。标记完毕后，再扫描整个空间中 <strong>未被标记</strong> 的对象进行 <strong>直接回收</strong>，如下图所示：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b87f0e86b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p><strong>标记-清除算法</strong> 不需要进行 <strong>对象的移动</strong>，并且仅对 <strong>不存活</strong> 的对象进行处理，在 <strong>存活</strong> 的对象 <strong>比较多</strong> 的情况下 <strong>极为高效</strong>。但由于 <strong>标记-清除算法</strong> 直接回收不存活的对象，并没有对还存活的对象进行 <strong>整理</strong>，因此会导致 <strong>内存碎片</strong>。</p>
+<h3 id="3-复制算法"><a href="#3-复制算法" class="headerlink" title="3. 复制算法"></a>3. 复制算法</h3><p><strong>复制算法</strong> 将内存划分为 <strong>两个区间</strong>，使用此算法时，所有 <strong>动态分配</strong> 的对象都只能分配在 <strong>其中一个</strong> 区间（<strong>活动区间</strong>），而 <strong>另外一个</strong> 区间（<strong>空间区间</strong>）则是 <strong>空闲</strong> 的。</p>
+<p><strong>复制算法</strong> 同样从 <strong>根集合</strong> 扫描，将 <strong>存活</strong> 的对象 <strong>复制</strong> 到 <strong>空闲区间</strong>。当扫描完毕活动区间后，会的将 <strong>活动区间</strong> 一次性全部 <strong>回收</strong>。此时原本的 <strong>空闲区间</strong> 变成了 <strong>活动区间</strong>。下次 <code>GC</code> 时候又会重复刚才的操作，以此循环。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b885c24bf?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p><strong>复制算法</strong> 在存活对象 <strong>比较少</strong> 的时候，极为高效，但是带来的成本是 <strong>牺牲一半的内存空间</strong> 用于进行 <strong>对象的移动</strong>。所以 <strong>复制算法</strong> 的使用场景，必须是对象的 <strong>存活率非常低</strong> 才行。最重要的是，我们需要克服 <code>50%</code> 的 <strong>内存浪费</strong>。</p>
+<h3 id="4-标记-整理算法"><a href="#4-标记-整理算法" class="headerlink" title="4. 标记 - 整理算法"></a>4. 标记 - 整理算法</h3><p><strong>标记-整理算法</strong> 采用 <strong>标记-清除算法</strong> 一样的方式进行对象的 <strong>标记</strong>，但在回收 <strong>不存活的对象</strong> 占用的空间后，会将所有 <strong>存活的对象</strong> 往 左端空闲空间 <strong>移动</strong>，并更新对应的指针。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7bb0960af8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p><strong>标记-整理</strong> 是在 <strong>标记-清除</strong> 之上，又进行了 <strong>对象的移动排序整理</strong>，因此 <strong>成本更高</strong>，但却解决了 <strong>内存碎片</strong> 的问题。</p>
+<blockquote>
+<p><code>JVM</code> 为了 <strong>优化内存</strong> 的回收，使用了 <strong>分代回收</strong> 的方式。对于 <strong>新生代内存</strong> 的回收（<code>Minor GC</code>）主要采用 <strong>复制算法</strong>。而对于 <strong>老年代内存</strong> 的回收（<code>Major GC</code>），大多采用 <strong>标记-整理算法</strong>。</p>
+</blockquote>
+<h2 id="垃圾回收器"><a href="#垃圾回收器" class="headerlink" title="垃圾回收器"></a>垃圾回收器</h2><h3 id="1-垃圾回收器分类标准"><a href="#1-垃圾回收器分类标准" class="headerlink" title="1. 垃圾回收器分类标准"></a>1. 垃圾回收器分类标准</h3><p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b8a61ea51?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h3 id="2-七种垃圾回收器概述"><a href="#2-七种垃圾回收器概述" class="headerlink" title="2. 七种垃圾回收器概述"></a>2. 七种垃圾回收器概述</h3><p>在 <code>JVM</code> 中，具体实现有 <code>Serial</code>、<code>ParNew</code>、<code>Parallel Scavenge</code>、<code>CMS</code>、<code>Serial Old（MSC）</code>、<code>Parallel Old</code>、<code>G1</code> 等。在下图中，你可以看到 <strong>不同垃圾回收器</strong> 适合于 <strong>不同的内存区域</strong>，如果两个垃圾回收器之间 <strong>存在连线</strong>，那么表示两者可以 <strong>配合使用</strong>。</p>
+<p>如果当 <strong>垃圾回收器</strong> 进行垃圾清理时，必须 <strong>暂停</strong> 其他所有的 <strong>工作线程</strong>，直到它完全收集结束。我们称这种需要暂停工作线程才能进行清理的策略为 <code>Stop-the-World</code>。以上回收器中，   <code>Serial</code>、<code>ParNew</code>、<code>Parallel Scavenge</code>、<code>Serial Old</code>、<code>Parallel Old</code> 均采用的是 <code>Stop-the-World</code> 的策略。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7bd1ebf8c4?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>图中有 <code>7</code> 种不同的 <strong>垃圾回收器</strong>，它们分别用于不同分代的垃圾回收。</p>
+<ul>
+<li><strong>新生代回收器</strong>：Serial、ParNew、Parallel Scavenge</li>
+<li><strong>老年代回收器</strong>：Serial Old、Parallel Old、CMS</li>
+<li><strong>整堆回收器</strong>：G1</li>
+</ul>
+<p>两个 <strong>垃圾回收器</strong> 之间有连线表示它们可以 <strong>搭配使用</strong>，可选的搭配方案如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left">新生代</th>
+<th align="left">老年代</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Serial</td>
+<td align="left">Serial Old</td>
+</tr>
+<tr>
+<td align="left">Serial</td>
+<td align="left">CMS</td>
+</tr>
+<tr>
+<td align="left">ParNew</td>
+<td align="left">Serial Old</td>
+</tr>
+<tr>
+<td align="left"><strong>ParNew</strong></td>
+<td align="left"><strong>CMS</strong></td>
+</tr>
+<tr>
+<td align="left">Parallel Scavenge</td>
+<td align="left">Serial Old</td>
+</tr>
+<tr>
+<td align="left"><strong>Parallel Scavenge</strong></td>
+<td align="left"><strong>Parallel Old</strong></td>
+</tr>
+<tr>
+<td align="left">G1</td>
+<td align="left">G1</td>
+</tr>
+</tbody></table>
+<h3 id="3-单线程垃圾回收器"><a href="#3-单线程垃圾回收器" class="headerlink" title="3. 单线程垃圾回收器"></a>3. 单线程垃圾回收器</h3><h4 id="3-1-Serial（-XX-UseSerialGC）"><a href="#3-1-Serial（-XX-UseSerialGC）" class="headerlink" title="3.1. Serial（-XX:+UseSerialGC）"></a>3.1. Serial（-XX:+UseSerialGC）</h4><p><code>Serial</code> 回收器是最基本的 <strong>新生代</strong> 垃圾回收器，是 <strong>单线程</strong> 的垃圾回收器。由于垃圾清理时，<code>Serial</code> <strong>回收器</strong> 不存在 <strong>线程间的切换</strong>，因此，特别是在单 <code>CPU</code> 的环境下，它的 <strong>垃圾清除效率</strong> 比较高。对于 <code>Client</code> 运行模式的程序，选择 <code>Serial</code> 回收器是一个不错的选择。</p>
+<p><code>Serial</code> <strong>新生代回收器</strong> 采用的是 <strong>复制算法</strong>。</p>
+<h4 id="3-2-Serial-Old（-XX-UseSerialGC）"><a href="#3-2-Serial-Old（-XX-UseSerialGC）" class="headerlink" title="3.2. Serial Old（-XX:+UseSerialGC）"></a>3.2. Serial Old（-XX:+UseSerialGC）</h4><p><code>Serial Old</code> 回收器是 <code>Serial</code> 回收器的 <strong>老生代版本</strong>，属于 <strong>单线程回收器</strong>，它使用 <strong>标记-整理</strong> 算法。对于 <code>Server</code> 模式下的虚拟机，在 <code>JDK1.5</code> 及其以前，它常与 <code>Parallel Scavenge</code> 回收器配合使用，达到较好的 <strong>吞吐量</strong>，另外它也是 <code>CMS</code> 回收器在 <code>Concurrent Mode Failure</code> 时的 <strong>后备方案</strong>。</p>
+<p><code>Serial</code> 回收器和 <code>Serial Old</code> 回收器的执行效果如下：</p>
+<blockquote>
+<p><code>Serial Old</code> <strong>老年代回收器</strong> 采用的是 <strong>标记 - 整理算法</strong>。</p>
+</blockquote>
+<h3 id="4-多线程垃圾回收器（吞吐量优先）"><a href="#4-多线程垃圾回收器（吞吐量优先）" class="headerlink" title="4. 多线程垃圾回收器（吞吐量优先）"></a>4. 多线程垃圾回收器（吞吐量优先）</h3><h4 id="4-1-ParNew（-XX-UseParNewGC）"><a href="#4-1-ParNew（-XX-UseParNewGC）" class="headerlink" title="4.1. ParNew（-XX:+UseParNewGC）"></a>4.1. ParNew（-XX:+UseParNewGC）</h4><p><code>ParNew</code> 回收器是在 <code>Serial</code> 回收器的基础上演化而来的，属于 <code>Serial</code> 回收器的 <strong>多线程版本</strong>，同样运行在 <strong>新生代区域</strong>。在实现上，两者共用很多代码。在不同运行环境下，根据 <code>CPU</code> 核数，开启 <strong>不同的线程数</strong>，从而达到 <strong>最优</strong> 的垃圾回收效果。对于那些 <code>Server</code> 模式的应用程序，如果考虑采用 <code>CMS</code> 作为 <strong>老生代回收器</strong> 时，<code>ParNew</code> 回收器是一个不错的选择。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b88cda952?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<blockquote>
+<p><code>ParNew</code> <strong>新生代回收器</strong> 采用的是 <strong>复制算法</strong>。</p>
+</blockquote>
+<h4 id="4-2-Parallel-Scavenge（-XX-UseParallelGC）"><a href="#4-2-Parallel-Scavenge（-XX-UseParallelGC）" class="headerlink" title="4.2. Parallel Scavenge（-XX:+UseParallelGC）"></a>4.2. Parallel Scavenge（-XX:+UseParallelGC）</h4><p>和 <code>ParNew</code> 回收一样，<code>Parallel Scavenge</code> 回收器也是运行在 <strong>新生代区域</strong>，属于 <strong>多线程</strong> 的回收器。但不同的是，<code>ParNew</code> 回收器是通过控制 <strong>垃圾回收</strong> 的 <strong>线程数</strong> 来进行参数调整，而 <code>Parallel Scavenge</code> 回收器更关心的是 <strong>程序运行的吞吐量</strong>。即一段时间内，<strong>用户代码</strong> 运行时间占 <strong>总运行时间</strong> 的百分比。</p>
+<blockquote>
+<p><code>Parallel Scavenge</code> <strong>新生代回收器</strong> 采用的是 <strong>复制算法</strong>。</p>
+</blockquote>
+<h4 id="4-3-Parallel-Old（-XX-UseParallelOldGC）"><a href="#4-3-Parallel-Old（-XX-UseParallelOldGC）" class="headerlink" title="4.3. Parallel Old（-XX:+UseParallelOldGC）"></a>4.3. Parallel Old（-XX:+UseParallelOldGC）</h4><p><code>Parallel Old</code> 回收器是 <code>Parallel Scavenge</code> 回收器的 <strong>老生代版本</strong>，属于 <strong>多线程回收器</strong>，采用 <strong>标记-整理算法</strong>。<code>Parallel Old</code> 回收器和 <code>Parallel Scavenge</code> 回收器同样考虑了 <strong>吞吐量优先</strong> 这一指标，非常适合那些 <strong>注重吞吐量</strong> 和 <code>CPU</code> <strong>资源敏感</strong> 的场合。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7b8a60fa35?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<blockquote>
+<p><code>Parallel Old</code> <strong>老年代回收器</strong> 采用的是 <strong>标记 - 整理算法</strong>。</p>
+</blockquote>
+<h3 id="5-其他的回收器（停顿时间优先）"><a href="#5-其他的回收器（停顿时间优先）" class="headerlink" title="5. 其他的回收器（停顿时间优先）"></a>5. 其他的回收器（停顿时间优先）</h3><h4 id="5-1-CMS（-XX-UseConcMarkSweepGC）"><a href="#5-1-CMS（-XX-UseConcMarkSweepGC）" class="headerlink" title="5.1. CMS（-XX:+UseConcMarkSweepGC）"></a>5.1. CMS（-XX:+UseConcMarkSweepGC）</h4><p><code>CMS（Concurrent Mark Sweep）</code> 回收器是在 <strong>最短回收停顿时间</strong> 为前提的回收器，属于 <strong>多线程回收器</strong>，采用 <strong>标记-清除算法</strong>。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7bb00da43d?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>相比之前的回收器，<code>CMS</code> 回收器的运作过程比较复杂，分为四步：</p>
+<ol>
+<li><strong>初始标记（CMS initial mark）</strong></li>
+</ol>
+<p><strong>初始标记</strong> 仅仅是标记 <code>GC Roots</code> 内 <strong>直接关联</strong> 的对象。这个阶段 <strong>速度很快</strong>，需要 <code>Stop the World</code>。</p>
+<ol start="2">
+<li><strong>并发标记（CMS concurrent mark）</strong></li>
+</ol>
+<p><strong>并发标记</strong> 进行的是 <code>GC Tracing</code>，从 <code>GC Roots</code> 开始对堆进行 <strong>可达性分析</strong>，找出 <strong>存活对象</strong></p>
+<ol start="3">
+<li>** <strong>重新标记（CMS remark）</strong></li>
+</ol>
+<p><strong>重新标记</strong> 阶段为了 <strong>修正</strong> 并发期间由于 <strong>用户进行运作</strong> 导致的 <strong>标记变动</strong> 的那一部分对象的 <strong>标记记录</strong>。这个阶段的 <strong>停顿时间</strong> 一般会比 <strong>初始标记阶段</strong> 稍长一些，但远比 <strong>并发标记</strong> 的时间短，也需要 <code>Stop The World</code>。</p>
+<ol start="4">
+<li><strong>并发清除（CMS concurrent sweep）</strong></li>
+</ol>
+<p><strong>并发清除</strong> 阶段会清除垃圾对象。</p>
+<blockquote>
+<p><strong>初始标记</strong>（<code>CMS initial mark</code>）和 <strong>重新标记</strong>（<code>CMS remark</code>）会导致 <strong>用户线程</strong> 卡顿，<code>Stop the World</code> 现象发生。</p>
+</blockquote>
+<p>在整个过程中，<code>CMS</code> 回收器的 <strong>内存回收</strong> 基本上和 <strong>用户线程</strong> 并发执行，如下所示：</p>
+<p>由于 <code>CMS</code> 回收器 <strong>并发收集</strong>、<strong>停顿低</strong>，因此有些地方成为 <strong>并发低停顿回收器</strong>（<code>Concurrent Low Pause Sweep Collector</code>）。</p>
+<p><code>CMS</code> 回收器的缺点：</p>
+<ol>
+<li><strong>CMS回收器对CPU资源非常依赖</strong></li>
+</ol>
+<p><code>CMS</code> 回收器过分依赖于 <strong>多线程环境</strong>，默认情况下，开启的 <strong>线程数</strong> 为<code>（CPU 的数量 + 3）/ 4</code>，当 <code>CPU</code> 数量少于 <code>4</code> 个时，<code>CMS</code> 对 <strong>用户查询</strong> 的影响将会很大，因为他们要分出一半的运算能力去 <strong>执行回收器线程</strong>；</p>
+<ol start="2">
+<li><strong>CMS回收器无法清除浮动垃圾</strong></li>
+</ol>
+<p>由于 <code>CMS</code> 回收器 <strong>清除已标记的垃圾</strong> （处于最后一个阶段）时，<strong>用户线程</strong> 还在运行，因此会有新的垃圾产生。但是这部分垃圾 <strong>未被标记</strong>，在下一次 <code>GC</code> 才能清除，因此被成为 <strong>浮动垃圾</strong>。</p>
+<p>由于 <strong>内存回收</strong> 和 <strong>用户线程</strong> 是同时进行的，内存在被 <strong>回收</strong> 的同时，也在被 <strong>分配</strong>。当 <strong>老生代</strong> 中的内存使用超过一定的比例时，系统将会进行 <strong>垃圾回收</strong>；当 <strong>剩余内存</strong> 不能满足程序运行要求时，系统将会出现 <code>Concurrent Mode Failure</code>，临时采用 <code>Serial Old</code> 算法进行 <strong>清除</strong>，此时的 <strong>性能</strong> 将会降低。</p>
+<ol start="3">
+<li><strong>垃圾收集结束后残余大量空间碎片</strong></li>
+</ol>
+<p><code>CMS</code> 回收器采用的 <strong>标记清除算法</strong>，本身存在垃圾收集结束后残余 <strong>大量空间碎片</strong> 的缺点。<code>CMS</code> 配合适当的 <strong>内存整理策略</strong>，在一定程度上可以解决这个问题。</p>
+<h4 id="5-2-G1回收器（垃圾区域Region优先）"><a href="#5-2-G1回收器（垃圾区域Region优先）" class="headerlink" title="5.2. G1回收器（垃圾区域Region优先）"></a>5.2. G1回收器（垃圾区域Region优先）</h4><p><code>G1</code> 是 <code>JDK 1.7</code> 中正式投入使用的用于取代 <code>CMS</code> 的 <strong>压缩回收器</strong>。它虽然没有在物理上隔断 <strong>新生代</strong> 与 <strong>老生代</strong>，但是仍然属于 <strong>分代垃圾回收器</strong>。<code>G1</code> 仍然会区分 <strong>年轻代</strong> 与 <strong>老年代</strong>，年轻代依然分有 <code>Eden</code> 区与 <code>Survivor</code> 区。</p>
+<p><code>G1</code> 首先将 <strong>堆</strong> 分为 <strong>大小相等</strong> 的  <code>Region</code>，避免 <strong>全区域</strong> 的垃圾回收。然后追踪每个 <code>Region</code> 垃圾 <strong>堆积的价值大小</strong>，在后台维护一个 <strong>优先列表</strong>，根据允许的回收时间优先回收价值最大的 <code>Region</code>。同时 <code>G1</code>采用 <code>Remembered Set</code> 来存放 <code>Region</code> 之间的 <strong>对象引用</strong> ，其他回收器中的 <strong>新生代</strong> 与 <strong>老年代</strong> 之间的对象引用，从而避免 <strong>全堆扫描</strong>。<code>G1</code> 的分区示例如下图所示：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/8/4/16502c7bb5454a60?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>这种使用 <code>Region</code> 划分 <strong>内存空间</strong> 以及有 <strong>优先级</strong> 的区域回收方式，保证 <code>G1</code> 回收器在有限的时间内可以获得尽可能 <strong>高的回收效率</strong>。</p>
+<p><code>G1</code> 和 <code>CMS</code> 运作过程有很多相似之处，整个过程也分为 <code>4</code> 个步骤：</p>
+<ol>
+<li><strong>初始标记（CMS initial mark）</strong></li>
+</ol>
+<p><strong>初始标记</strong> 仅仅是标记 <code>GC Roots</code> 内 <strong>直接关联</strong> 的对象。这个阶段 <strong>速度很快</strong>，需要 <code>Stop the World</code>。</p>
+<ol start="2">
+<li><strong>并发标记（CMS concurrent mark）</strong></li>
+</ol>
+<p><strong>并发标记</strong> 进行的是 <code>GC Tracing</code>，从 <code>GC Roots</code> 开始对堆进行 <strong>可达性分析</strong>，找出 <strong>存活对象</strong>。</p>
+<ol start="3">
+<li><strong>重新标记（CMS remark）</strong></li>
+</ol>
+<p><strong>重新标记</strong> 阶段为了 <strong>修正</strong> 并发期间由于 <strong>用户进行运作</strong> 导致的 <strong>标记变动</strong> 的那一部分对象的 <strong>标记记录</strong>。这个阶段的 <strong>停顿时间</strong> 一般会比 <strong>初始标记阶段</strong> 稍长一些，但远比 <strong>并发标记</strong> 的时间短，也需要 <code>Stop The World</code>。</p>
+<ol start="4">
+<li><strong>筛选回收</strong></li>
+</ol>
+<p>首先对各个 <code>Region</code> 的 <strong>回收价值</strong> 和 <strong>成本</strong> 进行排序，根据用户所期望的 <code>GC</code> <strong>停顿时间</strong> 来制定回收计划。这个阶段可以与用户程序一起 <strong>并发执行</strong>，但是因为只回收一部分 <code>Region</code>，时间是用户可控制的，而且停顿 <strong>用户线程</strong> 将大幅提高回收效率。</p>
+<blockquote>
+<p>与其它 <code>GC</code> 回收相比，<code>G1</code> 具备如下 <code>4</code> 个特点：</p>
+</blockquote>
+<ul>
+<li><strong>并行与并发</strong></li>
+</ul>
+<p>使用多个 <code>CPU</code> 来缩短 <code>Stop-the-World</code> 的 <strong>停顿时间</strong>，部分其他回收器需要停顿 <code>Java</code> 线程执行的 <code>GC</code> 动作，<code>G1</code> 回收器仍然可以通过 <strong>并发的方式</strong> 让 <code>Java</code> 程序继续执行。</p>
+<ul>
+<li><strong>分代回收</strong></li>
+</ul>
+<p>与其他回收器一样，<strong>分代概念</strong> 在 <code>G1</code> 中依然得以保留。虽然 <code>G1</code> 可以不需要 <strong>其他回收器配合</strong> 就能独立管理 <strong>整个GC堆</strong>，但它能够采用 <strong>不同的策略</strong> 去处理 <strong>新创建的对象</strong> 和 <strong>已经存活</strong> 一段时间、<strong>熬过多次</strong> <code>GC</code> 的旧对象，以获取更好的回收效果。<strong>新生代</strong> 和 <strong>老年代</strong> 不再是 <strong>物理隔离</strong>，是多个 <strong>大小相等</strong> 的独立 <code>Region</code>。</p>
+<ul>
+<li><strong>空间整合</strong></li>
+</ul>
+<p>与 <code>CMS</code> 的 <strong>标记—清理</strong> 算法不同，<code>G1</code> 从 <strong>整体</strong> 来看是基于 <strong>标记—整理</strong> 算法实现的回收器。从 <strong>局部</strong>（两个 <code>Region</code> 之间）上来看是基于 <strong>复制算法</strong> 实现的。</p>
+<p>但无论如何，这 <strong>两种算法</strong> 都意味着 <code>G1</code> 运作期间 <strong>不会产生内存空间碎片</strong>，回收后能提供规整的可用内存。这种特性有利于程序长时间运行，<strong>分配大对象</strong> 时不会因为无法找到 <strong>连续内存空间</strong> 而提前触发 <strong>下一次</strong> <code>GC</code>。</p>
+<ul>
+<li><strong>可预测的停顿</strong></li>
+</ul>
+<p>这是 <code>G1</code> 相对于 <code>CMS</code> 的另一大优势，<strong>降低停顿时间</strong> 是 <code>G1</code> 和 <code>CMS</code> 共同的关注点。<code>G1</code> 除了追求 <strong>低停顿</strong> 外，还能建立 <strong>可预测</strong> 的 <strong>停顿时间模型</strong>，能让使用者明确指定在一个 <strong>长度</strong> 为 <code>M</code> 毫秒的 <strong>时间片段</strong> 内，消耗在 <strong>垃圾回收</strong> 上的时间不得超过 <code>N</code> 毫秒。（后台维护的 <strong>优先列表</strong>，优先回收 <strong>价值大</strong> 的 <code>Region</code>）。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p>周志明，深入理解Java虚拟机：JVM高级特性与最佳实践，机械工业出版社</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5b651200f265da0fa00a38d7" target="_blank" rel="noopener">JVM垃圾回收器</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1564,479 +2250,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/13/%E6%B5%85%E6%9E%90%20Netty%20%E5%AE%9E%E7%8E%B0%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6%E4%B8%8E%E6%96%AD%E7%BA%BF%E9%87%8D%E8%BF%9E/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/13/%E6%B5%85%E6%9E%90%20Netty%20%E5%AE%9E%E7%8E%B0%E5%BF%83%E8%B7%B3%E6%9C%BA%E5%88%B6%E4%B8%8E%E6%96%AD%E7%BA%BF%E9%87%8D%E8%BF%9E/" class="post-title-link" itemprop="url">浅析 Netty 实现心跳机制与断线重连</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-14 06:43:56 / 修改时间：14:47:22" itemprop="dateCreated datePublished" datetime="2020-06-14T06:43:56+08:00">2020-06-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>14k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>13 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="基础"><a href="#基础" class="headerlink" title="基础"></a>基础</h2><h3 id="何为心跳"><a href="#何为心跳" class="headerlink" title="何为心跳"></a>何为心跳</h3><p>顾名思义, 所谓 <strong>心跳</strong>, 即在 TCP 长连接中, 客户端和服务器之间定期发送的一种特殊的数据包, 通知对方自己还在线, 以确保 TCP 连接的有效性.</p>
-<h3 id="为什么需要心跳"><a href="#为什么需要心跳" class="headerlink" title="为什么需要心跳"></a>为什么需要心跳</h3><p>因为网络的不可靠性, 有可能在 TCP 保持长连接的过程中, 由于某些突发情况, 例如网线被拔出, 突然掉电等, 会造成服务器和客户端的连接中断. 在这些突发情况下, 如果恰好服务器和客户端之间没有交互的话, 那么它们是不能在短时间内发现对方已经掉线的. 为了解决这个问题, 我们就需要引入 <strong>心跳</strong> 机制. 心跳机制的工作原理是: 在服务器和客户端之间一定时间内没有数据交互时, 即处于 idle 状态时, 客户端或服务器会发送一个特殊的数据包给对方, 当接收方收到这个数据报文后, 也立即发送一个特殊的数据报文, 回应发送方, 此即一个 PING-PONG 交互. 自然地, 当某一端收到心跳消息后, 就知道了对方仍然在线, 这就确保 TCP 连接的有效性.</p>
-<h3 id="如何实现心跳"><a href="#如何实现心跳" class="headerlink" title="如何实现心跳"></a>如何实现心跳</h3><p>我们可以通过两种方式实现心跳机制:</p>
-<ul>
-<li>使用 TCP 协议层面的 keepalive 机制.</li>
-<li>在应用层上实现自定义的心跳机制.</li>
-</ul>
-<p>虽然在 TCP 协议层面上, 提供了 keepalive 保活机制, 但是使用它有几个缺点:</p>
-<ol>
-<li>它不是 TCP 的标准协议, 并且是默认关闭的.</li>
-<li>TCP keepalive 机制依赖于操作系统的实现, 默认的 keepalive 心跳时间是 <strong>两个小时</strong>, 并且对 keepalive 的修改需要系统调用(或者修改系统配置), 灵活性不够.</li>
-<li>TCP keepalive 与 TCP 协议绑定, 因此如果需要更换为 UDP 协议时, keepalive 机制就失效了.</li>
-</ol>
-<p>虽然使用 TCP 层面的 keepalive 机制比自定义的应用层心跳机制节省流量, 但是基于上面的几点缺点, 一般的实践中, 人们大多数都是选择在应用层上实现自定义的心跳.<br>既然如此, 那么我们就来大致看看在在 Netty 中是怎么实现心跳的吧. 在 Netty 中, 实现心跳机制的关键是 <strong>IdleStateHandler</strong>, 它可以对一个 Channel 的 读/写设置定时器, 当 Channel 在一定事件间隔内没有数据交互时(即处于 idle 状态), 就会触发指定的事件.</p>
-<h2 id="使用-Netty-实现心跳"><a href="#使用-Netty-实现心跳" class="headerlink" title="使用 Netty 实现心跳"></a>使用 Netty 实现心跳</h2><p>上面我们提到了, 在 Netty 中, 实现心跳机制的关键是 <strong>IdleStateHandler</strong>, 那么这个 Handler 如何使用呢? 我们来看看它的构造器:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">IdleStateHandler</span><span class="params">(<span class="keyword">int</span> readerIdleTimeSeconds, <span class="keyword">int</span> writerIdleTimeSeconds, <span class="keyword">int</span> allIdleTimeSeconds)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>((<span class="keyword">long</span>)readerIdleTimeSeconds, (<span class="keyword">long</span>)writerIdleTimeSeconds, (<span class="keyword">long</span>)allIdleTimeSeconds, TimeUnit.SECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>实例化一个 IdleStateHandler 需要提供三个参数:</p>
-<ul>
-<li>readerIdleTimeSeconds, 读超时. 即当在指定的时间间隔内没有从 Channel 读取到数据时, 会触发一个 READER_IDLE 的 IdleStateEvent 事件.</li>
-<li>writerIdleTimeSeconds, 写超时. 即当在指定的时间间隔内没有数据写入到 Channel 时, 会触发一个 WRITER_IDLE 的 IdleStateEvent 事件.</li>
-<li>allIdleTimeSeconds, 读/写超时. 即当在指定的时间间隔内没有读或写操作时, 会触发一个 ALL_IDLE 的 IdleStateEvent 事件.</li>
-</ul>
-<p>为了展示具体的 IdleStateHandler 实现的心跳机制, 下面我们来构造一个具体的EchoServer 的例子, 这个例子的行为如下:</p>
-<ol>
-<li>在这个例子中, 客户端和服务器通过 TCP 长连接进行通信.</li>
-<li>TCP 通信的报文格式是:</li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">+--------+-----+---------------+ </span><br><span class="line">| Length |Type |   Content     |</span><br><span class="line">|   17   |  1  |&quot;HELLO, WORLD&quot; |</span><br><span class="line">+--------+-----+---------------+</span><br></pre></td></tr></table></figure>
-
-<ol>
-<li>客户端每隔一个随机的时间后, 向服务器发送消息, 服务器收到消息后, 立即将收到的消息原封不动地回复给客户端.</li>
-<li>若客户端在指定的时间间隔内没有读/写操作, 则客户端会自动向服务器发送一个 PING 心跳, 服务器收到 PING 心跳消息时, 需要回复一个 PONG 消息.</li>
-</ol>
-<p>下面所使用的代码例子可以在我的 <a href="https://github.com/yongshun/some_java_code" target="_blank" rel="noopener">Github</a> github.com/yongshun/some_java_code 上找到.</p>
-<h3 id="通用部分"><a href="#通用部分" class="headerlink" title="通用部分"></a>通用部分</h3><p>根据上面定义的行为, 我们接下来实现心跳的通用部分 <strong>CustomHeartbeatHandler</strong>:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> xiongyongshun</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 1.0</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@email</span> yongshun1228@gmail.com</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@created</span> 16/9/18 13:02</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">CustomHeartbeatHandler</span> <span class="keyword">extends</span> <span class="title">SimpleChannelInboundHandler</span>&lt;<span class="title">ByteBuf</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span> PING_MSG = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span> PONG_MSG = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">byte</span> CUSTOM_MSG = <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">protected</span> String name;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> heartbeatCount = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CustomHeartbeatHandler</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">channelRead0</span><span class="params">(ChannelHandlerContext context, ByteBuf byteBuf)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (byteBuf.getByte(<span class="number">4</span>) == PING_MSG) &#123;</span><br><span class="line">            sendPongMsg(context);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (byteBuf.getByte(<span class="number">4</span>) == PONG_MSG)&#123;</span><br><span class="line">            System.out.println(name + <span class="string">" get pong msg from "</span> + context.channel().remoteAddress());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            handleData(context, byteBuf);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">sendPingMsg</span><span class="params">(ChannelHandlerContext context)</span> </span>&#123;</span><br><span class="line">        ByteBuf buf = context.alloc().buffer(<span class="number">5</span>);</span><br><span class="line">        buf.writeInt(<span class="number">5</span>);</span><br><span class="line">        buf.writeByte(PING_MSG);</span><br><span class="line">        context.writeAndFlush(buf);</span><br><span class="line">        heartbeatCount++;</span><br><span class="line">        System.out.println(name + <span class="string">" sent ping msg to "</span> + context.channel().remoteAddress() + <span class="string">", count: "</span> + heartbeatCount);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">sendPongMsg</span><span class="params">(ChannelHandlerContext context)</span> </span>&#123;</span><br><span class="line">        ByteBuf buf = context.alloc().buffer(<span class="number">5</span>);</span><br><span class="line">        buf.writeInt(<span class="number">5</span>);</span><br><span class="line">        buf.writeByte(PONG_MSG);</span><br><span class="line">        context.channel().writeAndFlush(buf);</span><br><span class="line">        heartbeatCount++;</span><br><span class="line">        System.out.println(name + <span class="string">" sent pong msg to "</span> + context.channel().remoteAddress() + <span class="string">", count: "</span> + heartbeatCount);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">handleData</span><span class="params">(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">userEventTriggered</span><span class="params">(ChannelHandlerContext ctx, Object evt)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="comment">// IdleStateHandler 所产生的 IdleStateEvent 的处理逻辑.</span></span><br><span class="line">        <span class="keyword">if</span> (evt <span class="keyword">instanceof</span> IdleStateEvent) &#123;</span><br><span class="line">            IdleStateEvent e = (IdleStateEvent) evt;</span><br><span class="line">            <span class="keyword">switch</span> (e.state()) &#123;</span><br><span class="line">                <span class="keyword">case</span> READER_IDLE:</span><br><span class="line">                    handleReaderIdle(ctx);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> WRITER_IDLE:</span><br><span class="line">                    handleWriterIdle(ctx);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> ALL_IDLE:</span><br><span class="line">                    handleAllIdle(ctx);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelActive</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        System.err.println(<span class="string">"---"</span> + ctx.channel().remoteAddress() + <span class="string">" is active---"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelInactive</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        System.err.println(<span class="string">"---"</span> + ctx.channel().remoteAddress() + <span class="string">" is inactive---"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleReaderIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        System.err.println(<span class="string">"---READER_IDLE---"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleWriterIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        System.err.println(<span class="string">"---WRITER_IDLE---"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleAllIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        System.err.println(<span class="string">"---ALL_IDLE---"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>类 CustomHeartbeatHandler 负责心跳的发送和接收, 我们接下来详细地分析一下它的作用. 我们在前面提到, IdleStateHandler 是实现心跳的关键, 它会根据不同的 IO idle 类型来产生不同的 IdleStateEvent 事件, 而这个事件的捕获, 其实就是在 <strong>userEventTriggered</strong> 方法中实现的.<br>我们来看看 CustomHeartbeatHandler.userEventTriggered 的具体实现:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">userEventTriggered</span><span class="params">(ChannelHandlerContext ctx, Object evt)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (evt <span class="keyword">instanceof</span> IdleStateEvent) &#123;</span><br><span class="line">        IdleStateEvent e = (IdleStateEvent) evt;</span><br><span class="line">        <span class="keyword">switch</span> (e.state()) &#123;</span><br><span class="line">            <span class="keyword">case</span> READER_IDLE:</span><br><span class="line">                handleReaderIdle(ctx);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> WRITER_IDLE:</span><br><span class="line">                handleWriterIdle(ctx);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ALL_IDLE:</span><br><span class="line">                handleAllIdle(ctx);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 userEventTriggered 中, 根据 IdleStateEvent 的 state() 的不同, 而进行不同的处理. 例如如果是读取数据 idle, 则 e.state() == READER_IDLE, 因此就调用 <strong>handleReaderIdle</strong> 来处理它. CustomHeartbeatHandler 提供了三个 idle 处理方法: handleReaderIdle, handleWriterIdle, handleAllIdle, 这三个方法目前只有默认的实现, 它需要在子类中进行重写, 现在我们暂时略过它们, 在具体的客户端和服务器的实现部分时再来看它们.</p>
-<p>知道了这一点后, 我们接下来看看数据处理部分:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">channelRead0</span><span class="params">(ChannelHandlerContext context, ByteBuf byteBuf)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (byteBuf.getByte(<span class="number">4</span>) == PING_MSG) &#123;</span><br><span class="line">        sendPongMsg(context);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (byteBuf.getByte(<span class="number">4</span>) == PONG_MSG)&#123;</span><br><span class="line">        System.out.println(name + <span class="string">" get pong msg from "</span> + context.channel().remoteAddress());</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        handleData(context, byteBuf);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 CustomHeartbeatHandler.channelRead0 中, 我们首先根据报文协议:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">+--------+-----+---------------+ </span><br><span class="line">| Length |Type |   Content     |</span><br><span class="line">|   17   |  1  |&quot;HELLO, WORLD&quot; |</span><br><span class="line">+--------+-----+---------------+</span><br></pre></td></tr></table></figure>
-
-<p>来判断当前的报文类型, 如果是 PING_MSG 则表示是服务器收到客户端的 PING 消息, 此时服务器需要回复一个 PONG 消息, 其消息类型是 PONG_MSG.<br>扔报文类型是 PONG_MSG, 则表示是客户端收到服务器发送的 PONG 消息, 此时打印一个 log 即可.</p>
-<h3 id="客户端部分"><a href="#客户端部分" class="headerlink" title="客户端部分"></a>客户端部分</h3><h4 id="客户端初始化"><a href="#客户端初始化" class="headerlink" title="客户端初始化"></a>客户端初始化</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        NioEventLoopGroup workGroup = <span class="keyword">new</span> NioEventLoopGroup(<span class="number">4</span>);</span><br><span class="line">        Random random = <span class="keyword">new</span> Random(System.currentTimeMillis());</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Bootstrap bootstrap = <span class="keyword">new</span> Bootstrap();</span><br><span class="line">            bootstrap</span><br><span class="line">                    .group(workGroup)</span><br><span class="line">                    .channel(NioSocketChannel<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">                    .<span class="title">handler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123;</span><br><span class="line">                        <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                            ChannelPipeline p = socketChannel.pipeline();</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">0</span>, <span class="number">0</span>, <span class="number">5</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> LengthFieldBasedFrameDecoder(<span class="number">1024</span>, <span class="number">0</span>, <span class="number">4</span>, -<span class="number">4</span>, <span class="number">0</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> ClientHandler());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line"></span><br><span class="line">            Channel ch = bootstrap.remoteAddress(<span class="string">"127.0.0.1"</span>, <span class="number">12345</span>).connect().sync().channel();</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">                String content = <span class="string">"client msg "</span> + i;</span><br><span class="line">                ByteBuf buf = ch.alloc().buffer();</span><br><span class="line">                buf.writeInt(<span class="number">5</span> + content.getBytes().length);</span><br><span class="line">                buf.writeByte(CustomHeartbeatHandler.CUSTOM_MSG);</span><br><span class="line">                buf.writeBytes(content.getBytes());</span><br><span class="line">                ch.writeAndFlush(buf);</span><br><span class="line"></span><br><span class="line">                Thread.sleep(random.nextInt(<span class="number">20000</span>));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            workGroup.shutdownGracefully();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面的代码是 Netty 的客户端端的初始化代码, 使用过 Netty 的朋友对这个代码应该不会陌生. 别的部分我们就不再赘述, 我们来看看 ChannelInitializer.initChannel 部分即可:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">.handler(<span class="keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        ChannelPipeline p = socketChannel.pipeline();</span><br><span class="line">        p.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">0</span>, <span class="number">0</span>, <span class="number">5</span>));</span><br><span class="line">        p.addLast(<span class="keyword">new</span> LengthFieldBasedFrameDecoder(<span class="number">1024</span>, <span class="number">0</span>, <span class="number">4</span>, -<span class="number">4</span>, <span class="number">0</span>));</span><br><span class="line">        p.addLast(<span class="keyword">new</span> ClientHandler());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>我们给 pipeline 添加了三个 Handler, <strong>IdleStateHandler</strong> 这个 handler 是心跳机制的核心, 我们为客户端端设置了读写 idle 超时, 时间间隔是5s, 即如果客户端在间隔 5s 后都没有收到服务器的消息或向服务器发送消息, 则产生 ALL_IDLE 事件.<br>接下来我们添加了 <strong>LengthFieldBasedFrameDecoder</strong>, 它是负责解析我们的 TCP 报文, 因为和本文的目的无关, 因此这里不详细展开.<br>最后一个 Handler 是 ClientHandler, 它继承于 CustomHeartbeatHandler, 是我们处理业务逻辑部分.</p>
-<h4 id="客户端-Handler"><a href="#客户端-Handler" class="headerlink" title="客户端 Handler"></a>客户端 Handler</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClientHandler</span> <span class="keyword">extends</span> <span class="title">CustomHeartbeatHandler</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ClientHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(<span class="string">"client"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleData</span><span class="params">(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[byteBuf.readableBytes() - <span class="number">5</span>];</span><br><span class="line">        byteBuf.skipBytes(<span class="number">5</span>);</span><br><span class="line">        byteBuf.readBytes(data);</span><br><span class="line">        String content = <span class="keyword">new</span> String(data);</span><br><span class="line">        System.out.println(name + <span class="string">" get content: "</span> + content);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleAllIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.handleAllIdle(ctx);</span><br><span class="line">        sendPingMsg(ctx);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>ClientHandler 继承于 CustomHeartbeatHandler, 它重写了两个方法, 一个是 handleData, 在这里面实现 仅仅打印收到的消息.<br>第二个重写的方法是 <strong>handleAllIdle</strong>. 我们在前面提到, 客户端负责发送心跳的 PING 消息, 当客户端产生一个 <strong>ALL_IDLE</strong> 事件后, 会导致父类的 CustomHeartbeatHandler.userEventTriggered 调用, 而 userEventTriggered 中会根据 e.state() 来调用不同的方法, 因此最后调用的是 <strong>ClientHandler.handleAllIdle</strong>, 在这个方法中, 客户端调用 <strong>sendPingMsg</strong> 向服务器发送一个 PING 消息.</p>
-<h3 id="服务器部分"><a href="#服务器部分" class="headerlink" title="服务器部分"></a>服务器部分</h3><h4 id="服务器初始化"><a href="#服务器初始化" class="headerlink" title="服务器初始化"></a>服务器初始化</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Server</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        NioEventLoopGroup bossGroup = <span class="keyword">new</span> NioEventLoopGroup(<span class="number">1</span>);</span><br><span class="line">        NioEventLoopGroup workGroup = <span class="keyword">new</span> NioEventLoopGroup(<span class="number">4</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            ServerBootstrap bootstrap = <span class="keyword">new</span> ServerBootstrap();</span><br><span class="line">            bootstrap</span><br><span class="line">                    .group(bossGroup, workGroup)</span><br><span class="line">                    .channel(NioServerSocketChannel<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">                    .<span class="title">childHandler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123;</span><br><span class="line">                        <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                            ChannelPipeline p = socketChannel.pipeline();</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">10</span>, <span class="number">0</span>, <span class="number">0</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> LengthFieldBasedFrameDecoder(<span class="number">1024</span>, <span class="number">0</span>, <span class="number">4</span>, -<span class="number">4</span>, <span class="number">0</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> ServerHandler());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line"></span><br><span class="line">            Channel ch = bootstrap.bind(<span class="number">12345</span>).sync().channel();</span><br><span class="line">            ch.closeFuture().sync();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            bossGroup.shutdownGracefully();</span><br><span class="line">            workGroup.shutdownGracefully();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>服务器的初始化部分也没有什么好说的, 它也和客户端的初始化一样, 为 pipeline 添加了三个 Handler.</p>
-<h4 id="服务器-Handler"><a href="#服务器-Handler" class="headerlink" title="服务器 Handler"></a>服务器 Handler</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServerHandler</span> <span class="keyword">extends</span> <span class="title">CustomHeartbeatHandler</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ServerHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(<span class="string">"server"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleData</span><span class="params">(ChannelHandlerContext channelHandlerContext, ByteBuf buf)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[buf.readableBytes() - <span class="number">5</span>];</span><br><span class="line">        ByteBuf responseBuf = Unpooled.copiedBuffer(buf);</span><br><span class="line">        buf.skipBytes(<span class="number">5</span>);</span><br><span class="line">        buf.readBytes(data);</span><br><span class="line">        String content = <span class="keyword">new</span> String(data);</span><br><span class="line">        System.out.println(name + <span class="string">" get content: "</span> + content);</span><br><span class="line">        channelHandlerContext.write(responseBuf);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleReaderIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.handleReaderIdle(ctx);</span><br><span class="line">        System.err.println(<span class="string">"---client "</span> + ctx.channel().remoteAddress().toString() + <span class="string">" reader timeout, close it---"</span>);</span><br><span class="line">        ctx.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>ServerHandler 继承于 CustomHeartbeatHandler, 它重写了两个方法, 一个是 handleData, 在这里面实现 EchoServer 的功能: 即收到客户端的消息后, 立即原封不动地将消息回复给客户端.<br>第二个重写的方法是 <strong>handleReaderIdle</strong>, 因为服务器仅仅对客户端的读 idle 感兴趣, 因此只重新了这个方法. 若服务器在指定时间后没有收到客户端的消息, 则会触发 <strong>READER_IDLE</strong> 消息, 进而会调用 <strong>handleReaderIdle</strong> 这个方法. 我们在前面提到, 客户端负责发送心跳的 PING 消息, 并且服务器的 <strong>READER_IDLE</strong> 的超时时间是客户端发送 PING 消息的间隔的两倍, 因此当服务器 <strong>READER_IDLE</strong> 触发时, 就可以确定是客户端已经掉线了, 因此服务器直接关闭客户端连接即可.</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
-<li>使用 Netty 实现心跳机制的关键就是利用 <strong>IdleStateHandler</strong> 来产生对应的 idle 事件.</li>
-<li>一般是客户端负责发送心跳的 PING 消息, 因此客户端注意关注 <strong>ALL_IDLE</strong> 事件, 在这个事件触发后, 客户端需要向服务器发送 PING 消息, 告诉服务器”我还存活着”.</li>
-<li>服务器是接收客户端的 PING 消息的, 因此服务器关注的是 <strong>READER_IDLE</strong> 事件, 并且服务器的 <strong>READER_IDLE</strong> 间隔需要比客户端的 <strong>ALL_IDLE</strong> 事件间隔大(例如客户端ALL_IDLE 是5s 没有读写时触发, 因此服务器的 READER_IDLE 可以设置为10s)</li>
-<li>当服务器收到客户端的 PING 消息时, 会发送一个 PONG 消息作为回复. 一个 PING-PONG 消息对就是一个心跳交互.</li>
-</ol>
-<h2 id="实现客户端的断线重连"><a href="#实现客户端的断线重连" class="headerlink" title="实现客户端的断线重连"></a>实现客户端的断线重连</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> NioEventLoopGroup workGroup = <span class="keyword">new</span> NioEventLoopGroup(<span class="number">4</span>);</span><br><span class="line">    <span class="keyword">private</span> Channel channel;</span><br><span class="line">    <span class="keyword">private</span> Bootstrap bootstrap;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Client client = <span class="keyword">new</span> Client();</span><br><span class="line">        client.start();</span><br><span class="line">        client.sendData();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sendData</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Random random = <span class="keyword">new</span> Random(System.currentTimeMillis());</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (channel != <span class="keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">                String content = <span class="string">"client msg "</span> + i;</span><br><span class="line">                ByteBuf buf = channel.alloc().buffer(<span class="number">5</span> + content.getBytes().length);</span><br><span class="line">                buf.writeInt(<span class="number">5</span> + content.getBytes().length);</span><br><span class="line">                buf.writeByte(CustomHeartbeatHandler.CUSTOM_MSG);</span><br><span class="line">                buf.writeBytes(content.getBytes());</span><br><span class="line">                channel.writeAndFlush(buf);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            Thread.sleep(random.nextInt(<span class="number">20000</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            bootstrap = <span class="keyword">new</span> Bootstrap();</span><br><span class="line">            bootstrap</span><br><span class="line">                    .group(workGroup)</span><br><span class="line">                    .channel(NioSocketChannel<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">                    .<span class="title">handler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123;</span><br><span class="line">                        <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel socketChannel)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                            ChannelPipeline p = socketChannel.pipeline();</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> IdleStateHandler(<span class="number">0</span>, <span class="number">0</span>, <span class="number">5</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> LengthFieldBasedFrameDecoder(<span class="number">1024</span>, <span class="number">0</span>, <span class="number">4</span>, -<span class="number">4</span>, <span class="number">0</span>));</span><br><span class="line">                            p.addLast(<span class="keyword">new</span> ClientHandler(Client.<span class="keyword">this</span>));</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">            doConnect();</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doConnect</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (channel != <span class="keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ChannelFuture future = bootstrap.connect(<span class="string">"127.0.0.1"</span>, <span class="number">12345</span>);</span><br><span class="line"></span><br><span class="line">        future.addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture futureListener)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (futureListener.isSuccess()) &#123;</span><br><span class="line">                    channel = futureListener.channel();</span><br><span class="line">                    System.out.println(<span class="string">"Connect to server successfully!"</span>);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    System.out.println(<span class="string">"Failed to connect to server, try connect after 10s"</span>);</span><br><span class="line"></span><br><span class="line">                    futureListener.channel().eventLoop().schedule(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                        <span class="meta">@Override</span></span><br><span class="line">                        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                            doConnect();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;, <span class="number">10</span>, TimeUnit.SECONDS);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面的代码中, 我们抽象出 doConnect 方法, 它负责客户端和服务器的 TCP 连接的建立, 并且当 TCP 连接失败时, doConnect 会 通过 “channel().eventLoop().schedule” 来延时10s 后尝试重新连接.</p>
-<h3 id="客户端-Handler-1"><a href="#客户端-Handler-1" class="headerlink" title="客户端 Handler"></a>客户端 Handler</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClientHandler</span> <span class="keyword">extends</span> <span class="title">CustomHeartbeatHandler</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Client client;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ClientHandler</span><span class="params">(Client client)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(<span class="string">"client"</span>);</span><br><span class="line">        <span class="keyword">this</span>.client = client;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleData</span><span class="params">(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[byteBuf.readableBytes() - <span class="number">5</span>];</span><br><span class="line">        byteBuf.skipBytes(<span class="number">5</span>);</span><br><span class="line">        byteBuf.readBytes(data);</span><br><span class="line">        String content = <span class="keyword">new</span> String(data);</span><br><span class="line">        System.out.println(name + <span class="string">" get content: "</span> + content);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">handleAllIdle</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.handleAllIdle(ctx);</span><br><span class="line">        sendPingMsg(ctx);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelInactive</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.channelInactive(ctx);</span><br><span class="line">        client.doConnect();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>断线重连的关键一点是检测连接是否已经断开. 因此我们改写了 ClientHandler, 重写了 <strong>channelInactive</strong> 方法. 当 TCP 连接断开时, 会回调 channelInactive 方法, 因此我们在这个方法中调用 client.doConnect() 来进行重连.</p>
-<p>完整代码可以在我的 <a href="https://github.com/yongshun/some_java_code" target="_blank" rel="noopener">Github</a> github.com/yongshun/some_java_code 上找到.</p>
-<hr>
-<p>本文整理自</p>
-<p>[<a href="https://segmentfault.com/a/1190000006931568" target="_blank" rel="noopener">浅析 Netty 实现心跳机制与断线重连</a>]</p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/13/HashMap%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/13/HashMap%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/" class="post-title-link" itemprop="url">fHashMap的实现原理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-13 10:00:35 / 修改时间：18:13:57" itemprop="dateCreated datePublished" datetime="2020-06-13T10:00:35+08:00">2020-06-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>11k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>10 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>哈希表（hash table）也叫散列表，是一种非常重要的数据结构，应用场景及其丰富，许多缓存技术（比如memcached）的核心其实就是在内存中维护一张大的哈希表，而HashMap的实现原理也常常出现在各类的面试题中，重要性可见一斑。</p>
-<p>本文会对java集合框架中的对应实现HashMap的实现原理进行讲解，然后会对JDK7的HashMap源码进行分析（JDK8会有所不同，需要了解的可自行阅读JDK8的HashMap源码）。</p>
-<p>JDK7和JDK8中HashMap的大致变化是：</p>
-<blockquote>
-<p>1.7中采用数组+链表，1.8采用的是数组+链表/红黑树，即在1.7中链表长度超过一定长度后就改成红黑树存储。 </p>
-<p>1.7扩容时需要重新计算哈希值和索引位置(rehash即开启自适应hash,只对String有效?)，1.8并不重新计算哈希值，巧妙地采用和扩容后容量进行&amp;操作来计算新的索引位置。 </p>
-<p>1.7是采用表头插入法插入链表，1.8采用的是尾部插入法。 </p>
-<p>在1.7中采用表头插入法，在扩容时会改变链表中元素原本的顺序，以至于在并发场景下导致链表成环的问题；在1.8中采用尾部插入法，在扩容时会保持链表元素原本的顺序，就不会出现链表成环的问题了。</p>
-</blockquote>
-<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
-<li><em>什么是哈希表</em></li>
-<li><em>HashMap实现原理</em></li>
-<li><em>为何HashMap的数组长度一定是2的次幂？</em></li>
-<li><em>重写equals方法需同时重写hashCode方法</em></li>
-<li><em>总结</em></li>
-</ul>
-<h2 id="一、什么是哈希表"><a href="#一、什么是哈希表" class="headerlink" title="一、什么是哈希表"></a>一、什么是哈希表</h2><p>在讨论哈希表之前，我们先大概了解下其他数据结构在新增，查找等基础操作执行性能</p>
-<p><strong>数组：</strong>采用一段连续的存储单元来存储数据。对于指定下标的查找，时间复杂度为O(1)；通过给定值进行查找，需要遍历数组，逐一比对给定关键字和数组元素，时间复杂度为O(n)，当然，对于有序数组，则可采用二分查找，插值查找，斐波那契查找等方式，可将查找复杂度提高为O(logn)；对于一般的插入删除操作，涉及到数组元素的移动，其平均复杂度也为O(n)</p>
-<p><strong>线性链表：</strong>对于链表的新增，删除等操作（在找到指定操作位置后），仅需处理结点间的引用即可，时间复杂度为O(1)，而查找操作需要遍历链表逐一进行比对，复杂度为O(n)</p>
-<p><strong>二叉树：</strong>对一棵相对平衡的有序二叉树，对其进行插入，查找，删除等操作，平均复杂度均为O(logn)。</p>
-<p><strong>哈希表：</strong>相比上述几种数据结构，在哈希表中进行添加，删除，查找等操作，性能十分之高，不考虑哈希冲突的情况下，仅需一次定位即可完成，时间复杂度为O(1)，接下来我们就来看看哈希表是如何实现达到惊艳的常数阶O(1)的。</p>
-<p>我们知道，数据结构的物理存储结构只有两种：<strong>顺序存储结构和链式存储结构</strong>（像栈，队列，树，图等是从逻辑结构去抽象的，映射到内存中，也这两种物理组织形式），而在上面我们提到过，在数组中根据下标查找某个元素，一次定位就可以达到，哈希表利用了这种特性，<strong>哈希表的主干就是数组</strong>。</p>
-<p>比如我们要新增或查找某个元素，我们通过把当前元素的关键字 通过某个函数映射到数组中的某个位置，通过数组下标一次定位就可完成操作。</p>
-<blockquote>
-<p><strong>存储位置 = f(关键字)</strong></p>
-</blockquote>
-<p>其中，这个函数f一般称为哈希函数，这个函数的设计好坏会直接影响到哈希表的优劣。举个例子，比如我们要在哈希表中执行插入操作：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyF3cqmp3PuSibBIuX8mIAcTnqGwv8XpZYC30AAnjTREajFagZWKssZp6A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>查找操作同理，先通过哈希函数计算出实际存储地址，然后从数组中对应地址取出即可。</p>
-<p><strong>哈希冲突</strong></p>
-<p>然而万事无完美，如果两个不同的元素，通过哈希函数得出的实际存储地址相同怎么办？也就是说，当我们对某个元素进行哈希运算，得到一个存储地址，然后要进行插入的时候，发现已经被其他元素占用了，其实这就是所谓的哈希冲突，也叫哈希碰撞。</p>
-<p>前面我们提到过，哈希函数的设计至关重要，<strong>好的哈希函数会尽可能地保证 计算简单和散列地址分布均匀</strong>,但是，我们需要清楚的是，数组是一块连续的固定长度的内存空间，再好的哈希函数也不能保证得到的存储地址绝对不发生冲突。</p>
-<p><strong>那么哈希冲突如何解决呢？</strong>哈希冲突的解决方案有多种:开放定址法（发生冲突，继续寻找下一块未被占用的存储地址），再散列函数法，链地址法，而HashMap即是采用了链地址法，也就是数组+链表的方式，</p>
-<h2 id="二、HashMap实现原理"><a href="#二、HashMap实现原理" class="headerlink" title="二、HashMap实现原理"></a>二、HashMap实现原理</h2><p>HashMap的主干是一个Entry数组。Entry是HashMap的基本组成单元，每一个Entry包含一个key-value键值对。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;HashMap的主干数组，可以看到就是一个Entry数组，初始值为空数组&#123;&#125;，主干数组的长度一定是2的次幂，至于为什么这么做，后面会有详细分析。</span><br><span class="line">transient Entry&lt;K,V&gt;[] table &#x3D; (Entry&lt;K,V&gt;[]) EMPTY_TABLE;</span><br></pre></td></tr></table></figure>
-
-<p>Entry是HashMap中的一个静态内部类。代码如下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">static class Entry&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; &#123;</span><br><span class="line">        final K key;</span><br><span class="line">        V value;</span><br><span class="line">        Entry&lt;K,V&gt; next;&#x2F;&#x2F;存储指向下一个Entry的引用，单链表结构</span><br><span class="line">        int hash;&#x2F;&#x2F;对key的hashcode值进行hash运算后得到的值，存储在Entry，避免重复计算</span><br><span class="line"></span><br><span class="line">        &#x2F;**</span><br><span class="line">         * Creates new entry.</span><br><span class="line">         *&#x2F;</span><br><span class="line">        Entry(int h, K k, V v, Entry&lt;K,V&gt; n) &#123;</span><br><span class="line">            value &#x3D; v;</span><br><span class="line">            next &#x3D; n;</span><br><span class="line">            key &#x3D; k;</span><br><span class="line">            hash &#x3D; h;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
-
-<p>所以，HashMap的整体结构如下</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyFpSWqicibqmSGaZUaGdgiboT9CdpxgG96hSrXlIyKnbfrm8OGgRxPg9yFQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p><strong>简单来说，HashMap由数组+链表组成的，数组是HashMap的主体，链表则是主要为了解决哈希冲突而存在的，如果定位到的数组位置不含链表（当前entry的next指向null）,那么对于查找，添加等操作很快，仅需一次寻址即可；如果定位到的数组包含链表，对于添加操作，其时间复杂度为O(n)，首先遍历链表，存在即覆盖，否则新增；对于查找操作来讲，仍需遍历链表，然后通过key对象的equals方法逐一比对查找。所以，性能考虑，HashMap中的链表出现越少，性能才会越好。</strong></p>
-<p>其他几个重要字段</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;实际存储的key-value键值对的个数</span><br><span class="line">transient int size;</span><br><span class="line">&#x2F;&#x2F;阈值，当table &#x3D;&#x3D; &#123;&#125;时，该值为初始容量（初始容量默认为16）；当table被填充了，也就是为table分配内存空间后，threshold一般为 capacity*loadFactory。HashMap在进行扩容时需要参考threshold，后面会详细谈到</span><br><span class="line">int threshold;</span><br><span class="line">&#x2F;&#x2F;负载因子，代表了table的填充度有多少，默认是0.75</span><br><span class="line">final float loadFactor;</span><br><span class="line">&#x2F;&#x2F;用于快速失败，由于HashMap非线程安全，在对HashMap进行迭代时，如果期间其他线程的参与导致HashMap的结构发生变化了（比如put，remove等操作），需要抛出异常ConcurrentModificationException</span><br><span class="line">transient int modCount;</span><br></pre></td></tr></table></figure>
-
-<p>HashMap有4个构造器，其他构造器如果用户没有传入initialCapacity 和loadFactor这两个参数，会使用默认值</p>
-<p>initialCapacity默认为16，loadFactory默认为0.75</p>
-<p>我们看下其中一个</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public HashMap(int initialCapacity, float loadFactor) &#123;</span><br><span class="line">　　　　　&#x2F;&#x2F;此处对传入的初始容量进行校验，最大不能超过MAXIMUM_CAPACITY &#x3D; 1&lt;&lt;30(230)</span><br><span class="line">        if (initialCapacity &lt; 0)</span><br><span class="line">            throw new IllegalArgumentException(&quot;Illegal initial capacity: &quot; +</span><br><span class="line">                                               initialCapacity);</span><br><span class="line">        if (initialCapacity &gt; MAXIMUM_CAPACITY)</span><br><span class="line">            initialCapacity &#x3D; MAXIMUM_CAPACITY;</span><br><span class="line">        if (loadFactor &lt;&#x3D; 0 || Float.isNaN(loadFactor))</span><br><span class="line">            throw new IllegalArgumentException(&quot;Illegal load factor: &quot; +</span><br><span class="line">                                               loadFactor);</span><br><span class="line"></span><br><span class="line">        this.loadFactor &#x3D; loadFactor;</span><br><span class="line">        threshold &#x3D; initialCapacity;</span><br><span class="line">　　　　　</span><br><span class="line">        init();&#x2F;&#x2F;init方法在HashMap中没有实际实现，不过在其子类如 linkedHashMap中就会有对应实现</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>从上面这段代码我们可以看出，<strong>在常规构造器中，没有为数组table分配内存空间（有一个入参为指定Map的构造器例外），而是在执行put操作的时候才真正构建table数组</strong></p>
-<p>OK,接下来我们来看看put操作的实现吧</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">public V put(K key, V value) &#123;</span><br><span class="line">        &#x2F;&#x2F;如果table数组为空数组&#123;&#125;，进行数组填充（为table分配实际内存空间），入参为threshold，此时threshold为initialCapacity 默认是1&lt;&lt;4(24&#x3D;16)</span><br><span class="line">        if (table &#x3D;&#x3D; EMPTY_TABLE) &#123;</span><br><span class="line">            inflateTable(threshold);</span><br><span class="line">        &#125;</span><br><span class="line">       &#x2F;&#x2F;如果key为null，存储位置为table[0]或table[0]的冲突链上</span><br><span class="line">        if (key &#x3D;&#x3D; null)</span><br><span class="line">            return putForNullKey(value);</span><br><span class="line">        int hash &#x3D; hash(key);&#x2F;&#x2F;对key的hashcode进一步计算，确保散列均匀</span><br><span class="line">        int i &#x3D; indexFor(hash, table.length);&#x2F;&#x2F;获取在table中的实际位置</span><br><span class="line">        for (Entry&lt;K,V&gt; e &#x3D; table[i]; e !&#x3D; null; e &#x3D; e.next) &#123;</span><br><span class="line">        &#x2F;&#x2F;如果该对应数据已存在，执行覆盖操作。用新value替换旧value，并返回旧value</span><br><span class="line">            Object k;</span><br><span class="line">            if (e.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; e.key) &#x3D;&#x3D; key || key.equals(k))) &#123;</span><br><span class="line">                V oldValue &#x3D; e.value;</span><br><span class="line">                e.value &#x3D; value;</span><br><span class="line">                e.recordAccess(this);</span><br><span class="line">                return oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        modCount++;&#x2F;&#x2F;保证并发访问时，若HashMap内部结构发生变化，快速响应失败</span><br><span class="line">        addEntry(hash, key, value, i);&#x2F;&#x2F;新增一个entry</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>先来看看inflateTable这个方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">private void inflateTable(int toSize) &#123;</span><br><span class="line">        int capacity &#x3D; roundUpToPowerOf2(toSize);&#x2F;&#x2F;capacity一定是2的次幂</span><br><span class="line">        threshold &#x3D; (int) Math.min(capacity * loadFactor, MAXIMUM_CAPACITY + 1);&#x2F;&#x2F;此处为threshold赋值，取capacity*loadFactor和MAXIMUM_CAPACITY+1的最小值，capaticy一定不会超过MAXIMUM_CAPACITY，除非loadFactor大于1</span><br><span class="line">        table &#x3D; new Entry[capacity];</span><br><span class="line">        initHashSeedAsNeeded(capacity);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>inflateTable这个方法用于为主干数组table在内存中分配存储空间，通过roundUpToPowerOf2(toSize)可以确保capacity为大于或等于toSize的最接近toSize的二次幂，比如toSize=13,则capacity=16;to_size=16,capacity=16;to_size=17,capacity=32.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">private static int roundUpToPowerOf2(int number) &#123;</span><br><span class="line">        &#x2F;&#x2F; assert number &gt;&#x3D; 0 : &quot;number must be non-negative&quot;;</span><br><span class="line">        return number &gt;&#x3D; MAXIMUM_CAPACITY</span><br><span class="line">                ? MAXIMUM_CAPACITY</span><br><span class="line">                : (number &gt; 1) ? Integer.highestOneBit((number - 1) &lt;&lt; 1) : 1;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>roundUpToPowerOf2中的这段处理使得数组长度一定为2的次幂，Integer.highestOneBit是用来获取最左边的bit（其他bit位为0）所代表的数值.</p>
-<p>hash函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;这是一个神奇的函数，用了很多的异或，移位等运算，对key的hashcode进一步进行计算以及二进制位的调整等来保证最终获取的存储位置尽量分布均匀</span><br><span class="line">final int hash(Object k) &#123;</span><br><span class="line">        int h &#x3D; hashSeed;</span><br><span class="line">        if (0 !&#x3D; h &amp;&amp; k instanceof String) &#123;</span><br><span class="line">            return sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        h ^&#x3D; k.hashCode();</span><br><span class="line"></span><br><span class="line">        h ^&#x3D; (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);</span><br><span class="line">        return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>以上hash函数计算出的值，通过indexFor进一步处理来获取实际的存储位置</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;**</span><br><span class="line">     * 返回数组下标</span><br><span class="line">     *&#x2F;</span><br><span class="line">    static int indexFor(int h, int length) &#123;</span><br><span class="line">        return h &amp; (length-1);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>h&amp;（length-1）保证获取的index一定在数组范围内，举个例子，默认容量16，length-1=15，h=18,转换成二进制计算为</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">    1  0  0  1  0</span><br><span class="line">&amp;   0  1  1  1  1</span><br><span class="line">__________________</span><br><span class="line">    0  0  0  1  0    &#x3D; 2</span><br></pre></td></tr></table></figure>
-
-<p>最终计算出的index=2。有些版本的对于此处的计算会使用 取模运算，也能保证index一定在数组范围内，不过位运算对计算机来说，性能更高一些（HashMap中有大量位运算）</p>
-<p>所以最终存储位置的确定流程是这样的：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyFkfqOayTx95NbEoJicJNSHJcc6xABNiaesuibAWrFElIU4rqAjlpllpjqQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>再来看看addEntry的实现：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">void addEntry(int hash, K key, V value, int bucketIndex) &#123;</span><br><span class="line">        if ((size &gt;&#x3D; threshold) &amp;&amp; (null !&#x3D; table[bucketIndex])) &#123;</span><br><span class="line">            resize(2 * table.length);&#x2F;&#x2F;当size超过临界阈值threshold，并且即将发生哈希冲突时进行扩容</span><br><span class="line">            hash &#x3D; (null !&#x3D; key) ? hash(key) : 0;</span><br><span class="line">            bucketIndex &#x3D; indexFor(hash, table.length);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        createEntry(hash, key, value, bucketIndex);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过以上代码能够得知，当发生哈希冲突并且size大于阈值的时候，需要进行数组扩容，扩容时，需要新建一个长度为之前数组2倍的新的数组，然后将当前的Entry数组中的元素全部传输过去，扩容后的新数组长度为之前的2倍，所以扩容相对来说是个耗资源的操作。</p>
-<h2 id="三、为何HashMap的数组长度一定是2的次幂？"><a href="#三、为何HashMap的数组长度一定是2的次幂？" class="headerlink" title="三、为何HashMap的数组长度一定是2的次幂？"></a>三、为何HashMap的数组长度一定是2的次幂？</h2><p>我们来继续看上面提到的resize方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">void resize(int newCapacity) &#123;</span><br><span class="line">        Entry[] oldTable &#x3D; table;</span><br><span class="line">        int oldCapacity &#x3D; oldTable.length;</span><br><span class="line">        if (oldCapacity &#x3D;&#x3D; MAXIMUM_CAPACITY) &#123;</span><br><span class="line">            threshold &#x3D; Integer.MAX_VALUE;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Entry[] newTable &#x3D; new Entry[newCapacity];</span><br><span class="line">        transfer(newTable, initHashSeedAsNeeded(newCapacity));</span><br><span class="line">        table &#x3D; newTable;</span><br><span class="line">        threshold &#x3D; (int)Math.min(newCapacity * loadFactor, MAXIMUM_CAPACITY + 1);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果数组进行扩容，数组长度发生变化，而存储位置 index = h&amp;(length-1),index也可能会发生变化，需要重新计算index，我们先来看看transfer这个方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">void transfer(Entry[] newTable, boolean rehash) &#123;</span><br><span class="line">        int newCapacity &#x3D; newTable.length;</span><br><span class="line">　　　　　&#x2F;&#x2F;for循环中的代码，逐个遍历链表，重新计算索引位置，将老数组数据复制到新数组中去（数组不存储实际数据，所以仅仅是拷贝引用而已）</span><br><span class="line">        for (Entry&lt;K,V&gt; e : table) &#123;</span><br><span class="line">            while(null !&#x3D; e) &#123;</span><br><span class="line">                Entry&lt;K,V&gt; next &#x3D; e.next;</span><br><span class="line">                if (rehash) &#123;</span><br><span class="line">                    e.hash &#x3D; null &#x3D;&#x3D; e.key ? 0 : hash(e.key);</span><br><span class="line">                &#125;</span><br><span class="line">                int i &#x3D; indexFor(e.hash, newCapacity);</span><br><span class="line">　　　　　　　　　 &#x2F;&#x2F;将当前entry的next链指向新的索引位置,newTable[i]有可能为空，有可能也是个entry链，如果是entry链，直接在链表头部插入。</span><br><span class="line">                e.next &#x3D; newTable[i];</span><br><span class="line">                newTable[i] &#x3D; e;</span><br><span class="line">                e &#x3D; next;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>这个方法将老数组中的数据逐个链表地遍历，扔到新的扩容后的数组中，我们的数组索引位置的计算是通过 对key值的hashcode进行hash扰乱运算后，再通过和 length-1进行位运算得到最终数组索引位置。</p>
-<p>hashMap的数组长度一定保持2的次幂，比如16的二进制表示为 10000，那么length-1就是15，二进制为01111，同理扩容后的数组长度为32，二进制表示为100000，length-1为31，二进制表示为011111。</p>
-<p>从下图可以我们也能看到这样会保证低位全为1，而扩容后只有一位差异，也就是多出了最左位的1，这样在通过 h&amp;(length-1)的时候，只要h对应的最左边的那一个差异位为0，就能保证得到的新的数组索引和老数组索引一致(大大减少了之前已经散列良好的老数组的数据位置重新调换)，个人理解。</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyFTA98jQT0IwX3pgvicOIzic1m2pQnFGnEZticIgjkNpRzlpWpm6Up8R0JQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>还有，数组长度保持2的次幂，length-1的低位都为1，会使得获得的数组索引index更加均匀，比如：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyFtIY11CAa3FBg8kBrHZz6trVdiba0IXWNSibJyiaVfMXLYQjj7ia7CC8fqQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>我们看到，上面的&amp;运算，高位是不会对结果产生影响的（hash函数采用各种位运算可能也是为了使得低位更加散列），我们只关注低位bit，如果低位全部为1，那么对于h低位部分来说，任何一位的变化都会对结果产生影响，也就是说，要得到index=21这个存储位置，h的低位只有这一种组合。这也是数组长度设计为必须为2的次幂的原因。</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/8KKrHK5ic6XBcL6KB4FdibQFHicRNs97cyFkVLibyNBhJd3plIibRWZaeZ87KoKVpia9icllnlgiaXsSCU9wuvuqpX9nNg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>如果不是2的次幂，也就是低位不是全为1此时，要使得index=21，h的低位部分不再具有唯一性了，哈希冲突的几率会变的更大，同时，index对应的这个bit位无论如何不会等于1了，而对应的那些数组位置也就被白白浪费了。</p>
-<p>get方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public V get(Object key) &#123;</span><br><span class="line">　　　　 &#x2F;&#x2F;如果key为null,则直接去table[0]处去检索即可。</span><br><span class="line">        if (key &#x3D;&#x3D; null)</span><br><span class="line">            return getForNullKey();</span><br><span class="line">        Entry&lt;K,V&gt; entry &#x3D; getEntry(key);</span><br><span class="line">        return null &#x3D;&#x3D; entry ? null : entry.getValue();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>get方法通过key值返回对应value，如果key为null，直接去table[0]处检索。我们再看一下getEntry这个方法</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">final Entry&lt;K,V&gt; getEntry(Object key) &#123;</span><br><span class="line"></span><br><span class="line">        if (size &#x3D;&#x3D; 0) &#123;</span><br><span class="line">            return null;</span><br><span class="line">        &#125;</span><br><span class="line">        &#x2F;&#x2F;通过key的hashcode值计算hash值</span><br><span class="line">        int hash &#x3D; (key &#x3D;&#x3D; null) ? 0 : hash(key);</span><br><span class="line">        &#x2F;&#x2F;indexFor (hash&amp;length-1) 获取最终数组索引，然后遍历链表，通过equals方法比对找出对应记录</span><br><span class="line">        for (Entry&lt;K,V&gt; e &#x3D; table[indexFor(hash, table.length)];</span><br><span class="line">             e !&#x3D; null;</span><br><span class="line">             e &#x3D; e.next) &#123;</span><br><span class="line">            Object k;</span><br><span class="line">            if (e.hash &#x3D;&#x3D; hash &amp;&amp; </span><br><span class="line">                ((k &#x3D; e.key) &#x3D;&#x3D; key || (key !&#x3D; null &amp;&amp; key.equals(k))))</span><br><span class="line">                return e;</span><br><span class="line">        &#125;</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看出，get方法的实现相对简单，key(hashcode)–&gt;hash–&gt;indexFor–&gt;最终索引位置，找到对应位置table[i]，再查看是否有链表，遍历链表，通过key的equals方法比对查找对应的记录。要注意的是，有人觉得上面在定位到数组位置之后然后遍历链表的时候，e.hash == hash这个判断没必要，仅通过equals判断就可以。</p>
-<p>其实不然，试想一下，如果传入的key对象重写了equals方法却没有重写hashCode，而恰巧此对象定位到这个数组位置，如果仅仅用equals判断可能是相等的，但其hashCode和当前对象不一致，这种情况，根据Object的hashCode的约定，不能返回当前对象，而应该返回null，后面的例子会做出进一步解释。</p>
-<h2 id="四、重写equals方法需同时重写hashCode方法"><a href="#四、重写equals方法需同时重写hashCode方法" class="headerlink" title="四、重写equals方法需同时重写hashCode方法"></a>四、重写equals方法需同时重写hashCode方法</h2><p>关于HashMap的源码分析就介绍到这儿了，最后我们再聊聊老生常谈的一个问题，各种资料上都会提到，“重写equals时也要同时覆盖hashcode”，我们举个小例子来看看，如果重写了equals而不重写hashcode会发生什么样的问题</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;**</span><br><span class="line"> * Created by chengxiao on 2016&#x2F;11&#x2F;15.</span><br><span class="line"> *&#x2F;</span><br><span class="line">public class MyTest &#123;</span><br><span class="line">    private static class Person&#123;</span><br><span class="line">        int idCard;</span><br><span class="line">        String name;</span><br><span class="line"></span><br><span class="line">        public Person(int idCard, String name) &#123;</span><br><span class="line">            this.idCard &#x3D; idCard;</span><br><span class="line">            this.name &#x3D; name;</span><br><span class="line">        &#125;</span><br><span class="line">        @Override</span><br><span class="line">        public boolean equals(Object o) &#123;</span><br><span class="line">            if (this &#x3D;&#x3D; o) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">            if (o &#x3D;&#x3D; null || getClass() !&#x3D; o.getClass())&#123;</span><br><span class="line">                return false;</span><br><span class="line">            &#125;</span><br><span class="line">            Person person &#x3D; (Person) o;</span><br><span class="line">            &#x2F;&#x2F;两个对象是否等值，通过idCard来确定</span><br><span class="line">            return this.idCard &#x3D;&#x3D; person.idCard;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    public static void main(String []args)&#123;</span><br><span class="line">        HashMap&lt;Person,String&gt; map &#x3D; new HashMap&lt;Person, String&gt;();</span><br><span class="line">        Person person &#x3D; new Person(1234,&quot;乔峰&quot;);</span><br><span class="line">        &#x2F;&#x2F;put到hashmap中去</span><br><span class="line">        map.put(person,&quot;天龙八部&quot;);</span><br><span class="line">        &#x2F;&#x2F;get取出，从逻辑上讲应该能输出“天龙八部”</span><br><span class="line">        System.out.println(&quot;结果:&quot;+map.get(new Person(1234,&quot;萧峰&quot;)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>实际输出结果：</p>
-<blockquote>
-<p>结果：null</p>
-</blockquote>
-<p>如果我们已经对HashMap的原理有了一定了解，这个结果就不难理解了。尽管我们在进行get和put操作的时候，使用的key从逻辑上讲是等值的（通过equals比较是相等的），但由于没有重写hashCode方法，所以put操作时，key(hashcode1)–&gt;hash–&gt;indexFor–&gt;最终索引位置 ，而通过key取出value的时候 key(hashcode1)–&gt;hash–&gt;indexFor–&gt;最终索引位置，由于hashcode1不等于hashcode2，导致没有定位到一个数组位置而返回逻辑上错误的值null（也有可能碰巧定位到一个数组位置，但是也会判断其entry的hash值是否相等，上面get方法中有提到。）</p>
-<p>所以，在重写equals的方法的时候，必须注意重写hashCode方法，同时还要保证通过equals判断相等的两个对象，调用hashCode方法要返回同样的整数值。而如果equals判断不相等的两个对象，其hashCode可以相同（只不过会发生哈希冲突，应尽量避免）。</p>
-<h2 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h2><p>本文描述了HashMap的实现原理，并结合源码做了进一步的分析，也涉及到一些源码细节设计缘由，最后简单介绍了为什么重写equals的时候需要重写hashCode方法。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://mp.weixin.qq.com/s?__biz=MzIyNDU2ODA4OQ==&mid=2247484056&idx=1&sn=47cebe61a8902fd76e7bbf0929b97514&chksm=e80db4eedf7a3df8b357253fb6905dc423c47fcc7ddec89d5b81304c6f796f24a7dcf5b3cc10&scene=21#wechat_redirect" target="_blank" rel="noopener">HashMap的实现原理</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/12/Integer.highestOneBit(int%20i)%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/12/Integer.highestOneBit(int%20i)%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">Integer.highestOneBit(int i)方法的作用与底层实现</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-13 06:02:56 / 修改时间：14:09:57" itemprop="dateCreated datePublished" datetime="2020-06-13T06:02:56+08:00">2020-06-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在Integer类中有这么一个方法，你可以给它传入一个数字，它将返回小于等于这个数字的一个2的幂次方数。这个方法就是<code>highestOneBit(int i)</code>。</p>
-<p>比如下面的Demo，注意方法的输入与返回值：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(Integer.highestOneBit(<span class="number">15</span>));  <span class="comment">// 输出8</span></span><br><span class="line">System.out.println(Integer.highestOneBit(<span class="number">16</span>));  <span class="comment">// 输出16</span></span><br><span class="line">System.out.println(Integer.highestOneBit(<span class="number">17</span>));  <span class="comment">// 输出16</span></span><br></pre></td></tr></table></figure>
-
-<p>首先，对于这个方法的功能：<strong>给定一个数字，找到小于或等于这个数字的一个2的幂次方数。</strong></p>
-<p>如果我们要自己来实现的话，我们需要知道：<strong>怎么判断一个数字是2的幂次方数。</strong></p>
-<p>说真的，我一下想不到什么好方法来判断，唯一能想到的就是一个数字如果把它转换成二进制表示的话，它会有一个规律：<strong>如果一个数字是2的幂次方数，那么它对应的二进制表示仅有一个bit位上是1，其他bit位全为0。</strong> 比如： 十进制6，二进制表示为：0000 0110 十进制8，二进制表示为：0000 1000 十进制9，二进制表示为：0000 1001 所以，我们可以利用一个数字的二进制表示来判断这个数字是不是2的幂次方数。关键代码怎么实现呢？去遍历每个bit位？可以，但是不好，那怎么办？我们还是回头仔细看看Integer是如何实现的吧？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">highestOneBit</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// HD, Figure 3-1</span></span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">1</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">2</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">4</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">8</span>);</span><br><span class="line">	i |= (i &gt;&gt; <span class="number">16</span>);</span><br><span class="line">	<span class="keyword">return</span> i - (i &gt;&gt;&gt; <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们发现这段代码中没有任何的遍历，只有位运算与一个减法，也就是说它的实现思路和我们自己的实现思路完全不一样，它的思路就是：<strong>给定一个数字，通过一系列的运算，得到一个小于或等于该数字的一个2的幂次方数。</strong></p>
-<p>也就是：如果给定一个数字18，通过运算后，要得到16。</p>
-<p>18用二进制表示为：      0001 0010</p>
-<p>想要得到的结果(16)是：0001 0000</p>
-<p>那么这个运算的过程无非就是<strong>将18对应的二进制数中除最高位的1之外的其他bit位都清零，则拿到了我们想要的结果。</strong></p>
-<p>那怎么通过位运算来实现这个过程呢？</p>
-<p>我们拿18对应的二进制数<code>0001 0010</code>来举个例子就行了： 先将<code>0001 0010</code>右移1位， 得到<code>0000 1001</code>，再与自身进行或运算： 得到<code>0001 1011</code>。</p>
-<p>再将<code>0001 1011</code>右移2位， 得到<code>0000 0110</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移4位， 得到<code>0000 0001</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移8位， 得到<code>0000 0000</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移16位， 得到<code>0000 0000</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>无符号右移1位， 得到<code>0000 1111</code>。</p>
-<p>最后用<code>0001 1111 - 0000 1111 = 0001 0000</code> 震惊！得到了我们想要的结果。</p>
-<p>其实这个过程可以抽象成这样： 现在有一个二进制数据，<code>0001****</code>，我们不关心低位的取值情况，我们对其进行右移并且进行或运算。</p>
-<p>先将<code>0001****</code>右移1位， 得到<code>00001***</code>，再与自身进行或运算： 得到<code>00011***</code>。</p>
-<p>再将<code>00011***</code>右移2位， 得到<code>0000011*</code>，再与自身进行或运算： 得到<code>0001111*</code>。</p>
-<p>再将<code>0001111*</code>右移4位， 得到<code>00000001</code>，再与自身进行或运算： 得到<code>00011111</code>。</p>
-<p>后面不用再推算了，到这里我们其实可以发现一个规律： <strong>右移与或运算的目的就是想让某个数字的低位都变为1，再用该结果 减去 该结果右移一位后的结果，则相当于清零了原数字的低位。即得到了我们想要的结果。</strong></p>
-<p>到此，只能感叹JDK作者对于位运算的使用已经达到了出神入化的境界了。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5d679f67f265da03d55e6ab5" target="_blank" rel="noopener">Integer.highestOneBit(int i)方法的作用与底层实现</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2108,19 +2321,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">146</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">18</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -2164,7 +2377,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">417k</span>
+    <span title="站点总字数">438k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

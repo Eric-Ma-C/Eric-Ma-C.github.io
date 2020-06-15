@@ -186,6 +186,301 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%90%88%E5%B9%B6%E4%B8%A4%E4%B8%AA%E6%8E%92%E5%BA%8F%E7%9A%84%E9%93%BE%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E5%90%88%E5%B9%B6%E4%B8%A4%E4%B8%AA%E6%8E%92%E5%BA%8F%E7%9A%84%E9%93%BE%E8%A1%A8/" class="post-title-link" itemprop="url">合并两个排序的链表</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-23 06:49:00" itemprop="dateCreated datePublished" datetime="2020-05-23T06:49:00+08:00">2020-05-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-24 14:27:19" itemprop="dateModified" datetime="2020-05-24T14:27:19+08:00">2020-05-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>644</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入两个单调递增的链表，输出两个链表合成后的链表，当然我们需要合成后的链表满足单调不减规则。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ListNode <span class="title">Merge</span><span class="params">(ListNode list1, ListNode list2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (list1 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> list2;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (list2 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> list1;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode head = <span class="keyword">null</span>, pre = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">while</span> (list1 != <span class="keyword">null</span> &amp;&amp; list2 != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (list1.val &lt;= list2.val) &#123;</span><br><span class="line">            <span class="keyword">if</span> (head == <span class="keyword">null</span>) &#123;</span><br><span class="line">                head = list1;</span><br><span class="line">                pre = head;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                pre.next = list1;</span><br><span class="line">                pre = list1;</span><br><span class="line">            &#125;</span><br><span class="line">            list1 = list1.next;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (head == <span class="keyword">null</span>) &#123;</span><br><span class="line">                head = list2;</span><br><span class="line">                pre = head;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                pre.next = list2;</span><br><span class="line">                pre = list2;</span><br><span class="line">            &#125;</span><br><span class="line">            list2 = list2.next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    pre.next = (list1 != <span class="keyword">null</span>) ? list1 : list2;</span><br><span class="line">    <span class="keyword">return</span> head;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>todo:还可以用递归的方式</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E6%95%B0%E5%80%BC%E7%9A%84%E6%95%B4%E6%95%B0%E6%AC%A1%E6%96%B9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E6%95%B0%E5%80%BC%E7%9A%84%E6%95%B4%E6%95%B0%E6%AC%A1%E6%96%B9/" class="post-title-link" itemprop="url">数值的整数次方</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 03:04:14 / 修改时间：14:25:14" itemprop="dateCreated datePublished" datetime="2020-05-23T03:04:14+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>给定一个double类型的浮点数base和int类型的整数exponent。求base的exponent次方。</p>
+<p>保证base和exponent不同时为0</p>
+<p>非递归快速幂</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">Power</span><span class="params">(<span class="keyword">double</span> base, <span class="keyword">int</span> exponent)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (exponent == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (exponent &lt; <span class="number">0</span>) &#123;<span class="comment">//负数次幂</span></span><br><span class="line">        base = <span class="number">1.0</span> / base;</span><br><span class="line">        exponent = -exponent;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">double</span> ans = <span class="number">1.0</span>, tmpEx = base;</span><br><span class="line">    <span class="keyword">while</span> (exponent &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> ((exponent &amp; <span class="number">0x01</span>) == <span class="number">1</span>) &#123;</span><br><span class="line">            ans *= tmpEx;</span><br><span class="line">        &#125;</span><br><span class="line">        tmpEx *= tmpEx;<span class="comment">//翻倍</span></span><br><span class="line">        exponent = exponent &gt;&gt; <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ans;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上解法"><a href="#网上解法" class="headerlink" title="网上解法"></a>网上解法</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/1a834e5e3e1a4b7ba251417554e07c00?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/1a834e5e3e1a4b7ba251417554e07c00?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h3 id="预处理：求pow-b-n-，如果n为负数怎么解决？"><a href="#预处理：求pow-b-n-，如果n为负数怎么解决？" class="headerlink" title="预处理：求pow(b, n)，如果n为负数怎么解决？"></a>预处理：求pow(b, n)，如果n为负数怎么解决？</h3><p>假如求<img src="https://www.nowcoder.com/equation?tex=x%5E%7B-2%7D" alt="图片说明"> ,是不是可以转换成<img src="https://www.nowcoder.com/equation?tex=(%5Cfrac%7B1%7D%7Bx%7D)%5E%7B2%7D" alt="图片说明"><br>于是，预处理代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">double</span> <span class="title">Power</span><span class="params">(<span class="keyword">double</span> b, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        b = <span class="number">1</span> / b;</span><br><span class="line">        n = -n;</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="方法一：暴力方法"><a href="#方法一：暴力方法" class="headerlink" title="方法一：暴力方法"></a>方法一：暴力方法</h2><p>很显然就是n个b相乘。循环n次。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">Power</span><span class="params">(<span class="keyword">double</span> b, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            b = <span class="number">1</span> / b;</span><br><span class="line">            n = -n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">double</span> ret = <span class="number">1.0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; ++i) ret *= b;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>时间复杂度：O(n)<br>空间复杂度：O(1)</p>
+<h2 id="方法二：递归法（快速幂）"><a href="#方法二：递归法（快速幂）" class="headerlink" title="方法二：递归法（快速幂）"></a>方法二：递归法（快速幂）</h2><p>假设我们求<img src="https://www.nowcoder.com/equation?tex=x%5E%7B8%7D" alt="图片说明"> ，如果我们知道<img src="https://www.nowcoder.com/equation?tex=x%5E%7B4%7D" alt="图片说明"> ，那么<img src="https://www.nowcoder.com/equation?tex=x%5E%7B8%7D%20%3D%20(x%5E%7B4%7D)%5E%7B2%7D" alt="图片说明"> ，所以<img src="https://www.nowcoder.com/equation?tex=x%5E%7Bn%7D%20%3D%20(x%5E%7B%5Cfrac%7Bn%7D%7B2%7D%7D)%5E%7B2%7D" alt="图片说明"> </p>
+<p>但是还有个小问题，如果n是偶数，那么上述没问题。</p>
+<p>如果n是奇数，<img src="https://www.nowcoder.com/equation?tex=x%5E%7Bn%7D%20%3D%20(x%5E%7B%5Cfrac%7Bn%7D%7B2%7D%7D)%5E%7B2%7D%20*%20x" alt="图片说明"> ， 比如<img src="https://www.nowcoder.com/equation?tex=x%5E%7B7%7D%20%3D%20(x%5E%7B3%7D)%5E%7B2%7D%20*%20x" alt="图片说明"><br>代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">q_power</span><span class="params">(<span class="keyword">double</span> b, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">1.0</span>;</span><br><span class="line">        <span class="keyword">double</span> ret = q_power(b, n/<span class="number">2</span>);</span><br><span class="line">        <span class="keyword">if</span> (n&amp;<span class="number">1</span>) &#123; <span class="comment">// 奇数</span></span><br><span class="line">            <span class="keyword">return</span> ret * ret * b;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> ret * ret;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">Power</span><span class="params">(<span class="keyword">double</span> b, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            b = <span class="number">1</span> / b;</span><br><span class="line">            n = -n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> q_power(b, n);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>时间复杂度：O(logn)，每次规模减少一半<br>空间复杂度：O(logn)，递归栈，因为要记住logn个变量</p>
+<h2 id="方法三：非递归的快速幂"><a href="#方法三：非递归的快速幂" class="headerlink" title="方法三：非递归的快速幂"></a>方法三：非递归的快速幂</h2><p>假设求<img src="https://www.nowcoder.com/equation?tex=x%5E%7B6%7D" alt="图片说明"> ,已知6可以表示成二进制<code>110</code><br>可以表示成<img src="https://www.nowcoder.com/equation?tex=6%20%3D%200*2%5E%7B0%7D%20%2B%201%20*%202%5E%7B1%7D%20%2B%201%20*%202%5E%7B2%7D" alt="图片说明"> ,所以<img src="https://www.nowcoder.com/equation?tex=x%5E%7B6%7D" alt="图片说明"> 可以表示成<img src="https://www.nowcoder.com/equation?tex=x%5E%7B6%7D%20%3D%20x%5E%20%7B0*2%5E%7B0%7D%20%2B%201*2%5E%7B1%7D%20%2B%201*2%5E%7B2%7D%7D%20%3D%20x%5E%7B0%7D%20*%20x%5E%7B1*2%5E%7B1%7D%7D*x%5E%7B1*2%5E%7B2%7D%7D" alt="图片说明"> 所以，对于二进制数，遇到位数是1的就乘到答案中。<br>代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">double</span> <span class="title">Power</span><span class="params">(<span class="keyword">double</span> b, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            b = <span class="number">1</span> / b;</span><br><span class="line">            n = -n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">double</span> x = b; <span class="comment">// 记录x^0, x^1, x^2 ...</span></span><br><span class="line">        <span class="keyword">double</span> ret = <span class="number">1.0</span>;</span><br><span class="line">        <span class="keyword">while</span> (n) &#123;</span><br><span class="line">            <span class="keyword">if</span> (n&amp;<span class="number">1</span>) &#123;</span><br><span class="line">                ret *= x; <span class="comment">// 二进制位数是1的，乘进答案。</span></span><br><span class="line">            &#125;</span><br><span class="line">            x *= x;</span><br><span class="line">            n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上述方法相当于遍历n的二进制位，是1就乘进结果<br>时间复杂度：O(logn)，因为n的二进制位个数为logn<br>空间复杂度：O(1)</p>
+<h1 id="拓展"><a href="#拓展" class="headerlink" title="拓展"></a>拓展</h1><p>STL标准库中，pow函数的代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>,<span class="title">class</span> <span class="title">Integer</span>, <span class="title">class</span> <span class="title">MonoidOperation</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">T</span> <span class="title">power_this</span>(<span class="title">T</span> <span class="title">x</span>, <span class="title">Integer</span> <span class="title">n</span>, <span class="title">MonoidOperation</span> <span class="title">op</span>)&#123;</span> <span class="comment">// 可以看成求pow(x, n)</span></span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">return</span> identity_element(op); <span class="comment">// 可以看成 1</span></span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">while</span> ((n &amp; <span class="number">1</span>) == <span class="number">0</span>)&#123;</span><br><span class="line">            n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">            x = op(x, x); <span class="comment">//op看成乘法</span></span><br><span class="line">        &#125;</span><br><span class="line">        T result = x; <span class="comment">// 遇到 二进制中从低位到高位的第一个 1</span></span><br><span class="line">        n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (n != <span class="number">0</span>)&#123;</span><br><span class="line">            x = op(x, x);</span><br><span class="line">            <span class="keyword">if</span> ((n &amp; <span class="number">1</span>) != <span class="number">0</span>)</span><br><span class="line">                result = op(result, x);</span><br><span class="line">            n &gt;&gt;= <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>做法跟我们方法三是一样的。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E8%B0%83%E6%95%B4%E6%95%B0%E7%BB%84%E9%A1%BA%E5%BA%8F%E4%BD%BF%E5%A5%87%E6%95%B0%E4%BD%8D%E4%BA%8E%E5%81%B6%E6%95%B0%E5%89%8D%E9%9D%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E8%B0%83%E6%95%B4%E6%95%B0%E7%BB%84%E9%A1%BA%E5%BA%8F%E4%BD%BF%E5%A5%87%E6%95%B0%E4%BD%8D%E4%BA%8E%E5%81%B6%E6%95%B0%E5%89%8D%E9%9D%A2/" class="post-title-link" itemprop="url">调整数组顺序使奇数位于偶数前面</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 02:41:37 / 修改时间：10:55:32" itemprop="dateCreated datePublished" datetime="2020-05-23T02:41:37+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入一个整数数组，实现一个函数来调整该数组中数字的顺序，使得所有的奇数位于数组的前半部分，所有的偶数位于数组的后半部分，并保证奇数和奇数，偶数和偶数之间的相对位置不变。</p>
+<p>空间换时间,时间复杂度O(n),空间复杂度O(n)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reOrderArray</span><span class="params">(<span class="keyword">int</span> [] array)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span>[] ans = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span>[] oddList = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span>[] evenList = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span> oddNum = <span class="number">0</span>, evenNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; array.length; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (array[i] % <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">            oddList[oddNum++] = array[i];</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            evenList[evenNum++] = array[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; oddNum; k++) &#123;</span><br><span class="line">        ans[k] = oddList[k];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; evenNum; k++) &#123;</span><br><span class="line">        ans[k + oddNum] = evenList[k];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ans.length; i++) &#123;</span><br><span class="line">        array[i] = ans[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/beb5aa231adc45b2a5dcc5b62c93f593?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/beb5aa231adc45b2a5dcc5b62c93f593?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<p>思路：参考快速排序</p>
+<ul>
+<li><code>i++</code>往前走碰到偶数停下来，<code>j = i+1</code> </li>
+<li>若<code>a[j]</code>为偶数，<code>j++</code>前进，直到碰到奇数</li>
+<li><code>a[j]</code>对应的奇数插到a[i]位置，<code>j</code>经过的<code>j-i</code>个偶数依次后移 </li>
+<li>如果<code>j==len-1</code>时还没碰到奇数，证明<code>i</code>和<code>j</code>之间都为偶数了，完成整个移动 </li>
+</ul>
+<p><img src="https://uploadfiles.nowcoder.com/images/20190821/807319133_1566376642654_29268C9D65CC420F5579430A2416F419" alt="图片说明"> </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">reOrderArray</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;<span class="built_in">array</span>)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> len = <span class="built_in">array</span>.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">if</span>(len &lt;= <span class="number">1</span>)&#123; <span class="comment">// 数组空或长度为1</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(i &lt; len)&#123;</span><br><span class="line">            <span class="keyword">int</span> j = i + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">array</span>[i]%<span class="number">2</span> == <span class="number">0</span>)&#123; <span class="comment">// a[i]为偶数，j前进，直到替换</span></span><br><span class="line">                <span class="keyword">while</span>(<span class="built_in">array</span>[j]%<span class="number">2</span> == <span class="number">0</span>)&#123; <span class="comment">// j为偶数，前进</span></span><br><span class="line">                    <span class="keyword">if</span>(j==len<span class="number">-1</span>)<span class="comment">// i为偶数，j也为偶数，一直后移到了末尾，证明后面都是偶数</span></span><br><span class="line">                         <span class="keyword">return</span>;</span><br><span class="line">                    j++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 此时j为奇数</span></span><br><span class="line">                <span class="keyword">int</span> count = j-i;</span><br><span class="line">                <span class="keyword">int</span> temp = <span class="built_in">array</span>[i];</span><br><span class="line">                <span class="built_in">array</span>[i] = <span class="built_in">array</span>[j];</span><br><span class="line">                <span class="keyword">while</span>(count&gt;<span class="number">1</span>)&#123;</span><br><span class="line">                    <span class="built_in">array</span>[i+count] = <span class="built_in">array</span>[i+count<span class="number">-1</span>];<span class="comment">//数组后移</span></span><br><span class="line">                    count--;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="built_in">array</span>[i+<span class="number">1</span>] = temp;</span><br><span class="line">            &#125;</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%8F%8D%E8%BD%AC%E9%93%BE%E8%A1%A8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -923,385 +1218,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/19/Web%E5%89%8D%E7%AB%AF%E5%85%A5%E9%97%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/19/Web%E5%89%8D%E7%AB%AF%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Web前端入门</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-20 05:52:00 / 修改时间：13:58:27" itemprop="dateCreated datePublished" datetime="2020-05-20T05:52:00+08:00">2020-05-20</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="前端"><a href="#前端" class="headerlink" title="前端"></a>前端</h1><p>前端开发三把瑞士军刀:</p>
-<ul>
-<li><strong>HTML 超文本标记语言</strong> <code>HyperText Markup Language</code><br>一种标记语言,用标记标签描述网页(静态网页)</li>
-<li><strong>CSS 层叠样式表</strong> <code>Cascading Style Sheets</code><br>样式定义如何显示HTML元素,大小,形状等<br>样式表可内置于HTML文件中,但专业的做法是独立存放</li>
-<li><strong>JS JavaScript</strong><br>一种轻量级的高级编程语言<br>服务于网页交互,生成动态网页<br>同CSS一样,JS可嵌入在HTML文件中,但专业的做法是单独存放</li>
-</ul>
-<p><img src="https://img-blog.csdnimg.cn/20191209164927586.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>补充</p>
-<ul>
-<li><strong>jQuery</strong><br>jQuery是一个轻量级的”写的少，做的多”的<strong>JavaScript库</strong>。是目前最流行的 JS 框架，而且提供了大量的扩展。jQuery <strong>极大地简化了 JavaScript 编程</strong>.</li>
-<li><strong>bootstrap</strong><br>Bootstrap来自 Twitter,是基于HTML5和CSS3开发的<strong>CSS框架</strong>，它在jQuery的基础上进行了更为个性化的完善，形成一套自己独有的网站风格，并兼容大部分jQuery插件,可以<strong>方便地使用预定义的各种CSS元素和样式</strong>。</li>
-</ul>
-<br>
-
-<ul>
-<li><p><strong>JSP java服务器页面</strong> <code>Java Server Pages</code><br>JSP是为了简化Servlet的工作出现的替代品，Servlet输出HTML非常困难(需要一行一行print)，JSP就是替代Servlet输出HTML的。jsp更注重前端显示，servlet更注重模型和业务逻辑.简单地说,jsp就是在html里面写java代码，servlet就是在java里面写html代码,其实jsp经过容器解释之后就是servlet.<br>MVC模式在Web开发中的好处是非常明显，它规避了JSP与Servlet各自的短板，Servlet只负责业务逻辑而不会通过out.append()动态生成HTML代码；JSP中也不会充斥着大量的业务代码。这大大提高了代码的可读性和可维护性。</p>
-</li>
-<li><p><strong>Ajax  Asynchronous JavaScript + XML</strong><br>异步JavaScript和XML,Ajax是一种技术方案，但并不是一种新技术。它依赖现有的CSS/HTML/JavaScript，而其中最核心的依赖是浏览器提供的<strong>XMLHttpRequest对象</strong>，是这个对象使得浏览器可以发出HTTP请求与接收HTTP响应。实现了<strong>在页面不刷新个情况下和服务器进行数据交互</strong>。</p>
-</li>
-<li><p><strong>Grunt</strong><br>是一个前端自动化工具,提高工作效率.Grunt可以帮助你处理需要重复执行的压缩，编译，单元测试，代码检查以及打包发布等任务.</p>
-</li>
-<li><p><strong>Node.js</strong><br>是一种通过JavaScript语言开发web服务端应用的框架,简单地说就是运行在服务端的 JavaScript。Node.js是一个事件驱动I/O服务端JavaScript环境，基于Google的V8引擎，V8引擎执行Javascript的速度非常快，性能非常好。<br>如果你是一个前端程序员，你不懂得像PHP、Python或Ruby等动态编程语言，然后你想创建自己的服务，那么Node.js是一个非常好的选择。当然，如果你是后端程序员，想部署一些高性能的服务，那么学习Node.js也是一个非常好的选择。</p>
-</li>
-</ul>
-<h3 id="简单的例子"><a href="#简单的例子" class="headerlink" title="简单的例子"></a>简单的例子</h3><p>显示当前时间,刷新页面更新时间<br><img src="https://img-blog.csdnimg.cn/20191209201144526.png" alt="在这里插入图片描述"><br>对应的.html文件<br><img src="https://img-blog.csdnimg.cn/2019120920150448.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>&lt;head&gt;定义了当前网页在浏览器标签栏的标题,编码格式,当前页面css,js资源下载链接<br>&lt;body&gt;定义了网页中显示的元素<br>&lt;script&gt;js脚本,定义动态内容,这里每刷新一次更新一次显示时间</p>
-<h4 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h4><p>chrome –&gt; F12 –&gt; Console<br>输入</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = document.getElementById(<span class="string">"time"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a.textContent = <span class="string">" hello world "</span></span><br><span class="line"> <span class="string">" hello world "</span></span><br></pre></td></tr></table></figure>
-<p>网页内容会跟着改变</p>
-<h4 id="复杂一点的例子"><a href="#复杂一点的例子" class="headerlink" title="复杂一点的例子"></a>复杂一点的例子</h4><p>点击开始显示当前实时时间,点击停止时间暂停更新<br>颜色,布局:居中显示,设置字体颜色<br><img src="https://img-blog.csdnimg.cn/20191209212141134.png" alt="在这里插入图片描述"></p>
-<ul>
-<li>.html文件<br>&lt;head&gt;下新定义了.css和.js文件位置<br>&lt;button&gt;新定义了点击事件<br><img src="https://img-blog.csdnimg.cn/20191209213114526.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>.css文件<br>id选择器:#id { 属性 }<br><img src="https://img-blog.csdnimg.cn/20191209213510444.png" alt="在这里插入图片描述"></li>
-<li>.js文件<br>业务逻辑<br><img src="https://img-blog.csdnimg.cn/20191209213633443.png" alt="在这里插入图片描述"></li>
-</ul>
-<h1 id="前后端分离"><a href="#前后端分离" class="headerlink" title="前后端分离"></a>前后端分离</h1><p>职责分离,架构分离<br>前后端分开开发,各自持续集成,分离上线<br>前后端协作依靠配置文件<br>注意区别<strong>全栈工程师</strong>和<strong>前后端分离前的web工程师</strong></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/19/LeetCode655/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/19/LeetCode655/" class="post-title-link" itemprop="url">LeetCode655</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-20 02:14:02 / 修改时间：10:18:27" itemprop="dateCreated datePublished" datetime="2020-05-20T02:14:02+08:00">2020-05-20</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/LeetCode/" itemprop="url" rel="index"><span itemprop="name">LeetCode</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在一个 m*n 的二维字符串数组中输出二叉树，并遵守以下规则：</p>
-<ol>
-<li><p>行数 m 应当等于给定二叉树的高度。</p>
-</li>
-<li><p>列数 n 应当总是奇数。</p>
-</li>
-<li><p>根节点的值（以字符串格式给出）应当放在可放置的第一行正中间。根节点所在的行与列会将剩余空间划分为两部分（左下部分和右下部分）。你应该将左子树输出在左下部分，右子树输出在右下部分。左下和右下部分应当有相同的大小。即使一个子树为空而另一个非空，你不需要为空的子树输出任何东西，但仍需要为另一个子树留出足够的空间。然而，如果两个子树都为空则不需要为它们留出任何空间。</p>
-</li>
-<li><p>每个未使用的空间应包含一个空的字符串””。</p>
-</li>
-<li><p>使用相同的规则输出子树。</p>
-</li>
-</ol>
-<p>   示例 1:</p>
-<p>输入:<br>     1<br>    /<br>   2<br>输出:<br>[[“”, “1”, “”],<br> [“2”, “”, “”]]<br>示例 2:</p>
-<p>输入:<br>     1<br>    / <br>   2   3<br>    <br>     4```<br>输出:<br>[[“”, “”, “”, “1”, “”, “”, “”],<br> [“”, “2”, “”, “”, “”, “3”, “”],<br> [“”, “”, “4”, “”, “”, “”, “”]]<br>示例 3:</p>
-<p>输入:<br>      1<br>     / <br>    2   5<br>   /<br>  3<br> /<br>4<br>输出:<br>[[“”,  “”,  “”, “”,  “”, “”, “”, “1”, “”,  “”,  “”,  “”,  “”, “”, “”]<br> [“”,  “”,  “”, “2”, “”, “”, “”, “”,  “”,  “”,  “”,  “5”, “”, “”, “”]<br> [“”,  “3”, “”, “”,  “”, “”, “”, “”,  “”,  “”,  “”,  “”,  “”, “”, “”]<br> [“4”, “”,  “”, “”,  “”, “”, “”, “”,  “”,  “”,  “”,  “”,  “”, “”, “”]]<br>注意: 二叉树的高度在范围 [1, 10] 中。</p>
-<p>先递归求出树的高度,生成矩阵框架,再递归填充节点值.</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    List&lt;List&lt;String&gt;&gt; ans = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> List&lt;List&lt;String&gt;&gt; printTree(TreeNode root) &#123;</span><br><span class="line">        <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> ans;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> height = getHeight(root);</span><br><span class="line">        <span class="keyword">int</span> n = (<span class="keyword">int</span>) Math.pow(<span class="number">2</span>, height) - <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/** 生成矩阵 */</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; height; i++) &#123;</span><br><span class="line">            ans.add(<span class="keyword">new</span> ArrayList&lt;&gt;());</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; n; j++) &#123;</span><br><span class="line">                ans.get(i).add(<span class="string">""</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        printNode(root, <span class="number">0</span>, <span class="number">0</span>, n - <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 打印节点</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">printNode</span><span class="params">(TreeNode root, <span class="keyword">int</span> level, <span class="keyword">int</span> begin, <span class="keyword">int</span> end)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> index = (begin + end) / <span class="number">2</span>;</span><br><span class="line">        ans.get(level).set(index, root.val + <span class="string">""</span>);</span><br><span class="line">        printNode(root.left, level + <span class="number">1</span>, begin, index - <span class="number">1</span>);</span><br><span class="line">        printNode(root.right, level + <span class="number">1</span>, index + <span class="number">1</span>, end);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 树的高度</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">getHeight</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> leftH = getHeight(root.left);</span><br><span class="line">        <span class="keyword">int</span> rightH = getHeight(root.right);</span><br><span class="line">        <span class="keyword">return</span> Math.max(leftH, rightH) + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E5%BF%AB%E7%85%A7%E4%BD%BF%E7%94%A8%E5%AD%90%E8%BF%9B%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E5%BF%AB%E7%85%A7%E4%BD%BF%E7%94%A8%E5%AD%90%E8%BF%9B%E7%A8%8B/" class="post-title-link" itemprop="url">为什么 Redis 快照使用子进程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-19 06:40:11 / 修改时间：14:41:52" itemprop="dateCreated datePublished" datetime="2020-05-19T06:40:11+08:00">2020-05-19</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://draveness.me/whys-the-design-redis-single-thread/" target="_blank" rel="noopener">原文链接</a> 作者:Draven</p>
-<p>虽然我们经常将 Redis 看做一个纯内存的键值存储系统，但是我们也会用到它的持久化功能，RDB 和 AOF 就是 Redis 为我们提供的两种持久化工具，其中 RDB 就是 Redis 的数据快照，我们在这篇文章想要分析 Redis 为什么在对数据进行快照持久化时会需要使用子进程，而不是将内存中的数据结构直接导出到磁盘上进行存储。</p>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在具体分析今天的问题之前，我们首先需要了解 Redis 的持久化存储机制 RDB 究竟是什么，RDB 会每隔一段时间中对 Redis 服务中当下的数据集进行快照，除了 Redis 的配置文件可以对快照的间隔进行设置之外，Redis 客户端还同时提供两个命令来生成 RDB 存储文件，也就是 <code>SAVE</code> 和 <code>BGSAVE</code>，通过命令的名字我们就能猜出这两个命令的区别。</p>
-<p><img src="https://img.draveness.me/save-and-bgsave.png" alt="save-and-bgsave"></p>
-<p>其中 <code>SAVE</code> 命令在执行时会直接阻塞当前的线程，由于 Redis 是 <a href="https://draveness.me/whys-the-design-redis-single-thread" target="_blank" rel="noopener">单线程</a> 的，所以 <code>SAVE</code> 命令会直接阻塞来自客户端的所有其他请求，这在很多时候对于需要提供较强可用性保证的 Redis 服务都是无法接受的。</p>
-<p>我们往往需要 <code>BGSAVE</code> 命令在后台生成 Redis 全部数据对应的 RDB 文件，当我们使用 <code>BGSAVE</code> 命令时，Redis 会立刻 <code>fork</code> 出一个子进程，子进程会执行『将内存中的数据以 RDB 格式保存到磁盘中』这一过程，而 Redis 服务在 <code>BGSAVE</code> 工作期间仍然可以处理来自客户端的请求。</p>
-<p><a href="https://github.com/antirez/redis/blob/e916058f0ba59e964f5de3dee17f46ae08f1d385/src/rdb.c#L1343-L1378" target="_blank" rel="noopener"><code>rdbSaveBackground</code></a> 就是用来处理在后台将数据保存到磁盘上的函数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rdbSaveBackground</span><span class="params">(<span class="keyword">char</span> *filename, rdbSaveInfo *rsi)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> childpid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (hasActiveChildProcess()) <span class="keyword">return</span> C_ERR;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((childpid = redisFork()) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> retval;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Child */</span></span><br><span class="line">        redisSetProcTitle(<span class="string">"redis-rdb-bgsave"</span>);</span><br><span class="line">        retval = rdbSave(filename,rsi);</span><br><span class="line">        <span class="keyword">if</span> (retval == C_OK) &#123;</span><br><span class="line">            sendChildCOWInfo(CHILD_INFO_TYPE_RDB, <span class="string">"RDB"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        exitFromChild((retval == C_OK) ? <span class="number">0</span> : <span class="number">1</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/* Parent */</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Redis 服务器会在触发 <code>BGSAVE</code> 时调用 <code>redisFork</code> 函数来创建子进程并调用 <code>rdbSave</code> 在子进程中对数据进行持久化，我们在这里虽然省略了函数中的一些内容，但是整体的结构还是非常清晰的，感兴趣的读者可以在点击上面的链接了解整个函数的实现。</p>
-<p>使用 <code>fork</code> 的目的最终一定是为了不阻塞主进程来提升 Redis 服务的可用性，但是到了这里我们其实能够发现两个问题：</p>
-<ol>
-<li>为什么 <code>fork</code> 之后的子进程能够获取父进程内存中的数据？</li>
-<li><code>fork</code> 函数是否会带来额外的性能开销，这些开销我们怎么样才可以避免？</li>
-</ol>
-<p>既然 Redis 选择使用了 <code>fork</code> 的方式来解决快照持久化的问题，那就说明这两个问题已经有了答案，首先 <code>fork</code> 之后的子进程是可以获取父进程内存中的数据的，而 <code>fork</code> 带来的额外性能开销相比阻塞主线程也一定是可以接受的，只有同时具备这两点，Redis 最终才会选择这样的方案。</p>
-<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>为了分析上一节提出的两个问题，我们在这里需要了解以下的这些内容，这些内容是 Redis 服务器使用 <code>fork</code> 函数的前提条件，也是最终促使它选择这种实现方式的关键：</p>
-<ol>
-<li>通过 <code>fork</code> 生成的父子进程会共享包括内存空间在内的资源；</li>
-<li><code>fork</code> 函数并不会带来明显的性能开销，尤其是对内存进行大量的拷贝，它能通过写时拷贝将拷贝内存这一工作推迟到真正需要的时候；</li>
-</ol>
-<h3 id="子进程"><a href="#子进程" class="headerlink" title="子进程"></a>子进程</h3><p>在计算机编程领域，尤其是 Unix 和类 Unix 系统中，<code>fork</code> 都是一个进程用于创建自己拷贝的操作，它往往都是被操作系统内核实现的系统调用，也是操作系统在 *nix 系统中创建新进程的主要方法。</p>
-<p><img src="https://img.draveness.me/fork-and-processes.png" alt="fork-and-processes"></p>
-<p>当程序调用了 <code>fork</code> 方法之后，我们就可以通过 <code>fork</code> 的返回值确定父子进程，以此来执行不同的操作：</p>
-<ul>
-<li><code>fork</code> 函数返回 0 时，意味着当前进程是子进程；</li>
-<li><code>fork</code> 函数返回非 0 时，意味着当前进程是父进程，返回值是子进程的 <code>pid</code>；</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (fork() == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// child process</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// parent process</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 <code>fork</code> 的 <a href="http://man7.org/linux/man-pages/man2/fork.2.html" target="_blank" rel="noopener">手册</a> 中，我们会发现调用 <code>fork</code> 后的父子进程会运行在不同的内存空间中，当 <code>fork</code> 发生时两者的内存空间有着完全相同的内容，对内存的写入和修改、文件的映射都是独立的，两个进程不会相互影响。</p>
-<blockquote>
-<p>The child process and the parent process run in separate memory spaces. At the time of fork() both memory spaces have the same content. Memory writes, file mappings (mmap(2)), and unmappings (munmap(2)) performed by one of the processes do not affect other.</p>
-</blockquote>
-<p>除此之外，子进程几乎是父进程的完整副本（Exact duplicate），然而这两个进程在以下的一些方面会有较小的区别：</p>
-<ul>
-<li>子进程用于独立且唯一的进程 ID；</li>
-<li>子进程的父进程 ID 与父进程 ID 完全相同；</li>
-<li>子进程不会继承父进程的内存锁；</li>
-<li>子进程会重新设置进程资源利用率和 CPU 计时器；</li>
-<li>…</li>
-</ul>
-<p>最关键的点在于父子进程的内存在 <code>fork</code> 时是完全相同的，在 <code>fork</code> 之后进行写入和修改也不会相互影响，这其实就完美的解决了快照这个场景的问题 —— 只需要某个时间点下内存中的数据，而父进程可以继续对自己的内存进行修改，这既不会被阻塞，也不会影响生成的快照。</p>
-<h3 id="写时拷贝"><a href="#写时拷贝" class="headerlink" title="写时拷贝"></a>写时拷贝</h3><p>既然父进程和子进程拥有完全相同的内存空间并且两者对内存的写入都不会相互影响，那么是否意味着子进程在 <code>fork</code> 时需要对父进程的内存进行全量的拷贝呢？假设子进程需要对父进程的内存进行拷贝，这对于 Redis 服务来说基本都是灾难性的，尤其是在以下的两个场景中：</p>
-<ol>
-<li>内存中存储大量的数据，<code>fork</code> 时拷贝内存空间会消耗大量的时间和资源，会导致程序一段时间的不可用；</li>
-<li>Redis 占用了 10G 的内存，而物理机或者虚拟机的资源上限只有 16G，在这时我们就无法对 Redis 中的数据进行持久化，也就是说 Redis 对机器上内存资源的最大利用率不能超过 50%；</li>
-</ol>
-<p>如果无法解决上面的两个问题，使用 <code>fork</code> 来生成内存镜像的方式也无法真正落地，不是一个工程中真正可以使用的方法。</p>
-<blockquote>
-<p>就算脱离了 Redis 的场景，<code>fork</code> 时全量拷贝内存也是难以接受的，假设我们需要在命令行中执行一个命令，我们需要先通过 <code>fork</code> 创建一个新的进程再通过 <code>exec</code> 来执行程序，<code>fork</code> 拷贝的大量内存空间对于子进程来说可能完全没有任何作用的，但是却引入了巨大的额外开销。</p>
-</blockquote>
-<p>写时拷贝（Copy-on-Write）的出现就是为了解决这一问题，就像我们在这一节开头介绍的，写时拷贝的主要作用就是<strong>将拷贝推迟到写操作真正发生时</strong>，这也就避免了大量无意义的拷贝操作。在一些早期的 *nix 系统上，系统调用 <code>fork</code> 确实会立刻对父进程的内存空间进行复制，但是在今天的多数系统中，<code>fork</code> 并不会立刻触发这一过程：</p>
-<p><img src="https://img.draveness.me/process-shared-memory.png" alt="process-shared-memory"></p>
-<p>在 <code>fork</code> 函数调用时，父进程和子进程会被 Kernel 分配到不同的虚拟内存空间中，所以在两个进程看来它们访问的是不同的内存：</p>
-<ul>
-<li>在真正访问虚拟内存空间时，Kernel 会将虚拟内存映射到物理内存上，所以父子进程共享了物理上的内存空间；</li>
-<li>当父进程或者子进程对共享的内存进行修改时，共享的内存才会<strong>以页为单位进行拷贝</strong>，父进程会保留原有的物理空间，而子进程会使用拷贝后的新物理空间；</li>
-</ul>
-<p>在 Redis 服务中，子进程只会读取共享内存中的数据，它并不会执行任何写操作，只有父进程会在写入时才会触发这一机制，而对于大多数的 Redis 服务或者数据库，写请求往往都是远小于读请求的，所以使用 <code>fork</code> 加上写时拷贝这一机制能够带来非常好的性能，也让 <code>BGSAVE</code> 这一操作的实现变得非常简单。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Redis 实现后台快照的方式非常巧妙，通过操作系统提供的 <code>fork</code> 和写时拷贝的特性轻而易举的就实现了这个功能，从这里我们就能看出作者对于操作系统知识的掌握还是非常扎实的，大多人在面对类似的场景时，想到的方法可能就是手动实现类似『写时拷贝』的特性，然而这不仅增加了工作量，还增加了程序出现问题的可能性。</p>
-<p>到这里，我们简单总结一下 Redis 为什么在使用 RDB 进行快照时会通过子进程的方式进行实现：</p>
-<ol>
-<li>通过 <code>fork</code> 创建的子进程能够获得和父进程完全相同的内存空间，父进程对内存的修改对于子进程是不可见的，两者不会相互影响；</li>
-<li>通过 <code>fork</code> 创建子进程时不会立刻触发大量内存的拷贝，内存在被修改时会以页为单位进行拷贝，这也就避免了大量拷贝内存而带来的性能问题；</li>
-</ol>
-<p>上述两个原因中，一个为子进程访问父进程提供了支撑，另一个为减少额外开销做了支持，这两者缺一不可，共同成为了 Redis 使用子进程实现快照持久化的原因。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
-<ul>
-<li>Nginx 的主进程会在运行时 <code>fork</code> 一组子进程，这些子进程可以分别处理请求，还有哪些服务会使用这一特性？</li>
-<li>写时拷贝其实是一个比较常见的机制，在 Redis 之外还有哪里会用到它？</li>
-</ul>
-<blockquote>
-<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
-</blockquote>
-<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
-<li><a href="https://redis.io/topics/persistence" target="_blank" rel="noopener">Redis Persistence</a></li>
-<li><a href="https://jobs.zalando.com/tech/blog/understanding-redis-background-memory-usage/?gh_src=4n3gxh1" target="_blank" rel="noopener">Understanding Redis Background Memory Usage</a></li>
-<li><a href="https://redis.io/topics/faq" target="_blank" rel="noopener">FAQ · Redis</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Copy-on-write" target="_blank" rel="noopener">Copy-on-write</a></li>
-<li><a href="https://github.com/antirez/redis/blob/e916058f0ba59e964f5de3dee17f46ae08f1d385/src/rdb.c#L1343-L1378" target="_blank" rel="noopener">rdbSaveBackground · Redis</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Fork_(system_call)" target="_blank" rel="noopener">Fork (system call)</a></li>
-<li><a href="https://unix.stackexchange.com/questions/87551/which-file-in-kernel-specifies-fork-vfork-to-use-sys-clone-system-call" target="_blank" rel="noopener">Which file in kernel specifies fork(), vfork()… to use sys_clone() system call</a></li>
-<li><a href="https://www.reddit.com/r/compsci/comments/31szui/trying_to_understand_fork_and_copyonwrite_cow/" target="_blank" rel="noopener">Trying to understand fork() and Copy-on-Write (COW)</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1373,19 +1289,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">143</span>
+          <span class="site-state-item-count">146</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">18</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-count">17</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1429,7 +1345,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">417k</span>
+    <span title="站点总字数">438k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
