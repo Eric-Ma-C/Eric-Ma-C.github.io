@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="内部类就是定义在一个类中的另外一个类，是一种从属关系。在没有实际了解内部类之前，我始终困惑，为什么要在一个类中定义另外一个类，这不是增加代码结构复杂度么？现在才大致能知道这种设计的优势是大于其劣势的。比如，我们可以通过内部类解决类的单继承问题，外部类不能再继承的类可以交给内部类继承。我们可以通过定义内部类来实现一个类私属于一个类，实现更好的封装性。具体的我们接下来介绍，本文主要通过介绍内部类的四">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解Java内部类">
+<meta property="og:url" content="http://yoursite.com/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="内部类就是定义在一个类中的另外一个类，是一种从属关系。在没有实际了解内部类之前，我始终困惑，为什么要在一个类中定义另外一个类，这不是增加代码结构复杂度么？现在才大致能知道这种设计的优势是大于其劣势的。比如，我们可以通过内部类解决类的单继承问题，外部类不能再继承的类可以交给内部类继承。我们可以通过定义内部类来实现一个类私属于一个类，实现更好的封装性。具体的我们接下来介绍，本文主要通过介绍内部类的四">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-14T18:18:34.000Z">
+<meta property="article:modified_time" content="2020-06-15T02:40:13.965Z">
+<meta property="article:author" content="EricMa">
+<meta property="article:tag" content="内部类">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>深入理解Java内部类 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入理解Java内部类
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-15 02:18:34 / 修改时间：10:40:13" itemprop="dateCreated datePublished" datetime="2020-06-15T02:18:34+08:00">2020-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p> 内部类就是定义在一个类中的另外一个类，是一种从属关系。在没有实际了解内部类之前，我始终困惑，为什么要在一个类中定义另外一个类，这不是增加代码结构复杂度么？现在才大致能知道这种设计的优势是大于其劣势的。比如，我们可以通过内部类解决类的单继承问题，外部类不能再继承的类可以交给内部类继承。我们可以通过定义内部类来实现一个类私属于一个类，实现更好的封装性。具体的我们接下来介绍，本文主要通过介绍内部类的四种不同类型的定义，实例的创建，内部实现原理以及使用场景几种不同角度来学习内部类。</p>
+<ul>
+<li>静态内部类</li>
+<li>成员内部类</li>
+<li>方法内部类</li>
+<li>匿名内部类</li>
+</ul>
+<h2 id="一、静态内部类"><a href="#一、静态内部类" class="headerlink" title="一、静态内部类"></a><strong>一、静态内部类</strong></h2><p>静态内部类的定义和普通的静态变量或者静态方法的定义方法是一样的，使用static关键字，只不过这次static是修饰在class上的，一般而言，只有静态内部类才允许使用static关键字修饰，普通类的定义是不能用static关键字修饰的，这一点需要注意一下。下面定义一个静态内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    private int age;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        private int age;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            </span><br><span class="line">            System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            <span class="comment">//--编译报错---</span></span><br><span class="line">            <span class="comment">//System.out.println("my age is :"+ age);</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上述代码中，In这个类就是一个静态内部类。我们说内部类是可以访问外部类的私有字段和私有方法的，对于静态内部类，它遵循一致的原则，只能访问外部类的静态成员。上述代码中，外部类的非静态私有字段age在静态内部类中使不允许访问的，而静态字段name则是可访问的。下面我们看，如何创建一个静态内部类的实例对象。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out.In innerClass = <span class="keyword">new</span> Out.In();</span><br><span class="line">    innerClass.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>静态内部类的实例对象创建还是比较简洁的，不同于成员内部类，它不需要关联外部类实例（具体的下文介绍），下面我们再看一段代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码在内部类中两次访问了外部类的静态成员，第一次访问了静态字段name，第二次访问的静态方法showName。在我们反编译这个类之前，首先需要知道的是，所谓的内部类的概念只是出现在编译阶段，对于jvm层是没有内部类这个概念的。也就是说，编译器会将一个类编译成一个源文件，对于内部类也是一样，它会从它的外部类中抽离出来，增加一些与外部类的联系，然后被编译成一个单独的源文件。下面我们先编译运行之后，利用Dj反编译class文件看看编译器都做了些什么事情。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//这是我们的Out外部类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省去了一些不重要的部分</span></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>()&#123;<span class="keyword">return</span> name;&#125;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> access$<span class="number">100</span>()&#123;showName();&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//这是我们的内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>());</span><br><span class="line">        Out.access$<span class="number">100</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>相信大家也已经看出来这两者之间的某种联系，编译器将Out这个类编译成两个独立的class源文件。对于Out中所有的私有成员（也就是内部类分离出去之后不能访问的成员），增设了可供调用的access$xxx方法，从而实现内部类与外部类之间的联系。这就是他们的本质。</p>
+<p>至于使用场景，一般来说，对于和外部类联系紧密但是并不依赖于外部类实例的情况下，可以考虑定义成静态内部类。下面我们看稍显复杂的成员内部类。</p>
+<h2 id="二、成员内部类"><a href="#二、成员内部类" class="headerlink" title="二、成员内部类"></a><strong>二、成员内部类</strong></h2><p>我们说了，四种不同类型的内部类都各自有各自的使用场景，静态内部类适合于那种和外部类关系密切但是并不依赖外部类实例的情况。但是对于需要和外部类实例相关联的情况下，可以选择将内部类定义成成员内部类。以下代码定义了一个简单的成员内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            Out.this.showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上定义了一个简单的内部类In，我们的成员内部类可以直接访问外部类的成员字段和成员方法，因为它是关联着一个外部类实例的。下面我们看看在外部是如何创建该内部类实例的。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out();</span><br><span class="line">    Out.In <span class="keyword">in</span> = out.new In();</span><br><span class="line">    <span class="keyword">in</span>.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为成员内部类是关联着一个具体的外部类实例的，所以它的实例创建必然是由外部类实例来创建的。对于实例的创建，我们只需要记住即可，成员内部类的实例创建需要关联外部类实例对象，静态内部类实例创建相对简单。下面我们主要看看在编译阶段编译器是如何保持内部类对外部类成员信息可访问的。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译的Out外部类源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省略部分非核心代码</span></span><br><span class="line">    public <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println((<span class="keyword">new</span> StringBuilder()).append(<span class="string">"my name is : "</span>).append(name).toString());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>(Out o)&#123;<span class="keyword">return</span> o.name;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//反编译的内部类In源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>(Out.this));</span><br><span class="line">        showName();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    final Out <span class="keyword">this</span>$<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.this$<span class="number">0</span> = Out.this;</span><br><span class="line">        <span class="keyword">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由上述代码其实我们可以知道，当我们利用外部类实例创建内部类实例的时候，会将外部类实例作为初始资源传入内部类构造过程。这样我们就可以通过该实例访问外部类所有的成员信息，包括私有成员。（显式增加了暴露方法）</p>
+<p>至于使用场景，对于那种要高度依赖外部类实例的情况下，定义一个成员内部类则会显的更加明智。</p>
+<h2 id="三、方法-局部-内部类"><a href="#三、方法-局部-内部类" class="headerlink" title="三、方法(局部)内部类"></a><strong>三、方法(局部)内部类</strong></h2><p>方法内部类，顾名思义，定义在一个方法内部的类。方法内部类相对而言要复杂一些，下面定义一个方法内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">            public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">                System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        In <span class="keyword">in</span> = <span class="keyword">new</span> In();</span><br><span class="line">        <span class="keyword">in</span>.showName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们定义了一个类，在该类中又定义了一个方法sayHello，然而在该方法中我们定义了一个内部类，类In就是一个方法内部类。我们的方法内部类的生命周期不超过包含它的方法的生命周期，也就是说，方法内部类只能在方法中使用。所以在声明的时候，任何的访问修饰符都是没有意义的，于是Java干脆不允许使用任何的访问修饰符修饰方法内部类。其中还需要注意一点的是，定义和使用时两回事，别看那一大串定义类的代码，你实际想要使用该类，就必须new对象，而对于方法内部类而言，只能在方法内部new对象。这就是方法内部类的简单介绍，下面我们看看其实现原理。</p>
+<p>有关方法内部类的实现原理其实是和成员内部类差不太多的，也是在内部类初始化的时候为其传入一个外部类实例，区别在哪呢？就在于方法内部类是定义在具体方法的内部的，所以该类除了可以通过传入的外部实例访问外部类中的字段和方法，对于包含它的方法中被传入的参数也会随着外部类实例一起初始化给内部类。</p>
+<p>毋庸置疑的是，方法内部类的封装性比之前介绍的两种都要完善。所以一般只有在需要高度封装的时候才会将类定义成方法内部类。</p>
+<h2 id="四、匿名内部类"><a href="#四、匿名内部类" class="headerlink" title="四、匿名内部类"></a><strong>四、匿名内部类</strong></h2><p>可能内部类的所有分类中，匿名内部类的名号是最大的，也是我们最常用到的，多见于函数式编程，lambda表达式等。下面我们重点看看这个匿名内部类。</p>
+<p>匿名内部类就是没有名字的内部类，在定义完成同时，实例也创建好了，常常和new关键字紧密结合。当然，它也不局限于类，也可以是接口 ，可以出现在任何位置。下面我们定义一个匿名内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先定义一个普通类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is :"</span> + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//定义和使用一个匿名内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out()&#123;</span><br><span class="line">        @Override</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">            System.out.println(<span class="string">"hello single"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    out.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上述代码中可以很显然的让我们看出来，我们的匿名内部类必定是要依托一个父类的，因为它是没有名字的，无法用一个具体的类型来表示。所以匿名内部类往往都是通过继承一个父类，重写或者重新声明一些成员来实现一个匿名内部类的定义。实际上还是利用了里式转换原理。</p>
+<p>从中我们也可以看到，一个匿名内部类定义的完成就意味着该内部类实例创建的完成。下面我们看看其实现原理：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译出来的匿名内部类</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span>$1 <span class="keyword">extends</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    Out out;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Test$<span class="number">1</span>(Out o)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.out = o;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实在看了上述三种内部类的原理之后，反而觉得匿名内部类的实现较为简单了。主要思路还是将内部类抽离出来，通过初始化传入外部类的实例以达到对外部类所有成员的访问。只是在匿名内部类中，被依托的父类不是他的外部类。匿名内部类的主要特点在于，没有名字，对象只能被使用一次，可以出现在任意位置。所以它的使用场景也是呼之欲出，对于一些对代码简洁度有所要求的情况下，可首选匿名内部类。</p>
+<p>以上完成了对四种内部类的简单介绍，对于他们各自实现的原理也都已经介绍过了。其实大致相同，由于jvm对每个类都要求一个单独的源码文件，所以编译阶段就完成了分离的操作，但是在分离的过程中又要保持内部类和外部类之间的这种联系，于是编译器添加了一些接口保持这种信息共享的结构。使用内部类可以大大增加程序的封装性，使得代码整体简洁度较高。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://cloud.tencent.com/developer/article/1013592" target="_blank" rel="noopener">深入理解Java内部类</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%86%85%E9%83%A8%E7%B1%BB/" rel="tag"># 内部类</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/" rel="prev" title="Java集合接口Stack简介">
+      <i class="fa fa-chevron-left"></i> Java集合接口Stack简介
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/15/JVM%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8/" rel="next" title="JVM垃圾回收器">
+      JVM垃圾回收器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#一、静态内部类"><span class="nav-number">1.</span> <span class="nav-text">一、静态内部类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二、成员内部类"><span class="nav-number">2.</span> <span class="nav-text">二、成员内部类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#三、方法-局部-内部类"><span class="nav-number">3.</span> <span class="nav-text">三、方法(局部)内部类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#四、匿名内部类"><span class="nav-number">4.</span> <span class="nav-text">四、匿名内部类</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">450k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
