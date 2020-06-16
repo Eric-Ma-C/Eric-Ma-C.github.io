@@ -186,6 +186,565 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/10/Java%E5%B9%B6%E5%8F%91%E4%B9%8B%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8C%E9%9A%90%E5%BC%8F%E9%94%81%E6%AF%94%E8%BE%83/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/10/Java%E5%B9%B6%E5%8F%91%E4%B9%8B%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8C%E9%9A%90%E5%BC%8F%E9%94%81%E6%AF%94%E8%BE%83/" class="post-title-link" itemprop="url">Java显式锁和隐式锁比较</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-11 04:03:03 / 修改时间：13:36:47" itemprop="dateCreated datePublished" datetime="2020-06-11T04:03:03+08:00">2020-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://blog.csdn.net/kaizi_1992/article/details/105550689" target="_blank" rel="noopener">Java并发之显式锁和隐式锁的区别</a></p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQVJGZzVn?x-oss-process=image/format,png" alt="img"></p>
+<p>在Java并发编程中，锁有两种实现：使用隐式锁和使用显示锁分别是什么？两者的区别是什么？所谓的显式锁和隐式锁的区别也就是说说Synchronized(下文简称：sync)和lock(下文就用ReentrantLock来代之lock)的区别。</p>
+<p>本文主要内容：将通过七个方面详细介绍sync和lock的区别。</p>
+<p>Java中隐式锁：synchronized；显式锁：lock</p>
+<h2 id="sync和lock的区别"><a href="#sync和lock的区别" class="headerlink" title="sync和lock的区别"></a>sync和lock的区别</h2><h3 id="一：出身不同"><a href="#一：出身不同" class="headerlink" title="一：出身不同"></a>一：出身不同</h3><p>从sync和lock的出身(原始的构成)来看看两者的不同。</p>
+<ul>
+<li><p>Sync:Java中的关键字，是由JVM来维护的。是JVM层面的锁。</p>
+</li>
+<li><p>Lock：是JDK5以后才出现的具体的类。使用lock是调用对应的API。是API层面的锁</p>
+</li>
+</ul>
+<p>sync是底层是通过monitorenter进行加锁（底层是通过monitor对象来完成的，其中的wait/notify等方法也是依赖于monitor对象的。只有在同步块或者是同步方法中才可以调用wait/notify等方法的。因为只有在同步块或者是同步方法中，JVM才会调用monitory对象的）；通过monitorexit来退出锁的。</p>
+<p>而lock是通过调用对应的API方法来获取锁和释放锁的。</p>
+<p>我们通过Javap命令来查看调用sync和lock的汇编指令：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQjBJam5V?x-oss-process=image/format,png" alt="img"></p>
+<p>从编译后的汇编指令，我们也能够清晰的看出sync关键字和lock的区别。</p>
+<h3 id="二：使用方式"><a href="#二：使用方式" class="headerlink" title="二：使用方式"></a>二：使用方式</h3><ul>
+<li><p>Sync是隐式锁。</p>
+</li>
+<li><p>Lock是显示锁</p>
+</li>
+</ul>
+<p>所谓的显示和隐式就是在使用的时候，使用者<strong>要不要手动写代码去获取锁和释放锁</strong>的操作。</p>
+<p>我们大家都知道，在使用sync关键字的时候，我们使用者根本不用写其他的代码，然后程序就能够获取锁和释放锁了。那是因为当sync代码块执行完成之后，系统会自动的让程序释放占用的锁。Sync是由系统维护的，如果非逻辑问题的话话，是不会出现死锁的。</p>
+<p>在使用lock的时候，我们使用者需要手动的获取和释放锁。如果没有释放锁，就有可能导致出现死锁的现象。手动获取锁方法：lock.lock()。释放锁：unlock方法。需要配合tyr/finaly语句块来完成。</p>
+<p>两者用法对比如下：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQmFBVjBx?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="三：等待是否可中断"><a href="#三：等待是否可中断" class="headerlink" title="三：等待是否可中断"></a>三：等待是否可中断</h3><p>Sync是不可中断的。除非抛出异常或者正常运行完成</p>
+<p>Lock可以中断的。中断方式：</p>
+<p>1：调用设置超时方法<code>tryLock(long timeout ,timeUnit unit)</code></p>
+<p>2：调用<code>lockInterruptibly()</code>放到代码块中，然后调用<code>interrupt()</code>方法可以中断</p>
+<p>四：加锁的时候是否可以公平</p>
+<ul>
+<li><p>Sync;非公平锁</p>
+</li>
+<li><p>lock：两者都可以的。默认是非公平锁。在其构造方法的时候可以传入Boolean值。true：公平锁 false：非公平锁</p>
+</li>
+</ul>
+<p>Lock的公平锁和非公平锁：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQzE2aEpR?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="五：锁能否绑定多个条件condition"><a href="#五：锁能否绑定多个条件condition" class="headerlink" title="五：锁能否绑定多个条件condition"></a>五：锁能否绑定多个条件condition</h3><p>Sync:没有。要么随机唤醒一个线程；要么是唤醒所有等待的线程。</p>
+<p>Lock:用来实现分组唤醒需要唤醒的线程，可以精确的唤醒，而不是像sync那样，不能精确唤醒线程。</p>
+<h3 id="六：性能"><a href="#六：性能" class="headerlink" title="六：性能"></a>六：性能</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQ3lBem15?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="七-使用锁的方式"><a href="#七-使用锁的方式" class="headerlink" title="七:  使用锁的方式"></a>七:  使用锁的方式</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtRG9URWxF?x-oss-process=image/format,png" alt="img"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/10/%E6%98%BE%E5%BC%8F%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/10/%E6%98%BE%E5%BC%8F%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/" class="post-title-link" itemprop="url">显式锁（Lock）及Condition的学习与使用</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-10 08:37:08" itemprop="dateCreated datePublished" datetime="2020-06-10T08:37:08+08:00">2020-06-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-11 12:02:46" itemprop="dateModified" datetime="2020-06-11T12:02:46+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="[https://silencedut.github.io/2016/06/12/%E6%98%BE%E7%A4%BA%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/](https://silencedut.github.io/2016/06/12/显示锁（Lock）及Condition的学习与使用/)">显示锁（Lock）及Condition的学习与使用</a></p>
+<p>synchronized是不错，但它并不完美。它有一些功能性的限制，比如</p>
+<ul>
+<li>它无法中断一个正在等候获得锁的线程，也无法通过投票得到锁。多线程竞争一个锁时，其余未得到锁的线程只能不停的尝试获得锁，而不能中断。<br>高并发的情况下会导致性能下降。</li>
+<li>synchronized上是非公平的,新来的线程有可能立即获得监视器，而在等待区中等候已久的线程可能再次等待。</li>
+</ul>
+<p>而Lock的一些实现类则很好的解决了这些问题。</p>
+<h2 id="可重入锁ReentrantLock"><a href="#可重入锁ReentrantLock" class="headerlink" title="可重入锁ReentrantLock"></a>可重入锁ReentrantLock</h2><p>java.util.concurrent.lock 中的Lock 框架是锁定的一个抽象，它允许把锁定的实现作为 Java 类，而不是作为语言的特性来实现。这就为Lock 的多种实现留下了空间，各种实现可能有不同的调度算法、性能特性或者锁定语义。</p>
+<p>ReentrantLock 类实现了Lock ，它拥有与synchronized 相同的并发性和内存语义，但是添加了类似锁投票、定时锁等候和可中断锁等候的一些特性。此外，它还提供了在激烈争用情况下更佳的性能。（换句话说，当许多线程都想访问共享资源时，JVM 可以花更少的时候来调度线程，把更多时间用在执行线程上。）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LockStudy</span> </span>&#123;     </span><br><span class="line">       </span><br><span class="line">    <span class="keyword">private</span> Lock lock = <span class="keyword">new</span> ReentrantLock();<span class="comment">// 锁对象   </span></span><br><span class="line">             </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">output</span><span class="params">(String name)</span> </span>&#123;  </span><br><span class="line">                        </span><br><span class="line">        lock.lock();      <span class="comment">// 得到锁       </span></span><br><span class="line">        <span class="keyword">try</span> &#123;                   </span><br><span class="line">            <span class="comment">//doSomething            </span></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;                  </span><br><span class="line">            lock.unlock();<span class="comment">// 释放锁                </span></span><br><span class="line">        &#125;            </span><br><span class="line">    &#125;        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，用synchronized修饰的方法或者语句块在代码执行完之后锁自动释放，而是用Lock需要我们手动释放锁，所以为了保证锁最终被释放(发生异常情况)，要把互斥区放在try内，释放锁放在finally内。</p>
+<h2 id="Condition"><a href="#Condition" class="headerlink" title="Condition"></a>Condition</h2><p>ReentrantLock里有个函数newCondition(),该函数得到一个锁上的”条件”，用于实现线程间的通信，条件变量很大一个程度上是为了解决Object.wait/notify/notifyAll难以使用的问题。</p>
+<p>Condition拥有await(),signal(),signalAll(),<strong>await</strong>对应于<strong>Object.wait</strong>，<strong>signal</strong>对应于<strong>Object.notify</strong>，<strong>signalAll</strong>对应于<strong>Object.notifyAll</strong>。特别说明的是<strong>Condition</strong>的接口改变名称就是为了避免与Object中的<strong>wait/notify/notifyAll</strong>的语义和使用上混淆，因为Condition同样有<strong>wait/notify/notifyAll</strong>方法()因为任何类都拥有这些方法。</p>
+<p>每一个<strong>Lock</strong>可以有任意数据的<strong>Condition</strong>对象，<strong>Condition</strong>是与<strong>Lock</strong>绑定的，所以就有<strong>Lock</strong>的公平性特性：如果是公平锁，线程为按照FIFO的顺序从<strong>Condition.await</strong>中释放，如果是非公平锁，那么后续的锁竞争就不保证FIFO顺序了。下面是一个用Lock和Condition实现的一个生产者消费者的模式：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProductQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">        </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> T[] items;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Lock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="keyword">private</span> Condition notFull = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> Condition notEmpty = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> head, tail, count;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ProductQueue</span><span class="params">(<span class="keyword">int</span> maxSize)</span> </span>&#123;</span><br><span class="line">        items = T[] <span class="keyword">new</span> Object[maxSize];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ProductQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>(<span class="number">10</span>);</span><br><span class="line">    &#125;</span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(T t)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="keyword">while</span>(count == getCapacity()) &#123;</span><br><span class="line">                notFull.await();</span><br><span class="line">            &#125;</span><br><span class="line">            items[tail] = t;</span><br><span class="line">            <span class="keyword">if</span>(++tail==getCapacity())&#123;</span><br><span class="line">                tail = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            ++count;</span><br><span class="line">            notEmpty.signalAll();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span>(count == <span class="number">0</span>) &#123;</span><br><span class="line">                notEmpty.await();</span><br><span class="line">            &#125;</span><br><span class="line">            T ret = items[head];</span><br><span class="line">            items[head] = <span class="keyword">null</span>;<span class="comment">//GC  </span></span><br><span class="line">            <span class="keyword">if</span> (++head == getCapacity()) &#123;</span><br><span class="line">                head = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            --count;</span><br><span class="line">            notFull.signalAll();</span><br><span class="line">            <span class="keyword">return</span> ret;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getCapacity</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> items.length;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">size</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> count;</span><br><span class="line">        &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这就是多个Condition的强大之处，假设缓存队列中已经存满，那么阻塞的肯定是写线程，唤醒的肯定是读线程，相反，阻塞的肯定是读线程，唤醒的肯定是写线程，那么假设只有一个Condition会有什么效果呢，缓存队列中已经存满，这个Lock不知道唤醒的是读线程还是写线程了，如果唤醒的是读线程，皆大欢喜，如果唤醒的是写线程，那么线程刚被唤醒，又被阻塞了，这时又去唤醒，这样就浪费了很多时间。</p>
+<h2 id="ReentrantLock与synchronized的对比"><a href="#ReentrantLock与synchronized的对比" class="headerlink" title="ReentrantLock与synchronized的对比"></a>ReentrantLock与synchronized的对比</h2><p>ReentrantLock同样是一个可重入锁，但与目前的 synchronized 实现相比，争用下的 ReentrantLock 实现更具可伸缩性。除了synchronized的功能,多了三个高级功能.</p>
+<p>等待可中断,公平锁,绑定多个Condition。</p>
+<p>1.等待可中断</p>
+<p>在持有锁的线程长时间不释放锁的时候,等待的线程可以选择放弃等待.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tryLock(long timeout, TimeUnit unit)；</span><br></pre></td></tr></table></figure>
+
+<p>2.公平锁</p>
+<p>按照申请锁的顺序来一次获得锁称为公平锁.synchronized的是非公平锁,ReentrantLock可以通过构造函数实现公平锁.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new RenentrantLock(boolean fair)；</span><br></pre></td></tr></table></figure>
+
+<p>3.绑定多个Condition</p>
+<p>通过多次newCondition可以获得多个Condition对象,可以简单的实现比较复杂的线程同步的功能。通过await(),signal()等方法实现。</p>
+<h2 id="Lock的其他实现类"><a href="#Lock的其他实现类" class="headerlink" title="Lock的其他实现类"></a>Lock的其他实现类</h2><p>如ReadWriteLock。ReentrantReadWriteLock实现了ReadWriteLock接口，构造器提供了公平锁和非公平锁两种创建方式。读-写锁定允许对共享数据进行更高级别的并发访问。虽然一次只有一个线程（writer 线程）可以修改共享数据，但在许多情况下，任何数量的线程可以同时读取共享数据（reader 线程）。读写锁适用于读多写少的情况，可以实现更好的并发性。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/09/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/09/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98/" class="post-title-link" itemprop="url">哲学家就餐问题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-10 06:19:49 / 修改时间：16:36:36" itemprop="dateCreated datePublished" datetime="2020-06-10T06:19:49+08:00">2020-06-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载整理自</p>
+<p><a href="https://www.jianshu.com/p/99f10708b1e1" target="_blank" rel="noopener">哲学家就餐问题</a></p>
+<p><a href="https://juejin.im/entry/59675880f265da6c2f0ac67e" target="_blank" rel="noopener">哲学家进餐-多线程同步经典问题</a></p>
+<h2 id="死锁的必要条件"><a href="#死锁的必要条件" class="headerlink" title="死锁的必要条件"></a>死锁的必要条件</h2><p>死锁的四个必要条件：<br> （1） 互斥条件：一个资源每次只能被一个进程使用。<br> （2） 请求并保持条件：一个进程因请求资源而阻塞时，对已获得的资源保持不放。<br> （3） 不可剥夺条件: 进程已获得的资源，在末使用完之前，不能强行剥夺。<br> （4） 循环等待条件: 若干进程之间形成一种头尾相接的循环等待资源关系</p>
+<p>先写一个会造成死锁的哲学家问题。当所有哲学家同时决定进餐，拿起左边筷子时候，就发生了死锁。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ExecutorService exec = Executors.newCachedThreadPool();</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">5</span>;</span><br><span class="line">        Chopstick[] chopsticks = <span class="keyword">new</span> Chopstick[sum];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            chopsticks[i] = <span class="keyword">new</span> Chopstick();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            exec.execute(<span class="keyword">new</span> Philosopher(chopsticks[i], chopsticks[(i + <span class="number">1</span>) % sum], i));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 筷子</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Chopstick</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Chopstick</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Philosopher</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Chopstick left;</span><br><span class="line">    <span class="keyword">private</span> Chopstick right;</span><br><span class="line">    <span class="keyword">int</span> name;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Philosopher</span><span class="params">(Chopstick left, Chopstick right, <span class="keyword">int</span> name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.left = left;</span><br><span class="line">        <span class="keyword">this</span>.right = right;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);<span class="comment">//思考一段时间</span></span><br><span class="line">                <span class="keyword">synchronized</span> (left) &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">500</span>);<span class="comment">//这样更容易发生死锁</span></span><br><span class="line">                    System.out.println(name + <span class="string">" get left"</span>);</span><br><span class="line">                    <span class="keyword">synchronized</span> (right) &#123;</span><br><span class="line">                        System.out.println(name + <span class="string">" eat"</span>);</span><br><span class="line">                        Thread.sleep(<span class="number">1000</span>);<span class="comment">//进餐一段时间</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="破坏死锁的循环等待条件"><a href="#破坏死锁的循环等待条件" class="headerlink" title="破坏死锁的循环等待条件"></a>破坏死锁的循环等待条件</h2><p>解决方案一：破坏死锁的<strong>循环等待条件</strong>。<br> 不再按左手右手顺序拿起筷子。选择一个固定的全局<strong>顺序获取</strong>，此处给筷子添加id，根据id先获取小的再获取大的，(不用关心编号的具体规则，只要保证编号全局唯一并且可排序)，不会出现死锁情况。</p>
+<p>该方法适合获取锁的代码写的比较集中的情况，有利于<strong>维护这个全局顺序</strong>；若规模较大的程序，使用锁的地方比较零散，各处都遵守这个顺序就变得不太实际。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ExecutorService exec = Executors.newCachedThreadPool();</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">5</span>;</span><br><span class="line">        Chopstick[] chopsticks = <span class="keyword">new</span> Chopstick[sum];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            chopsticks[i] = <span class="keyword">new</span> Chopstick(i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            exec.execute(<span class="keyword">new</span> Philosopher(chopsticks[i], chopsticks[(i + <span class="number">1</span>) % sum], i));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 筷子</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Chopstick</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> id;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Chopstick</span><span class="params">(<span class="keyword">int</span> id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Philosopher</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Chopstick left;</span><br><span class="line">    <span class="keyword">private</span> Chopstick right;</span><br><span class="line">    <span class="keyword">int</span> name;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Philosopher</span><span class="params">(Chopstick left, Chopstick right, <span class="keyword">int</span> name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.left = left.id &lt; right.id ? left : right;</span><br><span class="line">        <span class="keyword">this</span>.right = left.id &gt; right.id ? left : right;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);<span class="comment">//思考一段时间</span></span><br><span class="line">                <span class="keyword">synchronized</span> (left) &#123;</span><br><span class="line">                    System.out.println(name + <span class="string">" get left"</span>);</span><br><span class="line">                    <span class="keyword">synchronized</span> (right) &#123;</span><br><span class="line">                        System.out.println(name + <span class="string">" eat"</span>);</span><br><span class="line">                        Thread.sleep(<span class="number">1000</span>);<span class="comment">//进餐一段时间</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="破坏死锁的请求与保持条件"><a href="#破坏死锁的请求与保持条件" class="headerlink" title="破坏死锁的请求与保持条件"></a>破坏死锁的请求与保持条件</h2><p>方法二：破坏死锁的<strong>请求与保持条件</strong>，使用lock的特性，<strong>为获取锁操作设置超时时间</strong>,当一段时间获取不到所有的资源时,就释放已获得的资源,重新开始请求资源。这样不会死锁（至少不会一直死锁）</p>
+<p>该方法避免了无尽地死锁，但也不是很好的方案，因为该方案并不能避免死锁，它只是提供了从死锁中恢复的手段，并且受到活锁现象的影响，如果所有死锁线程同时超时，它们极有可能再次陷入死锁，虽然死锁没有永远持续下去，但<strong>对资源的争夺状态却没有得到任何改善</strong>（为每个线程设置不同的超时时间可以稍好的处理这种情况）。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ExecutorService exec = Executors.newCachedThreadPool();</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">50</span>;</span><br><span class="line">        Chopstick[] chopsticks = <span class="keyword">new</span> Chopstick[sum];</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            chopsticks[i] = <span class="keyword">new</span> Chopstick();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            exec.execute(<span class="keyword">new</span> Philosopher(chopsticks[i], chopsticks[(i + <span class="number">1</span>) % sum], i));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 筷子</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Chopstick</span> <span class="keyword">extends</span> <span class="title">ReentrantLock</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Philosopher</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ReentrantLock left, right;</span><br><span class="line">    <span class="keyword">int</span> name;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Philosopher</span><span class="params">(ReentrantLock left, ReentrantLock right, <span class="keyword">int</span> name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.left = left;</span><br><span class="line">        <span class="keyword">this</span>.right = right;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Thread.sleep(<span class="number">1000</span>);<span class="comment">//思考一段时间</span></span><br><span class="line">                left.lock();</span><br><span class="line">                System.out.println(name + <span class="string">" get left"</span>);</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (right.tryLock(<span class="number">1000</span>, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            System.out.println(name + <span class="string">" eat"</span>);</span><br><span class="line">                            Thread.sleep(<span class="number">1000</span>);<span class="comment">//进餐一段时间</span></span><br><span class="line">                        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                            right.unlock();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">//没有获取到右手的筷子，放弃并继续思考</span></span><br><span class="line">                        System.out.println(name + <span class="string">" has not get right chopstick,give up"</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    left.unlock();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="使用条件变量Condition"><a href="#使用条件变量Condition" class="headerlink" title="使用条件变量Condition"></a>使用条件变量Condition</h2><p>方法三：设置一个条件变量与锁关联。该方法只用一把锁，没有Chopstick类，将竞争从对筷子的争夺转换成了对状态的判断。仅当左右邻座都没有进餐时才可以进餐。提升了并发度。前面的方法出现情况是：只有一个哲学家进餐，其他人持有一根筷子在等待另外一根。这个方案中，当一个哲学家理论上可以进餐（邻座没有进餐）时，他就开始进餐。</p>
+<p>思路是只使用一把锁，将竞争从对筷子的争夺转换成了对状态的判断，仅当哲学家的左右邻座都没有进餐时，才可以进餐。当一个哲学家饥饿时，首先锁住餐桌<code>table</code>，这样其他哲学家无法改变<code>table</code>状态，然后查看左右邻居是否正在进餐，如果没有，那么该哲学家开始进餐并解锁餐桌，否则调用await()以暂时解锁餐桌,等待条件满足后,再次尝试锁住餐桌<code>table</code>后开始进餐；当一个哲学家进餐结束并开始思考时，首先锁住餐桌将eating改为false，然后通知左右邻座可以进餐，最后解锁餐桌。如果他的左右邻居目前正在等待，那么他们将被唤醒，重新锁住餐桌，并判断是否开始进餐。</p>
+<p>通过多次<code>newCondition()</code>可以获得多个<code>Condition</code>对象,可以通过<code>await()</code>,<code>signal()</code>等方法实现比较复杂的线程同步的功能。在这个解决方法中，当一个哲学家理论上可以进餐时，肯定就可以进餐，并发度显著提升。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ExecutorService exec = Executors.newCachedThreadPool();</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">5</span>;</span><br><span class="line">        Philosopher[] philosophers = <span class="keyword">new</span> Philosopher[sum];</span><br><span class="line">        ReentrantLock table = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            philosophers[i] = <span class="keyword">new</span> Philosopher(table, i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            philosophers[i].setLeft(philosophers[(i - <span class="number">1</span> + sum) % sum]);</span><br><span class="line">            philosophers[i].setRight(philosophers[(i + <span class="number">1</span>) % sum]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; sum; i++) &#123;</span><br><span class="line">            exec.execute(philosophers[i]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Philosopher</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">boolean</span> eating;</span><br><span class="line">    <span class="keyword">private</span> Philosopher left;</span><br><span class="line">    <span class="keyword">private</span> Philosopher right;</span><br><span class="line">    <span class="keyword">private</span> ReentrantLock table;</span><br><span class="line">    <span class="keyword">private</span> Condition condition;</span><br><span class="line">    <span class="keyword">int</span> name;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Philosopher</span><span class="params">(ReentrantLock table, <span class="keyword">int</span> name)</span> </span>&#123;</span><br><span class="line">        eating = <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">this</span>.table = table;</span><br><span class="line">        condition = table.newCondition();</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setLeft</span><span class="params">(Philosopher left)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.left = left;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setRight</span><span class="params">(Philosopher right)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.right = right;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">think</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        table.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            eating = <span class="keyword">false</span>;</span><br><span class="line">            System.out.println(name + <span class="string">" 开始思考"</span>);</span><br><span class="line">            left.condition.signal();</span><br><span class="line">            right.condition.signal();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            table.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">eat</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        table.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (left.eating || right.eating)</span><br><span class="line">                condition.await();</span><br><span class="line"></span><br><span class="line">            System.out.println(name + <span class="string">" 开始吃饭"</span>);</span><br><span class="line">            eating = <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            table.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                think();</span><br><span class="line">                eat();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过这一经典的问题，学习多线程并发模型的三种解决方案：</p>
+<ol>
+<li>多把锁时，对锁设置<strong>全局唯一的顺序</strong>，按序使用锁；(破坏循环等待条件)</li>
+<li>设置线程<strong>获取锁的超时时间</strong>，防止无限制的死锁；(破坏请求与保持条件)</li>
+<li>使用<strong>条件变量</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">Condition Condition = lock.newCondition();</span><br><span class="line">lock.lock();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">	<span class="keyword">while</span>(!《条件为真》)</span><br><span class="line">		condition.await();</span><br><span class="line">	《使用共享资源》</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">	lock.unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一个条件变量需要与一把锁关联，线程在开始等待条件之前必须获取这把锁，获取锁后，线程检查所等待的条件是否已经为真，如果为真，线程将继续执行, 执行完毕后并解锁。条件变量的方法会使哲学家进餐问题的并发度显著提升。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/09/ThreadLocal%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/09/ThreadLocal%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">ThreadLocal详解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-10 02:18:17 / 修改时间：18:58:21" itemprop="dateCreated datePublished" datetime="2020-06-10T02:18:17+08:00">2020-06-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>653</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>ThreadLocal 提供<strong>线程局部变量</strong>；一个线程局部变量在多个线程中分别有独立的值(副本)</p>
+<h2 id="产生背景"><a href="#产生背景" class="headerlink" title="产生背景"></a>产生背景</h2><p>用于多线程场景,<strong>避免</strong>一致性问题</p>
+<p>一致性问题：</p>
+<ol>
+<li>发生在多个主体对同一份数据无法达成共识。</li>
+<li>包括：分布式一致性问题、并发问题等。</li>
+<li>特点：场景多、问题复杂、难以察觉—需要严密的思考甚至数学论证。</li>
+</ol>
+<p>一致性问题解决办法：</p>
+<ol>
+<li>排队（例如：锁synchronized、互斥量、管程、屏障等）</li>
+<li>投票（例如：Paxos，Raft等）</li>
+<li>避免（例如：ThreadLocal等 空间换时间的方式）</li>
+</ol>
+<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p><code>ThreadLocal</code>模型:<br><img src="https://segmentfault.com/img/bVbIdVN" alt="image.png"></p>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><h3 id="线程资源持有"><a href="#线程资源持有" class="headerlink" title="线程资源持有"></a>线程资源持有</h3><p>在一个用户一个线程的情况下,用户数据使用ThreadLocal存储,其他程序模块可以方便地拿到分配给当前线程的用户的数据,全局获取,减少编程难度.<br><img src="https://segmentfault.com/img/bVbIcAO" alt="image.png"></p>
+<h3 id="线程资源一致性"><a href="#线程资源一致性" class="headerlink" title="线程资源一致性"></a>线程资源一致性</h3><p>以JDBC为例,一个事务分为多个Part,它们在同一个线程中(如Spring响应池中分配的一个线程)请求获取一个数据库连接,将会得到同一个JDBC连接.这样的好处是一个JDBC连接维护了事务的状态,相同事务多次获取连接可以拿到同一个JDBC连接.ThreadLocal帮助需要保持线程一致的资源(如数据库事务)维护一致性,降低编程难度.<br><img src="https://segmentfault.com/img/bVbIcDA" alt="image.png"></p>
+<h3 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h3><p>在以前C语言中常用<code>setLastError()</code>和<code>getLastError()</code>,多线程下就需要ThreadLocal保证一致性.ThreadLocal帮助只考虑了单线程的程序库,无缝向多线程场景迁移.<br><img src="https://segmentfault.com/img/bVbIcGF" alt="image.png"></p>
+<h3 id="分布式计算"><a href="#分布式计算" class="headerlink" title="分布式计算"></a>分布式计算</h3><p>将计算任务分给不同的线程,用<code>ThreadLocal</code>存储本线程的计算结果,然后再汇总.</p>
+<p><img src="https://segmentfault.com/img/bVbIcHL" alt="image.png"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">负载均衡算法总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 03:25:20 / 修改时间：11:39:25" itemprop="dateCreated datePublished" datetime="2020-06-08T03:25:20+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="负载均衡算法"><a href="#负载均衡算法" class="headerlink" title="负载均衡算法"></a>负载均衡算法</h1><p>常用的6种负载均衡算法：</p>
+<h2 id="1、轮询法"><a href="#1、轮询法" class="headerlink" title="1、轮询法"></a>1、轮询法</h2><p>将请求按顺序轮流地分配到后端服务器上，它均衡地对待后端的每一台服务器，而不关心服务器实际的连接数和当前的系统负载。</p>
+<h2 id="2、加权轮询法"><a href="#2、加权轮询法" class="headerlink" title="2、加权轮询法"></a>2、加权轮询法</h2><p>不同的后端服务器可能机器的配置和当前系统的负载并不相同，因此它们的抗压能力也不相同。</p>
+<p>给配置高、负载低的机器配置更高的权重，让其处理更多的请；而配置低、负载高的机器，给其分配较低的权重，降低其系统负载，加权轮询能很好地处理这一问题，并将请求顺序且按照权重分配到后端。</p>
+<h2 id="3、随机法"><a href="#3、随机法" class="headerlink" title="3、随机法"></a>3、随机法</h2><p>通过系统的随机算法，根据后端服务器的列表大小值来随机选取其中的一台服务器进行访问。由概率统计理论可以得知，随着客户端调用服务端的次数增多，其实际效果越来越接近于平均分配调用量到后端的每一台服务器，也就是轮询的结果。</p>
+<h2 id="4、加权随机法"><a href="#4、加权随机法" class="headerlink" title="4、加权随机法"></a>4、加权随机法</h2><p>与加权轮询法一样，加权随机法也根据后端机器的配置，系统的负载分配不同的权重。不同的是，它是按照权重随机请求后端服务器，而非顺序。</p>
+<h2 id="5、源IP地址哈希法"><a href="#5、源IP地址哈希法" class="headerlink" title="5、源IP地址哈希法"></a>5、源IP地址哈希法</h2><p> 源IP地址哈希的思想是根据获取客户端的<code>IP地址</code>，通过哈希函数计算得到的一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是客服端要访问服务器的序号。采用源地址哈希法进行负载均衡，同一<code>IP地址</code>的客户端，当后端服务器列表不变时，它每次都会映射到同一台后端服务器进行访问(若后端服务器列表改变,需要一致性哈希算法来优化,见下文)。</p>
+<h2 id="6、最小连接数法"><a href="#6、最小连接数法" class="headerlink" title="6、最小连接数法"></a>6、最小连接数法</h2><p>最小连接数算法比较灵活和智能，由于后端服务器的配置不尽相同，对于请求的处理有快有慢，它是根据后端服务器当前的连接情况，动态地选取其中当前积压连接数最少的一台服务器来处理当前的请求，尽可能地提高后端服务的利用效率，将负责合理地分流到每一台服务器。</p>
+<h1 id="一致性哈希-Consistent-Hashing"><a href="#一致性哈希-Consistent-Hashing" class="headerlink" title="一致性哈希(Consistent Hashing)"></a>一致性哈希(Consistent Hashing)</h1><p>在上面的源地址hash算法中,存在以下的2个问题</p>
+<ol>
+<li><p>当一台服务器宕机了或者新添加一台机器之后,这个时候<code>hashCode % servers.size()</code>需要重新计算hash值, 如果在缓存的环境中,所有的请求都会涌向数据库服务器,给数据库服务器带来巨大的压力,可能导致整个系统不可用,形成雪崩效应.</p>
+</li>
+<li><p>当新增了一台性能强的机器后,利用上述的hash算法无法让新增的性能强的服务器多承担压力.</p>
+</li>
+</ol>
+<p>基于上面的2个问题,提出了hash算法的改进,即Consistent Hashing算法.Consistent Hashing也是一种 hash 算法，简单的说，<strong>在移除 / 添加操作，它能够尽可能小的改变已存在 key 映射关系.</strong></p>
+<p>Consistent Hashing算法的原理是它<strong>将hash函数的值域组织成一个环形</strong>,整个空间按照顺时针的方式进行组织,将对应的服务器节点进行hash,将他们映射到hash环上,假设有四台机器node1-4,hash之后如图所示:</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/6024043-de85b3798f9d53c8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/835/format/webp" alt="img"></p>
+<p>接下来使用相同的hash函数,计算出对应的key值和hash值,按照顺时针的方式,分布在node1和node2的key,访问时被定位在node2,分布在node2和node4的key被定位在node4上,以此类推.假设现在新增一个node5,假设hash之后在node2和node4之间,如图所示:</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/6024043-326c19e2430af9f9.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/822/format/webp" alt="img"></p>
+<p>那么受影响的节点只有node2和node5,他们将会从新hash,而其他的key的映射将不会变化.</p>
+<p>当然,上面描绘了一种很理想的情况,即各个节点在环上分布的十分均匀.正常情况下,当节点数量少的时候,节点分布并不均匀,这时需要引入虚拟节点机制.</p>
+<p>部分转载自<a href="https://www.jianshu.com/p/40e196414cfa" target="_blank" rel="noopener">常见的一些负载均衡算法总结</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1203,544 +1762,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/" class="post-title-link" itemprop="url">进程间通信方式</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 13:33:34 / 修改时间：21:35:04" itemprop="dateCreated datePublished" datetime="2020-06-07T13:33:34+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>693</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>链接：<a href="https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b</a><br>来源：牛客网</p>
-<ul>
-<li>管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO都有一个名字，允许不相关的进程访问同一个FIFO，因此也成为命名管。      </li>
-<li>消息队列：是用于两个进程之间的通讯，首先在一个进程中创建一个消息队列，然后再往消息队列中写数据，而另一个进程则从那个消息队列中取数据。需要注意的是，消息队列是用创建文件的方式建立的，如果一个进程向某个消息队列中写入了数据之后，另一个进程并没有取出数据，即使向消息队列中写数据的进程已经结束，保存在消息队列中的数据并没有消失，也就是说下次再从这个消息队列读数据的时候，就是上次的数据！！！      </li>
-<li>信号量， 不能传递复杂消息，只能用来同步      </li>
-<li>共享内存，只要首先创建一个共享内存区，其它进程按照一定的步骤就能访问到这个共享内存区中的数据，当然可读可写；    </li>
-</ul>
-<p>​    几种方式的比较：   </p>
-<ul>
-<li>​     管道：速度慢，容量有限      </li>
-<li>​     消息队列：容量受到系统限制，且要注意第一次读的时候，要考虑上一次没有读完数据的问题。      </li>
-<li>​     信号量：不能传递复杂消息，只能用来同步      </li>
-<li>​     共享内存区：能够很容易控制容量，速度快，但要保持同步，比如一个进程在写的时候，另一个进程要注意读写的问题，相当于线程中的线程安全，当然，共享内存区同样可以用作线程间通讯，不过没这个必要，线程间本来就已经共享了一块内存的。</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E6%AD%BB%E9%94%81%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%92%8C%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E6%AD%BB%E9%94%81%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%92%8C%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/" class="post-title-link" itemprop="url">死锁的条件和解决办法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 13:11:12 / 修改时间：21:23:33" itemprop="dateCreated datePublished" datetime="2020-06-07T13:11:12+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="死锁概念和产生原因"><a href="#死锁概念和产生原因" class="headerlink" title="死锁概念和产生原因"></a>死锁概念和产生原因</h3><p>死锁是指多个进程循环等待彼此占有的资源而无限期的僵持等待下去的局面。原因是：</p>
-<ul>
-<li>系统提供的资源太少了，远不能满足并发进程对资源的需求</li>
-<li>进程推进顺序不合适，互相占有彼此需要的资源，同时请求对方占有的资源，往往是程序设计不合理</li>
-</ul>
-<h3 id="死锁产生的必要条件"><a href="#死锁产生的必要条件" class="headerlink" title="死锁产生的必要条件"></a>死锁产生的必要条件</h3><p>需要同时具有以下四个条件：</p>
-<ul>
-<li><strong>互斥</strong>条件：即某个资源在一段时间内只能由一个进程占有，不能同时被两个或两个以上的进程占有</li>
-<li><strong>不可抢占</strong>条件：进程所获得的资源在未使用完毕之前，资源申请者不能强行的从资源占有者手中夺取资源，而只能由该资源的占有者进程自行释放</li>
-<li><strong>占有且等待</strong>条件：进程至少已经占有了一个资源，但又申请了一个新的被其他进程所占有的资源，此时处于等待状态</li>
-<li><strong>循环等待</strong>条件：若干个进程形成环形链，每个都占用对方申请的下一个资源</li>
-</ul>
-<p>只要系统发生死锁，这些条件必然成立，而只要上述条件之一不满足，就不会发生死锁。</p>
-<h3 id="死锁的处理策略"><a href="#死锁的处理策略" class="headerlink" title="死锁的处理策略"></a>死锁的处理策略</h3><p>为使系统不发生死锁，必须设法破坏产生死锁的四个必要条件之一，或者允许死锁产生，但当死锁发生时能检测出思索，并有能力实现恢复。<br> 一般有死锁的预防、死锁避免、死锁的检测与恢复三种方法。<br> (1) <strong>死锁预防</strong>：破坏导致死锁必要条件中的任意一个就可以预防死锁。例如，要求用户申请资源时一次性申请所需要的全部资源，这就破坏了保持和等待条件；将资源分层，得到上一层资源后，才能够申请下一层资源，它破坏了环路等待条件。预防通常会<strong>降低系统的效率</strong>。</p>
-<p>(2) <strong>死锁避免</strong>：避免是指进程在每次申请资源时判断这些操作是否安全，例如，使用银行家算法。死锁避免算法的执行会增加系统的开销。允许前三个必要条件，但通过明智的选择，确保永远不会到达死锁点，因此死锁避免比死锁预防允许更多的并发。</p>
-<p>(3) <strong>死锁检测</strong>：不须实现采取任何限制性措施，而是允许系统在运行过程发生死锁，但可通过系统设置的检测机构及时检测出死锁的发生，并精确地确定于死锁相关的进程和资源，然后采取适当的措施，从系统中将已发生的死锁清除掉。死锁预防和避免都是事前措施，而死锁的检测则是判断系统是否处于死锁状态，如果是，则执行死锁解除策略。</p>
-<p>(4) <strong>死锁解除</strong>：这是与死锁检测结合使用的，它使用的方式就是剥夺。即将某进程所拥有的资源强行收回，分配给其他的进程。常用方法：撤销或挂起一些进程，以便回收一些资源，再将这些资源分配给已处于阻塞状态的进程。死锁检测盒解除有可能使系统获得较好的资源利用率和吞吐量，但在实现上难度也最大。</p>
-<h4 id="死锁预防："><a href="#死锁预防：" class="headerlink" title="死锁预防："></a>死锁预防：</h4><ul>
-<li>打破互斥条件：允许进程同时访问资源（有些资源就是不可以同时访问的，它是设备的固有属性所决定的，不仅不能改变，还应该加以保证。无实用价值）</li>
-<li>打破不可抢占条件：比如给进程设置优先级，高优先级的可以抢占资源(实现困难，降低系统性能)</li>
-<li>打破占有且等待条件：实行资源预分配策略，即进程在运行前一次性的向系统申请它所需要的全部资源(不可预测资源的使用，利用率低，降低并发性)</li>
-<li>破坏循环等待条件：把资源事先分类编号，按优先级分配，使进程在申请，占用资源时不会形成环路。所有进程对资源的请求必须严格按资源序号递增的顺序提出（限制和编号实现困难，增加系统开销，有些资源暂时不用也需要先申请，增加了进程对资源的占用时间）</li>
-</ul>
-<h4 id="死锁避免"><a href="#死锁避免" class="headerlink" title="死锁避免"></a>死锁避免</h4><p>允许进程动态的申请资源，但系统在进行资源分配前，应先计算此次资源分配的安全性。若此次分配不会导致系统进入不安全状态，则将资源你分配给进程，否则，让进程等待。<br> 所谓安全状态，是指系统能按某种进程推进顺序，为每个进程分配其所需的资源，直至满足每个进程对资源的最大需求，是每个进程都可以顺序的完成。此时成P1P2P3…为安全序列，如果系统无法找到一个安全序列，则称系统处于不安全状态。<br> 并非所有的不安全状态都是死锁状态，但当系统进入不安全状态后，便可能进入死锁状态；反之，只要系统处于安全状态，系统便可以避免进入死锁状态。</p>
-<p> 银行家算法是最著名的死锁避免算法。</p>
-<p>(1)两种死锁避免算法：</p>
-<p>进程启动拒绝：如果一个进程的请求会导致死锁，则不启动该进程。</p>
-<p>资源分配拒绝：如果一个进程增加的资源请求会导致死锁，则不允许此分配(<strong>银行家算法</strong>)。</p>
-<p>(2)<strong>银行家算法</strong>：</p>
-<p>1.如果request&lt;=need，转向步骤2；否则认为出错，因为请求资源大于需要资源。</p>
-<p>2.如果request&lt;=available，转向步骤3,；否则尚无足够资源，进程p阻塞；</p>
-<p>3.系统尝试为把资源分配给进程P，并修改available、allocation和need的数值。</p>
-<p>4.系统执行安全性算法，检查此次分配后系统是否处于安全状态，若安全，才正式将资源分配给进程P，否则将本次试探性分配作废，让进程P等待。</p>
-<h4 id="死锁的检测"><a href="#死锁的检测" class="headerlink" title="死锁的检测"></a>死锁的检测</h4><p>资源分配图&amp;&amp;死锁定理</p>
-<h4 id="死锁解除"><a href="#死锁解除" class="headerlink" title="死锁解除"></a>死锁解除</h4><p>1）资源剥夺法。挂起某些思索进程，并抢占它的资源，将这些资源分配给其他的死锁进程。但应防止被挂起的进程长时间得不到资源时，而处于资源匮乏的状态。<br> 2）进程撤销法。强制撤销一个或一部分进程并剥夺这些进程的资源。撤销的原则可以按进程的优先级和撤销进程代价的高低进行。<br> 3）进程回退法。让一个或多个进程回退到足以回避死锁的地步，进程回退时资源释放资源而不是被剥夺。要求系统保持进程的历史信息，设置还原点。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/06/%E6%95%B0%E7%BB%84%E4%B8%AD%E7%9A%84%E9%80%86%E5%BA%8F%E5%AF%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/06/%E6%95%B0%E7%BB%84%E4%B8%AD%E7%9A%84%E9%80%86%E5%BA%8F%E5%AF%B9/" class="post-title-link" itemprop="url">数组中的逆序对</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 03:03:32 / 修改时间：19:03:47" itemprop="dateCreated datePublished" datetime="2020-06-07T03:03:32+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组,求出这个数组中的逆序对的总数P。并将P对1000000007取模的结果输出。 即输出P%1000000007</p>
-<h2 id="输入描述"><a href="#输入描述" class="headerlink" title="输入描述:"></a>输入描述:</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">题目保证输入的数组中没有的相同的数字数据范围：	对于%50的数据,size&lt;&#x3D;10^4	对于%75的数据,size&lt;&#x3D;10^5	对于%100的数据,size&lt;&#x3D;2*10^5</span><br></pre></td></tr></table></figure>
-
-<p>示例1</p>
-<h2 id="输入"><a href="#输入" class="headerlink" title="输入"></a>输入</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1,2,3,4,5,6,7,0</span><br></pre></td></tr></table></figure>
-
-<h2 id="输出"><a href="#输出" class="headerlink" title="输出"></a>输出</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">7</span><br></pre></td></tr></table></figure>
-
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>归并排序.leetcode上可以通过,牛客网剑指Offer没有完全通过,由于错误用例看不完整,正在排查原因</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> c = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">InversePairs</span><span class="params">(<span class="keyword">int</span>[] array)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (array == <span class="keyword">null</span> || array.length &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    mergeSort(array);</span><br><span class="line">    <span class="keyword">return</span> c % <span class="number">1000000007</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">int</span>[] mergeSort(<span class="keyword">int</span>[] n) &#123;</span><br><span class="line">    <span class="keyword">if</span> (n.length &lt;= <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> n;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (n.length == <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (n[<span class="number">0</span>] &gt; n[<span class="number">1</span>]) &#123;</span><br><span class="line">            c++;</span><br><span class="line">            <span class="keyword">int</span> t = n[<span class="number">0</span>];</span><br><span class="line">            n[<span class="number">0</span>] = n[<span class="number">1</span>];</span><br><span class="line">            n[<span class="number">1</span>] = t;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> n;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span>[] n1, n2;</span><br><span class="line">    n1 = mergeSort(Arrays.copyOfRange(n, <span class="number">0</span>, n.length / <span class="number">2</span>));</span><br><span class="line">    n2 = mergeSort(Arrays.copyOfRange(n, n.length / <span class="number">2</span>, n.length));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//todo merge 统计逆序对</span></span><br><span class="line">    <span class="keyword">int</span>[] n3 = <span class="keyword">new</span> <span class="keyword">int</span>[n.length];</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>, j = <span class="number">0</span>, k = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (i &lt; n1.length &amp;&amp; j &lt; n2.length) &#123;</span><br><span class="line">        <span class="keyword">if</span> (n1[i] &lt;= n2[j]) &#123;</span><br><span class="line">            n3[k] = n1[i];</span><br><span class="line">            i++;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            n3[k] = n2[j];</span><br><span class="line">            j++;</span><br><span class="line">            c += (n1.length - i);</span><br><span class="line">        &#125;</span><br><span class="line">        k++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (; i &lt; n1.length; k++, i++) &#123;</span><br><span class="line">        n3[k] = n1[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (; j &lt; n2.length; k++, j++) &#123;</span><br><span class="line">        n3[k] = n2[j];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> n3;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/96bd6684e04a44eb80e6a68efc0ec6c5?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/96bd6684e04a44eb80e6a68efc0ec6c5?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>题目描述：给定一个数组arr， 数组元素各不相同，求arr[i] &gt; arr[j] 且 i &lt; j的个数。</p>
-<p>首先还是提出两个问题，带着问题来看题解，我觉得效率更好。<br>Q1：为什么归并排序需要额外的空间？<br>Q2：为什么此题的最优解法可以借助归并排序的思想？</p>
-<h2 id="方法一：暴力方法"><a href="#方法一：暴力方法" class="headerlink" title="方法一：暴力方法"></a>方法一：暴力方法</h2><p>对于此题，按住一个arr[i], 依次判断{i+1 … n-1]是否满足条件。n为数组的大小。<br>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">private:</span><br><span class="line">    const int kmod &#x3D; 1000000007;</span><br><span class="line">public:</span><br><span class="line">    int InversePairs(vector&lt;int&gt; data) &#123;</span><br><span class="line">        int ret &#x3D; 0;</span><br><span class="line">        int n &#x3D; data.size();</span><br><span class="line">        for (int i &#x3D; 0; i &lt; n; ++i) &#123;</span><br><span class="line">            for (int j &#x3D; i + 1; j &lt; n; ++j) &#123;</span><br><span class="line">                if (data[i] &gt; data[j]) &#123;</span><br><span class="line">                    ret +&#x3D; 1;</span><br><span class="line">                    ret %&#x3D; kmod;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return ret;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>对于10^5数据，O(N^2)算法显然超时。<br>时间复杂度：O(N^2)<br>空间复杂度：O(1)</p>
-<h2 id="方法二：归并排序思想"><a href="#方法二：归并排序思想" class="headerlink" title="方法二：归并排序思想"></a>方法二：归并排序思想</h2><p>A1：    首先回答一下第一个问题，为什么归并排序需要额外空间？<br>显然我们知道，归并排序的过程就是，递归划分整个区间为基本相等的左右区间，之间左右区间各只有一个数字，然后就合并两个有序区间。<br>问题就出在了合并两个有序区间上，需要额外的空间。<br>为什么呢？<br>这里我举个例子，比如需要合并的两个有序区间为[3 4] 和 [1 2]<br>我们需要得到最后的结果为[1 2 3 4]， 如果不需要额外的空间的话，是做不到的，<br>当比较1 和 3 的时候， 1 比 3 小，就会覆盖原来的位置。</p>
-<p>A2：回答第二个问题之前，先了解一下归并排序的过程，主要有以下两个操作：</p>
-<ul>
-<li>递归划分整个区间为基本相等的左右两个区间 </li>
-<li>合并两个有序区间 </li>
-</ul>
-<p>可能看了代码，更好理解：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 合并过程</span><br><span class="line">void merge__(vector&lt;int&gt; &amp;arr, int l, int mid, int r) &#123;</span><br><span class="line">    &#x2F;&#x2F; 在这个地方创建额外空间，是一种不好的做法，更好的做法，等下讲</span><br><span class="line">    vector&lt;int&gt; tmp(r - l + 1);</span><br><span class="line">    int i &#x3D; l, j &#x3D; mid + 1, k &#x3D; 0;</span><br><span class="line"></span><br><span class="line">    while (i &lt;&#x3D; mid &amp;&amp; j &lt;&#x3D; r) &#123;</span><br><span class="line">        if (arr[i] &gt;&#x3D; arr[j]) &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[j++];</span><br><span class="line">        &#125;</span><br><span class="line">        else &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[i++];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    while (i &lt;&#x3D; mid) &#123;</span><br><span class="line">        tmp[k++] &#x3D; arr[i++];</span><br><span class="line">    &#125;</span><br><span class="line">    while (j &lt;&#x3D; r) &#123;</span><br><span class="line">        tmp[k++] &#x3D; arr[j++];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    for (k &#x3D; 0, i &#x3D; l; i &lt;&#x3D; r; ++i, ++k) &#123;</span><br><span class="line">        arr[i] &#x3D; tmp[k];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 递归划分过程</span><br><span class="line">void merge_sort__(vector&lt;int&gt; &amp;arr, int l, int r) &#123;</span><br><span class="line">    &#x2F;&#x2F; 只有一个数字，则停止划分</span><br><span class="line">    if (l &gt;&#x3D; r) &#123;</span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    int mid &#x3D; l + ((r - l) &gt;&gt; 1);</span><br><span class="line">    merge_sort__(arr, l, mid);</span><br><span class="line">    merge_sort__(arr, mid + 1, r);</span><br><span class="line">    &#x2F;&#x2F; 合并两个有序区间</span><br><span class="line">    merge__(arr, l, mid, r);</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; 要排序的数组 arr</span><br><span class="line">void merge_sort(vector&lt;int&gt;&amp; arr) &#123;</span><br><span class="line">    merge_sort__(arr, 0, arr.size() - 1);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>明白了归并排序的过程，那么回答问题2.<br>如果两个区间为[4, 3] 和[1, 2]<br>那么逆序数为(4,1),(4,2),(3,1),(3,2)，同样的如果区间变为有序，比如[3,4] 和 [1,2]的结果是一样的，也就是说区间有序和无序结果是一样的。<br>但是如果区间有序会有什么好处吗？当然，如果区间有序，比如[3,4] 和 [1,2]<br>如果3 &gt; 1, 显然3后面的所有数都是大于1， 这里为 4 &gt; 1, 明白其中的奥秘了吧。所以我们可以在合并的时候利用这个规则。</p>
-<p>直接上代码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">private:</span><br><span class="line">    const int kmod &#x3D; 1000000007;</span><br><span class="line">public:</span><br><span class="line">    int InversePairs(vector&lt;int&gt; data) &#123;</span><br><span class="line">        int ret &#x3D; 0;</span><br><span class="line">        merge_sort__(data, 0, data.size() - 1, ret);</span><br><span class="line">        return ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    void merge_sort__(vector&lt;int&gt; &amp;arr, int l, int r, int &amp;ret) &#123;</span><br><span class="line">        if (l &gt;&#x3D; r) &#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        int mid &#x3D; l + ((r - l) &gt;&gt; 1);</span><br><span class="line">        merge_sort__(arr, l, mid, ret);</span><br><span class="line">        merge_sort__(arr, mid + 1, r, ret);</span><br><span class="line">        merge__(arr, l, mid, r, ret);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    void merge__(vector&lt;int&gt; &amp;arr, int l, int mid, int r, int &amp;ret) &#123;</span><br><span class="line">        vector&lt;int&gt; tmp(r - l + 1);</span><br><span class="line">        int i &#x3D; l, j &#x3D; mid + 1, k &#x3D; 0;</span><br><span class="line"></span><br><span class="line">        while (i &lt;&#x3D; mid &amp;&amp; j &lt;&#x3D; r) &#123;</span><br><span class="line">            if (arr[i] &gt; arr[j]) &#123;</span><br><span class="line">                tmp[k++] &#x3D; arr[j++];</span><br><span class="line">                &#x2F;&#x2F; 奥妙之处</span><br><span class="line">                ret +&#x3D; (mid - i + 1);</span><br><span class="line">                ret %&#x3D; kmod;</span><br><span class="line">            &#125;</span><br><span class="line">            else &#123;</span><br><span class="line">                tmp[k++] &#x3D; arr[i++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        while (i &lt;&#x3D; mid) &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[i++];</span><br><span class="line">        &#125;</span><br><span class="line">        while (j &lt;&#x3D; r) &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[j++];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (k &#x3D; 0, i &#x3D; l; i &lt;&#x3D; r; ++i, ++k) &#123;</span><br><span class="line">            arr[i] &#x3D; tmp[k];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>刚才提到在函数内部开辟额外空间的做法很不好。因为这样会涉及到频繁的构建 vector 和析构vector，所以比较好的做法是：直接在最外层开辟一个足够大的数组，然后传引用到函数。<br>代码如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">class Solution &#123;</span><br><span class="line">private:</span><br><span class="line">    const int kmod &#x3D; 1000000007;</span><br><span class="line">public:</span><br><span class="line">    int InversePairs(vector&lt;int&gt; data) &#123;</span><br><span class="line">        int ret &#x3D; 0;</span><br><span class="line">        &#x2F;&#x2F; 在最外层开辟数组</span><br><span class="line">        vector&lt;int&gt; tmp(data.size());</span><br><span class="line">        merge_sort__(data, tmp, 0, data.size() - 1, ret);</span><br><span class="line">        return ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    void merge_sort__(vector&lt;int&gt; &amp;arr, vector&lt;int&gt; &amp;tmp, int l, int r, int &amp;ret) &#123;</span><br><span class="line">        if (l &gt;&#x3D; r) &#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        int mid &#x3D; l + ((r - l) &gt;&gt; 1);</span><br><span class="line">        merge_sort__(arr, tmp, l, mid, ret);</span><br><span class="line">        merge_sort__(arr, tmp, mid + 1, r, ret);</span><br><span class="line">        merge__(arr, tmp, l, mid, r, ret);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    void merge__(vector&lt;int&gt; &amp;arr, vector&lt;int&gt; &amp;tmp, int l, int mid, int r, int &amp;ret) &#123;</span><br><span class="line">        int i &#x3D; l, j &#x3D; mid + 1, k &#x3D; 0;</span><br><span class="line"></span><br><span class="line">        while (i &lt;&#x3D; mid &amp;&amp; j &lt;&#x3D; r) &#123;</span><br><span class="line">            if (arr[i] &gt; arr[j]) &#123;</span><br><span class="line">                tmp[k++] &#x3D; arr[j++];</span><br><span class="line">                ret +&#x3D; (mid - i + 1);</span><br><span class="line">                ret %&#x3D; kmod;</span><br><span class="line">            &#125;</span><br><span class="line">            else &#123;</span><br><span class="line">                tmp[k++] &#x3D; arr[i++];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        while (i &lt;&#x3D; mid) &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[i++];</span><br><span class="line">        &#125;</span><br><span class="line">        while (j &lt;&#x3D; r) &#123;</span><br><span class="line">            tmp[k++] &#x3D; arr[j++];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        for (k &#x3D; 0, i &#x3D; l; i &lt;&#x3D; r; ++i, ++k) &#123;</span><br><span class="line">            arr[i] &#x3D; tmp[k];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(NlogN)<br>空间复杂度：O(N)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/06/%E6%89%91%E5%85%8B%E7%89%8C%E9%A1%BA%E5%AD%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/06/%E6%89%91%E5%85%8B%E7%89%8C%E9%A1%BA%E5%AD%90/" class="post-title-link" itemprop="url">扑克牌顺子</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 02:32:45 / 修改时间：11:02:52" itemprop="dateCreated datePublished" datetime="2020-06-07T02:32:45+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>LL今天心情特别好,因为他去买了一副扑克牌,发现里面居然有2个大王,2个小王(一副牌原本是54张^_^)…他随机从中抽出了5张牌,想测测自己的手气,看看能不能抽到顺子,如果抽到的话,他决定去买体育彩票,嘿嘿！！“红心A,黑桃3,小王,大王,方片5”,“Oh My God!”不是顺子…..LL不高兴了,他想了想,决定大\小 王可以看成任何数字,并且A看作1,J为11,Q为12,K为13。上面的5张牌就可以变成“1,2,3,4,5”(大小王分别看作2和4),“So Lucky!”。LL决定去买体育彩票啦。 现在,要求你使用这幅牌模拟上面的过程,然后告诉我们LL的运气如何， 如果牌能组成顺子就输出true，否则就输出false。为了方便起见,你可以认为大小王是0。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isContinuous</span><span class="params">(<span class="keyword">int</span>[] numbers)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (numbers == <span class="keyword">null</span> || numbers.length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Arrays.sort(numbers);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (; i &lt; numbers.length; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (numbers[i] != <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; numbers.length; j++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (numbers[j] == numbers[j - <span class="number">1</span>]) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> gap = numbers[<span class="number">4</span>] - numbers[i];</span><br><span class="line">    <span class="keyword">if</span> (gap &lt; <span class="number">5</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/762836f4d43d43ca9deb273b3de8e1f4?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/762836f4d43d43ca9deb273b3de8e1f4?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>题目抽象：给定一个长度为5（排除空vector），包含0-13的数组，判断公差是否为1.</p>
-<h2 id="方法一：set-遍历"><a href="#方法一：set-遍历" class="headerlink" title="方法一：set+遍历"></a>方法一：set+遍历</h2><p>我们分两种情况考虑，<br><strong>一.</strong> 如果vector中不包含0的情况：<br>那么如何判断呢？因为需要是顺子，所以首先不能有<strong>重复值</strong>， 如果没有重复值，那么形如<code>[1 2 3 4 5]</code><br><code>[5 6 7 8 9]</code>， 会发现<strong>最大值与最小值的差值应该小于5.</strong></p>
-<p><strong>二.</strong> 如果vector中包含0：<br>发现除去0后的值，判断方法和1中是一样的。</p>
-<p>所以根据如上两个条件，算法过程如下：</p>
-<ol>
-<li>初始化一个<code>set</code>，最大值max_ = 0, 最小值min_ = 14 </li>
-<li>遍历数组， 对于大于0的整数，没有在set中出现，则加入到set中，同时更新max_, min_ </li>
-<li>如果出现在了<code>set</code>中，直接返回<code>false</code> </li>
-<li>数组遍历完，最后再判断一下最大值与最小值的差值是否小于5 </li>
-</ol>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">IsContinuous</span><span class="params">( <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; numbers )</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (numbers.empty()) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="built_in">set</span>&lt;<span class="keyword">int</span>&gt; st;</span><br><span class="line">        <span class="keyword">int</span> max_ = <span class="number">0</span>, min_ = <span class="number">14</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> val : numbers) &#123;</span><br><span class="line">            <span class="keyword">if</span> (val &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> (st.count(val) &gt; <span class="number">0</span>) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">                st.insert(val);</span><br><span class="line">                max_ = <span class="built_in">max</span>(max_, val);</span><br><span class="line">                min_ = <span class="built_in">min</span>(min_, val);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> max_ - min_ &lt; <span class="number">5</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度：O(N)</p>
-<h2 id="方法二：排序-遍历"><a href="#方法二：排序-遍历" class="headerlink" title="方法二：排序+遍历"></a>方法二：排序+遍历</h2><p>根据方法一的分析，实现上如果不用set判断是否有重复值的话，还可以先排序，然后如果有重复值，那么肯定相邻。<br>所以代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">IsContinuous</span><span class="params">( <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; numbers )</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (numbers.empty()) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        sort(numbers.<span class="built_in">begin</span>(), numbers.<span class="built_in">end</span>());</span><br><span class="line">        <span class="keyword">int</span> i = <span class="number">0</span>, sz = numbers.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=<span class="number">0</span>; j&lt;sz; ++j) &#123;</span><br><span class="line">            <span class="keyword">if</span> (numbers[j] == <span class="number">0</span>) &#123;</span><br><span class="line">                ++i; <span class="comment">// i 记录最小值的下标</span></span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (j+<span class="number">1</span>&lt;sz &amp;&amp; numbers[j] == numbers[j+<span class="number">1</span>]) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> numbers.back() - numbers[i] &lt; <span class="number">5</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(NlogN)<br>空间复杂度：O(1)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/06/%E5%AD%A9%E5%AD%90%E4%BB%AC%E7%9A%84%E6%B8%B8%E6%88%8F(%E5%9C%86%E5%9C%88%E4%B8%AD%E6%9C%80%E5%90%8E%E5%89%A9%E4%B8%8B%E7%9A%84%E6%95%B0)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/06/%E5%AD%A9%E5%AD%90%E4%BB%AC%E7%9A%84%E6%B8%B8%E6%88%8F(%E5%9C%86%E5%9C%88%E4%B8%AD%E6%9C%80%E5%90%8E%E5%89%A9%E4%B8%8B%E7%9A%84%E6%95%B0)/" class="post-title-link" itemprop="url">孩子们的游戏(圆圈中最后剩下的数)</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 02:09:42 / 修改时间：10:32:10" itemprop="dateCreated datePublished" datetime="2020-06-07T02:09:42+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>每年六一儿童节,牛客都会准备一些小礼物去看望孤儿院的小朋友,今年亦是如此。HF作为牛客的资深元老,自然也准备了一些小游戏。其中,有个游戏是这样的:首先,让小朋友们围成一个大圈。然后,他随机指定一个数m,让编号为0的小朋友开始报数。每次喊到m-1的那个小朋友要出列唱首歌,然后可以在礼品箱中任意的挑选礼物,并且不再回到圈中,从他的下一个小朋友开始,继续0…m-1报数….这样下去….直到剩下最后一个小朋友,可以不用表演,并且拿到牛客名贵的“名侦探柯南”典藏版(名额有限哦!!^_^)。请你试着想下,哪个小朋友会得到这份礼品呢？(注：小朋友的编号是从0到n-1)</p>
-<p>如果没有小朋友，请返回-1</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">LastRemaining_Solution</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (n == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    List&lt;Integer&gt; list = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">        list.add(i);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> begin = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (list.size() &gt; <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> t = (m - <span class="number">1</span> + begin) % n;</span><br><span class="line">        list.remove(t);</span><br><span class="line">        begin = t;</span><br><span class="line">        n--;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> list.get(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/f78a359491e64a50bce2d89cff857eb6?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/f78a359491e64a50bce2d89cff857eb6?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>题目抽象：给定一个由[0…n-1]构成的数组，第一次从0开始数m个数，然后删除，以后每次都从删除的数下一个位置开始数m个数，然后删除，直到剩余一个数字，找出那个数字。<br>比如：arr = [0 1 2 3 4]， m = 3<br>第一次：删除2 ，变成 arr = [0 1 3 4]<br>第二次，删除0，变成 arr = [1 3 4]<br>第三次，删除4，变成 arr = [1 3]<br>第四次，删除1，变成 arr = [3]</p>
-<h2 id="方法一：模拟"><a href="#方法一：模拟" class="headerlink" title="方法一：模拟"></a>方法一：模拟</h2><p>最开始长度为n，每次删除一个数，长度变为n-1，如果用数组模拟操作的话，删除一个数据，涉及大量的数据搬移操作，所以我们可以使用链表来模拟操作。<br>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">LastRemaining_Solution</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) <span class="keyword">return</span> <span class="number">-1</span>; </span><br><span class="line">        <span class="built_in">list</span>&lt;<span class="keyword">int</span>&gt; lt;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;n; ++i) </span><br><span class="line">            lt.push_back(i);</span><br><span class="line">        <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (n &gt; <span class="number">1</span>) &#123;</span><br><span class="line">            index = (index + m - <span class="number">1</span>) % n;</span><br><span class="line">            <span class="keyword">auto</span> it = lt.<span class="built_in">begin</span>();</span><br><span class="line">            <span class="built_in">std</span>::advance(it, index); <span class="comment">// 让it向后移动index个位置</span></span><br><span class="line">            lt.erase(it);</span><br><span class="line">            --n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> lt.back();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N^2), 每次删除一个节点，需要先找到那个节点，然后再删除，查找的时间复杂度为O(N)<br>空间复杂度：O(N)</p>
-<h2 id="方法二：递归"><a href="#方法二：递归" class="headerlink" title="方法二：递归"></a>方法二：递归</h2><p>假设f(n, m) 表示最终留下元素的序号。比如上例子中表示为:f(5,3) = 3</p>
-<p>首先，长度为 n 的序列会先删除第 m % n 个元素，然后剩下一个长度为 n - 1 的序列。那么，我们可以递归地求解 f(n - 1, m)，就可以知道对于剩下的 n - 1 个元素，最终会留下第几个元素，我们设答案为 x = f(n - 1, m)。</p>
-<p>由于我们删除了第 m % n 个元素，将序列的长度变为 n - 1。当我们知道了 f(n - 1, m) 对应的答案 x 之后，我们也就可以知道，长度为 n 的序列最后一个删除的元素，应当是从 m % n 开始数的第 x 个元素。因此有 f(n, m) = (m % n + x) % n = (m + x) % n。</p>
-<p>当n等于1时，f(1,m) = 0<br>代码为：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">f</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n == <span class="number">1</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> x = f(n<span class="number">-1</span>, m);</span><br><span class="line">        <span class="keyword">return</span> (x+m) % n;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">LastRemaining_Solution</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) <span class="keyword">return</span> <span class="number">-1</span>; </span><br><span class="line">        <span class="keyword">return</span> f(n,m);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度: O(N)</p>
-<h2 id="方法三：迭代法"><a href="#方法三：迭代法" class="headerlink" title="方法三：迭代法"></a>方法三：迭代法</h2><p>根据方法二可知，<br>f[1] = 0<br>f[2] = (f{1] + m) % 2<br>f[3] = (f[2] + m) % 3<br>…<br>f[n] = (f[n-1] + m) % n<br>所以代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">int</span> <span class="title">LastRemaining_Solution</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">int</span> m)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (n &lt;= <span class="number">0</span>) <span class="keyword">return</span> <span class="number">-1</span>; </span><br><span class="line">        <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">2</span>; i&lt;=n; ++i) &#123;</span><br><span class="line">            index = (index + m) % i;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> index;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度: O(1)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1808,7 +1833,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">154</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1864,7 +1889,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">450k</span>
+    <span title="站点总字数">475k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

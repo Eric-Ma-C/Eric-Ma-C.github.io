@@ -186,6 +186,787 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/" class="post-title-link" itemprop="url">深入理解Java内部类</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-15 02:18:34 / 修改时间：10:40:13" itemprop="dateCreated datePublished" datetime="2020-06-15T02:18:34+08:00">2020-06-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p> 内部类就是定义在一个类中的另外一个类，是一种从属关系。在没有实际了解内部类之前，我始终困惑，为什么要在一个类中定义另外一个类，这不是增加代码结构复杂度么？现在才大致能知道这种设计的优势是大于其劣势的。比如，我们可以通过内部类解决类的单继承问题，外部类不能再继承的类可以交给内部类继承。我们可以通过定义内部类来实现一个类私属于一个类，实现更好的封装性。具体的我们接下来介绍，本文主要通过介绍内部类的四种不同类型的定义，实例的创建，内部实现原理以及使用场景几种不同角度来学习内部类。</p>
+<ul>
+<li>静态内部类</li>
+<li>成员内部类</li>
+<li>方法内部类</li>
+<li>匿名内部类</li>
+</ul>
+<h2 id="一、静态内部类"><a href="#一、静态内部类" class="headerlink" title="一、静态内部类"></a><strong>一、静态内部类</strong></h2><p>静态内部类的定义和普通的静态变量或者静态方法的定义方法是一样的，使用static关键字，只不过这次static是修饰在class上的，一般而言，只有静态内部类才允许使用static关键字修饰，普通类的定义是不能用static关键字修饰的，这一点需要注意一下。下面定义一个静态内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    private int age;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        private int age;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            </span><br><span class="line">            System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            <span class="comment">//--编译报错---</span></span><br><span class="line">            <span class="comment">//System.out.println("my age is :"+ age);</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在上述代码中，In这个类就是一个静态内部类。我们说内部类是可以访问外部类的私有字段和私有方法的，对于静态内部类，它遵循一致的原则，只能访问外部类的静态成员。上述代码中，外部类的非静态私有字段age在静态内部类中使不允许访问的，而静态字段name则是可访问的。下面我们看，如何创建一个静态内部类的实例对象。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out.In innerClass = <span class="keyword">new</span> Out.In();</span><br><span class="line">    innerClass.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>静态内部类的实例对象创建还是比较简洁的，不同于成员内部类，它不需要关联外部类实例（具体的下文介绍），下面我们再看一段代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码在内部类中两次访问了外部类的静态成员，第一次访问了静态字段name，第二次访问的静态方法showName。在我们反编译这个类之前，首先需要知道的是，所谓的内部类的概念只是出现在编译阶段，对于jvm层是没有内部类这个概念的。也就是说，编译器会将一个类编译成一个源文件，对于内部类也是一样，它会从它的外部类中抽离出来，增加一些与外部类的联系，然后被编译成一个单独的源文件。下面我们先编译运行之后，利用Dj反编译class文件看看编译器都做了些什么事情。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//这是我们的Out外部类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省去了一些不重要的部分</span></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>()&#123;<span class="keyword">return</span> name;&#125;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> access$<span class="number">100</span>()&#123;showName();&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//这是我们的内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>());</span><br><span class="line">        Out.access$<span class="number">100</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>相信大家也已经看出来这两者之间的某种联系，编译器将Out这个类编译成两个独立的class源文件。对于Out中所有的私有成员（也就是内部类分离出去之后不能访问的成员），增设了可供调用的access$xxx方法，从而实现内部类与外部类之间的联系。这就是他们的本质。</p>
+<p>至于使用场景，一般来说，对于和外部类联系紧密但是并不依赖于外部类实例的情况下，可以考虑定义成静态内部类。下面我们看稍显复杂的成员内部类。</p>
+<h2 id="二、成员内部类"><a href="#二、成员内部类" class="headerlink" title="二、成员内部类"></a><strong>二、成员内部类</strong></h2><p>我们说了，四种不同类型的内部类都各自有各自的使用场景，静态内部类适合于那种和外部类关系密切但是并不依赖外部类实例的情况。但是对于需要和外部类实例相关联的情况下，可以选择将内部类定义成成员内部类。以下代码定义了一个简单的成员内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            Out.this.showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上定义了一个简单的内部类In，我们的成员内部类可以直接访问外部类的成员字段和成员方法，因为它是关联着一个外部类实例的。下面我们看看在外部是如何创建该内部类实例的。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out();</span><br><span class="line">    Out.In <span class="keyword">in</span> = out.new In();</span><br><span class="line">    <span class="keyword">in</span>.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为成员内部类是关联着一个具体的外部类实例的，所以它的实例创建必然是由外部类实例来创建的。对于实例的创建，我们只需要记住即可，成员内部类的实例创建需要关联外部类实例对象，静态内部类实例创建相对简单。下面我们主要看看在编译阶段编译器是如何保持内部类对外部类成员信息可访问的。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译的Out外部类源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省略部分非核心代码</span></span><br><span class="line">    public <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println((<span class="keyword">new</span> StringBuilder()).append(<span class="string">"my name is : "</span>).append(name).toString());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>(Out o)&#123;<span class="keyword">return</span> o.name;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//反编译的内部类In源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>(Out.this));</span><br><span class="line">        showName();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    final Out <span class="keyword">this</span>$<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.this$<span class="number">0</span> = Out.this;</span><br><span class="line">        <span class="keyword">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由上述代码其实我们可以知道，当我们利用外部类实例创建内部类实例的时候，会将外部类实例作为初始资源传入内部类构造过程。这样我们就可以通过该实例访问外部类所有的成员信息，包括私有成员。（显式增加了暴露方法）</p>
+<p>至于使用场景，对于那种要高度依赖外部类实例的情况下，定义一个成员内部类则会显的更加明智。</p>
+<h2 id="三、方法-局部-内部类"><a href="#三、方法-局部-内部类" class="headerlink" title="三、方法(局部)内部类"></a><strong>三、方法(局部)内部类</strong></h2><p>方法内部类，顾名思义，定义在一个方法内部的类。方法内部类相对而言要复杂一些，下面定义一个方法内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">            public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">                System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        In <span class="keyword">in</span> = <span class="keyword">new</span> In();</span><br><span class="line">        <span class="keyword">in</span>.showName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们定义了一个类，在该类中又定义了一个方法sayHello，然而在该方法中我们定义了一个内部类，类In就是一个方法内部类。我们的方法内部类的生命周期不超过包含它的方法的生命周期，也就是说，方法内部类只能在方法中使用。所以在声明的时候，任何的访问修饰符都是没有意义的，于是Java干脆不允许使用任何的访问修饰符修饰方法内部类。其中还需要注意一点的是，定义和使用时两回事，别看那一大串定义类的代码，你实际想要使用该类，就必须new对象，而对于方法内部类而言，只能在方法内部new对象。这就是方法内部类的简单介绍，下面我们看看其实现原理。</p>
+<p>有关方法内部类的实现原理其实是和成员内部类差不太多的，也是在内部类初始化的时候为其传入一个外部类实例，区别在哪呢？就在于方法内部类是定义在具体方法的内部的，所以该类除了可以通过传入的外部实例访问外部类中的字段和方法，对于包含它的方法中被传入的参数也会随着外部类实例一起初始化给内部类。</p>
+<p>毋庸置疑的是，方法内部类的封装性比之前介绍的两种都要完善。所以一般只有在需要高度封装的时候才会将类定义成方法内部类。</p>
+<h2 id="四、匿名内部类"><a href="#四、匿名内部类" class="headerlink" title="四、匿名内部类"></a><strong>四、匿名内部类</strong></h2><p>可能内部类的所有分类中，匿名内部类的名号是最大的，也是我们最常用到的，多见于函数式编程，lambda表达式等。下面我们重点看看这个匿名内部类。</p>
+<p>匿名内部类就是没有名字的内部类，在定义完成同时，实例也创建好了，常常和new关键字紧密结合。当然，它也不局限于类，也可以是接口 ，可以出现在任何位置。下面我们定义一个匿名内部类：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先定义一个普通类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is :"</span> + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//定义和使用一个匿名内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out()&#123;</span><br><span class="line">        @Override</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">            System.out.println(<span class="string">"hello single"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    out.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>从上述代码中可以很显然的让我们看出来，我们的匿名内部类必定是要依托一个父类的，因为它是没有名字的，无法用一个具体的类型来表示。所以匿名内部类往往都是通过继承一个父类，重写或者重新声明一些成员来实现一个匿名内部类的定义。实际上还是利用了里式转换原理。</p>
+<p>从中我们也可以看到，一个匿名内部类定义的完成就意味着该内部类实例创建的完成。下面我们看看其实现原理：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译出来的匿名内部类</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span>$1 <span class="keyword">extends</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    Out out;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Test$<span class="number">1</span>(Out o)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.out = o;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其实在看了上述三种内部类的原理之后，反而觉得匿名内部类的实现较为简单了。主要思路还是将内部类抽离出来，通过初始化传入外部类的实例以达到对外部类所有成员的访问。只是在匿名内部类中，被依托的父类不是他的外部类。匿名内部类的主要特点在于，没有名字，对象只能被使用一次，可以出现在任意位置。所以它的使用场景也是呼之欲出，对于一些对代码简洁度有所要求的情况下，可首选匿名内部类。</p>
+<p>以上完成了对四种内部类的简单介绍，对于他们各自实现的原理也都已经介绍过了。其实大致相同，由于jvm对每个类都要求一个单独的源码文件，所以编译阶段就完成了分离的操作，但是在分离的过程中又要保持内部类和外部类之间的这种联系，于是编译器添加了一些接口保持这种信息共享的结构。使用内部类可以大大增加程序的封装性，使得代码整体简洁度较高。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://cloud.tencent.com/developer/article/1013592" target="_blank" rel="noopener">深入理解Java内部类</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java集合接口Stack简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 11:41:53 / 修改时间：20:03:47" itemprop="dateCreated datePublished" datetime="2020-06-14T11:41:53+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>栈（Stack）是一种后进先出（LIFO：Last In First Out）的数据结构。</p>
+<p>什么是LIFO呢？我们先回顾一下<code>Queue</code>的特点FIFO：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">          ────────────────────────</span><br><span class="line">  (\(\      (\(\    (\(\    (\(\      (\(\</span><br><span class="line"> (&#x3D;&#39;.&#39;) ─&gt; (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;) ─&gt; (&#x3D;&#39;.&#39;)</span><br><span class="line">O(_&quot;)&quot;)   O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;)   O(_&quot;)&quot;)</span><br><span class="line">          ────────────────────────</span><br></pre></td></tr></table></figure>
+
+<p>所谓FIFO，是最先进队列的元素一定最早出队列，而LIFO是最后进<code>Stack</code>的元素一定最早出<code>Stack</code>。如何做到这一点呢？只需要把队列的一端封死：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">           ───────────────────────────────┐</span><br><span class="line">  (\(\       (\(\    (\(\    (\(\    (\(\ │</span><br><span class="line"> (&#x3D;&#39;.&#39;) &lt;─&gt; (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)│</span><br><span class="line">O(_&quot;)&quot;)    O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;)│</span><br><span class="line">           ───────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>因此，<code>Stack</code>是这样一种数据结构：只能不断地往<code>Stack</code>中压入（push）元素，最后进去的必须最早弹出（pop）来：</p>
+<p><img src="https://www.liaoxuefeng.com/files/attachments/1285759053070401/l" alt="donuts-stack"></p>
+<p><code>Stack</code>只有入栈和出栈的操作：</p>
+<ul>
+<li>把元素压栈：<code>push(E)</code>；</li>
+<li>把栈顶的元素“弹出”：<code>pop(E)</code>；</li>
+<li>取栈顶元素但不弹出：<code>peek(E)</code>。</li>
+</ul>
+<p>在Java中，我们用<code>Deque</code>可以实现<code>Stack</code>的功能：</p>
+<ul>
+<li>把元素压栈：<code>push(E)</code>/<code>addFirst(E)</code>；</li>
+<li>把栈顶的元素“弹出”：<code>pop(E)</code>/<code>removeFirst()</code>；</li>
+<li>取栈顶元素但不弹出：<code>peek(E)</code>/<code>peekFirst()</code>。</li>
+</ul>
+<p>为什么<strong>Java的集合类没有单独的<code>Stack</code>接口</strong>呢？因为有个遗留<strong>类</strong>名字就叫<code>Stack</code>, 继承自<code>Vector</code>，已不建议使用. </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Stack</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">Vector</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>出于兼容性考虑，所以没办法创建<code>Stack</code>接口，<strong>只能用<code>Deque</code>接口来“模拟”一个<code>Stack</code>了</strong>。</p>
+<p>当我们把<code>Deque</code>作为<code>Stack</code>使用时，注意<strong>只调用<code>push()</code>/<code>pop()</code>/<code>peek()</code>方法</strong>，不要调用<code>addFirst()</code>/<code>removeFirst()</code>/<code>peekFirst()</code>方法，这样代码更加清晰。</p>
+<h3 id="Stack的作用"><a href="#Stack的作用" class="headerlink" title="Stack的作用"></a>Stack的作用</h3><p>Stack在计算机中使用非常广泛，JVM在处理Java方法调用的时候就会通过栈这种数据结构维护方法调用的层次。例如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">static void main(String[] args) &#123;</span><br><span class="line">    foo(123);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static String foo(x) &#123;</span><br><span class="line">    return &quot;F-&quot; + bar(x + 1);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int bar(int x) &#123;</span><br><span class="line">    return x &lt;&lt; 2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>JVM会创建方法调用栈，每调用一个方法时，先将参数压栈，然后执行对应的方法；当方法返回时，返回值压栈，调用方法通过出栈操作获得方法返回值。</p>
+<p>因为方法调用栈有容量限制，嵌套调用过多会造成栈溢出，即引发<code>StackOverflowError</code>.</p>
+<p>我们再来看一个<code>Stack</code>的用途：对整数进行进制的转换就可以利用栈。</p>
+<p>例如，我们要把一个<code>int</code>整数<code>12500</code>转换为十六进制表示的字符串，如何实现这个功能？</p>
+<p>首先我们准备一个空栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>然后计算12500÷16=781…4，余数是<code>4</code>，把余数<code>4</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>然后计算781÷16=48…13，余数是<code>13</code>，<code>13</code>的十六进制用字母<code>D</code>表示，把余数<code>D</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>然后计算48÷16=3…0，余数是<code>0</code>，把余数<code>0</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 0 │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>最后计算3÷16=0…3，余数是<code>3</code>，把余数<code>3</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│ 3 │</span><br><span class="line">│   │</span><br><span class="line">│ 0 │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>当商是<code>0</code>的时候，计算结束，我们把栈的所有元素依次弹出，组成字符串<code>30D4</code>，这就是十进制整数<code>12500</code>的十六进制表示的字符串。</p>
+<h3 id="计算中缀表达式"><a href="#计算中缀表达式" class="headerlink" title="计算中缀表达式"></a>计算中缀表达式</h3><p>在编写程序的时候，我们使用的带括号的数学表达式实际上是中缀表达式，即运算符在中间，例如：<code>1 + 2 * (9 - 5)</code>。</p>
+<p>但是计算机执行表达式的时候，它并不能直接计算中缀表达式，而是通过编译器<strong>把中缀表达式转换为后缀表达式</strong>，例如：<code>1 2 9 5 - * +</code>。</p>
+<p>这个编译过程就会用到栈。我们先跳过编译这一步（涉及运算优先级，代码比较复杂），看看如何通过栈计算后缀表达式。</p>
+<p>计算后缀表达式不考虑优先级，直接从左到右依次计算，因此计算起来简单。首先准备一个空的栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>然后我们依次扫描后缀表达式<code>1 2 9 5 - * +</code>，遇到数字<code>1</code>，就直接扔到栈里：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>紧接着，遇到数字<code>2</code>，<code>9</code>，<code>5</code>，也扔到栈里：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│ 5 │</span><br><span class="line">│   │</span><br><span class="line">│ 9 │</span><br><span class="line">│   │</span><br><span class="line">│ 2 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>接下来遇到减号时，弹出栈顶的两个元素，并计算<code>9-5=4</code>，把结果<code>4</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">│   │</span><br><span class="line">│ 2 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>接下来遇到<code>*</code>号时，弹出栈顶的两个元素，并计算<code>2*4=8</code>，把结果<code>8</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 8 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>接下来遇到<code>+</code>号时，弹出栈顶的两个元素，并计算<code>1+8=9</code>，把结果<code>9</code>压栈：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 9 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
+
+<p>扫描结束后，没有更多的计算了，弹出栈的唯一一个元素，得到计算结果<code>9</code>。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>栈（Stack）是一种后进先出（LIFO）的数据结构，操作栈的元素的方法有：</p>
+<ul>
+<li>把元素压栈：<code>push(E)</code>；</li>
+<li>把栈顶的元素“弹出”：<code>pop(E)</code>；</li>
+<li>取栈顶元素但不弹出：<code>peek(E)</code>。</li>
+</ul>
+<p>在Java中，我们用<code>Deque</code>可以实现<code>Stack</code>的功能，注意只调用<code>push()</code>/<code>pop()</code>/<code>peek()</code>方法，避免调用<code>Deque</code>的其他方法。</p>
+<p>最后，不要使用遗留类<code>Stack</code>。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265121668997888" target="_blank" rel="noopener">使用Stack</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Queue%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Queue%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java集合接口Queue简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 11:24:56 / 修改时间：19:41:42" itemprop="dateCreated datePublished" datetime="2020-06-14T11:24:56+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="接口Queue"><a href="#接口Queue" class="headerlink" title="接口Queue"></a>接口Queue</h2><p>队列（<code>Queue</code>）是一种经常使用的集合。<code>Queue</code>实际上是实现了一个先进先出（FIFO：First In First Out）的有序表。它和<code>List</code>的区别在于，<code>List</code>可以在任意位置添加和删除元素，而<code>Queue</code>只有两个操作：</p>
+<ul>
+<li>把元素添加到队列末尾；</li>
+<li>从队列头部取出元素。</li>
+</ul>
+<p>超市的收银台就是一个队列：</p>
+<p><img src="https://www.liaoxuefeng.com/files/attachments/1285667604660289/l" alt="queue"></p>
+<p>在Java的标准库中，队列接口<code>Queue</code>定义了以下几个方法：</p>
+<ul>
+<li><code>int size()</code>：获取队列长度；</li>
+<li><code>boolean add(E)</code>/<code>boolean offer(E)</code>：添加元素到队尾；</li>
+<li><code>E remove()</code>/<code>E poll()</code>：获取队首元素并从队列中删除；</li>
+<li><code>E element()</code>/<code>E peek()</code>：获取队首元素但并不从队列中删除。</li>
+</ul>
+<p>对于具体的实现类，有的Queue有最大队列长度限制，有的Queue没有。注意到添加、删除和获取队列元素总是有两个方法，这是因为在添加或获取元素失败时，这两个方法的行为是不同的。我们用一个表格总结如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">throw Exception</th>
+<th align="left">返回false或null</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">添加元素到队尾</td>
+<td align="left"><strong>add</strong>(E e)</td>
+<td align="left">boolean <strong>offer</strong>(E e)</td>
+</tr>
+<tr>
+<td align="left">取队首元素并删除</td>
+<td align="left">E <strong>remove</strong>()</td>
+<td align="left">E <strong>poll</strong>()</td>
+</tr>
+<tr>
+<td align="left">取队首元素但不删除</td>
+<td align="left">E <strong>element</strong>()</td>
+<td align="left">E <strong>peek</strong>()</td>
+</tr>
+</tbody></table>
+<p>举个栗子，假设我们有一个队列，对它做一个添加操作，如果调用<code>add()</code>方法，当添加失败时（可能超过了队列的容量），它会抛出异常：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;String&gt; q &#x3D; ...</span><br><span class="line">try &#123;</span><br><span class="line">    q.add(&quot;Apple&quot;);</span><br><span class="line">    System.out.println(&quot;添加成功&quot;);</span><br><span class="line">&#125; catch(IllegalStateException e) &#123;</span><br><span class="line">    System.out.println(&quot;添加失败&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果我们调用<code>offer()</code>方法来添加元素，当添加失败时，它不会抛异常，而是返回<code>false</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;String&gt; q &#x3D; ...</span><br><span class="line">if (q.offer(&quot;Apple&quot;)) &#123;</span><br><span class="line">    System.out.println(&quot;添加成功&quot;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    System.out.println(&quot;添加失败&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当我们需要从<code>Queue</code>中取出队首元素时，如果当前<code>Queue</code>是一个空队列，调用<code>remove()</code>方法，它会抛出异常：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;String&gt; q &#x3D; ...</span><br><span class="line">try &#123;</span><br><span class="line">    String s &#x3D; q.remove();</span><br><span class="line">    System.out.println(&quot;获取成功&quot;);</span><br><span class="line">&#125; catch(IllegalStateException e) &#123;</span><br><span class="line">    System.out.println(&quot;获取失败&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果我们调用<code>poll()</code>方法来取出队首元素，当获取失败时，它不会抛异常，而是返回<code>null</code>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Queue&lt;String&gt; q &#x3D; ...</span><br><span class="line">String s &#x3D; q.poll();</span><br><span class="line">if (s !&#x3D; null) &#123;</span><br><span class="line">    System.out.println(&quot;获取成功&quot;);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    System.out.println(&quot;获取失败&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因此，两套方法可以根据需要来选择使用。</p>
+<p>注意：<strong>不要把<code>null</code>添加到队列中，否则<code>poll()</code>方法返回<code>null</code>时，很难确定是取到了<code>null</code>元素还是队列为空。</strong></p>
+<p><code>LinkedList</code>既实现了<code>List</code>接口，又实现了<code>Queue</code>接口，但是，在使用的时候，如果我们把它当作List，就获取List的引用，如果我们把它当作Queue，就获取Queue的引用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 这是一个List:</span></span><br><span class="line">List&lt;String&gt; list = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line"><span class="comment">// 这是一个Queue:</span></span><br><span class="line">Queue&lt;String&gt; queue = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br></pre></td></tr></table></figure>
+
+<p>始终按照面向抽象编程的原则编写代码，可以大大提高代码的质量。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>队列<code>Queue</code>实现了一个先进先出（FIFO）的数据结构：</p>
+<ul>
+<li>通过<code>add()</code>/<code>offer()</code>方法将元素添加到队尾；</li>
+<li>通过<code>remove()</code>/<code>poll()</code>从队首获取元素并删除；</li>
+<li>通过<code>element()</code>/<code>peek()</code>从队首获取元素但不删除。</li>
+</ul>
+<p>要避免把<code>null</code>添加到队列。</p>
+<h2 id="使用PriorityQueue"><a href="#使用PriorityQueue" class="headerlink" title="使用PriorityQueue"></a>使用PriorityQueue</h2><p>我们知道，<code>Queue</code>是一个先进先出（FIFO）的队列。</p>
+<p>在银行柜台办业务时，我们假设只有一个柜台在办理业务，但是办理业务的人很多，怎么办？</p>
+<p>可以每个人先取一个号，例如：<code>A1</code>、<code>A2</code>、<code>A3</code>……然后，按照号码顺序依次办理，实际上这就是一个<code>Queue</code>。</p>
+<p>如果这时来了一个VIP客户，他的号码是<code>V1</code>，虽然当前排队的是<code>A10</code>、<code>A11</code>、<code>A12</code>……但是柜台下一个呼叫的客户号码却是<code>V1</code>。</p>
+<p>这个时候，我们发现，要实现“VIP插队”的业务，用<code>Queue</code>就不行了，因为<code>Queue</code>会严格按FIFO的原则取出队首元素。我们需要的是优先队列：<code>PriorityQueue</code>。</p>
+<p><code>PriorityQueue</code>和<code>Queue</code>的区别在于，它的出队顺序与元素的优先级有关，对<code>PriorityQueue</code>调用<code>remove()</code>或<code>poll()</code>方法，返回的总是优先级最高的元素。</p>
+<p>要使用<code>PriorityQueue</code>，我们就必须给每个元素定义“优先级”。我们以实际代码为例，先看看<code>PriorityQueue</code>的行为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Queue&lt;String&gt; q = <span class="keyword">new</span> PriorityQueue&lt;&gt;();</span><br><span class="line">        <span class="comment">// 添加3个元素到队列:</span></span><br><span class="line">        q.offer(<span class="string">"apple"</span>);</span><br><span class="line">        q.offer(<span class="string">"pear"</span>);</span><br><span class="line">        q.offer(<span class="string">"banana"</span>);</span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// apple</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// banana</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// pear</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// null,因为队列为空</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们放入的顺序是<code>&quot;apple&quot;</code>、<code>&quot;pear&quot;</code>、<code>&quot;banana&quot;</code>，但是取出的顺序却是<code>&quot;apple&quot;</code>、<code>&quot;banana&quot;</code>、<code>&quot;pear&quot;</code>，这是因为从字符串的排序看，<code>&quot;apple&quot;</code>排在最前面，<code>&quot;pear&quot;</code>排在最后面。</p>
+<p>因此，放入<code>PriorityQueue</code>的元素，<strong>必须实现<code>Comparable</code>接口</strong>，<code>PriorityQueue</code>会根据元素的排序顺序决定出队的优先级。</p>
+<p>如果我们要放入的元素并没有实现<code>Comparable</code>接口怎么办？<code>PriorityQueue</code>允许我们提供一个<code>Comparator</code>对象来判断两个元素的顺序。我们以银行排队业务为例，实现一个<code>PriorityQueue</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Queue&lt;User&gt; q = <span class="keyword">new</span> PriorityQueue&lt;&gt;(<span class="keyword">new</span> UserComparator());</span><br><span class="line">        <span class="comment">// 添加3个元素到队列:</span></span><br><span class="line">        q.offer(<span class="keyword">new</span> User(<span class="string">"Bob"</span>, <span class="string">"A1"</span>));</span><br><span class="line">        q.offer(<span class="keyword">new</span> User(<span class="string">"Alice"</span>, <span class="string">"A2"</span>));</span><br><span class="line">        q.offer(<span class="keyword">new</span> User(<span class="string">"Boss"</span>, <span class="string">"V1"</span>));</span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// Boss/V1</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// Bob/A1</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// Alice/A2</span></span><br><span class="line">        System.out.println(q.poll()); <span class="comment">// null,因为队列为空</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UserComparator</span> <span class="keyword">implements</span> <span class="title">Comparator</span>&lt;<span class="title">User</span>&gt; </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">compare</span><span class="params">(User u1, User u2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (u1.number.charAt(<span class="number">0</span>) == u2.number.charAt(<span class="number">0</span>)) &#123;</span><br><span class="line">            <span class="comment">// 如果两人的号都是A开头或者都是V开头,比较号的大小:</span></span><br><span class="line">            <span class="keyword">return</span> u1.number.compareTo(u2.number);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (u1.number.charAt(<span class="number">0</span>) == <span class="string">'V'</span>) &#123;</span><br><span class="line">            <span class="comment">// u1的号码是V开头,优先级高:</span></span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> String name;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> String number;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">User</span><span class="params">(String name, String number)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.number = number;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name + <span class="string">"/"</span> + number;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实现<code>PriorityQueue</code>的关键在于提供的<code>UserComparator</code>对象，它负责比较两个元素的大小（较小的在前）。<code>UserComparator</code>总是把<code>V</code>开头的号码优先返回，只有在开头相同的时候，才比较号码大小。</p>
+<p>上面的<code>UserComparator</code>的比较逻辑其实还是有问题的，它会把<code>A10</code>排在<code>A2</code>的前面，请尝试修复该错误。</p>
+<h3 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h3><p><code>PriorityQueue</code>实现了一个优先队列：从队首获取元素时，总是获取优先级最高的元素。</p>
+<p><code>PriorityQueue</code>默认按元素比较的顺序排序（必须实现<code>Comparable</code>接口），也可以通过<code>Comparator</code>自定义排序算法（元素就不必实现<code>Comparable</code>接口）。</p>
+<h2 id="使用Deque"><a href="#使用Deque" class="headerlink" title="使用Deque"></a>使用Deque</h2><p>我们知道，<code>Queue</code>是队列，只能一头进，另一头出。</p>
+<p>如果把条件放松一下，允许两头都进，两头都出，这种队列叫双端队列（Double Ended Queue），学名<code>Deque</code>。</p>
+<p>Java集合提供了接口<code>Deque</code>来实现一个双端队列，它的功能是：</p>
+<ul>
+<li>既可以添加到队尾，也可以添加到队首；</li>
+<li>既可以从队首获取，又可以从队尾获取。</li>
+</ul>
+<p>我们来比较一下<code>Queue</code>和<code>Deque</code>出队和入队的方法：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">Queue</th>
+<th align="left">Deque</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">添加元素到队尾</td>
+<td align="left">add(E e) / offer(E e)</td>
+<td align="left">addLast(E e) / offerLast(E e)</td>
+</tr>
+<tr>
+<td align="left">取队首元素并删除</td>
+<td align="left">E remove() / E poll()</td>
+<td align="left">E removeFirst() / E pollFirst()</td>
+</tr>
+<tr>
+<td align="left">取队首元素但不删除</td>
+<td align="left">E element() / E peek()</td>
+<td align="left">E getFirst() / E peekFirst()</td>
+</tr>
+<tr>
+<td align="left">添加元素到队首</td>
+<td align="left">无</td>
+<td align="left">addFirst(E e) / offerFirst(E e)</td>
+</tr>
+<tr>
+<td align="left">取队尾元素并删除</td>
+<td align="left">无</td>
+<td align="left">E removeLast() / E pollLast()</td>
+</tr>
+<tr>
+<td align="left">取队尾元素但不删除</td>
+<td align="left">无</td>
+<td align="left">E getLast() / E peekLast()</td>
+</tr>
+</tbody></table>
+<p>对于添加元素到队尾的操作，<code>Queue</code>提供了<code>add()</code>/<code>offer()</code>方法，而<code>Deque</code>提供了<code>addLast()</code>/<code>offerLast()</code>方法。添加元素到对首、取队尾元素的操作在<code>Queue</code>中不存在，在<code>Deque</code>中由<code>addFirst()</code>/<code>removeLast()</code>等方法提供。</p>
+<p>注意到<code>Deque</code>接口实际上扩展自<code>Queue</code>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Deque</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">Queue</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因此，<code>Queue</code>提供的<code>add()</code>/<code>offer()</code>方法在<code>Deque</code>中也可以使用，但是，<strong>使用<code>Deque</code>，最好不要调用<code>offer()</code>，而是调用<code>offerLast()</code>：</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Deque&lt;String&gt; deque = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">        deque.offerLast(<span class="string">"A"</span>); <span class="comment">// A</span></span><br><span class="line">        deque.offerLast(<span class="string">"B"</span>); <span class="comment">// B -&gt; A</span></span><br><span class="line">        deque.offerFirst(<span class="string">"C"</span>); <span class="comment">// B -&gt; A -&gt; C</span></span><br><span class="line">        System.out.println(deque.pollFirst()); <span class="comment">// C, 剩下B -&gt; A</span></span><br><span class="line">        System.out.println(deque.pollLast()); <span class="comment">// B</span></span><br><span class="line">        System.out.println(deque.pollFirst()); <span class="comment">// A</span></span><br><span class="line">        System.out.println(deque.pollFirst()); <span class="comment">// null</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果直接写<code>deque.offer()</code>，我们就需要思考，<code>offer()</code>实际上是<code>offerLast()</code>，我们明确地写上<code>offerLast()</code>，不需要思考就能一眼看出这是添加到队尾。</p>
+<p>因此，使用<code>Deque</code>，推荐总是明确调用<code>offerLast()</code>/<code>offerFirst()</code>或者<code>pollFirst()</code>/<code>pollLast()</code>方法。</p>
+<p><code>Deque</code>是一个接口，它的<strong>实现类有<code>ArrayDeque</code>和<code>LinkedList</code>。</strong></p>
+<p>我们发现<code>LinkedList</code>真是一个全能选手，它即是<code>List</code>，又是<code>Queue</code>，还是<code>Deque</code>。但是我们在使用的时候，总是用特定的接口来引用它，这是因为持有接口说明代码的抽象层次更高，而且接口本身定义的方法代表了特定的用途。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 不推荐的写法:</span></span><br><span class="line">LinkedList&lt;String&gt; d1 = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">d1.offerLast(<span class="string">"z"</span>);</span><br><span class="line"><span class="comment">// 推荐的写法：</span></span><br><span class="line">Deque&lt;String&gt; d2 = <span class="keyword">new</span> LinkedList&lt;&gt;();</span><br><span class="line">d2.offerLast(<span class="string">"z"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>可见<strong>面向抽象编程</strong>的一个原则就是：尽量持有接口，而不是具体的实现类。参考依赖倒转原则.</p>
+<h3 id="小结-2"><a href="#小结-2" class="headerlink" title="小结"></a>小结</h3><p><code>Deque</code>实现了一个双端队列（Double Ended Queue），它可以：</p>
+<ul>
+<li>将元素添加到队尾或队首：<code>addLast()</code>/<code>offerLast()</code>/<code>addFirst()</code>/<code>offerFirst()</code>；</li>
+<li>从队首／队尾获取元素并删除：<code>removeFirst()</code>/<code>pollFirst()</code>/<code>removeLast()</code>/<code>pollLast()</code>；</li>
+<li>从队首／队尾获取元素但不删除：<code>getFirst()</code>/<code>peekFirst()</code>/<code>getLast()</code>/<code>peekLast()</code>；</li>
+<li>总是调用<code>xxxFirst()</code>/<code>xxxLast()</code>以便与<code>Queue</code>的方法区分开；</li>
+<li>避免把<code>null</code>添加到队列。</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265121791832960" target="_blank" rel="noopener">使用Queue</a></p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265120632401152" target="_blank" rel="noopener">使用PriorityQueue</a></p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265122668445536" target="_blank" rel="noopener">使用Deque</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Set%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Set%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java集合接口Set简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 09:41:40 / 修改时间：19:24:41" itemprop="dateCreated datePublished" datetime="2020-06-14T09:41:40+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>我们知道，<code>Map</code>用于存储key-value的映射，对于充当key的对象，是不能重复的，并且，不但需要正确覆写<code>equals()</code>方法，还要正确覆写<code>hashCode()</code>方法。</p>
+<p>如果我们只需要存储不重复的key，并不需要存储映射的value，那么就可以使用<code>Set</code>。</p>
+<p><code>Set</code>用于存储不重复的元素集合，它主要提供以下几个方法：</p>
+<ul>
+<li>将元素添加进<code>Set</code>：<code>boolean add(E e)</code></li>
+<li>将元素从<code>Set</code>删除：<code>boolean remove(Object e)</code></li>
+<li>判断是否包含元素：<code>boolean contains(Object e)</code></li>
+</ul>
+<p><strong><code>Set</code>实际上相当于只存储key、不存储value的<code>Map</code></strong>。我们经常用<code>Set</code>用于去除重复元素。</p>
+<p>因为放入<code>Set</code>的元素和<code>Map</code>的key类似，都要正确实现<code>equals()</code>和<code>hashCode()</code>方法，否则该元素无法正确地放入<code>Set</code>。</p>
+<p>最常用的<code>Set</code>实现类是<code>HashSet</code>，实际上，<strong><code>HashSet</code>仅仅是对<code>HashMap</code>的一个简单封装</strong>，它的核心代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HashSet</span>&lt;<span class="title">E</span>&gt; <span class="keyword">implements</span> <span class="title">Set</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line">    <span class="comment">// 持有一个HashMap:</span></span><br><span class="line">    <span class="keyword">private</span> HashMap&lt;E, Object&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 放入HashMap的value:</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Object PRESENT = <span class="keyword">new</span> Object();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> map.put(e, PRESENT) == <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">contains</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> map.containsKey(o);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">remove</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> map.remove(o) == PRESENT;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Set</code>接口并不保证有序，而<code>SortedSet</code>接口则保证元素是有序的：</p>
+<ul>
+<li><code>HashSet</code>是无序的，因为它实现了<code>Set</code>接口，并没有实现<code>SortedSet</code>接口；</li>
+<li><code>TreeSet</code>是有序的，因为它实现了<code>SortedSet</code>接口。</li>
+</ul>
+<p>用一张图表示：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">       ┌───┐</span><br><span class="line">       │Set│</span><br><span class="line">       └───┘</span><br><span class="line">         ▲</span><br><span class="line">    ┌────┴─────┐</span><br><span class="line">    │          │</span><br><span class="line">┌───────┐ ┌─────────┐</span><br><span class="line">│HashSet│ │SortedSet│</span><br><span class="line">└───────┘ └─────────┘</span><br><span class="line">               ▲</span><br><span class="line">               │</span><br><span class="line">          ┌─────────┐</span><br><span class="line">          │ TreeSet │</span><br><span class="line">          └─────────┘</span><br></pre></td></tr></table></figure>
+
+<p><code>HashSet</code>遍历的输出顺序既不是添加的顺序，也不是<code>String</code>排序的顺序，在不同版本的JDK中，这个顺序也可能是不同的。</p>
+<p>把<code>HashSet</code>换成<code>TreeSet</code>，在遍历<code>TreeSet</code>时，输出就是有序的，这个顺序是元素的排序顺序.</p>
+<p>使用<code>TreeSet</code>和使用<code>TreeMap</code>的要求一样，添加的元素必须正确<strong>实现<code>Comparable</code>接口</strong>，如果没有实现<code>Comparable</code>接口，那么创建<code>TreeSet</code>时必须传入一个<code>Comparator</code>对象。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p><code>Set</code>用于存储不重复的元素集合：</p>
+<ul>
+<li>放入<code>HashSet</code>的元素与作为<code>HashMap</code>的key要求相同；</li>
+<li>放入<code>TreeSet</code>的元素与作为<code>TreeMap</code>的Key要求相同；</li>
+</ul>
+<p>利用<code>Set</code>可以去除重复元素；</p>
+<p>遍历<code>SortedSet</code>按照元素的排序顺序遍历，也可以自定义排序算法。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265121225603904" target="_blank" rel="noopener">使用Set</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E4%B8%ADProperties%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/14/Java%E4%B8%ADProperties%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java中Properties简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-14 09:37:27 / 修改时间：17:40:48" itemprop="dateCreated datePublished" datetime="2020-06-14T09:37:27+08:00">2020-06-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h4 id=""><a href="#" class="headerlink" title=""></a></h4><p>在编写应用程序的时候，经常需要读写配置文件。例如，用户的设置：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 上次最后打开的文件:</span><br><span class="line">last_open_file&#x3D;&#x2F;data&#x2F;hello.txt</span><br><span class="line"># 自动保存文件的时间间隔:</span><br><span class="line">auto_save_interval&#x3D;60</span><br></pre></td></tr></table></figure>
+
+<p>配置文件的特点是，它的Key-Value一般都是<code>String</code>-<code>String</code>类型的，因此我们完全可以用<code>Map</code>来表示它。</p>
+<p>因为配置文件非常常用，所以Java集合库提供了一个<code>Properties</code>来表示一组“配置”。由于历史遗留原因，<code>Properties</code>内部本质上是一个<code>Hashtable</code>，但我们只需要用到<code>Properties</code>自身关于读写配置的接口。</p>
+<h3 id="读取配置文件"><a href="#读取配置文件" class="headerlink" title="读取配置文件"></a>读取配置文件</h3><p>用<code>Properties</code>读取配置文件非常简单。Java默认配置文件以<code>.properties</code>为扩展名，每行以<code>key=value</code>表示，以<code>#</code>课开头的是注释。以下是一个典型的配置文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># setting.properties</span><br><span class="line"></span><br><span class="line">last_open_file&#x3D;&#x2F;data&#x2F;hello.txt</span><br><span class="line">auto_save_interval&#x3D;60</span><br></pre></td></tr></table></figure>
+
+<p>可以从文件系统读取这个<code>.properties</code>文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String f &#x3D; &quot;setting.properties&quot;;</span><br><span class="line">Properties props &#x3D; new Properties();</span><br><span class="line">props.load(new java.io.FileInputStream(f));</span><br><span class="line"></span><br><span class="line">String filepath &#x3D; props.getProperty(&quot;last_open_file&quot;);</span><br><span class="line">String interval &#x3D; props.getProperty(&quot;auto_save_interval&quot;, &quot;120&quot;);</span><br></pre></td></tr></table></figure>
+
+<p>可见，用<code>Properties</code>读取配置文件，一共有三步：</p>
+<ol>
+<li>创建<code>Properties</code>实例；</li>
+<li>调用<code>load()</code>读取文件；</li>
+<li>调用<code>getProperty()</code>获取配置。</li>
+</ol>
+<p>调用<code>getProperty()</code>获取配置时，如果key不存在，将返回<code>null</code>。我们还可以提供一个默认值，这样，当key不存在的时候，就返回默认值。</p>
+<p>也可以从classpath读取<code>.properties</code>文件，因为<code>load(InputStream)</code>方法接收一个<code>InputStream</code>实例，表示一个字节流，它不一定是文件流，也可以是从jar包中读取的资源流：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Properties props &#x3D; new Properties();</span><br><span class="line">props.load(getClass().getResourceAsStream(&quot;&#x2F;common&#x2F;setting.properties&quot;));</span><br></pre></td></tr></table></figure>
+
+<p>试试从内存读取一个字节流：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"><span class="keyword">import</span> java.util.Properties;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        String settings = <span class="string">"# test"</span> + <span class="string">"\n"</span> + <span class="string">"course=Java"</span> + <span class="string">"\n"</span> + <span class="string">"last_open_date=2019-08-07T12:35:01"</span>;</span><br><span class="line">        ByteArrayInputStream input = <span class="keyword">new</span> ByteArrayInputStream(settings.getBytes(<span class="string">"UTF-8"</span>));</span><br><span class="line">        Properties props = <span class="keyword">new</span> Properties();</span><br><span class="line">        props.load(input);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"course: "</span> + props.getProperty(<span class="string">"course"</span>));</span><br><span class="line">        System.out.println(<span class="string">"last_open_date: "</span> + props.getProperty(<span class="string">"last_open_date"</span>));</span><br><span class="line">        System.out.println(<span class="string">"last_open_file: "</span> + props.getProperty(<span class="string">"last_open_file"</span>));</span><br><span class="line">        System.out.println(<span class="string">"auto_save: "</span> + props.getProperty(<span class="string">"auto_save"</span>, <span class="string">"60"</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果有多个<code>.properties</code>文件，可以反复调用<code>load()</code>读取，后读取的key-value会覆盖已读取的key-value：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Properties props &#x3D; new Properties();</span><br><span class="line">props.load(getClass().getResourceAsStream(&quot;&#x2F;common&#x2F;setting.properties&quot;));</span><br><span class="line">props.load(new FileInputStream(&quot;C:\\conf\\setting.properties&quot;));</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码演示了<code>Properties</code>的一个常用用法：可以把默认配置文件放到classpath中，然后，根据机器的环境编写另一个配置文件，覆盖某些默认的配置。</p>
+<p><code>Properties</code>设计的目的是存储<code>String</code>类型的key－value，<strong>但<code>Properties</code>实际上是从<code>Hashtable</code>派生的，它的设计实际上是有问题的</strong>，但是为了保持兼容性，现在已经没法修改了。除了<code>getProperty()</code>和<code>setProperty()</code>方法外，还有从<code>Hashtable</code>继承下来的<code>get()</code>和<code>put()</code>方法，这些方法的参数签名是<code>Object</code>，我们在使用<code>Properties</code>的时候，<strong>不要去调用这些从<code>Hashtable</code>继承下来的方法。</strong></p>
+<h3 id="写入配置文件"><a href="#写入配置文件" class="headerlink" title="写入配置文件"></a>写入配置文件</h3><p>如果通过<code>setProperty()</code>修改了<code>Properties</code>实例，可以把配置写入文件，以便下次启动时获得最新配置。写入配置文件使用<code>store()</code>方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Properties props &#x3D; new Properties();</span><br><span class="line">props.setProperty(&quot;url&quot;, &quot;http:&#x2F;&#x2F;www.liaoxuefeng.com&quot;);</span><br><span class="line">props.setProperty(&quot;language&quot;, &quot;Java&quot;);</span><br><span class="line">props.store(new FileOutputStream(&quot;C:\\conf\\setting.properties&quot;), &quot;这是写入的properties注释&quot;);</span><br></pre></td></tr></table></figure>
+
+<h3 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h3><p>早期版本的Java规定<code>.properties</code>文件编码是ASCII编码（ISO8859-1），如果涉及到中文就必须用<code>name=\u4e2d\u6587</code>来表示，非常别扭。从JDK9开始，Java的<code>.properties</code>文件可以使用UTF-8编码了。</p>
+<p>不过，需要注意的是，由于<code>load(InputStream)</code>默认总是以ASCII编码读取字节流，所以会导致读到乱码。我们需要用另一个重载方法<code>load(Reader)</code>读取：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Properties props &#x3D; new Properties();</span><br><span class="line">props.load(new FileReader(&quot;settings.properties&quot;, StandardCharsets.UTF_8));</span><br></pre></td></tr></table></figure>
+
+<p>就可以正常读取中文。<code>InputStream</code>和<code>Reader</code>的区别是一个是字节流，一个是字符流。字符流在内存中已经以<code>char</code>类型表示了，不涉及编码问题。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>Java集合库提供的<code>Properties</code>用于读写配置文件<code>.properties</code>。<code>.properties</code>文件可以使用UTF-8编码。</p>
+<p>可以从文件系统、classpath或其他任何地方读取<code>.properties</code>文件。</p>
+<p>读写<code>Properties</code>时，注意仅使用<code>getProperty()</code>和<code>setProperty()</code>方法，不要调用继承而来的<code>get()</code>和<code>put()</code>等方法。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265119084411136" target="_blank" rel="noopener">使用Properties</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Map%E7%AE%80%E4%BB%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1276,701 +2057,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/12/Integer.highestOneBit(int%20i)%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/12/Integer.highestOneBit(int%20i)%E6%96%B9%E6%B3%95%E7%9A%84%E4%BD%9C%E7%94%A8%E4%B8%8E%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">Integer.highestOneBit(int i)方法的作用与底层实现</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-13 06:02:56 / 修改时间：14:09:57" itemprop="dateCreated datePublished" datetime="2020-06-13T06:02:56+08:00">2020-06-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在Integer类中有这么一个方法，你可以给它传入一个数字，它将返回小于等于这个数字的一个2的幂次方数。这个方法就是<code>highestOneBit(int i)</code>。</p>
-<p>比如下面的Demo，注意方法的输入与返回值：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(Integer.highestOneBit(<span class="number">15</span>));  <span class="comment">// 输出8</span></span><br><span class="line">System.out.println(Integer.highestOneBit(<span class="number">16</span>));  <span class="comment">// 输出16</span></span><br><span class="line">System.out.println(Integer.highestOneBit(<span class="number">17</span>));  <span class="comment">// 输出16</span></span><br></pre></td></tr></table></figure>
-
-<p>首先，对于这个方法的功能：<strong>给定一个数字，找到小于或等于这个数字的一个2的幂次方数。</strong></p>
-<p>如果我们要自己来实现的话，我们需要知道：<strong>怎么判断一个数字是2的幂次方数。</strong></p>
-<p>说真的，我一下想不到什么好方法来判断，唯一能想到的就是一个数字如果把它转换成二进制表示的话，它会有一个规律：<strong>如果一个数字是2的幂次方数，那么它对应的二进制表示仅有一个bit位上是1，其他bit位全为0。</strong> 比如： 十进制6，二进制表示为：0000 0110 十进制8，二进制表示为：0000 1000 十进制9，二进制表示为：0000 1001 所以，我们可以利用一个数字的二进制表示来判断这个数字是不是2的幂次方数。关键代码怎么实现呢？去遍历每个bit位？可以，但是不好，那怎么办？我们还是回头仔细看看Integer是如何实现的吧？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">highestOneBit</span><span class="params">(<span class="keyword">int</span> i)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// HD, Figure 3-1</span></span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">1</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">2</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">4</span>);</span><br><span class="line">	i |= (i &gt;&gt;  <span class="number">8</span>);</span><br><span class="line">	i |= (i &gt;&gt; <span class="number">16</span>);</span><br><span class="line">	<span class="keyword">return</span> i - (i &gt;&gt;&gt; <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们发现这段代码中没有任何的遍历，只有位运算与一个减法，也就是说它的实现思路和我们自己的实现思路完全不一样，它的思路就是：<strong>给定一个数字，通过一系列的运算，得到一个小于或等于该数字的一个2的幂次方数。</strong></p>
-<p>也就是：如果给定一个数字18，通过运算后，要得到16。</p>
-<p>18用二进制表示为：      0001 0010</p>
-<p>想要得到的结果(16)是：0001 0000</p>
-<p>那么这个运算的过程无非就是<strong>将18对应的二进制数中除最高位的1之外的其他bit位都清零，则拿到了我们想要的结果。</strong></p>
-<p>那怎么通过位运算来实现这个过程呢？</p>
-<p>我们拿18对应的二进制数<code>0001 0010</code>来举个例子就行了： 先将<code>0001 0010</code>右移1位， 得到<code>0000 1001</code>，再与自身进行或运算： 得到<code>0001 1011</code>。</p>
-<p>再将<code>0001 1011</code>右移2位， 得到<code>0000 0110</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移4位， 得到<code>0000 0001</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移8位， 得到<code>0000 0000</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>右移16位， 得到<code>0000 0000</code>，再与自身进行或运算： 得到<code>0001 1111</code>。</p>
-<p>再将<code>0001 1111</code>无符号右移1位， 得到<code>0000 1111</code>。</p>
-<p>最后用<code>0001 1111 - 0000 1111 = 0001 0000</code> 震惊！得到了我们想要的结果。</p>
-<p>其实这个过程可以抽象成这样： 现在有一个二进制数据，<code>0001****</code>，我们不关心低位的取值情况，我们对其进行右移并且进行或运算。</p>
-<p>先将<code>0001****</code>右移1位， 得到<code>00001***</code>，再与自身进行或运算： 得到<code>00011***</code>。</p>
-<p>再将<code>00011***</code>右移2位， 得到<code>0000011*</code>，再与自身进行或运算： 得到<code>0001111*</code>。</p>
-<p>再将<code>0001111*</code>右移4位， 得到<code>00000001</code>，再与自身进行或运算： 得到<code>00011111</code>。</p>
-<p>后面不用再推算了，到这里我们其实可以发现一个规律： <strong>右移与或运算的目的就是想让某个数字的低位都变为1，再用该结果 减去 该结果右移一位后的结果，则相当于清零了原数字的低位。即得到了我们想要的结果。</strong></p>
-<p>到此，只能感叹JDK作者对于位运算的使用已经达到了出神入化的境界了。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5d679f67f265da03d55e6ab5" target="_blank" rel="noopener">Integer.highestOneBit(int i)方法的作用与底层实现</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/12/%E7%AA%81%E7%A0%B4netty%E5%8D%95%E6%9C%BA%E6%9C%80%E5%A4%A7%E8%BF%9E%E6%8E%A5%E6%95%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/12/%E7%AA%81%E7%A0%B4netty%E5%8D%95%E6%9C%BA%E6%9C%80%E5%A4%A7%E8%BF%9E%E6%8E%A5%E6%95%B0/" class="post-title-link" itemprop="url">突破netty单机最大连接数</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-12 11:35:19 / 修改时间：19:41:42" itemprop="dateCreated datePublished" datetime="2020-06-12T11:35:19+08:00">2020-06-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>实现单机的百万连接，瓶颈有以下几点：<br> 1、如何模拟百万连接<br> 2、突破局部文件句柄的限制<br> 3、突破全局文件句柄的限制<br>在linux系统里面，单个进程打开的句柄数是非常有限的，一条TCP连接就对应一个文件句柄，而对于我们应用程序来说，一个服务端默认建立的连接数是有限制的。</p>
-<p>如下图所示，通常一个客户端去除一些被占用的端口之后，可用的端口大于只有6w个左右，要想模拟百万连接要起比较多的客户端，而且比较麻烦，所以这种方案不合适。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-889b72884a359015.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/509/format/webp" alt="img"></p>
-<p>在服务端启动800~8100，而客户端依旧使用1025-65535范围内可用的端口号，让同一个端口号，可以连接Server的不同端口。这样的话，6W的端口可以连接Server的100个端口，累加起来就能实现近600W左右的连接，TCP是以一个四元组概念，以原IP、原端口号、目的IP、目的端口号来确定的，当原IP  和原端口号相同，但目的端口号不同，最终系统会把他当成两条TCP 连接来处理，所以TCP连接可以如此设计。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-d9efff2f1d8d1e3d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/443/format/webp" alt="img"></p>
-<h2 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h2><p>netty客户端和netty服务端,都是springboot项目。<br> 运行环境：linux<br> netty版本：4.1.6.Final</p>
-<h2 id="netty服务端代码"><a href="#netty服务端代码" class="headerlink" title="netty服务端代码"></a>netty服务端代码</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">netty maven</span><br><span class="line"> &lt;properties&gt;</span><br><span class="line"> &lt;netty-all.version&gt;4.1.6.Final&lt;&#x2F;netty-all.version&gt;</span><br><span class="line"> &lt;&#x2F;properties&gt;</span><br><span class="line"> &lt;dependency&gt;</span><br><span class="line"> &lt;groupId&gt;io.netty&lt;&#x2F;groupId&gt;</span><br><span class="line"> &lt;artifactId&gt;netty-all&lt;&#x2F;artifactId&gt;</span><br><span class="line"> &lt;version&gt;$&#123;netty-all.version&#125;&lt;&#x2F;version&gt;</span><br><span class="line"> &lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NettyserverApplication</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> BEGIN_PORT = <span class="number">8000</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> N_PORT = <span class="number">100</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(NettyserverApplication<span class="class">.<span class="keyword">class</span>, <span class="title">args</span>)</span>;</span><br><span class="line">        <span class="keyword">new</span> Server().start(BEGIN_PORT, N_PORT);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">/----------------------------------------------------------------------------------</span><br><span class="line"><span class="keyword">import</span> io.netty.bootstrap.ServerBootstrap;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.ChannelFutureListener;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.ChannelOption;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.EventLoopGroup;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.socket.nio.NioServerSocketChannel;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Server</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(<span class="keyword">int</span> beginPort, <span class="keyword">int</span> nPort)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"server starting...."</span>);</span><br><span class="line"></span><br><span class="line">        EventLoopGroup bossGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line">        EventLoopGroup workerGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line"></span><br><span class="line">        ServerBootstrap bootstrap = <span class="keyword">new</span> ServerBootstrap();</span><br><span class="line">        bootstrap.group(bossGroup, workerGroup);</span><br><span class="line">        bootstrap.channel(NioServerSocketChannel<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        bootstrap.childOption(ChannelOption.SO_REUSEADDR, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">        bootstrap.childHandler(<span class="keyword">new</span> ConnectionCountHandler());</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         *  绑定100个端口号</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nPort; i++) &#123;</span><br><span class="line">            <span class="keyword">int</span> port = beginPort + i;</span><br><span class="line">            bootstrap.bind(port).addListener((ChannelFutureListener) future -&gt; &#123;</span><br><span class="line">                System.out.println(<span class="string">"bind success in port: "</span> + port);</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"server started!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">/-------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.Channel;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.ChannelHandler.Sharable;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.ChannelHandlerContext;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.ChannelInboundHandlerAdapter;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.Executors;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.TimeUnit;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.atomic.AtomicInteger;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Sharable</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ConnectionCountHandler</span> <span class="keyword">extends</span> <span class="title">ChannelInboundHandlerAdapter</span> </span>&#123;</span><br><span class="line">  <span class="comment">//jdk1.5 并发包中的用于计数的类</span></span><br><span class="line">    <span class="keyword">private</span> AtomicInteger nConnection = <span class="keyword">new</span> AtomicInteger();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ConnectionCountHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="comment">/**</span></span><br><span class="line"><span class="comment">         *  每两秒统计一下连接数</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"connections: "</span> + nConnection.get());</span><br><span class="line">        &#125;, <span class="number">0</span>, <span class="number">2</span>, TimeUnit.SECONDS);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">   <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  每次过来一个新连接就对连接数加一</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> ctx</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelActive</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        nConnection.incrementAndGet();</span><br><span class="line">    &#125;</span><br><span class="line">   <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  端口的时候减一</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> ctx</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelInactive</span><span class="params">(ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        nConnection.decrementAndGet();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exceptionCaught</span><span class="params">(ChannelHandlerContext ctx, Throwable cause)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.exceptionCaught(ctx, cause);</span><br><span class="line">        Channel channel = ctx.channel();</span><br><span class="line">        <span class="keyword">if</span>(channel.isActive())&#123;</span><br><span class="line">            ctx.close();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//……</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="netty客户端代码"><a href="#netty客户端代码" class="headerlink" title="netty客户端代码"></a>netty客户端代码</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">netty maven</span><br><span class="line"> &lt;properties&gt;</span><br><span class="line"> &lt;netty-all.version&gt;4.1.6.Final&lt;&#x2F;netty-all.version&gt;</span><br><span class="line"> &lt;&#x2F;properties&gt;</span><br><span class="line"> &lt;dependency&gt;</span><br><span class="line"> &lt;groupId&gt;io.netty&lt;&#x2F;groupId&gt;</span><br><span class="line"> &lt;artifactId&gt;netty-all&lt;&#x2F;artifactId&gt;</span><br><span class="line"> &lt;version&gt;$&#123;netty-all.version&#125;&lt;&#x2F;version&gt;</span><br><span class="line"> &lt;&#x2F;dependency&gt;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">NettyclientApplication</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> BEGIN_PORT = <span class="number">8000</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> N_PORT = <span class="number">100</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(NettyclientApplication<span class="class">.<span class="keyword">class</span>, <span class="title">args</span>)</span>;</span><br><span class="line">        <span class="keyword">new</span> Client().start(BEGIN_PORT, N_PORT);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//----------------------------------------------------------------------------------------</span></span><br><span class="line"><span class="keyword">package</span> com.nettyclient.test;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> io.netty.bootstrap.Bootstrap;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.*;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.nio.NioEventLoopGroup;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.socket.SocketChannel;</span><br><span class="line"><span class="keyword">import</span> io.netty.channel.socket.nio.NioSocketChannel;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Client</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String SERVER_HOST = <span class="string">"127.0.0.1"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(<span class="keyword">final</span> <span class="keyword">int</span> beginPort, <span class="keyword">int</span> nPort)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"client starting...."</span>);</span><br><span class="line">        EventLoopGroup eventLoopGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line">        <span class="keyword">final</span> Bootstrap bootstrap = <span class="keyword">new</span> Bootstrap();</span><br><span class="line">        bootstrap.group(eventLoopGroup);</span><br><span class="line">        bootstrap.channel(NioSocketChannel<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        bootstrap.option(ChannelOption.SO_REUSEADDR, <span class="keyword">true</span>);</span><br><span class="line">        bootstrap.handler(<span class="keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel ch)</span> </span>&#123;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> port;</span><br><span class="line">        <span class="keyword">while</span> (!Thread.interrupted()) &#123;</span><br><span class="line">            port = beginPort + index;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                ChannelFuture channelFuture = bootstrap.connect(SERVER_HOST, port);</span><br><span class="line">                channelFuture.addListener((ChannelFutureListener) future -&gt; &#123;</span><br><span class="line">                    <span class="keyword">if</span> (!future.isSuccess()) &#123;</span><br><span class="line">                        System.out.println(<span class="string">"连接失败, 退出!"</span>);</span><br><span class="line">                        System.exit(<span class="number">0</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;);</span><br><span class="line">                channelFuture.get();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (++index == nPort) &#123;</span><br><span class="line">                index = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>启动服务端</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-728141279b26f1e1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/610/format/webp" alt="img"></p>
-<p>启动客户端</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-de84e3a575371495.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/734/format/webp" alt="img"></p>
-<p>测试发现当连接数达到13136 的时候，此时达到了最大的连接数，这时候服务器将不再对新的连接进行处理，客户端赢长时间得不到服务端的响应而结束与服务端的连接。（不同的机器配置结果可能不同）<br> 下面通过优化要突破这个连接数。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-ceba004c115eddd2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
-<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><h3 id="1、局部文件句柄限制"><a href="#1、局部文件句柄限制" class="headerlink" title="1、局部文件句柄限制"></a>1、局部文件句柄限制</h3><p><img src="https:////upload-images.jianshu.io/upload_images/13624274-54921882dda8a164.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/419/format/webp" alt="img"></p>
-<p>一个jvm进程最大能够打开的文件数</p>
-<p>修改65535的这个限制<br><code>vi /etc/security/limits.conf</code><br> 在文件末尾添加两行</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">*hard nofile 1000000</span><br><span class="line">*soft nofile 1000000</span><br></pre></td></tr></table></figure>
-
-
-<p> soft和hard为两种限制方式，其中soft表示警告的限制，hard表示真正限制，nofile表示打开的最大文件数。整体表示任何用户一个进程能够打开1000000个文件。注意语句签名有* 号 表示任何用户</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-9e7592bf4057ae73.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/414/format/webp" alt="img"></p>
-<p><code>shutdown -r now</code>  重启linux</p>
-<p>再次查看</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-afe18b5b26290098.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/453/format/webp" alt="img"></p>
-<p>已经修改生效了。</p>
-<p>测试</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-07ee6077d068db86.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/222/format/webp" alt="img"></p>
-<p>最大连接数10万多</p>
-<h3 id="2、突破全局文件句柄的限制"><a href="#2、突破全局文件句柄的限制" class="headerlink" title="2、突破全局文件句柄的限制"></a>2、突破全局文件句柄的限制</h3><p><code>cat /proc/sys/fs/file-max</code><br>file-max 表示在linux 中最终所有x线程能够打开的最大文件数</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-01d43ba5d34bf93a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/431/format/webp" alt="img"></p>
-<p>image.png</p>
-<p>修改这个最大值：<br> <code>sudo vi  /etc/sysctl.conf</code><br> 在文件的末尾添加 <code>fs.file-max=1000000</code><br> 然后让文件生效 <code>sudo sysctl -p</code><br> 这个时候再查看一下全局最大文件句柄的数已经变成1000000了</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-1f43043b3585da73.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/473/format/webp" alt="img"></p>
-<p>测试</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-d77cc04ce5934466.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/420/format/webp" alt="img"></p>
-<p>最大连接数36万多.png</p>
-<p>注： 测试的服务器型号</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-9ea4b4b0c9ad094e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/751/format/webp" alt="img"></p>
-<p>cpu 相关配置</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/13624274-7d9e344e96357abf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/532/format/webp" alt="img"></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.jianshu.com/p/490e2981545c" target="_blank" rel="noopener">突破netty单机最大连接数</a></p>
-<p>遵循CC 4.0 BY-SA版权协议</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/12/%E5%8D%95%E6%9C%BA%E6%9C%80%E5%A4%A7%E5%B9%B6%E5%8F%91tcp%E8%BF%9E%E6%8E%A5%E6%95%B0/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/12/%E5%8D%95%E6%9C%BA%E6%9C%80%E5%A4%A7%E5%B9%B6%E5%8F%91tcp%E8%BF%9E%E6%8E%A5%E6%95%B0/" class="post-title-link" itemprop="url">单机最大并发tcp连接数</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-12 11:18:21 / 修改时间：19:20:49" itemprop="dateCreated datePublished" datetime="2020-06-12T11:18:21+08:00">2020-06-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>做性能测试的同学，在问到到单台服务器最大连接数时，很多人多会回答是65535，因为最多有65535个端口，一个连接必须要占用一个端口号，所以得出答案是65535，真相到底是什么呢？</p>
-<p>在tcp应用中，server事先在某个固定端口监听，client主动发起连接，经过三路握手后建立tcp连接。那么对单机，其最大并发tcp连接数是多少？</p>
-<h3 id="如何标识一个TCP连接"><a href="#如何标识一个TCP连接" class="headerlink" title="如何标识一个TCP连接"></a>如何标识一个TCP连接</h3><p>在确定最大连接数之前，先来看看系统如何标识一个tcp连接。系统用一个4四元组来唯一标识一个TCP连接：{localip, localport,remoteip,remoteport}。</p>
-<h3 id="client最大tcp连接数"><a href="#client最大tcp连接数" class="headerlink" title="client最大tcp连接数"></a>client最大tcp连接数</h3><p>client每次发起tcp连接请求时，除非绑定端口，通常会让系统选取一个空闲的本地端口（local port），该端口是独占的，不能和其他tcp连接共享。tcp端口的数据类型是unsigned short，因此本地端口个数最大只有65536，端口0有特殊含义，不能使用，这样可用端口最多只有65535，所以在全部作为client端的情况下，一个client最大tcp连接数为65535，这些连接可以连到不同的serverip。</p>
-<h3 id="server最大tcp连接数"><a href="#server最大tcp连接数" class="headerlink" title="server最大tcp连接数"></a>server最大tcp连接数</h3><p>server通常固定在某个本地端口上监听，等待client的连接请求。不考虑地址重用（unix的SO_REUSEADDR选项）的情况下，即使server端有多个ip，本地监听端口也是独占的，因此server端tcp连接4元组中只有remoteip（也就是clientip）和remote port（客户端port）是可变的，因此最大tcp连接为客户端ip数×客户端port数，对IPV4，不考虑ip地址分类等因素，最大tcp连接数约为2的32次方（ip数）×2的16次方（port数），也就是server端单机最大tcp连接数约为2的48次方。</p>
-<h3 id="实际的tcp连接数"><a href="#实际的tcp连接数" class="headerlink" title="实际的tcp连接数"></a>实际的tcp连接数</h3><p>上面给出的是理论上的单机最大连接数，在实际环境中，受到机器资源、操作系统等的限制，特别是sever端，其最大并发tcp连接数远不能达到理论上限。在unix/linux下限制连接数的主要因素是内存和允许的文件描述符个数（每个tcp连接都要占用一定内存，每个socket就是一个文件描述符），另外1024以下的端口通常为保留端口。</p>
-<p>对server端，通过增加内存、修改最大文件描述符个数等参数，单机最大并发TCP连接数超过10万,甚至上百万是没问题的</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.sohu.com/a/221661481_216613" target="_blank" rel="noopener">单机最大并发tcp连接数是65535？原来我们都错了！</a></p>
-<p>遵循CC 4.0 BY-SA版权协议</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/UML%E7%B1%BB%E5%9B%BE%E7%AE%80%E4%BB%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/11/UML%E7%B1%BB%E5%9B%BE%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">UML类图简介</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-12 03:20:13 / 修改时间：11:23:31" itemprop="dateCreated datePublished" datetime="2020-06-12T03:20:13+08:00">2020-06-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>这里不会将UML的各种元素都提到，我只想讲讲类图中各个类之间的关系； 能看懂类图中各个类之间的线条、箭头代表什么意思后，也就足够应对 日常的工作和交流； 同时，我们应该能将类图所表达的含义和最终的代码对应起来； 有了这些知识，看后面章节的设计模式结构图就没有什么问题了；</p>
-<h2 id="从一个示例开始"><a href="#从一个示例开始" class="headerlink" title="从一个示例开始"></a>从一个示例开始</h2><p>请看以下这个类图，类之间的关系是我们需要关注的：</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_class_struct.jpg" alt="_images/uml_class_struct.jpg"></p>
-<ul>
-<li>车的类图结构为&lt;<abstract>&gt;，表示车是一个抽象类；</li>
-<li>它有两个继承类：小汽车和自行车；它们之间的关系为实现关系，使用带空心箭头的虚线表示；</li>
-<li>小汽车为与SUV之间也是继承关系，它们之间的关系为泛化关系，使用带空心箭头的实线表示；</li>
-<li>小汽车与发动机之间是组合关系，使用带实心箭头的实线表示；</li>
-<li>学生与班级之间是聚合关系，使用带空心箭头的实线表示；</li>
-<li>学生与身份证之间为关联关系，使用一根实线表示；</li>
-<li>学生上学需要用到自行车，与自行车是一种依赖关系，使用带箭头的虚线表示；</li>
-</ul>
-<p>下面我们将介绍这六种关系；</p>
-<hr>
-<h2 id="类之间的关系"><a href="#类之间的关系" class="headerlink" title="类之间的关系"></a>类之间的关系</h2><h3 id="泛化关系-generalization"><a href="#泛化关系-generalization" class="headerlink" title="泛化关系(generalization)"></a>泛化关系(generalization)</h3><p>类的继承结构表现在UML中为：泛化(generalize)与实现(realize)：</p>
-<p>继承关系为 is-a的关系；两个对象之间如果可以用 is-a 来表示，就是继承关系：（..是..)</p>
-<p>eg：自行车是车、猫是动物</p>
-<p>泛化关系用一条带空心箭头的直接表示；如下图表示（A继承自B）；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_generalization.jpg" alt="_images/uml_generalization.jpg"></p>
-<p>eg：汽车在现实中有实现，可用汽车定义具体的对象；汽车与SUV之间为泛化关系；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_generalize.jpg" alt="_images/uml_generalize.jpg"></p>
-<p>注：最终代码中，泛化关系表现为继承非抽象类；</p>
-<h3 id="实现关系-realize"><a href="#实现关系-realize" class="headerlink" title="实现关系(realize)"></a>实现关系(realize)</h3><p>实现关系用一条带空心箭头的虚线表示；</p>
-<p>eg：”车”为一个抽象概念，在现实中并无法直接用来定义对象；只有指明具体的子类(汽车还是自行车)，才 可以用来定义对象（”车”这个类在C++中用抽象类表示，在JAVA中有接口这个概念，更容易理解）</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_realize.jpg" alt="_images/uml_realize.jpg"></p>
-<p>注：最终代码中，实现关系表现为继承抽象类；</p>
-<h3 id="聚合关系-aggregation"><a href="#聚合关系-aggregation" class="headerlink" title="聚合关系(aggregation)"></a>聚合关系(aggregation)</h3><p>聚合关系用一条带空心菱形箭头的直线表示，如下图表示A聚合到B上，或者说B由A组成；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_aggregation.jpg" alt="_images/uml_aggregation.jpg"></p>
-<p>聚合关系用于表示实体对象之间的关系，表示整体由部分构成的语义；例如一个部门由多个员工组成；</p>
-<p>与组合关系不同的是，整体和部分不是强依赖的，即使整体不存在了，部分仍然存在；例如， 部门撤销了，人员不会消失，他们依然存在；</p>
-<h3 id="组合关系-composition"><a href="#组合关系-composition" class="headerlink" title="组合关系(composition)"></a>组合关系(composition)</h3><p>组合关系用一条带实心菱形箭头直线表示，如下图表示A组成B，或者B由A组成；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_composition.jpg" alt="_images/uml_composition.jpg"></p>
-<p>与聚合关系一样，组合关系同样表示整体由部分构成的语义；比如公司由多个部门组成；</p>
-<p>但组合关系是一种强依赖的特殊聚合关系，如果整体不存在了，则部分也不存在了；例如， 公司不存在了，部门也将不存在了；</p>
-<h3 id="关联关系-association"><a href="#关联关系-association" class="headerlink" title="关联关系(association)"></a>关联关系(association)</h3><p>关联关系是用一条直线表示的；它描述不同类的对象之间的结构关系；它是一种静态关系， 通常与运行状态无关，一般由常识等因素决定的；它一般用来定义对象之间静态的、天然的结构； 所以，关联关系是一种“强关联”的关系；</p>
-<p>比如，乘车人和车票之间就是一种关联关系；学生和学校就是一种关联关系；</p>
-<p>关联关系默认不强调方向，表示对象间相互知道；如果特别强调方向，如下图，表示A知道B，但 B不知道A；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_association.jpg" alt="_images/uml_association.jpg"></p>
-<p>注：在最终代码中，关联对象通常是以成员变量的形式实现的；</p>
-<h3 id="依赖关系-dependency"><a href="#依赖关系-dependency" class="headerlink" title="依赖关系(dependency)"></a>依赖关系(dependency)</h3><p>依赖关系是用一套带箭头的虚线表示的；如下图表示A依赖于B；他描述一个对象在运行期间会用到另一个对象的关系；</p>
-<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_dependency.jpg" alt="_images/uml_dependency.jpg"></p>
-<p>与关联关系不同的是，它是一种临时性的关系，通常在运行期间产生，并且随着运行时的变化； 依赖关系也可能发生变化；</p>
-<p>显然，依赖也有方向，双向依赖是一种非常糟糕的结构，我们总是应该保持单向依赖，杜绝双向依赖的产生；</p>
-<p>注：在最终代码中，依赖关系体现为类构造方法及类方法的传入参数，箭头的指向为调用关系；依赖关系除了临时知道对方外，还是“使用”对方的方法和属性；</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://design-patterns.readthedocs.io/zh_CN/latest/read_uml.html" target="_blank" rel="noopener">看懂UML类图和时序图</a></p>
-<p>遵循CC 4.0 BY-SA版权协议</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/equals()%E4%B8%8EhashCode()/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/11/equals()%E4%B8%8EhashCode()/" class="post-title-link" itemprop="url">equals()与hashCode()</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-12 02:56:30 / 修改时间：11:19:36" itemprop="dateCreated datePublished" datetime="2020-06-12T02:56:30+08:00">2020-06-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>7.3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>7 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>equals和hashCode都是Object对象中的非final方法，它们设计的目的就是被用来覆盖(override)的，所以在程序设计中还是经常需要处理这两个方法的。而掌握这两个方法的覆盖准则以及它们的区别还是很必要的，相关问题也不少。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2017/12/27/16098428b73f5bd0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>下面我们继续以一次面试的问答，来考察对equals和hashCode的掌握情况。</p>
-<h2 id="Java里面有-运算符了，为什么还需要equals"><a href="#Java里面有-运算符了，为什么还需要equals" class="headerlink" title="Java里面有==运算符了，为什么还需要equals"></a>Java里面有<code>==</code>运算符了，为什么还需要equals</h2><hr>
-<p>equals()的作用是用来判断两个对象是否相等，在Object里面的定义是：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这说明在我们实现自己的equals方法之前，equals等价于<code>==</code>,而<code>==</code>运算符是判断两个对象是不是同一个对象，即他们的<strong>地址是否相等</strong>。而覆写equals更多的是追求两个对象在<strong>逻辑上的相等</strong>，你可以说是<strong>值相等</strong>，也可说是<strong>内容相等</strong>。</p>
-<p>在以下几种条件中，不覆写equals就能达到目的：</p>
-<ul>
-<li><strong>类的每个实例本质上是唯一的</strong>：强调活动实体的而不关心值得，比如Thread，我们在乎的是哪一个线程，这时候用equals就可以比较了。</li>
-<li><strong>不关心类是否提供了逻辑相等的测试功能</strong>：有的类的使用者不会用到它的比较值得功能，比如Random类，基本没人会去比较两个随机值吧</li>
-<li><strong>超类已经覆盖了equals，子类也只需要用到超类的行为</strong>：比如AbstractMap里已经覆写了equals，那么继承的子类行为上也就需要这个功能，那也不需要再实现了。</li>
-<li><strong>类是私有的或者包级私有的，那也用不到equals方法</strong>：这时候需要覆写equals方法来禁用它：<code>@Override public boolean equals(Object obj) { throw new AssertionError();}</code></li>
-</ul>
-<h2 id="覆写equals时有哪些准则？"><a href="#覆写equals时有哪些准则？" class="headerlink" title="覆写equals时有哪些准则？"></a>覆写equals时有哪些准则？</h2><hr>
-<p>这个我在Effective Java上看过，没记错的话应该是：</p>
-<blockquote>
-<p><strong>自反性</strong>：对于任何非空引用值 x，x.equals(x) 都应返回 true。</p>
-</blockquote>
-<blockquote>
-<p><strong>对称性</strong>：对于任何非空引用值 x 和 y，当且仅当 y.equals(x) 返回 true 时，x.equals(y) 才应返回 true。</p>
-</blockquote>
-<blockquote>
-<p><strong>传递性</strong>：对于任何非空引用值 x、y 和 z，如果 x.equals(y) 返回 true， 并且 y.equals(z) 返回 true，那么 x.equals(z) 应返回 true。</p>
-</blockquote>
-<blockquote>
-<p><strong>一致性</strong>：对于任何非空引用值 x 和 y，多次调用 x.equals(y) 始终返回 true 或始终返回 false， 前提是对象上 equals 比较中所用的信息没有被修改。</p>
-</blockquote>
-<blockquote>
-<p><strong>非空性</strong>：对于任何非空引用值 x，x.equals(null) 都应返回 false。</p>
-</blockquote>
-<h2 id="哪些情况下会违反对称性和传递性"><a href="#哪些情况下会违反对称性和传递性" class="headerlink" title="哪些情况下会违反对称性和传递性"></a>哪些情况下会违反对称性和传递性</h2><hr>
-<h4 id="违反对称性"><a href="#违反对称性" class="headerlink" title="违反对称性"></a>违反对称性</h4><p>对称性就是x.equals(y)时，y也得equals x，很多时候，我们自己覆写equals时，让自己的类可以兼容等于一个已知类，比如下面的例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">CaseInsensitiveString</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String s;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CaseInsensitiveString</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">        <span class="keyword">this</span>.s = s;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> CaseInsensiticeString)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase(((CaseInsensitiveString)o).s);</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> String)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase((String) o);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这个想法很好，想创建一个无视大小写的String，并且还能够兼容String作为参数，假设我们创建一个CaseInsensitiveString:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CaseInsensitiveString cis = <span class="keyword">new</span> CaseInsensitiveString(<span class="string">"Case"</span>);</span><br></pre></td></tr></table></figure>
-
-<p>那么肯定有<code>cis.equals(&quot;case&quot;)</code>,问题来了，<code>&quot;case&quot;.equals(cis)</code>吗？String并没有兼容CaseInsensiticeString，所以String的equals也不接受CaseInsensiticeString作为参数。</p>
-<p>所以有个准则，一般在覆写equals<strong>只兼容同类型的变量</strong>。</p>
-<h4 id="违反传递性"><a href="#违反传递性" class="headerlink" title="违反传递性"></a>违反传递性</h4><p>传递性就是A等于B，B等于C，那么A也应该等于C。</p>
-<p>假设我们定义一个类Cat。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class <span class="title">Cat</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> height;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> weight;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Cat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.height = h;</span><br><span class="line">        <span class="keyword">this</span>.weight = w;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!(o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        Cat c = (Cat) o;</span><br><span class="line">        <span class="keyword">return</span> c.height == height &amp;&amp; c.weight == weight; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>名人有言，不管黑猫白猫抓住老鼠就是好猫，我们又定义一个类ColorCat:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class ColorCat <span class="title">extends</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String color;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ColorCat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w, String color)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(h, w);</span><br><span class="line">        <span class="keyword">this</span>.color = color;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们在实现equals方法时，可以加上颜色比较，但是加上颜色就不兼容和普通猫作对比了，这里我们忘记上面要求只兼容同类型变量的建议，定义一个兼容普通猫的equals方法，在“混合比较”时忽略颜色。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>; <span class="comment">//不是Cat或者ColorCat，直接false</span></span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> ColorCat))</span><br><span class="line">        <span class="keyword">return</span> o.equals(<span class="keyword">this</span>);<span class="comment">//不是彩猫，那一定是普通猫，忽略颜色对比</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.equals(o)&amp;&amp;((ColorCat)o).color.equals(color); <span class="comment">//这时候才比较颜色</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>假设我们定义了猫：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ColorCat whiteCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"white"</span>);</span><br><span class="line">Cat cat = <span class="keyword">new</span> Cat(<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">ColorCat blackCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"black"</span>);</span><br></pre></td></tr></table></figure>
-
-<p>此时有whiteCat等于cat，cat等于blackCat，但是whiteCat不等于blackCat，所以不满足传递性要求。</p>
-<p>所以在覆写equals时，一定要遵守上述的5大军规，不然总是有麻烦事找上门来。</p>
-<h2 id="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"><a href="#有覆写equals方法的诀窍吗，比如写一下String里面的equals？" class="headerlink" title="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"></a>有覆写equals方法的诀窍吗，比如写一下String里面的equals？</h2><hr>
-<p>手写：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">           String anotherString = (String)anObject;</span><br><span class="line">           <span class="keyword">int</span> n = value.length;</span><br><span class="line">           <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">               <span class="keyword">char</span> v1[] = value;</span><br><span class="line">               <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">               <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">               <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                   <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                   i++;</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面的equals有以下几点诀窍：</p>
-<ul>
-<li><strong>使用==操作符检查“参数是否为这个对象的引用”</strong>：如果是对象本身，则直接返回，拦截了对本身调用的情况，算是一种性能优化。</li>
-<li><strong>使用instanceof操作符检查“参数是否是正确的类型”</strong>：如果不是，就返回false，正如对称性和传递性举例子中说得，不要想着兼容别的类型，很容易出错。在实践中检查的类型多半是equals所在类的类型，或者是该类实现的接口的类型，比如Set、List、Map这些集合接口。</li>
-<li><strong>把参数转化为正确的类型</strong>： 经历了上一步的检测，基本会成功。</li>
-<li><strong>对于该类中的“关键域”，检查参数中的域是否与对象中的对应域相等</strong>：基本类型的域就用<code>==</code>比较，float域用Float.compare方法，double域用Double.compare方法，至于别的引用域，我们一般递归调用它们的equals方法比较，加上判空检查和对自身引用的检查，一般会写成这样：<code>(field == o.field || (field != null &amp;&amp; field.equals(o.field)))</code>,而上面的String里使用的是数组，所以只要把数组中的每一位拿出来比较就可以了。</li>
-<li><strong>编写完成后思考是否满足上面提到的对称性，传递性，一致性等等</strong>。</li>
-</ul>
-<p>还有一些注意点。</p>
-<p><strong>覆盖equals时一定要覆盖hashCode</strong></p>
-<p><strong>equals函数里面一定要是Object类型作为参数</strong></p>
-<p><strong>equals方法本身不要过于智能，只要判断一些值相等即可。</strong></p>
-<h2 id="hashCode什么用"><a href="#hashCode什么用" class="headerlink" title="hashCode什么用"></a>hashCode什么用</h2><hr>
-<p>hashCode用于返回对象的hash值，主要用于查找的快捷性，因为hashCode也是在Object对象中就有的，所以所有Java对象都有hashCode，在HashTable和HashMap这一类的散列结构中，都是通过hashCode来查找在散列表中的位置的。</p>
-<p><strong>如果两个对象equals，那么它们的hashCode必然相等，</strong></p>
-<p><strong>但是hashCode相等，equals不一定相等。(有哈希碰撞)</strong></p>
-<p>以HashMap为例，使用的是链地址法来处理散列，假设有一个长度为8的散列表</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span></span><br></pre></td></tr></table></figure>
-
-<p>那么，当往里面插数据时，是以hashCode作为key插入的，一般hashCode%8得到所在的索引，如果所在索引处有元素了，则使用一个链表，把多的元素不断链接到该位置，这边也就是大概提一下HashMap原理。所以hashCode的作用就是找到索引的位置，然后再用equals去比较元素是不是相等，形象一点就是先找到桶（bucket），然后再在里面找东西。</p>
-<blockquote>
-<p>hashCode 的常规协定是：<br> 在 Java 应用程序执行期间，在同一对象上多次调用 hashCode 方法时，必须一致地返回相同的整数，前提是对象上 equals 比较中所用的信息没有被修改。从某一应用程序的一次执行到同一应用程序的另一次执行，该整数无需保持一致。</p>
-<p>以下情况不 是必需的：如果根据 equals(java.lang.Object) 方法，两个对象不相等，那么在两个对象中的任一对象上调用 hashCode 方法必定会生成不同的整数结果。但是，程序员应该知道，为不相等的对象生成不同整数结果可以提高哈希表的性能。</p>
-<p>实际上，由 Object 类定义的 hashCode 方法确实会针对不同的对象返回不同的整数。（这一般是通过将该对象的内部地址转换成一个整数来实现的，但是 JavaTM 编程语言不需要这种实现技巧。）</p>
-<p>当equals方法被重写时，通常有必要重写 hashCode 方法，以维护 hashCode 方法的常规协定，该协定声明相等对象必须具有相等的哈希码。</p>
-</blockquote>
-<p>具体的例子:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">  Stu s1 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  Stu s2 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  System.out.println(<span class="string">"stu:"</span> + s1.equals(s2));</span><br><span class="line"></span><br><span class="line">  Set&lt;Stu&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">  set.add(s1);</span><br><span class="line">  System.out.println(<span class="string">"s1 hashCode:"</span> + s1.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s1 size:"</span> + set.size());</span><br><span class="line">  set.add(s2);</span><br><span class="line">  System.out.println(<span class="string">"s2 hashCode:"</span> + s2.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s2 size::"</span> + set.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1317241155</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:463175162</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
-
-<p>Java中的Set是不允许有重复元素的，所以这里set的size由1变成了2，因为两个Stu都是new出来的，分配的地址不一样，那么Set是通过equals来定义重复的吗？</p>
-<p>首先重写Stu的equals方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (obj == <span class="keyword">null</span>)&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (obj.getClass() != getClass())&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> ((Stu)obj).getName().equals(getName());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:713679046</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1107557627</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
-
-<p>重写equals方法，name相同就让equals返回true了，但是Set的size还是发生了改变，就说明不是有equals方法来定义重复的，现在仅仅重写hashCode方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getName().hashCode();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
-
-<p>仅重写了hashCode方法，所以equals返回false，然后hashCode由name属性的hashCode方法得到，所以hashCode相等，但是Set的size还是改变了，这说明Set也不是仅仅依据hashCode来定义重复。</p>
-<p>那么现在将上述equals和hashCode两者同时重写，输出结果：</p>
-<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::1</span></span><br></pre></td></tr></table></figure>
-
-<p>结合上面引用的案例，可以类推，hash类存储结构（HashSet、HashMap等等）添加元素会有重复性校验，校验的方式就是<strong>先取hashCode判断是否相等</strong>（找到对应的位置，该位置可能存在多个元素），然后<strong>再取equals方法比较</strong>（极大缩小比较范围，高效判断），最终判定该存储结构中是否有重复元素。</p>
-<h2 id="有哪些覆写hashCode的诀窍？"><a href="#有哪些覆写hashCode的诀窍？" class="headerlink" title="有哪些覆写hashCode的诀窍？"></a>有哪些覆写hashCode的诀窍？</h2><hr>
-<p>一个好的hashCode的方法的目标：<strong>为不相等的对象产生不相等的散列码</strong>，同样的，相等的对象必须拥有相等的散列码。</p>
-<p>好的散列函数要把实例均匀的分布到所有散列值上，结合前人的经验可以采取以下方法：</p>
-<blockquote>
-<p>引自Effective Java</p>
-<ol>
-<li><p>把某个非零的常数值，比如17，保存在一个int型的result中；</p>
-</li>
-<li><p>对于每个关键域f（equals方法中设计到的每个域），作以下操作：</p>
-<p><strong>a</strong>. 为该域计算int类型的散列码；</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">i.如果该域是boolean类型，则计算(f?1:0),</span><br><span class="line">ii.如果该域是byte,char,short或者int类型,计算(int)f,</span><br><span class="line">iii.如果是long类型，计算(int)(f^(f&gt;&gt;&gt;32)).</span><br><span class="line">iv.如果是float类型，计算Float.floatToIntBits(f).</span><br><span class="line">v.如果是double类型，计算Double.doubleToLongBits(f),然后再计算long型的hash值</span><br><span class="line">vi.如果是对象引用，则递归的调用域的hashCode，如果是更复杂的比较，则需要为这个域计算一个范式，然后针对范式调用hashCode，如果为null，返回0</span><br><span class="line">vii. 如果是一个数组，则把每一个元素当成一个单独的域来处理。</span><br></pre></td></tr></table></figure>
-
-<p><strong>b</strong>.result = 31 * result + c;</p>
-</li>
-<li><p>返回result</p>
-</li>
-<li><p>编写单元测试验证有没有实现所有相等的实例都有相等的散列码。</p>
-</li>
-</ol>
-</blockquote>
-<p>这里再说下2.b中为什么采用<code>31*result + c</code>,乘法使hash值依赖于域的顺序，如果没有乘法那么所有顺序不同的字符串String对象都会有一样的hash值，而31是一个奇素数，如果是偶数，并且乘法溢出的话，信息会丢失，31有个很好的特性是<code>31*i ==(i&lt;&lt;5)-i</code>,即2的5次方减1，虚拟机会优化乘法操作为移位操作的。</p>
-<p>给个简单的例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result = <span class="number">17</span>;</span><br><span class="line">  result = <span class="number">31</span> * result + getName().hashCode();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5a4379d4f265da432003874c" target="_blank" rel="noopener">面试官爱问的equals与hashCode</a></p>
-<p><a href="https://www.jianshu.com/p/5b7fe120bf94" target="_blank" rel="noopener">equals和hashCode的区别和联系</a></p>
-<p>遵循CC 4.0 BY-SA版权协议</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -2038,7 +2128,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">149</span>
+          <span class="site-state-item-count">154</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2094,7 +2184,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">450k</span>
+    <span title="站点总字数">475k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="JDBC介绍​    jdbc是java数据库连接(java DataBase Connectivity)技术的简称，由一组使用java语言编写的类与接口组成，可以为多种关系数据库提供统一访问  实现步骤    使用JDBC编程需要连接数据库，注册驱动和数据库信息 操作Connection，打开 Statement 对象 。 通过Statement执行SQL， 返回结果到ResultSet对象。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ORM是什么">
+<meta property="og:url" content="http://yoursite.com/2020/06/16/ORM%E6%98%AF%E4%BB%80%E4%B9%88/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="JDBC介绍​    jdbc是java数据库连接(java DataBase Connectivity)技术的简称，由一组使用java语言编写的类与接口组成，可以为多种关系数据库提供统一访问  实现步骤    使用JDBC编程需要连接数据库，注册驱动和数据库信息 操作Connection，打开 Statement 对象 。 通过Statement执行SQL， 返回结果到ResultSet对象。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-16T04:35:26.000Z">
+<meta property="article:modified_time" content="2020-06-16T12:40:32.218Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/16/ORM%E6%98%AF%E4%BB%80%E4%B9%88/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ORM是什么 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/ORM%E6%98%AF%E4%BB%80%E4%B9%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ORM是什么
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-16 12:35:26 / 修改时间：20:40:32" itemprop="dateCreated datePublished" datetime="2020-06-16T12:35:26+08:00">2020-06-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="JDBC介绍"><a href="#JDBC介绍" class="headerlink" title="JDBC介绍"></a>JDBC介绍</h3><p>​    jdbc是java数据库连接(java DataBase Connectivity)技术的简称，由一组使用java语言编写的类与接口组成，可以为多种关系数据库提供统一访问</p>
+<ul>
+<li><strong>实现步骤</strong></li>
+</ul>
+<ol>
+<li><ol>
+<li>使用JDBC编程需要连接数据库，注册驱动和数据库信息</li>
+<li>操作Connection，打开 Statement 对象 。</li>
+<li>通过Statement执行SQL， 返回结果到ResultSet对象。</li>
+<li>使用ResultSet读取数据，然后通过代码转化为具体的POJO对象。</li>
+<li>关闭数据库的相关资源。</li>
+</ol>
+</li>
+</ol>
+<ul>
+<li><strong>优点</strong></li>
+</ul>
+<p>​    直接底层操作，提供了很简单、便捷的访问数据库的方法，跨平台性比较强。灵活性比较强。可以写很复杂的SQL语句。</p>
+<ul>
+<li><strong>缺点</strong></li>
+</ul>
+<p>​    工作量相对较大。我们需要先连接，然后处理JDBC底层事务，处理数据类型。我们还需要操作Connection对象、Statement对象和ResultSet对象去拿到数据，并准确的关闭它们。</p>
+<p>我们要对JDBC编程可能产生的异常进行捕捉处理并正确关闭资源。</p>
+<h3 id="ORM介绍"><a href="#ORM介绍" class="headerlink" title="ORM介绍"></a>ORM介绍</h3><p>​    由于JDBC存在的缺陷，所以我们在实际工作中很少使用JDBC进行操作数据库的编程。于是我们就提出了<strong>对象关系映射</strong>（Object Relational Mapping）简称 ORM，或者O/RM，或者 O/R mapping。</p>
+<ul>
+<li><strong>介绍</strong></li>
+</ul>
+<ol>
+<li>ORM模型就是数据库的表和简单Java对象（Plain Ordinary Java Object，简称POJO）的映射关系模型。 </li>
+<li>它主要解决数据库数据和POJO对象的相互映射。我们通过这层映射就可以简单的把数据库表的数据转化为POJO。以便程序员更加容易的理解和应用Java程序.而且程序员一般只需要了解Java应用而无需对数据库进行深入的了解。此外，ORM模型提供了统一的规则使得数据库的数据通过配置便可轻易的映射到POJO上。</li>
+</ol>
+<ul>
+<li>常用的ORM框架</li>
+</ul>
+<ol>
+<li><strong>Java系列</strong>：</li>
+</ol>
+<p>​      Hibernate全自动需要写hql语句</p>
+<p>​      Mybatis半自动自己写sql语句,可操作性强,小巧（前身iBatis）</p>
+<p>​      Apache OJB</p>
+<p>​      TopLink     是位居第一的Java对象关系可持续性体系结构 （待研究）</p>
+<p>​      Jaxor  ：是一个简单但功能强大的创建到关系映像层对象的工具。它允许开发者轻松地 在表中插入、更新、删除行，但也可被扩展为创建一个可扩展的映像层，这个层可创建一 个完全的域模型，透明地映射到数据库表</p>
+<ol start="2">
+<li><strong>.Net系列</strong>：EF6与EFCore、Dapper</li>
+</ol>
+<ul>
+<li><strong>优点</strong></li>
+</ul>
+<p>目前我们接触（用）到比较多的是Hibernate和MyBatis。 </p>
+<p><strong>MyBatis优点：</strong></p>
+<ol>
+<li>易于上手和掌握。</li>
+<li>sql写在xml里，便于统一管理和优化。</li>
+<li>解除sql与程序代码的耦合。</li>
+<li>提供映射标签，支持对象与数据库的orm字段关系映射</li>
+<li>提供对象关系映射标签，支持对象关系组建维护</li>
+<li>提供xml标签，支持编写动态sql。</li>
+</ol>
+<p><strong>Hibernate优点：</strong></p>
+<ol>
+<li>消除了代码的映射规则，它全部被分离到XML或者注解里面去配置。</li>
+<li>无需再管理数据库连接，它也配置到XML里面。</li>
+<li>一个会话中，不要操作多个对象，只要操作Sesison即可。</li>
+<li>关闭资源只需要关闭一个Session即可。</li>
+</ol>
+<ul>
+<li><strong>缺点</strong></li>
+</ul>
+<p><strong>MyBatis缺点：</strong></p>
+<ol>
+<li>sql工作量很大，尤其是字段多、关联表多时，更是如此。</li>
+<li>sql依赖于数据库，导致数据库移植性差。</li>
+<li>由于xml里标签id必须唯一，导致DAO中方法不支持方法重载。</li>
+<li>字段映射标签和对象关系映射标签仅仅是对映射关系的描述，具体实现仍然依赖于sql。（比如配置了一对多Collection标签，如果sql里没有join子表或查询子表的话，查询后返回的对象是不具备对象关系的，即Collection的对象为null）</li>
+<li>DAO层过于简单，对象组装的工作量较大。</li>
+<li>不支持级联更新、级联删除。</li>
+<li>编写动态sql时,不方便调试，尤其逻辑复杂时。</li>
+<li>提供的写动态sql的xml标签功能简单（连struts都比不上），编写动态sql仍然受限，且可读性低。</li>
+<li>若不查询主键字段，容易造成查询出的对象有“覆盖”现象。</li>
+<li>参数的数据类型支持不完善。（如参数为Date类型时，容易报没有get、set方法，需在参数上加@param）</li>
+<li>多参数时，使用不方便，功能不够强大。（目前支持的方法有map、对象、注解@param以及默认采用012索引位的方式）</li>
+<li>缓存使用不当，容易产生脏数据。</li>
+</ol>
+<p><strong>Hibernate缺点：</strong></p>
+<ol>
+<li>全表映射带来的不便，比如更新时需要发送所有的字段。</li>
+<li>无法根据不同的条件组装不同的SQL。　</li>
+<li>对多表关联和复杂的SQL查询支持较差。需要自己写SQL，返回后，需要自己将数据组装到POJO中。</li>
+<li>不能有效支持存储过程。</li>
+<li>虽然有HQL，但是性能较差，大型互联网往往需要优化SQL，而Hibernate做不到。</li>
+</ol>
+<ul>
+<li><strong>框架选择</strong></li>
+</ul>
+<p>​    Hibernate作为Java ORM框架，它确实编程简易，需要我们提供映射的规则，完全可以通过IDE生成。同时无需编写SQL确实开发效率优于MyBatis。而且，它也提供了缓存、日志、级联、等强大的功能，但是Hibernate的缺陷也是十分的明显的。就是在多表关联复杂的SQL时，数据系统权限限制时，根据条件变化的SQL时。存储过程等使用场景。Hibernate十分不便。而性能又难以通过SQL来优化。所以Hibernate一般只适用于场景不太复杂的、性能要求不太苛刻的时候使用。</p>
+<p>​    MyBatis 是一个灵活的、可以动态生成映射关系的框架，它几物可以替代JDBC。拥有动态列、动态表名，存储过程都支持。同时提供了简易的缓存（如(默认)一级缓存，还有二级缓存）、日志、级联。但是它的缺陷是需要你提供映射规则和SQL，所以它的开发工作量一般要比Hibernate略大一些。</p>
+<p>​    总结。你需要根据你的项目的实际情况去选择框架。MyBatis具有高度灵活、可优化、易维护等特点,所以目前还是myBatis比较合适我们。</p>
+<h3 id="JDBC-Mybatis性能比较（无事务）"><a href="#JDBC-Mybatis性能比较（无事务）" class="headerlink" title="JDBC,Mybatis性能比较（无事务）"></a>JDBC,Mybatis性能比较（无事务）</h3><ul>
+<li><strong>测试向本机的数据库插入数据</strong></li>
+</ul>
+<p><strong>JDBC：批量操作</strong></p>
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>210</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>551</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>1963</td>
+</tr>
+</tbody></table>
+<p><strong>MyBatis：</strong></p>
+<ol>
+<li>批量处理（SQL拼接）代码如下</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">     Map&lt;String,Object&gt; param &#x3D; Maps.newHashMap();</span><br><span class="line">        param.put(&quot;recordList&quot;, recordList);</span><br><span class="line">        recordDao.insertList(param);复制代码</span><br><span class="line">&lt;insert id&#x3D;&quot;insertList&quot; parameterType&#x3D;&quot;java.util.Map&quot;&gt;</span><br><span class="line">        insert into test</span><br><span class="line">        (aa,bb,cc,dd,ee,ff,gg,hh,ii)</span><br><span class="line">        values</span><br><span class="line">        &lt;foreach collection&#x3D;&quot;recordList&quot; item&#x3D;&quot;recordList&quot; open&#x3D;&quot;&quot; close&#x3D;&quot;&quot;</span><br><span class="line">                 separator&#x3D;&quot;,&quot;&gt;</span><br><span class="line">            (</span><br><span class="line">            null,</span><br><span class="line">            #&#123;recordList.aa,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.bb,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.cc,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.dd,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ee,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ff,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.gg,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.hh,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ii,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            )</span><br><span class="line">        &lt;&#x2F;foreach&gt;</span><br><span class="line">        ;</span><br><span class="line">    &lt;&#x2F;insert&gt;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>414</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>1035</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>4899</td>
+</tr>
+</tbody></table>
+<ol start="2">
+<li>for 循环插入，一条条的执行插入</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>9624</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>102275</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>1183339</td>
+</tr>
+</tbody></table>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5d5cf777e51d45621320311b" target="_blank" rel="noopener">传统JDBC与ORM框架之间的性能比较</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/16/HTTP%20%E7%8A%B6%E6%80%81%E7%A0%81%E8%AF%A6%E8%A7%A3%E4%B8%8E%E9%80%89%E7%94%A8/" rel="prev" title="HTTP 状态码详解与选用">
+      <i class="fa fa-chevron-left"></i> HTTP 状态码详解与选用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/16/%E4%BA%92%E6%96%A5%E9%94%81mutex%E7%9A%84%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/" rel="next" title="互斥锁mutex的简单实现">
+      互斥锁mutex的简单实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#JDBC介绍"><span class="nav-number">1.</span> <span class="nav-text">JDBC介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ORM介绍"><span class="nav-number">2.</span> <span class="nav-text">ORM介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JDBC-Mybatis性能比较（无事务）"><span class="nav-number">3.</span> <span class="nav-text">JDBC,Mybatis性能比较（无事务）</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">154</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">475k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
