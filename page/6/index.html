@@ -186,6 +186,339 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/" class="post-title-link" itemprop="url">通过HashMap认识equals与hashcode</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 12:17:27 / 修改时间：20:19:37" itemprop="dateCreated datePublished" datetime="2020-06-05T12:17:27+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载 <a href="https://www.jianshu.com/p/56e793643d8f" target="_blank" rel="noopener">原文链接</a></p>
+<h2 id="什么是hashcode-hashcode的作用是什么"><a href="#什么是hashcode-hashcode的作用是什么" class="headerlink" title="什么是hashcode,hashcode的作用是什么"></a>什么是hashcode,hashcode的作用是什么</h2><p>hashcode并不是java中独有的。设想一下，如果让你设计一个算法，根据关键码去得到一个集合中的某个值或者这个关键码所在的位置。普通的做法就是挨个比较，高级一点的使用二分检索或者树形检索等算法。但是以上的检索算法都跟集合的长度N有关，当问题规模N很大时，这些检索的效率可能十分低下。</p>
+<p>理想的情况是，根据关键码，我们就可以定位记录所在的位置，而不用去挨个进行比较。也就是说，在关键码与记录存放的位置之间做一种映射。这个映射的方法就是hash(哈希)函数，或者叫散列函数，也就是java中的hashCode()方法，他所返回的值就是hashcode，根据hashcode可以找到记录的位置。</p>
+<p>按照散列的存储方式构造的存储结构叫做散列表。散列表中的一个位置称之为一个槽。</p>
+<p>hashCode()方法存在于java.lang.Object类当中，任何类都可以继承修改这个方法。hashCode()方法返回调用它的实例的hashCode值，是个int值。</p>
+<p>注：以下代码均来自jdk1.7</p>
+<p>String中hashCode()方法的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hash;</span><br><span class="line">        <span class="keyword">if</span> (h == <span class="number">0</span> &amp;&amp; value.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">char</span> val[] = value;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; value.length; i++) &#123;</span><br><span class="line">                h = <span class="number">31</span> * h + val[i];</span><br><span class="line">            &#125;</span><br><span class="line">            hash = h;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> h;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="什么是equals-Object-obj-方法"><a href="#什么是equals-Object-obj-方法" class="headerlink" title="什么是equals(Object obj)方法"></a>什么是equals(Object obj)方法</h2><p>equals(Object obj)方法同样来自Object类。在Object类中，他是这样实现的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，默认的equals(Object obj)方法直接将要比较的两个对象的内存地址进行了比较，一致则返回true。</p>
+<p>这个方法主要用来实现两个对象间的比较，确认他们在逻辑上是否相等。我们同样可以实现自己的equals(Object obj)方法。</p>
+<p>String中equals(Object obj)方法的实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            String anotherString = (String) anObject;</span><br><span class="line">            <span class="keyword">int</span> n = value.length;</span><br><span class="line">            <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">                <span class="keyword">char</span> v1[] = value;</span><br><span class="line">                <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="在java中hashcode方法与equals方法的作用"><a href="#在java中hashcode方法与equals方法的作用" class="headerlink" title="在java中hashcode方法与equals方法的作用"></a>在java中hashcode方法与equals方法的作用</h2><p>首先看一下HashMap中的put方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">put</span><span class="params">(K key, V value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (table == EMPTY_TABLE) &#123;</span><br><span class="line">            inflateTable(threshold);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (key == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">return</span> putForNullKey(value);</span><br><span class="line">        <span class="keyword">int</span> hash = hash(key);<span class="comment">//得到hash值</span></span><br><span class="line">        <span class="keyword">int</span> i = indexFor(hash, table.length);<span class="comment">//找到槽</span></span><br><span class="line">        <span class="keyword">for</span> (Entry&lt;K,V&gt; e = table[i]; e != <span class="keyword">null</span>; e = e.next) &#123;</span><br><span class="line">            Object k;</span><br><span class="line">            <span class="keyword">if</span> (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) &#123;</span><br><span class="line">                V oldValue = e.value;</span><br><span class="line">                e.value = value;</span><br><span class="line">                e.recordAccess(<span class="keyword">this</span>);</span><br><span class="line">                <span class="keyword">return</span> oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        modCount++;</span><br><span class="line">        addEntry(hash, key, value, i);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们从 int hash = hash(key); 这一行看起，这行起才是put方法的核心。</p>
+<p>首先 int hash = hash(key); key就是我们之前提到的关键码，我们看看HashMap中的这个hash方法做了些什么：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object k)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hashSeed;</span><br><span class="line">        <span class="keyword">if</span> (<span class="number">0</span> != h &amp;&amp; k <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        h ^= k.hashCode();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// This function ensures that hashCodes that differ only by</span></span><br><span class="line">        <span class="comment">// constant multiples at each bit position have a bounded</span></span><br><span class="line">        <span class="comment">// number of collisions (approximately 8 at default load factor).</span></span><br><span class="line">        h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line">        <span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，这个方法里调用了key本身的hashCode方法，得到了key的hashcode，然后对该hashcode进行了一些移位操作，最终返回操作后的int值。返回的这个值就是HashMap要用到的hashcode值，通过他可以找到记录所在的位置。那么现在有一个问题：为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？可以直接使用key的hashcode的呀，这样做看起来不是多此一举吗？</p>
+<p>其实这样做的目的是为下面的函数做准备的，我们看接下来要执行的代码：</p>
+<p><code>int i = indexFor(hash, table.length);</code>找到所谓的槽，也就是记录存在的位置。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Returns index for hash code h.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">indexFor</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">     <span class="comment">// assert Integer.bitCount(length) == 1 : "length must be a non-zero power of 2";</span></span><br><span class="line">    <span class="keyword">return</span> h &amp; (length<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，indexFor(int h, int length)如何通过hashcode得到记录的位置。indexFor方法内部是一个取模运算，h是我们通过上面的hash方法得到的，length是散列表的长度。HashMap中的散列表是一个数组，通过取模运算能保证indexFor方法的返回值(记录的位置)一定在这个数组内，没有超过其长度。因为h往往是一个很大的数字(int可以表示40亿这么大的数字)，而散列表的初始长度是可以由我们指定的(默认是16),另一方面，就算给他这么大的数组，内存也是放不下的。所以取模运算是必须的。经过取模运算得到的才是真正的槽值。</p>
+<p>回到上一个问题，<strong>为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？而不是直接使用key的hashcode的</strong>？</p>
+<p>想明白这个问题，参考<a href="https://link.jianshu.com?t=https://www.zhihu.com/question/20733617" target="_blank" rel="noopener">JDK 源码中 HashMap 的 hash 方法原理是什么？</a>。我们上面也说了这样做的目的是为indexFor方法做准备的，总的来说就是为了让取模运算不会出现一种极端情况：<strong>大量的不同的h经过取模后返回同样的槽值</strong>。这样会带来严重的性能问题，也就是严重的冲突情况导致性能下降。关于冲突，看下文。</p>
+<p>要理解接下来的代码，我们就需要知道哈希算法的另一个概念：冲突。</p>
+<p>散列函数可能对于不相等的关键码计算出相同的hashcode，该现象称为冲突。怎么理解呢？</p>
+<p>比如我们有这样一个串abcd，我们给出这样一个散列函数：将每一个字符的ascii值加起来除以字符的个数，得到他们的平均值就是这个串的hashcode。那么，可以保证没有其他的串经过这样的算法得到相同的hashcode吗？也就是说，无限多的元素通过散列函数映射到有穷集合上，一定会产生冲突。这也是我们理解hashcode的一个重要的点：<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。</p>
+<p>那么，产生冲突怎么办呢？产生冲突之后，不同的对象在散列表中找到了相同的位置，为了解决这个问题，我们将这个槽中的内容设计成一个链表，当产生冲突的时候，就将新的元素放到链表中，他看起来是这样的：</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/5555632-b4a42ccffa5bf44f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/580/format/webp" alt="img"></p>
+<p>其中：A，B，C分别为三条记录，他们就是产生冲突的三条记录。1,2,3….为散列表的索引位置。</p>
+<p>接下来的代码  <code>for (Entry e = table[i]; e != null; e = e.next)</code>就容易理解了。找到记录所对应的槽之后，遍历这个链表直到找到与关键码相同的位置(可能之前已经有以这个关键码为key的value插入)。如果遍历完链表还没有找到这样的值，说明还不存在此关键码对应的记录，直接插入即可：<code>addEntry(hash, key, value, i);</code>.</p>
+<p>那么，怎么判断两个关键码在逻辑上是否相同呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if (e.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; e.key) &#x3D;&#x3D; key || key.equals(k)))</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，首先判断关键码的hashcode与链表记录的关键码hashcode是否相同：·<code>e.hash == hash</code>。为什么要加这样的判断？回头看看indexFor方法，经过取模运算后，不同的hashcode可以被散列在同一个槽中。通过这句代码可以将那些因为取模运算散列到同一个槽里的不同对象排除。</p>
+<p>我们知道<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。相同的对象hashcode也必须相等吗？试想一下，如果两个对象相同，但是他们的hashcode不同，那么这两个对象很有可能被散列在不同的槽里，造成了同一个对象重复存储的问题。所以，我们又得出一个重要结论：<strong>相同的对象(equals返回true)hashcode一定相等</strong>。</p>
+<p><code>e.hash == hash &amp;&amp; ((k = e.key) == key</code>：这段代码首先判断hashcode是否相等，然后判断关键码是否相等。注意，是判断<strong>关键码是否相等</strong>，直接比较内存地址，如果满足以上条件，那么可以断定两个关键码相同，是我们要找的记录。</p>
+<p><code>key.equals(k)</code>：如果上述两个条件没有满足，并不能够断定这两个关键码相等，此刻要使用equals方法判断这两个关键码是否相同。如果相同，说明是我们要找的记录。</p>
+<p><code>if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k)))</code>这句代码中其实包含了一种短路思想，|| 之前的判断如果生效，那么之后的key.equals(k)就不会再执行。很明显内存地址的比较要比equals方法高效的多。这也是Hashmap提高查找效率的一个重要手段。</p>
+<p>至此，我们应该对equals和hashcode有了一个相对清晰的认识：hashcode提高了查找指定对象的效率。euqals定义了两个对象之间是否在逻辑上相同。hashcode只在HashMap，HashSet等这样使用了散列思想的地方用到，而equals在判断两个对象之间是否相同时需要用到，比如排序等。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过上面的分析，我们知道了hashcode与equals的几个关键：</p>
+<h4 id="1-不同的对象-equals返回false-可以有相同的hashcode"><a href="#1-不同的对象-equals返回false-可以有相同的hashcode" class="headerlink" title="1.不同的对象(equals返回false)可以有相同的hashcode"></a>1.<strong>不同的对象(equals返回false)可以有相同的hashcode</strong></h4><h4 id="2-相同的对象-equals返回true-hashcode一定相等"><a href="#2-相同的对象-equals返回true-hashcode一定相等" class="headerlink" title="2.相同的对象(equals返回true)hashcode一定相等"></a>2.<strong>相同的对象(equals返回true)hashcode一定相等</strong></h4><h4 id="3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"><a href="#3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）" class="headerlink" title="3.若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"></a>3.<strong>若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义</strong>（对1、2的遵守）</h4><p><a href="https://link.jianshu.com?t=http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java" target="_blank" rel="noopener">关于如何重写equals方法与hashCode方法</a></p>
+<h2 id="equals与"><a href="#equals与" class="headerlink" title="equals与=="></a>equals与==</h2><p>“==” 比较的是两个对象的内存地址，是物理意义上的相等</p>
+<p>equals比较的是两个对象逻辑意义上的相等，是逻辑意义上的相等</p>
+<p>两个对象进行比较：</p>
+<p><strong>== 返回true，则equals一定返回true</strong>；</p>
+<p><strong>equals返回true，== 不一定返回true</strong>。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/sleep()%EF%BC%8Cwait()%EF%BC%8Cyield()%E5%92%8Cjoin()%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/05/sleep()%EF%BC%8Cwait()%EF%BC%8Cyield()%E5%92%8Cjoin()%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">sleep()，wait()，yield()和join()方法的区别</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 11:37:59 / 修改时间：19:46:25" itemprop="dateCreated datePublished" datetime="2020-06-05T11:37:59+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="sleep"><a href="#sleep" class="headerlink" title="sleep()"></a>sleep()</h2><p>​    sleep()方法需要<strong>指定等待的时间</strong>，它可以让当前正在执行的线程在指定的时间内暂停执行，进入阻塞状态.</p>
+<p>​    该方法既可以让其他同优先级或者高优先级的线程得到执行的机会，也可以让低优先级的线程得到执行机会。但是sleep()方法<strong>不会释放“锁标志”</strong>，也就是说如果有synchronized同步块，其他线程仍然不能访问共享数据。
+　　</p>
+<h2 id="wait"><a href="#wait" class="headerlink" title="wait()"></a>wait()</h2><p>　　wait()方法需要和<code>notify()</code>及<code>notifyAll()</code>两个方法一起介绍，这三个方法用于协调多个线程对共享数据的存取，所以必须在synchronized语句块内使用，也就是说，调用<code>wait()</code>，<code>notify()</code>和<code>notifyAll()</code>的任务在调用这些方法前必须拥有对象的锁。注意，它们都是Object类的方法，而不是Thread类的方法。<br>　　<code>wait()</code>方法与<code>sleep()</code>方法的不同之处在于，<code>wait()</code>方法<strong>会释放对象的“锁标志”</strong>。当调用某一对象的<code>wait()</code>方法后，会使当前线程暂停执行，并<strong>将当前线程放入对象等待池中</strong>，直到调用了<code>notify()</code>方法后，将从对象等待池中<strong>移出任意一个线程</strong>并放入锁标志等待池中，只有<strong>锁标志等待池中的线程可以获取锁标志，它们随时准备争夺锁的拥有权。</strong>当调用了某个对象的<code>notifyAll()</code>方法，会<strong>将对象等待池中的所有线程</strong>都移动到该对象的锁标志等待池。<br>　　除了使用<code>notify()</code>和<code>notifyAll()</code>方法，还可以使用带毫秒参数的<code>wait(long timeout)</code>方法，效果是<strong>在延迟timeout毫秒后，被暂停的线程将被恢复到锁标志等待池。</strong><br>　　此外，<code>wait()</code>，<code>notify()</code>及<code>notifyAll()</code>只能在<code>synchronized</code>语句中使用，但是如果使用的是<code>ReenTrantLock</code>实现同步，该如何达到这三个方法的效果呢？解决方法是使用<code>ReenTrantLock.newCondition()</code>获取一个<code>Condition</code>类对象，然后<code>Condition</code>的<code>await()</code>，<code>signal()</code>以及<code>signalAll()</code>分别对应上面的三个方法。</p>
+<h2 id="yield"><a href="#yield" class="headerlink" title="yield()"></a>yield()</h2><p>　　<code>yield()</code>方法和<code>sleep()</code>方法类似，也<strong>不会释放“锁标志”</strong>，区别在于，它没有参数，即<code>yield()</code>方法只是<strong>使当前线程重新回到可执行状态</strong>，所以执行<code>yield()</code>的线程有可能在进入到可执行状态后马上又被执行，另外<strong>yield()方法只能使同优先级或者高优先级的线程得到执行机会</strong>，这也和sleep()方法不同。</p>
+<h2 id="join"><a href="#join" class="headerlink" title="join()"></a>join()</h2><p>　　<code>join()</code>方法会使当前线程<strong>等待调用join()方法的线程结束</strong>后才能继续执行</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/" class="post-title-link" itemprop="url">Object类的方法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-05 11:26:02 / 修改时间：20:28:33" itemprop="dateCreated datePublished" datetime="2020-06-05T11:26:02+08:00">2020-06-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Object有几种方法呢？</p>
+<blockquote>
+<p>Java语言是一种单继承结构语言，Java中所有的类都有一个共同的祖先。这个祖先就是Object类。</p>
+<p>如果一个类没有用extends明确指出继承于某个类，那么它默认继承Object类。</p>
+</blockquote>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>Object类是Java中所有类的基类。位于java.lang包中，一共有13个方法。如下图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XC97BDOiblPU3PjicVfd5IIXibJr1EPadLZ2U28FVeSfBEpDhmYwHHiceviaxzZvOZX99Z8BZWehcSiaupA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="具体解答"><a href="#具体解答" class="headerlink" title="具体解答"></a>具体解答</h2><h3 id="1-Object"><a href="#1-Object" class="headerlink" title="1.Object()"></a>1.Object()</h3><p>这个没什么可说的，Object类的构造方法。(非重点)</p>
+<h3 id="2-registerNatives"><a href="#2-registerNatives" class="headerlink" title="2.registerNatives()"></a>2.registerNatives()</h3><p>为了使JVM发现本机功能，他们被一定的方式命名。例如，对于java.lang.Object.registerNatives，对应的C函数命名为Java_java_lang_Object_registerNatives。</p>
+<p>通过使用registerNatives（或者更确切地说，JNI函数RegisterNatives），可以命名任何你想要你的C函数。(非重点)</p>
+<h3 id="3-clone"><a href="#3-clone" class="headerlink" title="3.clone()"></a>3.clone()</h3><p>clone()函数的用途是用来另存一个当前存在的对象。只有实现了Cloneable接口才可以调用该方法，否则抛出CloneNotSupportedException异常。（注意：回答这里时可能会引出设计模式的提问）</p>
+<h3 id="4-getClass"><a href="#4-getClass" class="headerlink" title="4.getClass()"></a>4.getClass()</h3><p>final方法，用于获得运行时的类型。该方法返回的是此Object对象的类对象/运行时类对象Class。效果与Object.class相同。（注意：回答这里时可能会引出类加载，反射等知识点的提问）</p>
+<h3 id="5-equals"><a href="#5-equals" class="headerlink" title="5.equals()"></a>5.equals()</h3><p>equals用来比较两个对象的内容是否相等。默认情况下(继承自Object类)，equals和==是一样的，除非被覆写(override)了。（注意：这里可能引出更常问的“equals与==的区别”及hashmap实现原理的提问）</p>
+<h3 id="6-hashCode"><a href="#6-hashCode" class="headerlink" title="6.hashCode()"></a>6.hashCode()</h3><p>该方法用来返回其所在对象的物理地址（哈希码值），常会和equals方法同时重写，确保相等的两个对象拥有相等的hashCode。（同样，可能引出hashmap实现原理的提问）</p>
+<h3 id="7-toString"><a href="#7-toString" class="headerlink" title="7.toString()"></a>7.toString()</h3><p>toString()方法返回该对象的字符串表示，这个方法没什么可说的。</p>
+<h3 id="8-wait"><a href="#8-wait" class="headerlink" title="8.wait()"></a>8.wait()</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="9-wait-long-timeout"><a href="#9-wait-long-timeout" class="headerlink" title="9.wait(long timeout)"></a>9.wait(long timeout)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者超过指定的时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="10-wait-long-timeout-int-nanos"><a href="#10-wait-long-timeout-int-nanos" class="headerlink" title="10.wait(long timeout, int nanos)"></a>10.wait(long timeout, int nanos)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者其他某个线程中断当前线程，或者已超过某个实际时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
+<h3 id="11-notify"><a href="#11-notify" class="headerlink" title="11.notify()"></a>11.notify()</h3><p>唤醒在此对象监视器上等待的单个线程。（引出线程通信的提问）</p>
+<h3 id="12-notifyAll"><a href="#12-notifyAll" class="headerlink" title="12. notifyAll()"></a>12. notifyAll()</h3><p>唤醒在此对象监视器上等待的所有线程。（引出线程通信的提问）</p>
+<h3 id="13-finalize"><a href="#13-finalize" class="headerlink" title="13.finalize()"></a>13.finalize()</h3><p>当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法。（非重点，但小心引出垃圾回收的提问）</p>
+<h2 id="引申常见问题"><a href="#引申常见问题" class="headerlink" title="引申常见问题"></a>引申常见问题</h2><ul>
+<li>equals() 与 == 的区别是什么？</li>
+<li>hashCode() 和 equals() 之间有什么联系？</li>
+<li>wait()方法与sleep()方法的区别</li>
+<li>为什么重写了equals就必须重写hashCode</li>
+<li>HashMap的实现原理</li>
+<li>谈谈类加载机制</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1336,318 +1669,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/04/%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/04/%E5%AF%B9%E7%A7%B0%E7%9A%84%E4%BA%8C%E5%8F%89%E6%A0%91/" class="post-title-link" itemprop="url">对称的二叉树</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 02:14:25 / 修改时间：10:45:59" itemprop="dateCreated datePublished" datetime="2020-06-05T02:14:25+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>请实现一个函数，用来判断一颗二叉树是不是对称的。注意，如果一个二叉树同此二叉树的镜像是同样的，定义其为对称的。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>递归判断,还可以更简洁</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">isSymmetrical</span><span class="params">(TreeNode pRoot)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (pRoot == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (isSame(pRoot.left, pRoot.right)) &#123;</span><br><span class="line">        <span class="keyword">return</span> judgeSymmetrical(pRoot.left, pRoot.right);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">judgeSymmetrical</span><span class="params">(TreeNode leftNode, TreeNode rightNode)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (leftNode == <span class="keyword">null</span> &amp;&amp; rightNode == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (isSame(leftNode.left, rightNode.right) &amp;&amp; isSame(leftNode.right, rightNode.left)) &#123;</span><br><span class="line">            <span class="keyword">return</span> judgeSymmetrical(leftNode.left, rightNode.right) &amp;&amp; judgeSymmetrical(leftNode.right, rightNode.left);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">isSame</span><span class="params">(TreeNode node1, TreeNode node2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (node1 == <span class="keyword">null</span> &amp;&amp; node2 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (node1 != <span class="keyword">null</span> &amp;&amp; node2 != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (node1.val == node2.val) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/ff05d44dfdb04e1d83bdbdab320efbcb?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/ff05d44dfdb04e1d83bdbdab320efbcb?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="方法：递归"><a href="#方法：递归" class="headerlink" title="方法：递归"></a>方法：递归</h2><p>如图<br><img src="https://uploadfiles.nowcoder.com/images/20200506/284295_1588747824270_AF837BEBDDD3BDB7B0D96A05FFDE86DD" alt=" "><br>根据上图可知：若满足对称二叉树，必须满足：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. L-&gt;val &#x3D;&#x3D; R-&gt;val</span><br><span class="line">2. L-&gt;left-&gt;val &#x3D;&#x3D; R-&gt;right-&gt;val</span><br><span class="line">3. L-&gt;right-&gt;val &#x3D;&#x3D; R-&gt;left-&gt;val</span><br></pre></td></tr></table></figure>
-
-<p>因此可以自顶向下，递归求解即可。</p>
-<ol>
-<li>设置一个递归函数<code>isSame(r1, r2)</code>,表示如果对称，返回<code>true</code>，否则返回<code>false</code> </li>
-<li>递归终止条件：<code>r1==nullptr &amp;&amp; r2==nulllptr</code>, 直接返回<code>true</code>，否则，如果只有一个为<code>nullptr</code>，返回<code>false</code> </li>
-<li>下一步递归：如果<code>r1-&gt;val == r2-&gt;val, 则isSame(root1-&gt;left, root2-&gt;right) &amp;&amp; isSame(root1-&gt;right, root2-&gt;left);</code> </li>
-</ol>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">isSame</span><span class="params">(TreeNode *root1, TreeNode *root2)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!root1 &amp;&amp; !root2) <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (!root1 || !root2) <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        <span class="keyword">return</span> root1-&gt;val == root2-&gt;val &amp;&amp; </span><br><span class="line">        isSame(root1-&gt;left, root2-&gt;right) &amp;&amp;</span><br><span class="line">        isSame(root1-&gt;right, root2-&gt;left);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">isSymmetrical</span><span class="params">(TreeNode* pRoot)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> isSame(pRoot, pRoot);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度：O(N),最坏情况下，二叉树退化为链表</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/04/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E4%B8%8B%E4%B8%80%E4%B8%AA%E7%BB%93%E7%82%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/04/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E4%B8%8B%E4%B8%80%E4%B8%AA%E7%BB%93%E7%82%B9/" class="post-title-link" itemprop="url">二叉树的下一个结点</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 01:02:39 / 修改时间：10:13:49" itemprop="dateCreated datePublished" datetime="2020-06-05T01:02:39+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给定一个二叉树和其中的一个结点，请找出中序遍历顺序的下一个结点并且返回。注意，树中的结点不仅包含左右子结点，同时包含指向父结点的指针。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>分情况判断</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TreeLinkNode <span class="title">GetNext</span><span class="params">(TreeLinkNode pNode)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (pNode == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (pNode.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">        TreeLinkNode tmp = pNode.right;</span><br><span class="line">        <span class="keyword">while</span> (tmp.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">            tmp = tmp.left;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> tmp;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;<span class="comment">//pNode.right == null</span></span><br><span class="line">        <span class="keyword">if</span> (pNode.next == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (pNode.next.left == pNode) &#123;<span class="comment">//pNode is left child</span></span><br><span class="line">            <span class="keyword">return</span> pNode.next;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;<span class="comment">//pNode is right child</span></span><br><span class="line">            TreeLinkNode tmp = pNode.next;</span><br><span class="line">            <span class="keyword">while</span> (tmp.next.left != tmp) &#123;<span class="comment">//find first left child</span></span><br><span class="line">                tmp = tmp.next;</span><br><span class="line">                <span class="keyword">if</span> (tmp.next == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> tmp.next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/9023a0c988684a53960365b889ceaf5e?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/9023a0c988684a53960365b889ceaf5e?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>题目描述：给你一颗二叉树的一个结点，返回中序遍历顺序中这个结点的下一结点。二叉树不仅有左右孩子指针，还有指向父亲结点的指针。</p>
-<p>Q1：首先问你一个问题，如果这道题出现在笔试题中，你会用什么方法做？如果出现在面试题中呢？<br>A1：我想你肯定有点疑惑，同一道题为什么还分出现在笔试题中还是面试题中呢？很显然，笔试题中只要能过就好，设计的算法丑点，慢点也无所畏，不一定需要最优解法，当然前提是能够通过。而面试中就不一样了，显然面试官希望听到最优解法。</p>
-<h2 id="方法一：暴力解法"><a href="#方法一：暴力解法" class="headerlink" title="方法一：暴力解法"></a>方法一：暴力解法</h2><p>如果在笔试题中看到这道题，直接模拟题意就好了。题意需要找到某个结点中序遍历的下一个结点，那我们的做法很显然可以这样：</p>
-<ol>
-<li>根据给出的结点求出整棵树的根节点 </li>
-<li>根据根节点递归求出树的中序遍历，存入vector </li>
-<li>在vector中查找当前结点，则当前结点的下一结点即为所求。 </li>
-</ol>
-<p>虽然有点暴力，但是时间复杂度也是线性的，第一步：最坏为O(N), N为整棵树结点的个数。第二步：O(N), 第三步：最坏为O(N),<br>所以整的时间复杂度：3*O(N)</p>
-<p>时间复杂度还可以接受，关键是思路好想并且每一步的代码都很简单。<br>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">pre_order</span><span class="params">(TreeLinkNode *root, <span class="built_in">vector</span>&lt;TreeLinkNode*&gt; &amp;v)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!root) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        pre_order(root-&gt;left, v);</span><br><span class="line">        v.push_back(root);</span><br><span class="line">        pre_order(root-&gt;right, v);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">TreeLinkNode* <span class="title">GetNext</span><span class="params">(TreeLinkNode* pNode)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">          TreeLinkNode *root = <span class="literal">nullptr</span>;</span><br><span class="line">          TreeLinkNode *tmp = pNode;</span><br><span class="line">          <span class="comment">// 第一步</span></span><br><span class="line">          <span class="keyword">while</span> (tmp) &#123;</span><br><span class="line">              root = tmp;</span><br><span class="line">              tmp = tmp-&gt;next;</span><br><span class="line">          &#125;   </span><br><span class="line"></span><br><span class="line">          <span class="built_in">vector</span>&lt;TreeLinkNode*&gt; v;</span><br><span class="line">          <span class="comment">// 第二步</span></span><br><span class="line">          pre_order(root, v);</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 第三步</span></span><br><span class="line">          <span class="keyword">int</span> n = v.<span class="built_in">size</span>();</span><br><span class="line">          <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">              <span class="keyword">if</span> (v[i] == pNode &amp;&amp; i + <span class="number">1</span> != n) &#123;</span><br><span class="line">                  <span class="keyword">return</span> v[i+<span class="number">1</span>];</span><br><span class="line">              &#125; </span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度：O(N)</p>
-<h2 id="方法二：最优解法"><a href="#方法二：最优解法" class="headerlink" title="方法二：最优解法"></a>方法二：最优解法</h2><p>但是，如果在面试中，方法一肯定上不了台面。但是最优解法该怎么去想呢？想不出来就画图分析，举个中序遍历的图：如下：</p>
-<p><img src="https://uploadfiles.nowcoder.com/images/20200526/284295_1590477193692_99D648423BB3F2113395149399A1462A" alt="图片说明"><br>红色数字是中序遍历的顺序。接下来，我们就假设，如果当前结点分别是1,2 … 7，下一结点看有什么规律没？</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> =&gt; <span class="number">2</span> <span class="comment">// 显然下一结点是 1 的父亲结点</span></span><br><span class="line"><span class="number">2</span> =&gt; <span class="number">3</span> <span class="comment">// 下一节点是当前结点右孩子的左孩子结点，其实你也应该想到了，应该是一直到左孩子为空的那个结点</span></span><br><span class="line"><span class="number">3</span> =&gt; <span class="number">4</span> <span class="comment">// 跟 2 的情况相似，当前结点右孩子结点的左孩子为空的那个结点</span></span><br><span class="line"><span class="number">4</span> =&gt; <span class="number">5</span> <span class="comment">// 5 是父亲结点 3 的父亲结点，发现和1有点像，因为 1，3,同样是父亲结点的左孩子</span></span><br><span class="line"><span class="number">5</span> =&gt; <span class="number">6</span> <span class="comment">// 跟 4=&gt;5 一样的道理</span></span><br><span class="line"><span class="number">6</span> =&gt; <span class="number">7</span> <span class="comment">// 跟 3=&gt;4 一样的道理</span></span><br><span class="line"><span class="number">7</span> =&gt; null <span class="comment">// 因为属于最尾结点</span></span><br></pre></td></tr></table></figure>
-
-<p>此时，可以总结一下：<br>[1] 是一类：特点：当前结点是父亲结点的左孩子<br>[2 3 6] 是一类，特点：当前结点右孩子结点，那么下一节点就是：右孩子结点的最左孩子结点,如果右孩子结点没有左孩子就是自己<br>[4 5]是一类，特点：当前结点为父亲结点的右孩子结点，本质还是[1]那一类<br>[7]是一类，特点：最尾结点</p>
-<p>我写的可能不够清晰，但是，思想你要明白，当遇到不会的题，可以根据题意画图，分析，分析方法是关键。<br>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function">TreeLinkNode* <span class="title">GetNext</span><span class="params">(TreeLinkNode* pNode)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!pNode) &#123;</span><br><span class="line">            <span class="keyword">return</span> pNode;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 属于[2 3 6]类</span></span><br><span class="line">        <span class="keyword">if</span> (pNode-&gt;right) &#123;</span><br><span class="line">            pNode = pNode-&gt;right;</span><br><span class="line">            <span class="keyword">while</span> (pNode-&gt;left) &#123;</span><br><span class="line">                pNode = pNode-&gt;left;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> pNode;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 属于 [1] 和 [4 5]</span></span><br><span class="line">        <span class="keyword">while</span> (pNode-&gt;next) &#123;</span><br><span class="line">            TreeLinkNode *root = pNode-&gt;next;</span><br><span class="line">            <span class="keyword">if</span> (root-&gt;left == pNode) &#123;</span><br><span class="line">                <span class="keyword">return</span> root;</span><br><span class="line">            &#125;</span><br><span class="line">            pNode = pNode-&gt;next;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 属于[7]</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：最坏情况下为O(N)<br>空间复杂度：O(1)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/03/%E8%A1%A8%E7%A4%BA%E6%95%B0%E5%80%BC%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/03/%E8%A1%A8%E7%A4%BA%E6%95%B0%E5%80%BC%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2/" class="post-title-link" itemprop="url">表示数值的字符串</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-04 03:38:19 / 修改时间：15:00:44" itemprop="dateCreated datePublished" datetime="2020-06-04T03:38:19+08:00">2020-06-04</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>请实现一个函数用来判断字符串是否表示数值（包括整数和小数）。例如，字符串”+100”,”5e2”,”-123”,”3.1416”和”-1E-16”都表示数值。 但是”12e”,”1a3.14”,”1.2.3”,”+-5”和”12e+4.3”都不是。</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>结合正则表达式</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">    String s = <span class="keyword">new</span> String(str);</span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"+"</span>) || s.startsWith(<span class="string">"-"</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (s.matches(<span class="string">"[0-9]+.*"</span>)) &#123;</span><br><span class="line">        s = s.replaceFirst(<span class="string">"[0-9]+"</span>, <span class="string">""</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="string">""</span>.equals(s)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"."</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (!s.matches(<span class="string">"[0-9]+.*"</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        s = s.replaceFirst(<span class="string">"[0-9]+"</span>, <span class="string">""</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (<span class="string">""</span>.equals(s)) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (s.startsWith(<span class="string">"e"</span>) || s.startsWith(<span class="string">"E"</span>)) &#123;</span><br><span class="line">        s = s.substring(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (s.startsWith(<span class="string">"+"</span>) || s.startsWith(<span class="string">"-"</span>)) &#123;</span><br><span class="line">            s = s.substring(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!s.matches(<span class="string">"[0-9]+"</span>)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我不服,也写了个正则表达式,好像也能通过</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">    String pattern = <span class="string">"[+-]?\\d*(\\.\\d+)?([eE][+-]?\\d+)?"</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> String(str).matches(pattern);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/6f8c901d091949a5837e24bb82a731f2?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/6f8c901d091949a5837e24bb82a731f2?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<p>来玩正则表达式吧！~</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.regex.Pattern;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isNumeric</span><span class="params">(<span class="keyword">char</span>[] str)</span> </span>&#123;</span><br><span class="line">        String pattern = <span class="string">"^[-+]?\\d*(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?$"</span>;</span><br><span class="line">        String s = <span class="keyword">new</span> String(str);</span><br><span class="line">        <span class="keyword">return</span> Pattern.matches(pattern,s);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p> ^ 和 美元符号框定正则表达式，它指引这个正则表达式对文本中的所有字符都进行匹配。如果省略这些标识，那么只要一个字符串中包含一个数字这个正则表达式就会进行匹配。如果仅包含 ^ ，它将匹配以一个数字开头的字符串。如果仅包含$ ，则匹配以一个数字结尾的字符串。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[-+]?</span><br></pre></td></tr></table></figure>
-
-<p>正负号后面的 ? 后缀表示这个负号是可选的,表示有0到1个负号或者正号</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">\\d*</span><br></pre></td></tr></table></figure>
-
-<p>\d的含义和[0-9]一样。它匹配一个数字。后缀 * 指引它可匹配零个或者多个数字。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(?:\\.\\d*)?</span><br></pre></td></tr></table></figure>
-
-<p>(?: …)?表示一个可选的非捕获型分组。* 指引这个分组会匹配后面跟随的0个或者多个数字的小数点。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(?:[eE][+\\-]?\d+)?</span><br></pre></td></tr></table></figure>
-
-<p>这是另外一个可选的非捕获型分组。它会匹配一个e(或E)、一个可选的正负号以及一个或多个数字。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1719,7 +1740,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">154</span>
+          <span class="site-state-item-count">157</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1775,7 +1796,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">475k</span>
+    <span title="站点总字数">479k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
