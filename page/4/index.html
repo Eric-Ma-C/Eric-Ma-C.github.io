@@ -186,6 +186,865 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/UML%E7%B1%BB%E5%9B%BE%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/11/UML%E7%B1%BB%E5%9B%BE%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">UML类图简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-12 03:20:13 / 修改时间：11:23:31" itemprop="dateCreated datePublished" datetime="2020-06-12T03:20:13+08:00">2020-06-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这里不会将UML的各种元素都提到，我只想讲讲类图中各个类之间的关系； 能看懂类图中各个类之间的线条、箭头代表什么意思后，也就足够应对 日常的工作和交流； 同时，我们应该能将类图所表达的含义和最终的代码对应起来； 有了这些知识，看后面章节的设计模式结构图就没有什么问题了；</p>
+<h2 id="从一个示例开始"><a href="#从一个示例开始" class="headerlink" title="从一个示例开始"></a>从一个示例开始</h2><p>请看以下这个类图，类之间的关系是我们需要关注的：</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_class_struct.jpg" alt="_images/uml_class_struct.jpg"></p>
+<ul>
+<li>车的类图结构为&lt;<abstract>&gt;，表示车是一个抽象类；</li>
+<li>它有两个继承类：小汽车和自行车；它们之间的关系为实现关系，使用带空心箭头的虚线表示；</li>
+<li>小汽车为与SUV之间也是继承关系，它们之间的关系为泛化关系，使用带空心箭头的实线表示；</li>
+<li>小汽车与发动机之间是组合关系，使用带实心箭头的实线表示；</li>
+<li>学生与班级之间是聚合关系，使用带空心箭头的实线表示；</li>
+<li>学生与身份证之间为关联关系，使用一根实线表示；</li>
+<li>学生上学需要用到自行车，与自行车是一种依赖关系，使用带箭头的虚线表示；</li>
+</ul>
+<p>下面我们将介绍这六种关系；</p>
+<hr>
+<h2 id="类之间的关系"><a href="#类之间的关系" class="headerlink" title="类之间的关系"></a>类之间的关系</h2><h3 id="泛化关系-generalization"><a href="#泛化关系-generalization" class="headerlink" title="泛化关系(generalization)"></a>泛化关系(generalization)</h3><p>类的继承结构表现在UML中为：泛化(generalize)与实现(realize)：</p>
+<p>继承关系为 is-a的关系；两个对象之间如果可以用 is-a 来表示，就是继承关系：（..是..)</p>
+<p>eg：自行车是车、猫是动物</p>
+<p>泛化关系用一条带空心箭头的直接表示；如下图表示（A继承自B）；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_generalization.jpg" alt="_images/uml_generalization.jpg"></p>
+<p>eg：汽车在现实中有实现，可用汽车定义具体的对象；汽车与SUV之间为泛化关系；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_generalize.jpg" alt="_images/uml_generalize.jpg"></p>
+<p>注：最终代码中，泛化关系表现为继承非抽象类；</p>
+<h3 id="实现关系-realize"><a href="#实现关系-realize" class="headerlink" title="实现关系(realize)"></a>实现关系(realize)</h3><p>实现关系用一条带空心箭头的虚线表示；</p>
+<p>eg：”车”为一个抽象概念，在现实中并无法直接用来定义对象；只有指明具体的子类(汽车还是自行车)，才 可以用来定义对象（”车”这个类在C++中用抽象类表示，在JAVA中有接口这个概念，更容易理解）</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_realize.jpg" alt="_images/uml_realize.jpg"></p>
+<p>注：最终代码中，实现关系表现为继承抽象类；</p>
+<h3 id="聚合关系-aggregation"><a href="#聚合关系-aggregation" class="headerlink" title="聚合关系(aggregation)"></a>聚合关系(aggregation)</h3><p>聚合关系用一条带空心菱形箭头的直线表示，如下图表示A聚合到B上，或者说B由A组成；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_aggregation.jpg" alt="_images/uml_aggregation.jpg"></p>
+<p>聚合关系用于表示实体对象之间的关系，表示整体由部分构成的语义；例如一个部门由多个员工组成；</p>
+<p>与组合关系不同的是，整体和部分不是强依赖的，即使整体不存在了，部分仍然存在；例如， 部门撤销了，人员不会消失，他们依然存在；</p>
+<h3 id="组合关系-composition"><a href="#组合关系-composition" class="headerlink" title="组合关系(composition)"></a>组合关系(composition)</h3><p>组合关系用一条带实心菱形箭头直线表示，如下图表示A组成B，或者B由A组成；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_composition.jpg" alt="_images/uml_composition.jpg"></p>
+<p>与聚合关系一样，组合关系同样表示整体由部分构成的语义；比如公司由多个部门组成；</p>
+<p>但组合关系是一种强依赖的特殊聚合关系，如果整体不存在了，则部分也不存在了；例如， 公司不存在了，部门也将不存在了；</p>
+<h3 id="关联关系-association"><a href="#关联关系-association" class="headerlink" title="关联关系(association)"></a>关联关系(association)</h3><p>关联关系是用一条直线表示的；它描述不同类的对象之间的结构关系；它是一种静态关系， 通常与运行状态无关，一般由常识等因素决定的；它一般用来定义对象之间静态的、天然的结构； 所以，关联关系是一种“强关联”的关系；</p>
+<p>比如，乘车人和车票之间就是一种关联关系；学生和学校就是一种关联关系；</p>
+<p>关联关系默认不强调方向，表示对象间相互知道；如果特别强调方向，如下图，表示A知道B，但 B不知道A；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_association.jpg" alt="_images/uml_association.jpg"></p>
+<p>注：在最终代码中，关联对象通常是以成员变量的形式实现的；</p>
+<h3 id="依赖关系-dependency"><a href="#依赖关系-dependency" class="headerlink" title="依赖关系(dependency)"></a>依赖关系(dependency)</h3><p>依赖关系是用一套带箭头的虚线表示的；如下图表示A依赖于B；他描述一个对象在运行期间会用到另一个对象的关系；</p>
+<p><img src="https://design-patterns.readthedocs.io/zh_CN/latest/_images/uml_dependency.jpg" alt="_images/uml_dependency.jpg"></p>
+<p>与关联关系不同的是，它是一种临时性的关系，通常在运行期间产生，并且随着运行时的变化； 依赖关系也可能发生变化；</p>
+<p>显然，依赖也有方向，双向依赖是一种非常糟糕的结构，我们总是应该保持单向依赖，杜绝双向依赖的产生；</p>
+<p>注：在最终代码中，依赖关系体现为类构造方法及类方法的传入参数，箭头的指向为调用关系；依赖关系除了临时知道对方外，还是“使用”对方的方法和属性；</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://design-patterns.readthedocs.io/zh_CN/latest/read_uml.html" target="_blank" rel="noopener">看懂UML类图和时序图</a></p>
+<p>遵循CC 4.0 BY-SA版权协议</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/equals()%E4%B8%8EhashCode()/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/11/equals()%E4%B8%8EhashCode()/" class="post-title-link" itemprop="url">equals()与hashCode()</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-12 02:56:30 / 修改时间：11:19:36" itemprop="dateCreated datePublished" datetime="2020-06-12T02:56:30+08:00">2020-06-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>equals和hashCode都是Object对象中的非final方法，它们设计的目的就是被用来覆盖(override)的，所以在程序设计中还是经常需要处理这两个方法的。而掌握这两个方法的覆盖准则以及它们的区别还是很必要的，相关问题也不少。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/12/27/16098428b73f5bd0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>下面我们继续以一次面试的问答，来考察对equals和hashCode的掌握情况。</p>
+<h2 id="Java里面有-运算符了，为什么还需要equals"><a href="#Java里面有-运算符了，为什么还需要equals" class="headerlink" title="Java里面有==运算符了，为什么还需要equals"></a>Java里面有<code>==</code>运算符了，为什么还需要equals</h2><hr>
+<p>equals()的作用是用来判断两个对象是否相等，在Object里面的定义是：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这说明在我们实现自己的equals方法之前，equals等价于<code>==</code>,而<code>==</code>运算符是判断两个对象是不是同一个对象，即他们的<strong>地址是否相等</strong>。而覆写equals更多的是追求两个对象在<strong>逻辑上的相等</strong>，你可以说是<strong>值相等</strong>，也可说是<strong>内容相等</strong>。</p>
+<p>在以下几种条件中，不覆写equals就能达到目的：</p>
+<ul>
+<li><strong>类的每个实例本质上是唯一的</strong>：强调活动实体的而不关心值得，比如Thread，我们在乎的是哪一个线程，这时候用equals就可以比较了。</li>
+<li><strong>不关心类是否提供了逻辑相等的测试功能</strong>：有的类的使用者不会用到它的比较值得功能，比如Random类，基本没人会去比较两个随机值吧</li>
+<li><strong>超类已经覆盖了equals，子类也只需要用到超类的行为</strong>：比如AbstractMap里已经覆写了equals，那么继承的子类行为上也就需要这个功能，那也不需要再实现了。</li>
+<li><strong>类是私有的或者包级私有的，那也用不到equals方法</strong>：这时候需要覆写equals方法来禁用它：<code>@Override public boolean equals(Object obj) { throw new AssertionError();}</code></li>
+</ul>
+<h2 id="覆写equals时有哪些准则？"><a href="#覆写equals时有哪些准则？" class="headerlink" title="覆写equals时有哪些准则？"></a>覆写equals时有哪些准则？</h2><hr>
+<p>这个我在Effective Java上看过，没记错的话应该是：</p>
+<blockquote>
+<p><strong>自反性</strong>：对于任何非空引用值 x，x.equals(x) 都应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>对称性</strong>：对于任何非空引用值 x 和 y，当且仅当 y.equals(x) 返回 true 时，x.equals(y) 才应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>传递性</strong>：对于任何非空引用值 x、y 和 z，如果 x.equals(y) 返回 true， 并且 y.equals(z) 返回 true，那么 x.equals(z) 应返回 true。</p>
+</blockquote>
+<blockquote>
+<p><strong>一致性</strong>：对于任何非空引用值 x 和 y，多次调用 x.equals(y) 始终返回 true 或始终返回 false， 前提是对象上 equals 比较中所用的信息没有被修改。</p>
+</blockquote>
+<blockquote>
+<p><strong>非空性</strong>：对于任何非空引用值 x，x.equals(null) 都应返回 false。</p>
+</blockquote>
+<h2 id="哪些情况下会违反对称性和传递性"><a href="#哪些情况下会违反对称性和传递性" class="headerlink" title="哪些情况下会违反对称性和传递性"></a>哪些情况下会违反对称性和传递性</h2><hr>
+<h4 id="违反对称性"><a href="#违反对称性" class="headerlink" title="违反对称性"></a>违反对称性</h4><p>对称性就是x.equals(y)时，y也得equals x，很多时候，我们自己覆写equals时，让自己的类可以兼容等于一个已知类，比如下面的例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">CaseInsensitiveString</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String s;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CaseInsensitiveString</span><span class="params">(String s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (s == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> NullPointerException();</span><br><span class="line">        <span class="keyword">this</span>.s = s;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> CaseInsensiticeString)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase(((CaseInsensitiveString)o).s);</span><br><span class="line">        <span class="keyword">if</span> (o <span class="keyword">instanceof</span> String)</span><br><span class="line">            <span class="keyword">return</span> s.equalsIgnoreCase((String) o);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个想法很好，想创建一个无视大小写的String，并且还能够兼容String作为参数，假设我们创建一个CaseInsensitiveString:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CaseInsensitiveString cis = <span class="keyword">new</span> CaseInsensitiveString(<span class="string">"Case"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>那么肯定有<code>cis.equals(&quot;case&quot;)</code>,问题来了，<code>&quot;case&quot;.equals(cis)</code>吗？String并没有兼容CaseInsensiticeString，所以String的equals也不接受CaseInsensiticeString作为参数。</p>
+<p>所以有个准则，一般在覆写equals<strong>只兼容同类型的变量</strong>。</p>
+<h4 id="违反传递性"><a href="#违反传递性" class="headerlink" title="违反传递性"></a>违反传递性</h4><p>传递性就是A等于B，B等于C，那么A也应该等于C。</p>
+<p>假设我们定义一个类Cat。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class <span class="title">Cat</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> height;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> weight;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Cat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.height = h;</span><br><span class="line">        <span class="keyword">this</span>.weight = w;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!(o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        Cat c = (Cat) o;</span><br><span class="line">        <span class="keyword">return</span> c.height == height &amp;&amp; c.weight == weight; </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>名人有言，不管黑猫白猫抓住老鼠就是好猫，我们又定义一个类ColorCat:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> class ColorCat <span class="title">extends</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String color;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ColorCat</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> w, String color)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(h, w);</span><br><span class="line">        <span class="keyword">this</span>.color = color;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们在实现equals方法时，可以加上颜色比较，但是加上颜色就不兼容和普通猫作对比了，这里我们忘记上面要求只兼容同类型变量的建议，定义一个兼容普通猫的equals方法，在“混合比较”时忽略颜色。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> Cat))</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>; <span class="comment">//不是Cat或者ColorCat，直接false</span></span><br><span class="line">    <span class="keyword">if</span> (! (o <span class="keyword">instanceof</span> ColorCat))</span><br><span class="line">        <span class="keyword">return</span> o.equals(<span class="keyword">this</span>);<span class="comment">//不是彩猫，那一定是普通猫，忽略颜色对比</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.equals(o)&amp;&amp;((ColorCat)o).color.equals(color); <span class="comment">//这时候才比较颜色</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设我们定义了猫：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ColorCat whiteCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"white"</span>);</span><br><span class="line">Cat cat = <span class="keyword">new</span> Cat(<span class="number">1</span>,<span class="number">2</span>);</span><br><span class="line">ColorCat blackCat = <span class="keyword">new</span> ColorCat(<span class="number">1</span>,<span class="number">2</span>,<span class="string">"black"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>此时有whiteCat等于cat，cat等于blackCat，但是whiteCat不等于blackCat，所以不满足传递性要求。</p>
+<p>所以在覆写equals时，一定要遵守上述的5大军规，不然总是有麻烦事找上门来。</p>
+<h2 id="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"><a href="#有覆写equals方法的诀窍吗，比如写一下String里面的equals？" class="headerlink" title="有覆写equals方法的诀窍吗，比如写一下String里面的equals？"></a>有覆写equals方法的诀窍吗，比如写一下String里面的equals？</h2><hr>
+<p>手写：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">           String anotherString = (String)anObject;</span><br><span class="line">           <span class="keyword">int</span> n = value.length;</span><br><span class="line">           <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">               <span class="keyword">char</span> v1[] = value;</span><br><span class="line">               <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">               <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">               <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                   <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                   i++;</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的equals有以下几点诀窍：</p>
+<ul>
+<li><strong>使用==操作符检查“参数是否为这个对象的引用”</strong>：如果是对象本身，则直接返回，拦截了对本身调用的情况，算是一种性能优化。</li>
+<li><strong>使用instanceof操作符检查“参数是否是正确的类型”</strong>：如果不是，就返回false，正如对称性和传递性举例子中说得，不要想着兼容别的类型，很容易出错。在实践中检查的类型多半是equals所在类的类型，或者是该类实现的接口的类型，比如Set、List、Map这些集合接口。</li>
+<li><strong>把参数转化为正确的类型</strong>： 经历了上一步的检测，基本会成功。</li>
+<li><strong>对于该类中的“关键域”，检查参数中的域是否与对象中的对应域相等</strong>：基本类型的域就用<code>==</code>比较，float域用Float.compare方法，double域用Double.compare方法，至于别的引用域，我们一般递归调用它们的equals方法比较，加上判空检查和对自身引用的检查，一般会写成这样：<code>(field == o.field || (field != null &amp;&amp; field.equals(o.field)))</code>,而上面的String里使用的是数组，所以只要把数组中的每一位拿出来比较就可以了。</li>
+<li><strong>编写完成后思考是否满足上面提到的对称性，传递性，一致性等等</strong>。</li>
+</ul>
+<p>还有一些注意点。</p>
+<p><strong>覆盖equals时一定要覆盖hashCode</strong></p>
+<p><strong>equals函数里面一定要是Object类型作为参数</strong></p>
+<p><strong>equals方法本身不要过于智能，只要判断一些值相等即可。</strong></p>
+<h2 id="hashCode什么用"><a href="#hashCode什么用" class="headerlink" title="hashCode什么用"></a>hashCode什么用</h2><hr>
+<p>hashCode用于返回对象的hash值，主要用于查找的快捷性，因为hashCode也是在Object对象中就有的，所以所有Java对象都有hashCode，在HashTable和HashMap这一类的散列结构中，都是通过hashCode来查找在散列表中的位置的。</p>
+<p><strong>如果两个对象equals，那么它们的hashCode必然相等，</strong></p>
+<p><strong>但是hashCode相等，equals不一定相等。(有哈希碰撞)</strong></p>
+<p>以HashMap为例，使用的是链地址法来处理散列，假设有一个长度为8的散列表</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span></span><br></pre></td></tr></table></figure>
+
+<p>那么，当往里面插数据时，是以hashCode作为key插入的，一般hashCode%8得到所在的索引，如果所在索引处有元素了，则使用一个链表，把多的元素不断链接到该位置，这边也就是大概提一下HashMap原理。所以hashCode的作用就是找到索引的位置，然后再用equals去比较元素是不是相等，形象一点就是先找到桶（bucket），然后再在里面找东西。</p>
+<blockquote>
+<p>hashCode 的常规协定是：<br> 在 Java 应用程序执行期间，在同一对象上多次调用 hashCode 方法时，必须一致地返回相同的整数，前提是对象上 equals 比较中所用的信息没有被修改。从某一应用程序的一次执行到同一应用程序的另一次执行，该整数无需保持一致。</p>
+<p>以下情况不 是必需的：如果根据 equals(java.lang.Object) 方法，两个对象不相等，那么在两个对象中的任一对象上调用 hashCode 方法必定会生成不同的整数结果。但是，程序员应该知道，为不相等的对象生成不同整数结果可以提高哈希表的性能。</p>
+<p>实际上，由 Object 类定义的 hashCode 方法确实会针对不同的对象返回不同的整数。（这一般是通过将该对象的内部地址转换成一个整数来实现的，但是 JavaTM 编程语言不需要这种实现技巧。）</p>
+<p>当equals方法被重写时，通常有必要重写 hashCode 方法，以维护 hashCode 方法的常规协定，该协定声明相等对象必须具有相等的哈希码。</p>
+</blockquote>
+<p>具体的例子:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">  Stu s1 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  Stu s2 = <span class="keyword">new</span> Stu(<span class="string">"张三"</span>, <span class="number">18</span>);</span><br><span class="line">  System.out.println(<span class="string">"stu:"</span> + s1.equals(s2));</span><br><span class="line"></span><br><span class="line">  Set&lt;Stu&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">  set.add(s1);</span><br><span class="line">  System.out.println(<span class="string">"s1 hashCode:"</span> + s1.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s1 size:"</span> + set.size());</span><br><span class="line">  set.add(s2);</span><br><span class="line">  System.out.println(<span class="string">"s2 hashCode:"</span> + s2.hashCode());</span><br><span class="line">  System.out.println(<span class="string">"add s2 size::"</span> + set.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1317241155</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:463175162</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>Java中的Set是不允许有重复元素的，所以这里set的size由1变成了2，因为两个Stu都是new出来的，分配的地址不一样，那么Set是通过equals来定义重复的吗？</p>
+<p>首先重写Stu的equals方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (obj == <span class="keyword">null</span>)&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (obj.getClass() != getClass())&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> ((Stu)obj).getName().equals(getName());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:713679046</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:1107557627</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>重写equals方法，name相同就让equals返回true了，但是Set的size还是发生了改变，就说明不是有equals方法来定义重复的，现在仅仅重写hashCode方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> getName().hashCode();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:false</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::2</span></span><br></pre></td></tr></table></figure>
+
+<p>仅重写了hashCode方法，所以equals返回false，然后hashCode由name属性的hashCode方法得到，所以hashCode相等，但是Set的size还是改变了，这说明Set也不是仅仅依据hashCode来定义重复。</p>
+<p>那么现在将上述equals和hashCode两者同时重写，输出结果：</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">stu</span><span class="selector-pseudo">:true</span></span><br><span class="line"><span class="selector-tag">s1</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s1</span> <span class="selector-tag">size</span><span class="selector-pseudo">:1</span></span><br><span class="line"><span class="selector-tag">s2</span> <span class="selector-tag">hashCode</span><span class="selector-pseudo">:774889</span></span><br><span class="line"><span class="selector-tag">add</span> <span class="selector-tag">s2</span> <span class="selector-tag">size</span><span class="selector-pseudo">::1</span></span><br></pre></td></tr></table></figure>
+
+<p>结合上面引用的案例，可以类推，hash类存储结构（HashSet、HashMap等等）添加元素会有重复性校验，校验的方式就是<strong>先取hashCode判断是否相等</strong>（找到对应的位置，该位置可能存在多个元素），然后<strong>再取equals方法比较</strong>（极大缩小比较范围，高效判断），最终判定该存储结构中是否有重复元素。</p>
+<h2 id="有哪些覆写hashCode的诀窍？"><a href="#有哪些覆写hashCode的诀窍？" class="headerlink" title="有哪些覆写hashCode的诀窍？"></a>有哪些覆写hashCode的诀窍？</h2><hr>
+<p>一个好的hashCode的方法的目标：<strong>为不相等的对象产生不相等的散列码</strong>，同样的，相等的对象必须拥有相等的散列码。</p>
+<p>好的散列函数要把实例均匀的分布到所有散列值上，结合前人的经验可以采取以下方法：</p>
+<blockquote>
+<p>引自Effective Java</p>
+<ol>
+<li><p>把某个非零的常数值，比如17，保存在一个int型的result中；</p>
+</li>
+<li><p>对于每个关键域f（equals方法中设计到的每个域），作以下操作：</p>
+<p><strong>a</strong>. 为该域计算int类型的散列码；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">i.如果该域是boolean类型，则计算(f?1:0),</span><br><span class="line">ii.如果该域是byte,char,short或者int类型,计算(int)f,</span><br><span class="line">iii.如果是long类型，计算(int)(f^(f&gt;&gt;&gt;32)).</span><br><span class="line">iv.如果是float类型，计算Float.floatToIntBits(f).</span><br><span class="line">v.如果是double类型，计算Double.doubleToLongBits(f),然后再计算long型的hash值</span><br><span class="line">vi.如果是对象引用，则递归的调用域的hashCode，如果是更复杂的比较，则需要为这个域计算一个范式，然后针对范式调用hashCode，如果为null，返回0</span><br><span class="line">vii. 如果是一个数组，则把每一个元素当成一个单独的域来处理。</span><br></pre></td></tr></table></figure>
+
+<p><strong>b</strong>.result = 31 * result + c;</p>
+</li>
+<li><p>返回result</p>
+</li>
+<li><p>编写单元测试验证有没有实现所有相等的实例都有相等的散列码。</p>
+</li>
+</ol>
+</blockquote>
+<p>这里再说下2.b中为什么采用<code>31*result + c</code>,乘法使hash值依赖于域的顺序，如果没有乘法那么所有顺序不同的字符串String对象都会有一样的hash值，而31是一个奇素数，如果是偶数，并且乘法溢出的话，信息会丢失，31有个很好的特性是<code>31*i ==(i&lt;&lt;5)-i</code>,即2的5次方减1，虚拟机会优化乘法操作为移位操作的。</p>
+<p>给个简单的例子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result = <span class="number">17</span>;</span><br><span class="line">  result = <span class="number">31</span> * result + getName().hashCode();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5a4379d4f265da432003874c" target="_blank" rel="noopener">面试官爱问的equals与hashCode</a></p>
+<p><a href="https://www.jianshu.com/p/5b7fe120bf94" target="_blank" rel="noopener">equals和hashCode的区别和联系</a></p>
+<p>遵循CC 4.0 BY-SA版权协议</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BARPC%E5%8E%9F%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/11/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BARPC%E5%8E%9F%E7%90%86/" class="post-title-link" itemprop="url">深入浅出RPC原理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-11 12:28:49 / 修改时间：20:33:32" itemprop="dateCreated datePublished" datetime="2020-06-11T12:28:49+08:00">2020-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>25k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>22 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>远程过程调用(Remote Procedure Call，简称RPC)，在微服务大行其道的今天，得到了广泛的应用。因此，在分布式系统服务群中开发应用，了解RPC一些原理和实现架构，还是很有必要的。本文，将从大的框架层面来聊聊RPC原理和实现。</p>
+</blockquote>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>远程过程调用RPC，就是客户端基于某种传输协议通过网络向服务提供端请求服务处理，然后获取返回数据(对于ONE WAY模式则不返还响应结果)；而这种调用对于客户端而言，和调用本地服务一样方便，开发人员不需要了解具体底层网络传输协议。简单讲，就是本地调用的逻辑处理的过程放在的远程的机器上，而不是本地服务代理来处理。</p>
+<p>目前，Java界的RPC中间件百家争鸣，国内开源的就有阿里的Dubbo(当当二次开发的DubboX)，新浪Motan；国外跨语言的有Facebook的Thrift， Google的gRpc等。</p>
+<h2 id="LPC-amp-IPC"><a href="#LPC-amp-IPC" class="headerlink" title="LPC &amp; IPC"></a>LPC &amp; IPC</h2><p>既然存在RPC这种远程过程调用，必然会有与之对应的本地过程调用了。本地过程调用在不同的操作系统中，叫法不同，使用方式也不太一样。在Windows编程中，称为LPC；在linux编程中，更习惯称之为IPC，即进程间通信。</p>
+<p>但是，不管如何，其本质上就是本地机器上的不同进程之间通信协作的调用方式。</p>
+<p>服务端开发，一般我们基于Linux，所以这里简单介绍下Linux环境下 IPC实现方式：</p>
+<ul>
+<li>管道</li>
+<li>共享内存</li>
+<li>信号量</li>
+<li>Socket套接字</li>
+</ul>
+<p>除此之外，还有消息队列和信号两种实现进程间通信的方式。</p>
+<p>信号很容易理解，比如我们在控制台输入的<code>CTRL + C</code>来向执行的进程发送kill信号来结束该进程。对于信号，一般我们再终端交互窗口中使用比较多，在服务端开发中很少涉及。</p>
+<p>Linux提供的消息队列和各种分布式MQ不同，它是在内核中使用链表结构来保持消息的队列，然后其他进程从内核的消息队列中获取消息。目前，Linux官方不太推荐使用，将渐渐被淘汰。</p>
+<h3 id="管道"><a href="#管道" class="headerlink" title="管道"></a>管道</h3><p>管道命令，在我们的<code>linux shell</code>中经常使用，一般，我们使用<code>|</code>操作符来保证两个命令之间的数据通信。比如，使用命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep java | xargs echo</span><br></pre></td></tr></table></figure>
+
+<p>管道命令，其实内部实现就是使用的linux管道接口，每个命令其实是一个进程，各个进程的标准输出STDOUT，作为下一个进程的标准输入STDIN。</p>
+<p>Linux管道包含：匿名管道和命名管道。</p>
+<ul>
+<li><p>匿名管道：只能父子进程间通信。使用pipe()方法来创建：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line">int pipe(int filedis[2]);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>参数filedis返回两个文件描述符：filedes[0]为读而打开，filedes[1]为写而打开。filedes[1]的输出是filedes[0]的输入</p>
+</blockquote>
+</li>
+<li><p>命名管道：可以在单台机器内的任何一组进程间进行通信。一般我们使用mkfifo()来创建命名管道：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mkfifo</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> * pathname,<span class="keyword">mode_t</span> mode)</span></span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>成功返回0，失败返回-1。成功返回之后，pathname其实就可以看着一个管道文件操作(当然并没有真实文件在磁盘存在)，对于文件操作的方法例如open,read,write都适用于fifo命名通道。</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="信号量Semaphore"><a href="#信号量Semaphore" class="headerlink" title="信号量Semaphore"></a>信号量Semaphore</h3><p>Linux中的信号量和Java中的信号量一样，其主要用处是同步协作。</p>
+<p>信号量其实就是一个比较特殊的变量，然后对它的操作都是原子进行的，并且一般只提供两种方法：P和V操作(在java中为wait()和notify())。</p>
+<ul>
+<li>P(sv)：如果sv的值大于零，就给它减1；如果它的值为零，就挂起该进程的执行；</li>
+<li>V(sv)：如果有其他进程因等待sv而被挂起，就让它恢复运行，如果没有进程因等待sv而挂起，就给它加1。</li>
+</ul>
+<p>linux对外提供的API接口方法如下所示:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">struct sem &#123;</span><br><span class="line">  short sempid;&#x2F;* pid of last operaton *&#x2F;</span><br><span class="line">  ushort semval;&#x2F;* current value *&#x2F;</span><br><span class="line">  ushort semncnt;&#x2F;* num procs awaiting increase in semval *&#x2F;</span><br><span class="line">  ushort semzcnt;&#x2F;* num procs awaiting semval &#x3D; 0 *&#x2F;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">　　 #include &lt;sys&#x2F;types.h&gt;</span><br><span class="line">　　 #include &lt;sys&#x2F;ipc.h&gt;</span><br><span class="line">　　 #include &lt;sys&#x2F;sem.h&gt;</span><br><span class="line">&#x2F;&#x2F;首先获取一个信号量,只有该方法可以才能直接使用key，其他方法必须先semget然后才能使用信号量</span><br><span class="line">　　 int semget(key_t key, int nsems, int flag);</span><br><span class="line">&#x2F;&#x2F;对信号量进行操作，直接控制信号量信息，比如删除信号量</span><br><span class="line">int semctl(int semid, int semnum, int cmd, union semun arg);</span><br><span class="line">&#x2F;&#x2F;改变信号量的值，P,V操作都是通过该方法</span><br><span class="line">int semop(int sem_id, struct sembuf *sem_opa, size_t num_sem_ops);</span><br></pre></td></tr></table></figure>
+
+<p>信号量的主要作用就是同步，所以我们一般是使用共享内存方式完成进程间通信，而在此过程中通过信号量来完成多进程间的同步协调机制。</p>
+<h3 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h3><p>由于同一台机器的硬件设备一般对于同一个系统来说，都是共享的。所以使用内存来完成进程间通信开发的思路，必然是很容易想到的，但是未必容易做到。</p>
+<p>众所周知，进程和线程最大的区别就是一些资源是否隔离。也就是说，不同的进程，其内存资源使用是隔离独立的，每个进程有自己的一套内存地址映射逻辑，也即是系统是无法直接从不同进程的相同虚拟内存地址找到共同的物理内存地址的，这样，就无法像线程一样，简单把数据对象设置为<code>static</code>然后线程间就可以共享获取了。</p>
+<p>因此，Linux对外提供了共享内存的方法来完成进程间通信。</p>
+<p>共享内存是最有效的进程间通信方式。其对外提供的API如下所示：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"> #include &lt;sys&#x2F;types.h&gt;</span><br><span class="line">　   #include &lt;sys&#x2F;ipc.h&gt;</span><br><span class="line">　　 #include &lt;sys&#x2F;shm.h&gt;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;创建共享内存空间，大小为size</span><br><span class="line">int shmget(key_t key, size_t size, int shmflg);</span><br><span class="line">&#x2F;&#x2F;所有需要使用共享内存通信的进程，映射到自身的内存地址空间中</span><br><span class="line">void *shmat(int shmid, void *addr, int flag);</span><br><span class="line">&#x2F;&#x2F;从当前进程地址空间中分离该共享内存</span><br><span class="line">int shmdt(const void *shmaddr);</span><br><span class="line">&#x2F;&#x2F;控制共享内存的，比如删除该共享内存空间等</span><br><span class="line">int shmctl(int shm_id, int command, struct shmid_ds *buf);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从上面的方法可以很显然的看出，进程间的内存地址空间是独立隔离的(内核地址空间由于虚拟地址和物理地址是一致的，所以在进程间这块地址空间也是一致的，不过我们操作的都是用户空间的内存，所以不考虑这块)。当我们想要共享操作，必须要把物理内存分别绑定到对应进程的地址空间，才能共享操作。</p>
+<p>使用的时候，很简单。<code>shmat</code>方法返回一个<code>void *</code>就可以强转某个指定的struct，然后直接操作该对象结构体即可。由于共享，所以需要考虑多线程同步安全问题。</p>
+</blockquote>
+<h3 id="Socket套接字"><a href="#Socket套接字" class="headerlink" title="Socket套接字"></a>Socket套接字</h3><p>从上面的几个API方法可以看到都是利用单机同用一套资源，然后各自进程的资源之间通过内核方式或者内存方式协作完成单机多进程间通信。</p>
+<p>此外，还有一种方式来完成进程间通信，就是套接字socket。Socket一般情况下是用在不同的两台机器的不同进程之间通信的，当Socket创建时的类型为 <code>AF_LOCAL或AF_UNIX</code>时，则是本地进程通信了(当然你也可以直接使用网络套接字，如果你觉得走下网络更酷，或者以后便于服务分离)。</p>
+<p>关于Socket的API介绍，这里就省略了。服务端/客户端模式的介绍和示例相对很常见，也很容易开发和理解。</p>
+<p>从使用网络套接字Socket来实现进程间通信这个角度来说，其和RPC并没有什么不同了，所以有些文献分类时，说广义来讲RPC也应该包括LPC(IPC),因为从大的来讲，单机进程通信其实算是远程过程调用的一种特殊简化的方式而已。</p>
+<p>当然，本文还是觉得还是区别开比较通用，也便于理解。</p>
+<blockquote>
+<p>如在Socket介绍的那样，本地过程调用很多情况下都是依赖操作系统对外提供的API来协调操作某个共享资源来完成进程间的数据交换。</p>
+<p>如果不依赖单机共享资源，就只有Socket接口。因此，如果要扩展到分布式环境下的进程间通信，那就只能使用网络套接字来完成。</p>
+</blockquote>
+<p>说完单机的服务调用，在互联网时代，自然要讲web服务(Web Service)了。</p>
+<h2 id="Web-Service技术"><a href="#Web-Service技术" class="headerlink" title="Web Service技术"></a>Web Service技术</h2><blockquote>
+<p><code>Web Service</code>一般有两种定义：</p>
+<ol>
+<li>特指 W3C组织制定的<code>web service</code>规范技术。其包括SOAP(一个基于XML的可扩展消息信封格式，需同时绑定一个网络传输协议。这个协议通常是HTTP或HTTPS，但也可能是SMTP或XMPP)、WSDL(一个XML格式文档，用以描述服务端口访问方式和使用协议的细节。通常用来辅助生成服务器和客户端代码及配置信息)和UDDI(一个用来发布和搜索WEB服务的协议，应用程序可借由此协议在设计或运行时找到目标WEB服务)。从上面三个定义就可以看出，这种规范技术是一个重量级的协议。</li>
+<li>泛指网络系统对外提供web服务所使用的技术。这里，我们主要是基于该定义来理解。</li>
+</ol>
+</blockquote>
+<p>一般而言，技术体系，必然是服务于架构体系的。不同的架构，所约定的技术结构设计还是有些区别的。</p>
+<p>因此，要了解web服务技术，必然要先了解其服务于哪个架构体系；也就是说，先去了解技术产生的架构背景。</p>
+<h3 id="SOA-amp-微服务"><a href="#SOA-amp-微服务" class="headerlink" title="SOA &amp; 微服务"></a>SOA &amp; 微服务</h3><p>在分布式网络服务架构体系中，最火的莫过于 SOA(面向服务架构，Service-Oriented Architecture)和微服务。</p>
+<p>嗯，一般将服务化架构，必然会扯到<code>全家桶</code>设计升级的故事。</p>
+<p>简化版是这样子的：</p>
+<ul>
+<li>在很久很久以前，网络应用也是单机部署的，所有的业务代码全部都在一个大项目内，然后更改一个逻辑就需要重启部署应用，停止对外服务。</li>
+<li>然后，这样子肯定不行的，就有了多机部署，通过Nginx或者其他代理/均衡软件来分发请求到相同服务的不同机器上，当其中一台机器停机部署时，请求全部打到其他机器上去。但是这个时候，所有机器上的代码还是一套。</li>
+<li>后来，机器不断升级，但是业务不断变多，项目代码越来越大，更改一个地方编译打包部署时间非常长，于是，我们就把一些独立隔离开的业务代码分成多个项目。但是，实现业务逻辑的时候，必然有一些功能和数据是多个业务都会用到的，简单以前的代码copy过来，数据就直接操作数据库。但是，当有个公用的功能需要更改时，就发现所有相关业务都需要更改，并且数据库上的操作，还会带来其他同步兼容等等问题。</li>
+<li>于是，就出现了SOA，也就是基于服务的架构设计理念。SOA的设计理念，就是把所有的服务都对外以HTTP或者其他协议方式对外暴露，绝对<code>不允许</code>相同的服务在不同的业务系统独立一套，然后共用底层数据库。服务化的设计系统，所有拆分的业务，彼此之间都通过暴露的服务接口通信，操作对方的数据。这样，各个业务系统之间开始独立自主的向着美好的方向发展了。</li>
+<li>再后来，单个业务发展的越来越好，提供的功能也越来越多，这样一个业务系统的代码也变得很大了，开发人员也越来越多。于是乎，单个业务系统内部就存在问题了，当然，我们也可以拆分成不同的业务系统来开发发展。但是，单个业务系统，很多的公用逻辑都是一些业务细节，并不好独立成业务系统；此外，单个业务系统开发人员都很容易交流，因此，对于内部业务系统的架构设计，就出现了<code>微服务Micro-Service</code>了。我们把单个业务系统中一些功能细节的结构封装成服务，大的对外业务系统，组装各个微服务的接口数据，然后提供SOA服务。</li>
+</ul>
+<p>因此，SOA其实和微服务，从我的视角来看，其实就是 业务外部和内部服务的不同架构设计而已，其技术框架很大程度上都可以通用。其区别如下图：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/soa_ms.jpg" alt="SOA和微服务"></p>
+<p>从上面发展历程可以看到，SOA一般使用SOAP或者REST方式来提供服务，这样外部业务系统可以使用通用网络协议来处理请求和响应，而微服务，还可以有一些私有的协议方式来提供服务，例如基于自定义协议的RPC框架。RPC使得调用服务简单，但是需要一些其他耗时间的交流协调工作，这适合微服务的场景，但是不一定适合SOA场景了。</p>
+<h3 id="web服务技术结构"><a href="#web服务技术结构" class="headerlink" title="web服务技术结构"></a>web服务技术结构</h3><p>先给出一个web服务的技术体系结构图：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/web_service.png" alt="web服务技术体系"></p>
+<p><code>web service</code>被W3C设立规范之初，SOAP方案就被提出来。但是，随着服务化技术和架构的发展，SOAP多少有点过于复杂，因此就出现了简化版的REST方案。此后，由于分布式服务应用越来越大，对性能和易用性上面要求越来越大，因此就出现了RPC框架(很多时候，RPC并不被当做一种web service方案。在绝大部分博客中，介绍web service 只会讨论 SOAP和REST，主要是其基本上都是基于SOA来介绍服务方案)。</p>
+<h4 id="SOAP"><a href="#SOAP" class="headerlink" title="SOAP"></a>SOAP</h4><p>SOAP，全称为 Simple Object Access Protocol，也就是 简单对象访问协议。跟着<code>web service</code>一起出来的，说明历史悠久，不过感觉现在也慢慢要淘汰了。</p>
+<p>SOAP，是基于XML数据格式来交换数据的；其内部定义了一套复杂完善的XML标签，标签中包含了调用的远程过程、参数、返回值和出错信息等等，通信双方根据这套标签来解析数据或者请求服务。与SOAP相关的配套协议是WSDL (Web Service Description Language)，用来描述哪个服务器提供什么服务，怎样找到它，以及该服务使用怎样的接口规范，类似我们现在聊服务治理中的服务发现功能。</p>
+<p>因此，SOAP服务整体流程是：首先，获得该服务的WSDL描述，根据WSDL构造一条格式化的SOAP请求发送给服务器，然后接收一条同样SOAP格式的应答，最后根据先前的WSDL解码数据。绝大多数情况下，请求和应答使用HTTP协议传输，那么发送请求就使用HTTP的POST方法。</p>
+<h4 id="REST"><a href="#REST" class="headerlink" title="REST"></a>REST</h4><p>REST，全称 REpresentational State Transfort，也就是 表示性状态转移。由于SOAP方案过于庞大复杂，在很多简单的web服务应用场景中，轻量级的REST就出现替代SOAP方案了。</p>
+<p>和SOAP相比，REST只是对URI做了一些规范，数据才有JSON格式，底层传输使用HTTP/HTTPS来通信，因此，所有web服务器都可以快速支持该方案；开发人员也可以快速学习和使用。</p>
+<h4 id="SOAP-amp-REST"><a href="#SOAP-amp-REST" class="headerlink" title="SOAP &amp; REST"></a>SOAP &amp; REST</h4><p>从命名来看，SOAP是一种协议，而REST只是一种方案。协议的设计很多时候，从上而下一整套都是新的，需要设计开发专门的工具支持；而方案相对就是基于目前以后的工具来做一些设计和约束，这就是为什么REST快速替换了SOAP的地位。</p>
+<p>REST特点：</p>
+<ul>
+<li>由于数据返回格式是自定义的，绝大部分使用JSON，这种数据结构节省带宽，并且前端JavaScript能天生支持。</li>
+<li>无状态，基于HTTP协议，所以只能适应无状态场景。</li>
+</ul>
+<p>SOAP特点：</p>
+<ul>
+<li>协议有安全性的一些规范。</li>
+<li>基于xml的标签约束，而且也不要去底层是HTTP传输，所以支持有状态的场景。</li>
+</ul>
+<h3 id="RPC家族"><a href="#RPC家族" class="headerlink" title="RPC家族"></a>RPC家族</h3><p>RPC家族中，RMI是Java制定的远程通信协议。而后，基本上RPC框架都或多或少有RMI的影子(当然，其实主要是RPC本身的实现方式就是这样子了-_-)。RMI既然是Java的标准RPC组件，那必然其他编程语言就无法使用了；因此，Thrift这种基于IDL来跨语言的RPC组件就出现了。Thrift的使用者，只需要按照Thrift官方规定的方式来写API结构，然后生成对应语言的API接口，继而就可以跨语言完成远程过程调用了。但是，作为服务化的组件，如果没有服务治理来完成大规模应用集群中服务调用管理工作，则运维工作则是非常繁重的，因此类似dubbo这种包含服务治理的RPC组件出现了。</p>
+<p>下面，就来介绍RPC组件。</p>
+<h2 id="RPC介绍"><a href="#RPC介绍" class="headerlink" title="RPC介绍"></a>RPC介绍</h2><blockquote>
+<p>RMI作为Java自带的官方RPC组件，单独介绍；然后我们来看看通用RPC实现结构。</p>
+</blockquote>
+<h3 id="RMI介绍"><a href="#RMI介绍" class="headerlink" title="RMI介绍"></a>RMI介绍</h3><p>RMI，全称是Remote Method Invocation，也就是远程方法调用。在JDK 1.2的时候，引入到Java体系的。当应用比较小，性能要求不高的情况下，使用RMI还是挺方便快捷的。</p>
+<p>下面先看看RMI的调用流程。</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/rmi.png" alt="RMI服务调用流程"></p>
+<p>其中，有些概念需要说明：</p>
+<blockquote>
+<p>stub(桩)：stub实际上就是远程过程在客户端上面的一个代理proxy。当我们的客户端代码调用API接口提供的方法的时候，RMI生成的stub代码块会将请求数据序列化，交给远程服务端处理，然后将结果反序列化之后返回给客户端的代码。这些处理过程，对于客户端来说，基本是透明无感知的。</p>
+<p>remote：这层就是底层网络处理了，RMI对用户来说，屏蔽了这层细节。stub通过remote来和远程服务端进行通信。</p>
+<p>skeleton(骨架)：和stub相似，skeleton则是服务端生成的一个代理proxy。当客户端通过stub发送请求到服务端，则交给skeleton来处理，其会根据指定的服务方法来反序列化请求，然后调用具体方法执行，最后将结果返回给客户端。</p>
+<p>registry(服务发现)：rmi服务，在服务端实现之后需要注册到rmi server上，然后客户端从指定的rmi地址上lookup服务，调用该服务对应的方法即可完成远程方法调用。registry是个很重要的功能，当服务端开发完服务之后，要对外暴露，如果没有服务注册，则客户端是无从调用的，即使服务端的服务就在那里。</p>
+</blockquote>
+<p>下面给出一个简单的Java示例来show code下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 接口必须继承RMI的Remote</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">RmiService</span> <span class="keyword">extends</span> <span class="title">Remote</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 必须有RemoteException，才是RMI方法</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">String <span class="title">hello</span><span class="params">(String name)</span> <span class="keyword">throws</span> RemoteException</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * UnicastRemoteObject会生成一个代理proxy</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RmiServiceImpl</span> <span class="keyword">extends</span> <span class="title">UnicastRemoteObject</span> <span class="keyword">implements</span> <span class="title">RmiService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">RmiServiceImpl</span><span class="params">()</span> <span class="keyword">throws</span> RemoteException </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">hello</span><span class="params">(String name)</span> <span class="keyword">throws</span> RemoteException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Hello "</span> + name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 服务端server启动</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RmiServer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            RmiService service = <span class="keyword">new</span> RmiServiceImpl();</span><br><span class="line">            <span class="comment">//在本地创建和暴露一个注册服务实例，端口为9999</span></span><br><span class="line">            LocateRegistry.createRegistry(<span class="number">9999</span>);</span><br><span class="line">            <span class="comment">//注册service服务到上面创建的注册实例上</span></span><br><span class="line">            Naming.rebind(<span class="string">"rmi://127.0.0.1:9999/service1"</span>,service);</span><br><span class="line">        &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"------------server start-----------------"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 客户端调用rmi服务</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RmiClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 根据注册的服务地址来查找服务，然后就可以调用API对应的方法了</span></span><br><span class="line">            RmiService service = (RmiService)Naming.lookup(<span class="string">"rmi://localhost:9999/service1"</span>);</span><br><span class="line">            System.out.println(service.hello(<span class="string">"RMI"</span>));</span><br><span class="line">        &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>上面一些核心的代码已经在注释中给了说明。</p>
+</blockquote>
+<h3 id="通用RPC架构"><a href="#通用RPC架构" class="headerlink" title="通用RPC架构"></a>通用RPC架构</h3><p>一般，远程过程调用RPC就是本地动态代理隐藏通信细节，通过组件序列化请求，走网络到服务端，执行真正的服务代码，然后将结果返回给客户端，反序列化数据给调用方法的过程。</p>
+<p>RPC具体调用流程如下所示： <img src="https://ketao1989.github.io/images/2016/12/rpc.png" alt="RPC调用流程"></p>
+<p>通用的RPC组件一般包括以下一些模块：</p>
+<blockquote>
+<ol>
+<li>serviceClient：这个模块主要是封装服务端对外提供的API，让客户端像使用本地API接口一样调用远程服务。一般，我们使用动态代理机制，当客户端调用api的方法时，serviceClient会走代理逻辑，去远程服务器请求真正的执行方法，然后将响应结果作为本地的api方法执行结果返回给客户端应用。类似RMI的stub模块。</li>
+<li>processor：在服务端存在很多方法，当客户端请求过来，服务端需要定位到具体对象的具体方法，然后执行该方法，这个功能就由processor模块来完成。一般这个操作需要使用反射机制来获取用来执行真实处理逻辑的方法，当然，有的RPC直接在server初始化的时候，将一定规则写进Map映射中，这样直接获取对象即可。类似RMI的skeleton模块。</li>
+<li>protocol：协议层，这是每个RPC组件的核心技术所在。一般，协议层包括编码/解码，或者说序列化和反序列化工作；当然，有的时候编解码不仅仅是对象序列化的工作，还有一些通信相关的字节流的额外解析部分。序列化工具有：hessian，protobuf，avro,thrift，json系，xml系等等。在RMI中这块是直接使用JDK自身的序列化组件。</li>
+<li>transport：传输层，主要是服务端和客户端网络通信相关的功能。这里和下面的IO层区分开，主要是因为传输层处理server/client的网络通信交互，而不涉及具体底层处理连接请求和响应相关的逻辑。</li>
+<li>I/O：这个模块主要是为了提高性能可能采用不同的IO模型和线程模型，当然，一般我们可能和上面的transport层联系的比较紧密，统一称为remote模块。</li>
+</ol>
+</blockquote>
+<p>此外，还有业务代码自己去实现的client和server层。client当需要远程调用服务时，会首先初始化一个API接口代理对象，然后调用某个代理方法。server在对外暴露服务时，需要首先实现对应API接口内部的方法，当请求过来时，通过反射找到对应的实例对象，执行对应的业务代码。</p>
+<h3 id="简单RPC组件实现"><a href="#简单RPC组件实现" class="headerlink" title="简单RPC组件实现"></a>简单RPC组件实现</h3><p>介绍完RPC相关结构和概念之后，给一个简单的RPC组件示例来对各个模块进行code级别的说明。</p>
+<blockquote>
+<p>以下代码仅仅是了解RPC各个模块功能的示例，对性能和异常等情况未考虑全面，生产环境不适用。</p>
+</blockquote>
+<h4 id="protocol模块代码"><a href="#protocol模块代码" class="headerlink" title="protocol模块代码"></a>protocol模块代码</h4><blockquote>
+<p>协议层主要包括编解码和序列化部分。编解码就是我们对传输通信的远程调用请求接口和方法参数等数据按照我们规定的格式进行组装编码，然后在接收的一方负责把数据解码成原始的对象，然后找到需要执行的接口和方法。序列化/反序列化，则是将数据对象，按照一定的映射关系转换成字节流，供网络传输，接收的一方首先将流映射为对象数据。</p>
+<p>有的时候，序列化/反序列化组件会包含编解码部分。此外，编解码和序列化工作先后关系也不一定。一般高性能RPC，序列化工具十分强大和通用，所以编解码部分会放在序列化之后，主要是解码的时候，可以不完成反序列化就对流进行一些处理工作，比如映射、分发等。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 很明显，这里使用JSON来序列化和反序列化RPC调用传递的数据</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServiceProtocol</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ServiceProtocol protocol = <span class="keyword">new</span> ServiceProtocol();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 将对象序列化为字符串字节</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">byte</span>[] encode(Object o) &#123;</span><br><span class="line">        <span class="keyword">return</span> JsonUtils.encode(o).getBytes();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 反序列化成字符串</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">decode</span><span class="params">(<span class="keyword">byte</span>[] data, Class&lt;T&gt; clazz)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> JsonUtils.decode(<span class="keyword">new</span> String(data), clazz);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 编解码模型</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ProtocolModel</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> String clazz;</span><br><span class="line">        <span class="keyword">private</span> String method;</span><br><span class="line">        <span class="keyword">private</span> String[] argTypes;</span><br><span class="line">        <span class="keyword">private</span> Object[] args;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// setter getter方法省略</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>示例中的代码使用JSON来序列化/反序列化工作。由于JSON序列化组件比较弱，所以这边需要将执行调用方法相关的请求数据进行编码成<code>ProtocolModel</code>对象。</p>
+<h4 id="remote模块代码"><a href="#remote模块代码" class="headerlink" title="remote模块代码"></a>remote模块代码</h4><blockquote>
+<p>remote模块是提供服务端和客户端通信的功能。因此，在服务端需要起一个端口来监听外部的请求，在客户端则负责发送请求，接收响应数据。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 客户端通信组件，客户端和外部服务端数据交互时使用</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ClientRemoter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ClientRemoter client = <span class="keyword">new</span> ClientRemoter();</span><br><span class="line"></span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">byte</span>[] getDataRemote(<span class="keyword">byte</span>[] requestData) &#123;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">try</span> (Socket socket = <span class="keyword">new</span> Socket()) &#123;</span><br><span class="line">             socket.connect(<span class="keyword">new</span> InetSocketAddress(<span class="string">"127.0.0.1"</span>, <span class="number">9999</span>));</span><br><span class="line">             socket.getOutputStream().write(requestData);</span><br><span class="line">             socket.getOutputStream().flush();</span><br><span class="line"></span><br><span class="line">             <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">10240</span>];</span><br><span class="line">             <span class="keyword">int</span> len = socket.getInputStream().read(data);</span><br><span class="line"></span><br><span class="line">             <span class="keyword">return</span> Arrays.copyOfRange(data, <span class="number">0</span>, len);</span><br><span class="line">         &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">             <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 服务端起一个端口监听服务，绑定到相关processor处理器上。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServerRemoter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> ExecutorService executor =</span><br><span class="line">        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">startServer</span><span class="params">(<span class="keyword">int</span> port)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> ServerSocket server = <span class="keyword">new</span> ServerSocket();</span><br><span class="line">        server.bind(<span class="keyword">new</span> InetSocketAddress(port));</span><br><span class="line">        System.out.println(<span class="string">"-----------start server----------------"</span>);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="keyword">final</span> Socket socket = server.accept();</span><br><span class="line">                executor.execute(<span class="keyword">new</span> MyRunnable(socket));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            server.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MyRunnable</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> Socket socket;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">MyRunnable</span><span class="params">(Socket socket)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.socket = socket;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> (InputStream is = socket.getInputStream(); OutputStream os = socket.getOutputStream()) &#123;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">byte</span>[] data = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">10240</span>];</span><br><span class="line">                <span class="keyword">int</span> len = is.read(data);</span><br><span class="line"></span><br><span class="line">                ServiceProtocol.ProtocolModel model = ServiceProtocol.protocol</span><br><span class="line">                    .decode(Arrays.copyOfRange(data, <span class="number">0</span>, len), ServiceProtocol.ProtocolModel<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">                Object object = ServiceProcessor.processor.process(model);</span><br><span class="line">                os.write(ServiceProtocol.protocol.encode(object));</span><br><span class="line">                os.flush();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// close socket...</span></span><br><span class="line">           &#125;        &#125;    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>简单处理，直接让网络一次获取所有的数据，假设一次请求和响应的数据大小小于10K。</p>
+<p>在server端的remote中，启动服务之前是需要绑定对外提供的服务的，也就是服务server启动，其内部需要指定序列化、服务处理器等逻辑。</p>
+</blockquote>
+<p>通用RPC的通信层，是非常复杂的，其需要考虑各种网络环境导致的数据半包，分包和粘包情况，需要考虑高性能NIO组件，多线程处理超时，连接复用等等。</p>
+<h4 id="processor模块代码"><a href="#processor模块代码" class="headerlink" title="processor模块代码"></a>processor模块代码</h4><blockquote>
+<p>服务端接口方法定位处理器。作为一个组件，显然不应该在业务代码中嵌入一些非业务逻辑。processor会根据序列化完了之后的请求数据来定位具体的处理逻辑，然后调用对应的业务代码来处理获取返回结果。</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">public class ServiceProcessor &#123;</span><br><span class="line"></span><br><span class="line">    public static final ServiceProcessor processor &#x3D; new ServiceProcessor();</span><br><span class="line"></span><br><span class="line">    private static final ConcurrentMap&lt;String, Object&gt; PROCESSOR_INSTANCE_MAP &#x3D; new ConcurrentHashMap&lt;String, Object&gt;();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public boolean publish(Class clazz, Object obj) &#123;</span><br><span class="line">        return PROCESSOR_INSTANCE_MAP.putIfAbsent(clazz.getName(), obj) !&#x3D; null;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public Object process(ServiceProtocol.ProtocolModel model) &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">            Class clazz &#x3D; Class.forName(model.getClazz());</span><br><span class="line"></span><br><span class="line">            Class[] types &#x3D; new Class[model.getArgTypes().length];</span><br><span class="line">            for (int i &#x3D; 0; i &lt; types.length; i++) &#123;</span><br><span class="line">                types[i] &#x3D; Class.forName(model.getArgTypes()[i]);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            Method method &#x3D; clazz.getMethod(model.getMethod(), types);</span><br><span class="line"></span><br><span class="line">            Object obj &#x3D; PROCESSOR_INSTANCE_MAP.get(model.getClazz());</span><br><span class="line">            if (obj &#x3D;&#x3D; null) &#123;</span><br><span class="line">                return null;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            return method.invoke(obj, model.getArgs());</span><br><span class="line">        &#125; catch (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            return null;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>PROCESSOR_INSTANCE_MAP publish这个逻辑，在Spring环境中，一般通过xml配置自动注入进来，然后从context中获取对应的实例。但是，不管怎样，底层其实都是一个map来维护映射关系。</p>
+</blockquote>
+<p>如上文介绍的那样，经过解码获取到的调用对象，然后通过java反射机制，执行指定的方法获取结果。</p>
+<h4 id="serviceClient模块代码"><a href="#serviceClient模块代码" class="headerlink" title="serviceClient模块代码"></a>serviceClient模块代码</h4><blockquote>
+<p>其实，这块叫做serviceProxyClient比较直接点。</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">public class ServiceProxyClient &#123;</span><br><span class="line"></span><br><span class="line">    public static &lt;T&gt; T getInstance(Class&lt;T&gt; clazz) &#123;</span><br><span class="line">        return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] &#123;clazz&#125;, new ServiceProxy(clazz));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public static class ServiceProxy implements InvocationHandler &#123;</span><br><span class="line"></span><br><span class="line">        private Class clazz;</span><br><span class="line"></span><br><span class="line">        public ServiceProxy(Class clazz) &#123;</span><br><span class="line">            this.clazz &#x3D; clazz;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable &#123;</span><br><span class="line"></span><br><span class="line">            ServiceProtocol.ProtocolModel model &#x3D; new ServiceProtocol.ProtocolModel();</span><br><span class="line">            model.setClazz(clazz.getName());</span><br><span class="line">            model.setMethod(method.getName());</span><br><span class="line">            model.setArgs(args);</span><br><span class="line"></span><br><span class="line">            String[] argType &#x3D; new String[method.getParameterTypes().length];</span><br><span class="line">            for (int i &#x3D; 0; i &lt; argType.length; i++) &#123;</span><br><span class="line">                argType[i] &#x3D; method.getParameterTypes()[i].getName();</span><br><span class="line">            &#125;</span><br><span class="line">            model.setArgTypes(argType);</span><br><span class="line"></span><br><span class="line">            byte[] req &#x3D; ServiceProtocol.protocol.encode(model);</span><br><span class="line">            byte[] rsp &#x3D; ClientRemoter.client.getDataRemote(req);</span><br><span class="line">            return ServiceProtocol.protocol.decode(rsp, method.getReturnType());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ProxyClient</code>就是对客户端调用API时透明化底层序列化和网络操作相关细节。所以，在proxyClient内部，我们可以看到它封装代理了这块调用逻辑，业务代码直接使用<code>getInstance</code>方法就可以获取对象实例，然后按照正常使用api方法来执行调用逻辑，获取结果。</p>
+<blockquote>
+<p>如果使用spring框架的话，可以进一步封装成一个bean，然后客户端业务代码只需要在xml中配置一下，就可以通过注解annotation等方式注入进来。</p>
+</blockquote>
+<h4 id="server业务接口实现代码"><a href="#server业务接口实现代码" class="headerlink" title="server业务接口实现代码"></a>server业务接口实现代码</h4><blockquote>
+<p>这里给出接口对外发布和测试</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">public interface RpcService &#123;</span><br><span class="line">    String sayHi(String name);</span><br><span class="line">&#125;</span><br><span class="line">public class RpcServiceImpl implements RpcService &#123;</span><br><span class="line">    public String sayHi(String name) &#123;</span><br><span class="line">        return &quot;Hello,&quot; + name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;**</span><br><span class="line"> * 服务端测试main执行代码</span><br><span class="line"> *&#x2F;</span><br><span class="line">public class ServerDemo &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 发布接口</span><br><span class="line">        ServiceProcessor.processor.publish(RpcService.class,new RpcServiceImpl());</span><br><span class="line"></span><br><span class="line">        &#x2F;&#x2F; 启动server</span><br><span class="line">        ServerRemoter remoter &#x3D; new ServerRemoter();</span><br><span class="line">        remoter.startServer(9999);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>如上，我们构造了一个<code>RpcService</code>接口对外提供sayHi的服务。在main方法中，我们首先需要对外发布这个接口和对应的实现类对象。在一些框架中，这些对外暴露的接口，都是通过xml配置或者annotation来发布的。然后，我们就可以启动server服务，对外提供RPC服务。</p>
+</blockquote>
+<h4 id="6-client调用测试代码"><a href="#6-client调用测试代码" class="headerlink" title="6. client调用测试代码"></a>6. client调用测试代码</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public class ClientDemo &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        System.out.println(&quot;----------start invoke----------------&quot;);</span><br><span class="line">        RpcService service &#x3D; ServiceProxyClient.getInstance(RpcService.class);</span><br><span class="line">        System.out.println(service.sayHi(&quot;RPC World&quot;));</span><br><span class="line">        System.out.println(&quot;----------end invoke----------------&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>看我们的测试代码非常简单，当要远程调用某个接口方法时，只需要getInstance该接口类代理对象，然后就像调用本地方法一直执行方法执行和结果处理。</p>
+</blockquote>
+<h2 id="RPC技术深入"><a href="#RPC技术深入" class="headerlink" title="RPC技术深入"></a>RPC技术深入</h2><p>上文简单的介绍了RPC模块各个部分，并且实现了一个简单的RPC组件。这一部分，我们要介绍在生产环节下RPC需要使用的一些技术点。</p>
+<h3 id="RPC序列化"><a href="#RPC序列化" class="headerlink" title="RPC序列化"></a>RPC序列化</h3><blockquote>
+<p>将RPC序列化和编解码分开，是因为个人觉得，虽然在很多时候，编解码其实就是序列化操作，但是有的时候，我们会自定义一些数据结构来封装业务数据对象，然后再序列化成二进制流。此外，在协议层，我们可能也会对普通序列化完了之后，还会对传输头进行编码工作。因此，为了更好的说明，这里分开来。</p>
+</blockquote>
+<p>序列化，说的简单，就是将对象转换成二进制流，也就是<code>byte[]</code>，而反序列化就是讲二进制流转换成对象。使用序列化/反序列化，主要是我们想把内存对象数据，持久化到文件fd或者通过网络传输到其他地方，而这只能使用二进制流来呈现。此外，由于RPC是通过网络通信的，所以序列化工具的性能和二进制流的大小，都是直接影响整体处理能力的关键因素。</p>
+<p>目前基于Java的序列化工具，主要有：</p>
+<ul>
+<li>JDK Serializable工具</li>
+<li>Hessian工具</li>
+<li>Kryo工具</li>
+<li>JSON工具</li>
+</ul>
+<h4 id="JDK内置序列化工具"><a href="#JDK内置序列化工具" class="headerlink" title="JDK内置序列化工具"></a>JDK内置序列化工具</h4><p>JDK自带的序列化工作不需要引入任何第三方包就可以直接使用，我们仅仅只需要实现<code>java.io.Serializable</code>接口。然后，我们在需要序列化/反序列化的时候，直接使用<code>ObjectInputStream</code>/<code>ObjectOutStream</code>来readObject将流反序列化成对象或者writeObject将对象序列化成流。</p>
+<p>很多时候，我们并不使用原生的JDK序列化工具进行序列化，主要原因是因为其序列化后的二进制流太大，并且序列化耗时也比较长。但是，其最大的优点就是原生支持，快速使用，引入成本低，此外，其支持java所有类型，所以在有些RPC组件中，其作为默认序列化工具。</p>
+<blockquote>
+<p>使用JDK自带的序列化工具，尤其需要注意<code>serialVersionUID</code>这个静态变量，在反序列化的时候，会根据这个变量来判断两个类是否一样，如果修改了该变量，那么将无法兼容来的二进制数据的反序列化操作。</p>
+<p>此外，你可以通过在类中增加writeObject 和 readObject 方法可以实现自定义序列化。</p>
+</blockquote>
+<p>测试代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public class JdkSerialiable &#123;</span><br><span class="line">    public static void serial(Blog blog) throws Exception &#123;</span><br><span class="line">        ByteArrayOutputStream baos &#x3D; new ByteArrayOutputStream();</span><br><span class="line">        ObjectOutputStream os &#x3D; new ObjectOutputStream(baos);</span><br><span class="line">        os.writeObject(blog);</span><br><span class="line">        os.close();</span><br><span class="line"></span><br><span class="line">        ObjectInputStream is &#x3D; new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));</span><br><span class="line">        Blog blog1 &#x3D; (Blog) is.readObject();</span><br><span class="line">        is.close();</span><br><span class="line">        System.out.println(blog1);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Hessian工具"><a href="#Hessian工具" class="headerlink" title="Hessian工具"></a>Hessian工具</h4><p>Hessian,其实是一个开源的轻量级RPC组件。从上面分析RPC通用结构，可以看到很多RPC为了性能会自己实现序列化/反序列化工具，比如Thrift，而hessian也是如此。hessian2的性能相对JDK来说，提高了很多，而且序列化完了之后的流也小了很多。由于hessian已经生产实践了很长时间，所以其还是很值得使用的。</p>
+<p>hessian在处理序列化的时候，会根据对象的数据类型采用不同的序列化策略，比如有些直接使用JavaSerializer，有些事自己来实现对应类型的序列化方法，其实就是如上面所介绍的那样，实现对应类型的<code>writeObject</code>和<code>readObject</code>方法。</p>
+<p>我们只是使用hessian工具来完成序列化和反序列化工作，如果你需要自己实现一个自定义序列化工具，那么可以参考hessian的实现方式。</p>
+<p>测试代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public class HessianSerialibale &#123;</span><br><span class="line"></span><br><span class="line">    public static void serial(Blog blog) throws Exception&#123;</span><br><span class="line"></span><br><span class="line">        ByteArrayOutputStream baos &#x3D; new ByteArrayOutputStream();</span><br><span class="line">        Hessian2Output os &#x3D; new Hessian2Output(baos);</span><br><span class="line">        os.writeObject(blog);</span><br><span class="line">        os.close();</span><br><span class="line">        Hessian2Input is &#x3D; new Hessian2Input(new ByteArrayInputStream(baos.toByteArray()));</span><br><span class="line">        Blog blog1 &#x3D; (Blog) is.readObject();</span><br><span class="line">        is.close();</span><br><span class="line">        System.out.println(blog1);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>尤其需要说明，在上面的测试代码中，如果不将os close掉，则一直会报错，告诉<code>java.io.EOFException: readObject: unexpected end of file</code>.</p>
+<p>此外，处理性能上的优势，hessian还可以在<code>serialVersionUID</code>被后期更改的时候，反序列化也没有问题。这是因为，hessian不依赖UID来匹配类型，而且hessian在序列化完了之后的二进制流里面，会保留每个field对应的一些属性信息，虽然这些信息会增加一点流大小，但是对反序列化工作很有帮助。</p>
+</blockquote>
+<h4 id="Kryo工具"><a href="#Kryo工具" class="headerlink" title="Kryo工具"></a>Kryo工具</h4><blockquote>
+<p>关于Kryo的性能对比，可以参考<a href="http://developer.51cto.com/art/201506/480273.htm" target="_blank" rel="noopener">各种 Java 的序列化库的性能比较测试结果</a>。</p>
+</blockquote>
+<p>Kryo是一个快速高效的Java对象序列化框架，其在java的序列化上的性能指标甚至优于google著名的序列化框架protobuf，已经在Twitter、Groupon、Yahoo以及多个著名开源项目（如Hive、Storm）中广泛的使用。总之，Kryo性能非常霸道。</p>
+<p>测试代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">public class KryoSerializable &#123;</span><br><span class="line"></span><br><span class="line">    public static void serial(Blog blog)throws Exception&#123;</span><br><span class="line">        Kryo kryo &#x3D; new Kryo();</span><br><span class="line">        ByteArrayOutputStream baos &#x3D; new ByteArrayOutputStream();</span><br><span class="line">        Output output &#x3D; new Output(baos);</span><br><span class="line">        kryo.writeClassAndObject(output, blog);</span><br><span class="line">        output.close();</span><br><span class="line"></span><br><span class="line">        ByteArrayInputStream bais &#x3D; new ByteArrayInputStream(baos.toByteArray());</span><br><span class="line">        Input input &#x3D; new Input(bais);</span><br><span class="line">        Blog blog1 &#x3D; (Blog) kryo.readClassAndObject(input);</span><br><span class="line">        input.close();</span><br><span class="line">        System.out.println(blog1);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>由于Kryo工具生成的字节码中是不包含field元数据信息的，这样的话，在兼容性上就很难处理了。比如我现在对一个对象增加一个字段属性，但是这样子的话，老的所有序列化二进制流就无法被正常反序列化成对象了。在很多场景下，这都是无法容忍的。</p>
+</blockquote>
+<h4 id="JSON工具"><a href="#JSON工具" class="headerlink" title="JSON工具"></a>JSON工具</h4><blockquote>
+<p>JSON工具进行序列化和反序列化在上文已经进行了说明，并且RPC示例代码就是使用这种方式。其性能上跟hessian差不多，并且反序列化兼容会很，但是其有个比较大的缺点，就是很多类型，可能JSON工具无法支持，并且其是基于String然后再转成二进制流的，所以流的大小，可能并没有想象的那么好。</p>
+</blockquote>
+<h3 id="RPC协议编解码"><a href="#RPC协议编解码" class="headerlink" title="RPC协议编解码"></a>RPC协议编解码</h3><blockquote>
+<p>除了序列化，在编码的上/下游还需要对二进制流或者对象做一些额外的处理，而这些处理本身和二进制流化没有太大关系。</p>
+</blockquote>
+<p>比如dubbo给出的处理流程，可以清晰的看出序列化和编码之间的区别(个人觉得广义的编码应该包括序列化那部分)如下：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/dubbo_codec.png" alt="dubbo线程处理流程"></p>
+<p>每个RPC组件，基本上都是直接基于Socket来开发通信层功能，但是在网络传输的数据由于网络链路和协议的问题，会出现半包，分包和粘包情况。这样就需要设计编解码协议头来解码网络流，如上dubbo视图。</p>
+<p>下面我们来看下dubbo的协议编码格式(具体参考：<a href="http://dubbo.io/Developer+Guide-zh.htm#DeveloperGuide-zh-远程通讯细节" target="_blank" rel="noopener">远程通讯细节</a>)：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/dubbo_protocol.png" alt="dubbo协议头"></p>
+<p>Dubbo协议头分析：</p>
+<blockquote>
+<p>协议头固定长度<code>16</code>个字节，也就是128位。这样，当我们解码流的时候，会首先提取前16byte来解析。</p>
+<p>先来看看MAGIC设计：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; magic header.</span><br><span class="line">protected static final short    MAGIC              &#x3D; (short) 0xdabb;</span><br><span class="line">protected static final byte     MAGIC_HIGH         &#x3D; Bytes.short2bytes(MAGIC)[0];</span><br><span class="line">protected static final byte     MAGIC_LOW          &#x3D; Bytes.short2bytes(MAGIC)[1];</span><br></pre></td></tr></table></figure>
+
+<p><code>SerializationID</code>表示序列化类型ID，Dubbo支持多种序列化工具，比如hessian，jdk，fastjson等，所以需要在协议头里面指定序列化方式，这样在解码完了之后才能知道内容使用哪种工具反序列化。</p>
+<p><code>event</code>表示事件，比如这个请求是<code>heartbeat</code>。<code>two way</code>表示请求是否是需要交互返回数据的请求。<code>req/res</code>表示该数据是请求还是响应。<code>status</code>表示状态位，当响应数据的时候，根据该字段判断是否成功。</p>
+<p><code>id</code>表示请求id。这个ID真的真的很重要！！！这个id是请求客户端生成的唯一id，保证在服务运行期内id不会重复。此外，在阿里内部的RPC组件HSF最开始是将id放在data数据内，这样只有在反序列化的时候，才能拿到ReqId，但是有些时候ReqId对应的RPC请求可能由于超时或者已经被处理，导致客户端对于这种case直接丢弃就可以。因此，将id放在head里面，则直接解码的时候就可以拿到ReqId去check，而不需要额外反序列化工作。</p>
+<p><code>data length</code>则表示正文内容的长度。解码是通过该字段来判断消息正文字节流的整个完整包，这样反序列化就可以进行正确的转换对象了。</p>
+</blockquote>
+<h3 id="RPC路由和负载均衡"><a href="#RPC路由和负载均衡" class="headerlink" title="RPC路由和负载均衡"></a>RPC路由和负载均衡</h3><blockquote>
+<p>路由策略，是完成单个机器对于服务方调用链路的选择策略,然后把客户端的服务请求传输到具体的某台服务端的机器上。负载均衡是完成路由的一种实现方式，其将前端请求根据一定算法策略来分发到不同机器上，使得集群中机器资源得到充分均衡的利用，此外还可以将不可用机器剔出请求列表。但是，显然路由除了负载均衡之外，还有其他方式。</p>
+<p>我们知道，现在的服务后台都是多台机器部署的服务集群，在这些集群在请求的入口，一般会有负责负载均衡的机器部署，来完成请求的合理分发。RPC的结构也是客户端和服务端模式，但是其结构中我们发现是没有中间代理server层的，所以对于客户端在集群中的远程服务调用，就需要客户端自己来完成负载均衡的逻辑了。</p>
+<p>除负载均衡之外，我们还会存在其他路由加强方式。比如，我们有多个机房都部署服务的时候，我需要优先选择同机房内的服务调用。</p>
+</blockquote>
+<p>一般定义类似如下的接口，然后根据自己的需求实现自己的负载均衡/路由策略：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public interface ILoadBalanceStrategy &#123;</span><br><span class="line"></span><br><span class="line">    &#x2F;**</span><br><span class="line">     * 从众多连接池子中选择其中一个池子.</span><br><span class="line">     *</span><br><span class="line">     * @param invokeConns 客户端维持的和各个服务端维持的连接池对象列表</span><br><span class="line">     * @param invocation 本次客户端调用服务端相关的信息</span><br><span class="line">     * @return 返回和其中一个服务端维持链接的连接池对象</span><br><span class="line">     *&#x2F;</span><br><span class="line">    public InvokeConn select(List&lt;InvokeConn&gt; invokeConns, Invocation invocation);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>一般RPC组件中，会实现两个通用的负载均衡策略。随机和轮询。具体实现可以参考：<a href="https://github.com/ketao1989/ourea/tree/master/ourea-core/src/main/java/com/taocoder/ourea/core/loadbalance" target="_blank" rel="noopener">https://github.com/ketao1989/ourea/tree/master/ourea-core/src/main/java/com/taocoder/ourea/core/loadbalance</a></p>
+</blockquote>
+<p><em>再谈谈维护可用服务列表：</em></p>
+<p>一般我们会在客户端和服务端之间维持长连接，然后通过心跳机制来确保服务端是否在线提供服务。此外，对一些没有维护长连接或者可选择不建立长连接的RPC组件来说，只能通过注册服务机制来监听服务端是否下线。</p>
+<p>如果调用比较频繁的服务来说，客户端可以在服务连接未成功的情况下，将该机器从服务连接列表中剔除，放在<code>暂时不可用机器列表</code>，然后起一个定时任务，当机器暂存5s后，再放到可用列表尝试请求服务调用。</p>
+<p>关于心跳请求的定时任务，可以参考使用Netty提供的<code>HashedWheelTimer</code><a href="https://zacard.net/2016/12/02/netty-hashedwheeltimer/" target="_blank" rel="noopener">netty源码解读之时间轮算法实现-HashedWheelTimer</a>，其提供了在不要求高精度触发定时任务的场景下，性能非常高。</p>
+<p><em>最后，再聊聊服务调用路由：</em></p>
+<p>服务路由，这里特指除负载均衡之外的一些服务寻址策略。和负载均衡不同的是，这里的路由策略是单个机器根据自身特点做出的服务方选择策略，而负载均衡策略则是基于整个集群中所有机器的普适策略。如上所言，我们的多机房部署，再拿到集群机器列表之后，我们还需要维持一个本机房的机器列表(一般，对服务集群列表进行按IP前缀规则来过滤)，这样当我们选择调用机器的时候，会优先从本机房获取连接，如果没有才会按照负载均衡来获取服务调用连接。</p>
+<p>此外，对于一些完善的RPC框架，可能还会支持动态可配置路由规则。比如，我们可以按照机器ip来配置，某些客户端调用只能路由到某些服务端机器上。对于线上测试问题跟踪而言，可以很好的根据服务调用链路，来查看日志解决问题。</p>
+<h3 id="RPC超时管理"><a href="#RPC超时管理" class="headerlink" title="RPC超时管理"></a>RPC超时管理</h3><p>作为一个健康的服务，一定需要超时机制。相当多的服务不可用问题，都是因为客户端没有超时机制，导致服务端抖动的一段时间内，客户端一直处于占用连接等待响应的阶段，耗尽服务端资源，最后导致服务端集群雪崩。所以在请求网络服务的时候，增加超时设置是多么重要(当然，连接使用现在最大连接数的连接池也非常重要)。</p>
+<p>RPC的调用实现，一般会有一个IO线程池来处理RPC调用，也就是我们的业务线程会将调用请求交给RPC线程来处理，返回一个future对象。远程调用处理完成之后，RPC线程会将结果填充到<code>futrue</code>对象内部，然后告知调用方调用完成，可以使用<code>futrue.get</code>来获取返回数据。如下所示：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/timeout.png" alt="RPC客户端调用处理"></p>
+<p>从上图可以看出，<code>超时1</code>我们可以直接使用<code>futrue.get</code>特性来设置和处理超时问题。<code>超时2</code>指的是服务端执行的超时，比如我们客户端调用的时间是1s，但是服务端可能会超过1s，而这个时候客户端其实已经超时丢弃这次请求，但是服务端还一直执行直到完成返回，这个时候服务端需要序列化对象然后传输到客户端，但是这个流程其实可以简化的。</p>
+<p>因此，服务端的超时管理，是当服务端业务逻辑执行完成之后(这期间实现超时中断比较难)，比较执行时间和客户端设置的超时时间，如果接近，则打包服务端超时错误信息返回给客户端即可。这样可以节省序列化数据时间(直接使用序列化好了的数据返回)，已经减少网络传输时间。</p>
+<h3 id="RPC-服务发现"><a href="#RPC-服务发现" class="headerlink" title="RPC 服务发现"></a>RPC 服务发现</h3><p>在对外http服务里，我们有一个配套的支撑基础组件叫做DNS，其根据域名找到某几个外网ip地址。然后，请求打到网站内部，一般首先到nginx群，nginx也会根据url规则找到配置好的一组ip地址，此外，nginx根据healthcheck来检查http服务是否可用。但是，使用nginx时，我们通常需要把ip地址离线配置到nginx上。</p>
+<p>我们提供的RPC服务都是集群部署，所以我们需要在客户端维持一个服务调用地址列表。所以，我们也需要类似DNS功能的服务。 但是，我们不想我们的RPC服务集群有机器迁移或者增加时，所需要离线给客户端配置，这就是说，我们还需要实时更新集群机器列表的功能。</p>
+<p>这，就是RPC服务发现模块需要解决的问题。</p>
+<p>一般，服务发现主要包括2部分：</p>
+<ol>
+<li>服务地址存储；</li>
+<li>服务状态感知。</li>
+</ol>
+<h4 id="服务地址存储"><a href="#服务地址存储" class="headerlink" title="服务地址存储"></a>服务地址存储</h4><p>服务地址存储，首先需要一个组件来存放服务机器列表等RPC服务数据，提供存储服务的组件有很多，比如：zookeeper，redis，mysql等等。然后，在服务端正常启动可以提供服务之后，需要将自己的服务地址，比如ip，port，以及服务信息，比如接口，版本号等信息，提交到存储服务机器上。然后，客户端在启动的时候，从存储服务的机器上，根据接口，版本等服务信息来拿到提供对应服务的RPC地址列表，客户端根据这个列表就可以开始调用远程服务了。</p>
+<p>此外，为了服务治理，比如我们需要知道哪些客户端调用了我们对外提供的服务，就需要客户端在启动的时候，把自己的地址数据和调用的服务信息提交到存储服务上去。</p>
+<p>对于提供比较完善的服务治理功能，还可以提供后台操作界面，让某些服务端机器手动操作上/下线，这样让通过RPC调用的客户端不将流量打到下线的服务器上。</p>
+<p>简单的服务发现，RPC方和存储组件之间的交互如下：</p>
+<p><img src="https://ketao1989.github.io/images/2016/12/find.png" alt="RPC服务发现结果"></p>
+<h4 id="服务状态感知"><a href="#服务状态感知" class="headerlink" title="服务状态感知"></a>服务状态感知</h4><p>这里的服务感知，包括客户端感知服务端状态，以及存储服务感知RPC参与方的状态。</p>
+<p>正常情况下，我们从存储组件那里拿到服务端地址后，自己来处理路由策略，然后选择一个服务端建立连接，执行远程调用。在执行的过程中，如果有服务不可用，我们可以从我们的服务列表中，将它剔除。但是，如果服务增加机器或者服务机器迁移了呢？这就需要我们及时了解服务端集群的整体机器状态。两种方式：</p>
+<ol>
+<li>客户端其一个定时调度任务，周期去存储组件处拉取最新的服务集群地址列表，但是这个周期粒度比较难控制。</li>
+<li>客户端和存储组件建立一个长连接，当存储组件发现有服务集群状态发生变更，推送给客户端。但是，这又要求存储组件具有推送功能。</li>
+</ol>
+<p>目前有这个功能的存储组件，主要有zookeeper和redis，此外，也可以自己实现一个简单可靠的服务发现中间件，对外提供推送存储服务。</p>
+<p>我们在服务启动的时候，会告知存储组件我们对外提供服务的地址信息和客户端的地址信息；在服务已知操作的服务下线的时候，会将存储组件中存储的服务相关信息清除掉。但是，显然，在服务下线或者客户端下线的时候，都存在没有清除存储信息就宕机的情况，这个时候就需要存储组件需要有感知各个参与方的状态了。</p>
+<p>一般，我们会让RPC两方都和存储组件保持连接，然后通过心跳等方式来探测对方是否下线。</p>
+<p>目前提供这个功能的存储组件，主要有zookeeper和redis。当然，你也可以实现一个，可以和所有注册服务和查找服务的server保持长连接。由于，可能有大量的机器建立长连接，所以服务器性能一定要高。</p>
+<blockquote>
+<p>基于zookeeper实现服务发现功能的代码，可以参考：<a href="https://github.com/ketao1989/ourea" target="_blank" rel="noopener">https://github.com/ketao1989/ourea</a></p>
+</blockquote>
+<h3 id="RPC-多线程IO模型"><a href="#RPC-多线程IO模型" class="headerlink" title="RPC 多线程IO模型"></a>RPC 多线程IO模型</h3><h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>RPC其实是一个说简单简单，说复杂复杂的组件。就如上文写的一个简单的RPC示例，其本身就是一个具备RPC功能的组件。但是，在深入篇中，可以看到每一个模块都可以深入优化，以及支持模块化插件话设计开发。</p>
+<p>本文从单机到集群，从本地调用到远程调用的渐进过度。然后再从一个满足RPC结构图的简单示例开始，代码介绍每个模块，进而深入成熟RPC框架所需要考虑和优化的各个技术点。</p>
+<p>本文的目的，旨在对RPC整体结构和各个模块进行介绍和深入，然后根据这些点，可以去分析开源的RPC框架或者自己写一个RPC组件。</p>
+<p>在本文中，很多点都是一边学习，一边总结，所以知识有限，如有问题，欢迎交流。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><ol>
+<li><p><a href="https://yq.aliyun.com/articles/8931" target="_blank" rel="noopener">linux内存管理浅析</a></p>
+</li>
+<li><p><a href="http://www.ibm.com/developerworks/cn/websphere/library/techarticles/1601_clark-trs/1601_clark.html" target="_blank" rel="noopener">微服务、SOA 和 API：是敌是友？</a></p>
+</li>
+<li><p><a href="http://tech.meituan.com/serialization_vs_deserialization.html" target="_blank" rel="noopener">序列化和反序列化</a></p>
+</li>
+</ol>
+<hr>
+<p>本文转载自</p>
+<p><a href="https://ketao1989.github.io/2016/12/10/rpc-theory-in-action/" target="_blank" rel="noopener">深入浅出RPC原理</a></p>
+<p>遵循CC 4.0 BY-SA版权协议</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/CAS%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98%E4%BB%A5%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/11/CAS%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98%E4%BB%A5%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="post-title-link" itemprop="url">CAS存在的问题以及解决方案</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-11 10:57:09 / 修改时间：19:02:46" itemprop="dateCreated datePublished" datetime="2020-06-11T10:57:09+08:00">2020-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="CAS的由来"><a href="#CAS的由来" class="headerlink" title="CAS的由来"></a>CAS的由来</h2><p>在JDK 5之前Java语言是靠synchronized关键字保证同步的，有锁机制存在以下问题：</p>
+<p>（1）在多线程竞争下，加锁、释放锁会导致比较多的上下文切换和调度延时，引起性能问题。</p>
+<p>（2）一个线程持有锁会导致其它所有需要此锁的线程挂起。</p>
+<p>（3）如果一个优先级高的线程等待一个优先级低的线程释放锁会导致优先级倒置，引起性能风险。</p>
+<p>volatile是不错的机制，但是volatile不能保证原子性。因此对于同步最终还是要回到锁机制上来。</p>
+<p>独占锁是一种悲观锁，synchronized就是一种独占锁，会导致其它所有需要锁的线程挂起，等待持有锁的线程释放锁。而另一个更加有效的锁就是乐观锁。所谓乐观锁就是，每次不加锁而是假设没有冲突而去完成某项操作，如果因为冲突失败就重试，直到成功为止。乐观锁用到的机制就是CAS，Compare and Swap。</p>
+<h2 id="什么是CAS"><a href="#什么是CAS" class="headerlink" title="什么是CAS"></a>什么是CAS</h2><p>CAS,compare and swap的缩写，中文翻译成比较并交换。</p>
+<p>我们都知道，在java语言之前，并发就已经广泛存在并在服务器领域得到了大量的应用。所以硬件厂商老早就在芯片中加入了大量直至并发操作的原语，从而在硬件层面提升效率。在intel的CPU中，使用cmpxchg指令。</p>
+<p>在Java发展初期，java语言是不能够利用硬件提供的这些便利来提升系统的性能的。而随着java不断的发展,Java本地方法(JNI)的出现，使得java程序越过JVM直接调用本地方法提供了一种便捷的方式，因而java在并发的手段上也多了起来。而在Doug Lea提供的cucurenct包中，CAS理论是它实现整个java包的基石。</p>
+<p>CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。 如果内存位置的值与预期原值相匹配，那么处理器会自动将该位置值更新为新值 。否则，处理器不做任何操作。无论哪种情况，它都会在 CAS 指令之前返回该 位置的值。（在 CAS 的一些特殊情况下将仅返回 CAS 是否成功，而不提取当前 值。）CAS 有效地说明了“我认为位置 V 应该包含值 A；如果包含该值，则将 B 放到这个位置；否则，不要更改该位置，只告诉我这个位置现在的值即可。”</p>
+<p>通常将 CAS 用于同步的方式是从地址 V 读取值 A，执行多步计算来获得新 值 B，然后使用 CAS 将 V 的值从 A 改为 B。如果 V 处的值尚未同时更改，则 CAS 操作成功。</p>
+<p>类似于 CAS 的指令允许算法执行读-修改-写操作，而无需害怕其他线程同时 修改变量，因为如果其他线程修改变量，那么 CAS 会检测它（并失败），算法 可以对该操作重新计算。</p>
+<h2 id="CAS的目的"><a href="#CAS的目的" class="headerlink" title="CAS的目的"></a>CAS的目的</h2><p>利用CPU的CAS指令，同时借助JNI来完成Java的非阻塞算法。其它原子操作都是利用类似的特性完成的。而整个J.U.C都是建立在CAS之上的，因此对于synchronized阻塞算法，J.U.C在性能上有了很大的提升。</p>
+<h2 id="CAS的问题"><a href="#CAS的问题" class="headerlink" title="CAS的问题"></a>CAS的问题</h2><blockquote>
+<p>CAS虽然很高效的解决原子操作，但是CAS仍然存在三大问题。ABA问题，循环时间长开销大和只能保证一个共享变量的原子操作</p>
+</blockquote>
+<h3 id="ABA问题"><a href="#ABA问题" class="headerlink" title="ABA问题"></a>ABA问题</h3><p>因为CAS需要在操作值的时候检查下值有没有发生变化，如果没有发生变化则更新，但是如果一个值原来是A，变成了B，又变成了A，那么使用CAS进行检查时会发现它的值没有发生变化，但是实际上却变化了。ABA问题的解决思路就是使用版本号。在变量前面追加上版本号，每次变量更新的时候把版本号加一，那么A－B－A 就会变成1A-2B－3A。</p>
+<p>从Java1.5开始JDK的atomic包里提供了一个类AtomicStampedReference来解决ABA问题。这个类的compareAndSet方法作用是首先检查当前引用是否等于预期引用，并且当前标志是否等于预期标志，如果全部相等，则以原子方式将该引用和该标志的值设置为给定的更新值。</p>
+<p>AtomicStampedReference 实例使用Demo示例代码:<br><a href="https://www.cnblogs.com/java20130722/p/3206742.html" target="_blank" rel="noopener">https://www.cnblogs.com/java20130722/p/3206742.html</a></p>
+<h3 id="循环时间长开销大"><a href="#循环时间长开销大" class="headerlink" title="循环时间长开销大"></a>循环时间长开销大</h3><p>自旋CAS如果长时间不成功，会给CPU带来非常大的执行开销。如果JVM能支持处理器提供的pause指令那么效率会有一定的提升，pause指令有两个作用，第一它可以延迟流水线执行指令（de-pipeline）,使CPU不会消耗过多的执行资源，延迟的时间取决于具体实现的版本，在一些处理器上延迟时间是零。第二它可以避免在退出循环的时候因内存顺序冲突（memory order violation）而引起CPU流水线被清空（CPU pipeline flush），从而提高CPU的执行效率。</p>
+<h3 id="只能保证一个共享变量的原子操作"><a href="#只能保证一个共享变量的原子操作" class="headerlink" title="只能保证一个共享变量的原子操作"></a>只能保证一个共享变量的原子操作</h3><p>当对一个共享变量执行操作时，我们可以使用循环CAS的方式来保证原子操作，但是对多个共享变量操作时，循环CAS就无法保证操作的原子性，这个时候就可以用锁，或者有一个取巧的办法，就是把多个共享变量合并成一个共享变量来操作。比如有两个共享变量i＝2,j=a，合并一下ij=2a，然后用CAS来操作ij。从Java1.5开始JDK提供了AtomicReference类来保证引用对象之间的原子性，你可以把多个变量放在一个对象里来进行CAS操作。</p>
+<p>转载自<a href="https://blog.csdn.net/hl_java/article/details/90520405" target="_blank" rel="noopener">CAS存在的问题以及解决方案</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/11/%E7%9C%8B%E5%9B%BE%E5%AD%A6HTTPS/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -911,705 +1770,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/09/ThreadLocal%E8%AF%A6%E8%A7%A3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/09/ThreadLocal%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">ThreadLocal详解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-10 02:18:17 / 修改时间：18:58:21" itemprop="dateCreated datePublished" datetime="2020-06-10T02:18:17+08:00">2020-06-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>653</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>ThreadLocal 提供<strong>线程局部变量</strong>；一个线程局部变量在多个线程中分别有独立的值(副本)</p>
-<h2 id="产生背景"><a href="#产生背景" class="headerlink" title="产生背景"></a>产生背景</h2><p>用于多线程场景,<strong>避免</strong>一致性问题</p>
-<p>一致性问题：</p>
-<ol>
-<li>发生在多个主体对同一份数据无法达成共识。</li>
-<li>包括：分布式一致性问题、并发问题等。</li>
-<li>特点：场景多、问题复杂、难以察觉—需要严密的思考甚至数学论证。</li>
-</ol>
-<p>一致性问题解决办法：</p>
-<ol>
-<li>排队（例如：锁synchronized、互斥量、管程、屏障等）</li>
-<li>投票（例如：Paxos，Raft等）</li>
-<li>避免（例如：ThreadLocal等 空间换时间的方式）</li>
-</ol>
-<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p><code>ThreadLocal</code>模型:<br><img src="https://segmentfault.com/img/bVbIdVN" alt="image.png"></p>
-<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><h3 id="线程资源持有"><a href="#线程资源持有" class="headerlink" title="线程资源持有"></a>线程资源持有</h3><p>在一个用户一个线程的情况下,用户数据使用ThreadLocal存储,其他程序模块可以方便地拿到分配给当前线程的用户的数据,全局获取,减少编程难度.<br><img src="https://segmentfault.com/img/bVbIcAO" alt="image.png"></p>
-<h3 id="线程资源一致性"><a href="#线程资源一致性" class="headerlink" title="线程资源一致性"></a>线程资源一致性</h3><p>以JDBC为例,一个事务分为多个Part,它们在同一个线程中(如Spring响应池中分配的一个线程)请求获取一个数据库连接,将会得到同一个JDBC连接.这样的好处是一个JDBC连接维护了事务的状态,相同事务多次获取连接可以拿到同一个JDBC连接.ThreadLocal帮助需要保持线程一致的资源(如数据库事务)维护一致性,降低编程难度.<br><img src="https://segmentfault.com/img/bVbIcDA" alt="image.png"></p>
-<h3 id="线程安全"><a href="#线程安全" class="headerlink" title="线程安全"></a>线程安全</h3><p>在以前C语言中常用<code>setLastError()</code>和<code>getLastError()</code>,多线程下就需要ThreadLocal保证一致性.ThreadLocal帮助只考虑了单线程的程序库,无缝向多线程场景迁移.<br><img src="https://segmentfault.com/img/bVbIcGF" alt="image.png"></p>
-<h3 id="分布式计算"><a href="#分布式计算" class="headerlink" title="分布式计算"></a>分布式计算</h3><p>将计算任务分给不同的线程,用<code>ThreadLocal</code>存储本线程的计算结果,然后再汇总.</p>
-<p><img src="https://segmentfault.com/img/bVbIcHL" alt="image.png"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">负载均衡算法总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-08 03:25:20 / 修改时间：11:39:25" itemprop="dateCreated datePublished" datetime="2020-06-08T03:25:20+08:00">2020-06-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="负载均衡算法"><a href="#负载均衡算法" class="headerlink" title="负载均衡算法"></a>负载均衡算法</h1><p>常用的6种负载均衡算法：</p>
-<h2 id="1、轮询法"><a href="#1、轮询法" class="headerlink" title="1、轮询法"></a>1、轮询法</h2><p>将请求按顺序轮流地分配到后端服务器上，它均衡地对待后端的每一台服务器，而不关心服务器实际的连接数和当前的系统负载。</p>
-<h2 id="2、加权轮询法"><a href="#2、加权轮询法" class="headerlink" title="2、加权轮询法"></a>2、加权轮询法</h2><p>不同的后端服务器可能机器的配置和当前系统的负载并不相同，因此它们的抗压能力也不相同。</p>
-<p>给配置高、负载低的机器配置更高的权重，让其处理更多的请；而配置低、负载高的机器，给其分配较低的权重，降低其系统负载，加权轮询能很好地处理这一问题，并将请求顺序且按照权重分配到后端。</p>
-<h2 id="3、随机法"><a href="#3、随机法" class="headerlink" title="3、随机法"></a>3、随机法</h2><p>通过系统的随机算法，根据后端服务器的列表大小值来随机选取其中的一台服务器进行访问。由概率统计理论可以得知，随着客户端调用服务端的次数增多，其实际效果越来越接近于平均分配调用量到后端的每一台服务器，也就是轮询的结果。</p>
-<h2 id="4、加权随机法"><a href="#4、加权随机法" class="headerlink" title="4、加权随机法"></a>4、加权随机法</h2><p>与加权轮询法一样，加权随机法也根据后端机器的配置，系统的负载分配不同的权重。不同的是，它是按照权重随机请求后端服务器，而非顺序。</p>
-<h2 id="5、源IP地址哈希法"><a href="#5、源IP地址哈希法" class="headerlink" title="5、源IP地址哈希法"></a>5、源IP地址哈希法</h2><p> 源IP地址哈希的思想是根据获取客户端的<code>IP地址</code>，通过哈希函数计算得到的一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是客服端要访问服务器的序号。采用源地址哈希法进行负载均衡，同一<code>IP地址</code>的客户端，当后端服务器列表不变时，它每次都会映射到同一台后端服务器进行访问(若后端服务器列表改变,需要一致性哈希算法来优化,见下文)。</p>
-<h2 id="6、最小连接数法"><a href="#6、最小连接数法" class="headerlink" title="6、最小连接数法"></a>6、最小连接数法</h2><p>最小连接数算法比较灵活和智能，由于后端服务器的配置不尽相同，对于请求的处理有快有慢，它是根据后端服务器当前的连接情况，动态地选取其中当前积压连接数最少的一台服务器来处理当前的请求，尽可能地提高后端服务的利用效率，将负责合理地分流到每一台服务器。</p>
-<h1 id="一致性哈希-Consistent-Hashing"><a href="#一致性哈希-Consistent-Hashing" class="headerlink" title="一致性哈希(Consistent Hashing)"></a>一致性哈希(Consistent Hashing)</h1><p>在上面的源地址hash算法中,存在以下的2个问题</p>
-<ol>
-<li><p>当一台服务器宕机了或者新添加一台机器之后,这个时候<code>hashCode % servers.size()</code>需要重新计算hash值, 如果在缓存的环境中,所有的请求都会涌向数据库服务器,给数据库服务器带来巨大的压力,可能导致整个系统不可用,形成雪崩效应.</p>
-</li>
-<li><p>当新增了一台性能强的机器后,利用上述的hash算法无法让新增的性能强的服务器多承担压力.</p>
-</li>
-</ol>
-<p>基于上面的2个问题,提出了hash算法的改进,即Consistent Hashing算法.Consistent Hashing也是一种 hash 算法，简单的说，<strong>在移除 / 添加操作，它能够尽可能小的改变已存在 key 映射关系.</strong></p>
-<p>Consistent Hashing算法的原理是它<strong>将hash函数的值域组织成一个环形</strong>,整个空间按照顺时针的方式进行组织,将对应的服务器节点进行hash,将他们映射到hash环上,假设有四台机器node1-4,hash之后如图所示:</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/6024043-de85b3798f9d53c8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/835/format/webp" alt="img"></p>
-<p>接下来使用相同的hash函数,计算出对应的key值和hash值,按照顺时针的方式,分布在node1和node2的key,访问时被定位在node2,分布在node2和node4的key被定位在node4上,以此类推.假设现在新增一个node5,假设hash之后在node2和node4之间,如图所示:</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/6024043-326c19e2430af9f9.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/822/format/webp" alt="img"></p>
-<p>那么受影响的节点只有node2和node5,他们将会从新hash,而其他的key的映射将不会变化.</p>
-<p>当然,上面描绘了一种很理想的情况,即各个节点在环上分布的十分均匀.正常情况下,当节点数量少的时候,节点分布并不均匀,这时需要引入虚拟节点机制.</p>
-<p>部分转载自<a href="https://www.jianshu.com/p/40e196414cfa" target="_blank" rel="noopener">常见的一些负载均衡算法总结</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E8%AF%A6%E8%A7%A3%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8%E7%9A%84%E5%8E%9F%E7%90%86%EF%BC%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%92%8C%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9/" class="post-title-link" itemprop="url">详解布隆过滤器的原理，使用场景和注意事项</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-08 02:40:04 / 修改时间：10:41:50" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载自<a href="https://zhuanlan.zhihu.com/p/43263751" target="_blank" rel="noopener">详解布隆过滤器的原理，使用场景和注意事项</a></p>
-<p>在进入正文之前，之前看到的有句话我觉得说得很好：</p>
-<blockquote>
-<p>Data structures are nothing different. They are like the bookshelves of your application where you can organize your data. Different data structures will give you different facility and benefits. To properly use the power and accessibility of the data structures you need to know the trade-offs of using one.</p>
-<p>大意是不同的数据结构有不同的适用场景和优缺点，你需要仔细权衡自己的需求之后妥善适用它们，布隆过滤器就是践行这句话的代表。</p>
-</blockquote>
-<h2 id="什么是布隆过滤器"><a href="#什么是布隆过滤器" class="headerlink" title="什么是布隆过滤器"></a><strong>什么是布隆过滤器</strong></h2><p>本质上布隆过滤器是一种数据结构，比较巧妙的概率型数据结构（probabilistic data structure），特点是高效地插入和查询，可以用来告诉你 <strong>“某样东西一定不存在或者可能存在”</strong>。</p>
-<p>相比于传统的 List、Set、Map 等数据结构，它更高效、占用空间更少，但是缺点是其返回的结果是概率性的，而不是确切的。</p>
-<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a><strong>实现原理</strong></h2><p><strong>HashMap 的问题</strong></p>
-<p>讲述布隆过滤器的原理之前，我们先思考一下，通常你判断某个元素是否存在用的是什么？应该蛮多人回答 HashMap 吧，确实可以将值映射到 HashMap 的 Key，然后可以在 O(1) 的时间复杂度内返回结果，效率奇高。但是 HashMap 的实现也有缺点，例如存储容量占比高，考虑到负载因子的存在，通常空间是不能被用满的，而一旦你的值很多例如上亿的时候，那 HashMap 占据的内存大小就变得很可观了。</p>
-<p>还比如说你的数据集存储在远程服务器上，本地服务接受输入，而数据集非常大不可能一次性读进内存构建 HashMap 的时候，也会存在问题。</p>
-<p><strong>布隆过滤器数据结构</strong></p>
-<p>布隆过滤器是一个 bit 向量或者说 bit 数组，长这样：</p>
-<p><img src="https://pic3.zhimg.com/80/v2-530c9d4478398718c15632b9aa025c36_720w.jpg" alt="img"></p>
-<p>如果我们要映射一个值到布隆过滤器中，我们需要使用<strong>多个不同的哈希函数</strong>生成<strong>多个哈希值，</strong>并对每个生成的哈希值指向的 bit 位置 1，例如针对值 “baidu” 和三个不同的哈希函数分别生成了哈希值 1、4、7，则上图转变为：</p>
-<p><img src="https://pic4.zhimg.com/80/v2-a0ee721daf43f29dd42b7d441b79d227_720w.jpg" alt="img"></p>
-<p>Ok，我们现在再存一个值 “tencent”，如果哈希函数返回 3、4、8 的话，图继续变为：</p>
-<p><img src="https://pic3.zhimg.com/80/v2-c0c20d8e06308aae1578c16afdea3b6a_720w.jpg" alt="img"></p>
-<p>值得注意的是，4 这个 bit 位由于两个值的哈希函数都返回了这个 bit 位，因此它被覆盖了。现在我们如果想查询 “dianping” 这个值是否存在，哈希函数返回了 1、5、8三个值，结果我们发现 5 这个 bit 位上的值为 0，<strong>说明没有任何一个值映射到这个 bit 位上</strong>，因此我们可以很确定地说 “dianping” 这个值不存在。而当我们需要查询 “baidu” 这个值是否存在的话，那么哈希函数必然会返回 1、4、7，然后我们检查发现这三个 bit 位上的值均为 1，那么我们可以说 “baidu” <strong>存在了么？答案是不可以，只能是 “baidu” 这个值可能存在。</strong></p>
-<p>这是为什么呢？答案跟简单，因为随着增加的值越来越多，被置为 1 的 bit 位也会越来越多，这样某个值 “taobao” 即使没有被存储过，但是万一哈希函数返回的三个 bit 位都被其他值置位了 1 ，那么程序还是会判断 “taobao” 这个值存在。</p>
-<h2 id="支持删除么"><a href="#支持删除么" class="headerlink" title="支持删除么"></a>支持删除么</h2><p>感谢评论区提醒，传统的布隆过滤器并不支持删除操作。但是名为 Counting Bloom filter 的变种可以用来测试元素计数个数是否绝对小于某个阈值，它支持元素删除。可以参考文章 <a href="https://cloud.tencent.com/developer/article/1136056" target="_blank" rel="noopener">Counting Bloom Filter 的原理和实现</a></p>
-<h2 id="如何选择哈希函数个数和布隆过滤器长度"><a href="#如何选择哈希函数个数和布隆过滤器长度" class="headerlink" title="如何选择哈希函数个数和布隆过滤器长度"></a><strong>如何选择哈希函数个数和布隆过滤器长度</strong></h2><p>很显然，过小的布隆过滤器很快所有的 bit 位均为 1，那么查询任何值都会返回“可能存在”，起不到过滤的目的了。布隆过滤器的长度会直接影响误报率，布隆过滤器越长其误报率越小。</p>
-<p>另外，哈希函数的个数也需要权衡，个数越多则布隆过滤器 bit 位置位 1 的速度越快，且布隆过滤器的效率越低；但是如果太少的话，那我们的误报率会变高。</p>
-<p><img src="https://pic4.zhimg.com/80/v2-05d4a17ec47911d9ff0e72dc788d5573_720w.jpg" alt="img">k 为哈希函数个数，m 为布隆过滤器长度，n 为插入的元素个数，p 为误报率</p>
-<p>如何选择适合业务的 k 和 m 值呢，这里直接贴一个公式：</p>
-<p><img src="https://pic1.zhimg.com/80/v2-1ed5b79aa7ac2e9cd66c83690fdbfcf0_720w.jpg" alt="img"></p>
-<p>如何推导这个公式这里只是提一句，因为对于使用来说并没有太大的意义，你让一个高中生来推会推得很快。k 次哈希函数某一 bit 位未被置为 1 的概率为：</p>
-<p><img src="https://www.zhihu.com/equation?tex=%281-%5Cfrac%7B1%7D%7Bm%7D%29%5E%7Bk%7D" alt="[公式]"></p>
-<p>插入n个元素后依旧为 0 的概率和为 1 的概率分别是：</p>
-<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D" alt="[公式]"> <img src="https://www.zhihu.com/equation?tex=1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk+%7D" alt="[公式]"></p>
-<p>标明某个元素是否在集合中所需的 k 个位置都按照如上的方法设置为 1，但是该方法可能会使算法错误的认为某一原本不在集合中的元素却被检测为在该集合中（False Positives），该概率由以下公式确定</p>
-<p><img src="https://www.zhihu.com/equation?tex=%5Cleft%5B+1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D+%5Cright%5D%5E%7Bk%7D%5Capprox%5Cleft%28+1-e%5E%7B-kn%2Fm%7D+%5Cright%29%5E%7Bk%7D" alt="[公式]"></p>
-<h2 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a><strong>最佳实践</strong></h2><p>常见的适用常见有，利用布隆过滤器减少磁盘 IO 或者网络请求，因为一旦一个值必定不存在的话，我们可以不用进行后续昂贵的查询请求。</p>
-<p>另外，既然你使用布隆过滤器来加速查找和判断是否存在，那么性能很低的哈希函数不是个好选择，推荐 MurmurHash、Fnv 这些。</p>
-<p><strong>大Value拆分</strong></p>
-<p>Redis 因其支持 setbit 和 getbit 操作，且纯内存性能高等特点，因此天然就可以作为布隆过滤器来使用。但是布隆过滤器的不当使用极易产生大 Value，增加 Redis 阻塞风险，因此生成环境中建议对体积庞大的布隆过滤器进行拆分。</p>
-<p>拆分的形式方法多种多样，但是本质是不要将 Hash(Key) 之后的请求分散在多个节点的多个小 bitmap 上，而是应该拆分成多个小 bitmap 之后，对一个 Key 的所有哈希函数都落在这一个小 bitmap 上。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a><strong>参考资料</strong></h2><p><a href="https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832" target="_blank" rel="noopener">https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832hackernoon.com</a><a href="https://www.jasondavies.com/bloomfilter/" target="_blank" rel="noopener">Bloom Filterswww.jasondavies.com<img src="https://pic2.zhimg.com/v2-8fe8b3a427a0db249407ee62e428f1cd_180x120.jpg" alt="图标"></a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/" class="post-title-link" itemprop="url">MySQL事务隔离级别和锁</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-06-08 02:40:04" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-06-11 15:53:43" itemprop="dateModified" datetime="2020-06-11T15:53:43+08:00">2020-06-11</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>8.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载,整理自</p>
-<p>1.<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html" target="_blank" rel="noopener">MySQL 事务隔离级别和锁</a></p>
-<p>2.<a href="https://blog.csdn.net/puhaiyang/article/details/72284702" target="_blank" rel="noopener">对mysql乐观锁、悲观锁、共享锁、排它锁、行锁、表锁概念的理解</a></p>
-<p>3.<a href="https://blog.csdn.net/hh1sdfsf56456/article/details/79449714" target="_blank" rel="noopener">mysql乐观锁总结和实践：用version或者时间戳</a></p>
-<h2 id="事务及其特性"><a href="#事务及其特性" class="headerlink" title="事务及其特性"></a>事务及其特性</h2><p>数据库事务（简称:事务）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。事务的使用是数据库管理系统区别文件系统的重要特征之一。</p>
-<p>事务拥有四个重要的特性：<strong>原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）</strong>，人们习惯称之为 ACID 特性。下面我逐一对其进行解释。</p>
-<ul>
-<li><p>原子性（Atomicity）</p>
-<p>事务开始后所有操作，要么全部做完，要么全部不做，不可能停滞在中间环节。事务执行过程中出错，会回滚到事务开始前的状态，所有的操作就像没有发生一样。例如，如果一个事务需要新增 100 条记录，但是在新增了 10 条记录之后就失败了，那么数据库将回滚对这 10 条新增的记录。也就是说事务是一个不可分割的整体，就像化学中学过的原子，是物质构成的基本单位。</p>
-</li>
-<li><p>一致性（Consistency）</p>
-<p>指事务将数据库从一种状态转变为另一种一致的的状态。事务开始前和结束后，数据库的完整性约束没有被破坏。例如工号带有唯一属性，如果经过一个修改工号的事务后，工号变的非唯一了，则表明一致性遭到了破坏。</p>
-</li>
-<li><p>隔离性（Isolation）</p>
-<p>要求每个读写事务的对象对其他事务的操作对象能互相分离，即该事务提交前对其他事务不可见。 也可以理解为多个事务并发访问时，事务之间是隔离的，一个事务不应该影响其它事务运行效果。这指的是在并发环境中，当不同的事务同时操纵相同的数据时，每个事务都有各自的完整数据空间。由并发事务所做的修改必须与任何其他并发事务所做的修改隔离。例如一个用户在更新自己的个人信息的同时，是不能看到系统管理员也在更新该用户的个人信息（此时更新事务还未提交）。</p>
-<p>注：MySQL 通过锁机制来保证事务的隔离性。</p>
-</li>
-<li><p>持久性（Durability）</p>
-<p>事务一旦提交，则其结果就是永久性的。即使发生宕机的故障，数据库也能将数据恢复，也就是说事务完成后，事务对数据库的所有更新将被保存到数据库，不能回滚。这只是从事务本身的角度来保证，排除 RDBMS（关系型数据库管理系统，例如 Oracle、MySQL 等）本身发生的故障。</p>
-<p>注：MySQL 使用 <code>redo log</code> 来保证事务的持久性。</p>
-</li>
-</ul>
-<h2 id="事务的隔离级别"><a href="#事务的隔离级别" class="headerlink" title="事务的隔离级别"></a>事务的隔离级别</h2><p>SQL 标准定义的四种隔离级别被 ANSI（美国国家标准学会）和 ISO/IEC（国际标准）采用，每种级别对事务的处理能力会有不同程度的影响。</p>
-<p>我们分别对四种隔离级别从并发程度由高到低进行描述，并用代码进行演示，数据库环境为 MySQL 5.7。</p>
-<h3 id="READ-UNCOMMITTED（读未提交）"><a href="#READ-UNCOMMITTED（读未提交）" class="headerlink" title="READ UNCOMMITTED（读未提交）"></a>READ UNCOMMITTED（读未提交）</h3><p>该隔离级别的事务会读到其它未提交事务的数据，此现象也称之为<strong>脏读</strong>。</p>
-<ol>
-<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ UNCOMMITTED</code>，任意一个终端执行即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-UNCOMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-<ol start="2">
-<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条ID为2的记录</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 2，开启一个事务后查看表中的数据。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>最后一步读取到了 mysql 终端 1 中未提交的事务（没有 commit 提交动作），即产生了<strong>脏读</strong>，<strong>大部分业务场景都不允许脏读</strong>出现，<strong>但</strong>是此隔离级别下数据库的<strong>并发是最好的</strong>。</p>
-<h3 id="READ-COMMITTED（读提交）"><a href="#READ-COMMITTED（读提交）" class="headerlink" title="READ COMMITTED（读提交）"></a>READ COMMITTED（读提交）</h3><p>一个事务可以读取另一个已提交的事务，这次事务内多次读取会得到不一样的结果，此现象称为<strong>不可重复读(也称虚读)</strong>问题，Oracle 和 SQL Server 的默认隔离级别。</p>
-<ol>
-<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ COMMITTED</code>，任意一个终端执行即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-COMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2，并确认记录数变更过来。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条记录为 2</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 2，开启一个事务后，查看表中的数据。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看一条 ID 为 1 的记录</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 1，提交事务。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>切换到 mysql 终端 2。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ol>
-<p>mysql 终端 2 在开启了一个事务之后，在第一次读取 <code>test</code> 表（此时 mysql 终端 1 的事务还未提交）时 ID 为 <code>1</code>，在第二次读取 <code>test</code> 表（此时 mysql 终端 1 的事务已经提交）时 ID 已经变为 <code>2</code>，说明在此隔离级别下已经<strong>读取到已提交的事务。</strong></p>
-<h3 id="REPEATABLE-READ（可重复读）"><a href="#REPEATABLE-READ（可重复读）" class="headerlink" title="REPEATABLE READ（可重复读）"></a>REPEATABLE READ（可重复读）</h3><p>该隔离级别是 <strong>MySQL 默认的隔离级别</strong>，在同一个事务里，<code>select</code> 的结果是事务开始时时间点的状态，因此，同样的 <code>select</code> 操作读到的结果会是一致的，但是，会有<strong>幻读</strong>现象。MySQL 的 InnoDB 引擎可以通过 <code>next-key locks</code> 机制（参考下文<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html#1行锁的算法outline" target="_blank" rel="noopener">“行锁的算法”</a>一节）来避免幻读。</p>
-<ol>
-<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，准备一张测试表<code>test</code>并调整隔离级别为<code>REPEATABLE READ</code>，任意一个终端执行即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>,<span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">20</span>));</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 1，开启一个事务。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 2，开启一个事务。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>切换到 mysql 终端 1，增加一条记录并提交。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'a'</span>);</span><br><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>切换到 msyql 终端 2。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">--此时查询还是无记录</span></span><br></pre></td></tr></table></figure>
-
-<p>通过这一步可以证明，在该隔离级别下已经<strong>读取不到别的已提交的事务</strong>，如果想看到 mysql 终端 1 提交的事务，在 mysql 终端 2 将当前事务提交后再次查询就可以读取到 mysql 终端 1 提交的事务。我们接着实验，看看在该隔离级别下是否会存在别的问题。</p>
-</li>
-<li><p>此时接着在 mysql 终端 2 插入一条数据。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'b'</span>); <span class="comment">-- 此时报主键冲突的错误</span></span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>也许到这里您心里可能会有疑问，明明在第 5 步没有数据，为什么在这里会报错呢？其实这就是该隔离级别下可能产生的问题，MySQL 称之为<strong>幻读</strong>。注意我在这里强调的是 MySQL 数据库，Oracle 数据库对于幻读的定义可能有所不同。</p>
-<h3 id="SERIALIZABLE（序列化）"><a href="#SERIALIZABLE（序列化）" class="headerlink" title="SERIALIZABLE（序列化）"></a>SERIALIZABLE（序列化）</h3><p>在该隔离级别下事务都是串行顺序执行的，MySQL 数据库的 <strong>InnoDB 引擎会给读操作隐式加一把读共享锁</strong>，从而<strong>避免了脏读、不可重读复读和幻读</strong>问题。</p>
-<ol>
-<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，准备一张测试表 test 并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'SERIALIZABLE'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 1，开启一个事务，并写入一条数据。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 2，开启一个事务。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时会一直卡住</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>立马切换到 mysql 终端 1,提交事务。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>一旦事务提交，msyql 终端 2 会立马返回 ID 为 1 的记录，否则会一直卡住，直到超时，其中超时参数是由 <code>innodb_lock_wait_timeout</code> 控制。由于每条 <code>select</code> 语句都会加锁，所以该隔离级别的数据库并发能力最弱，但是有些资料表明该结论也不一定对，如果感兴趣，您可以自行做个压力测试。</p>
-<p>表 1 总结了各个隔离级别下产生的一些问题。</p>
-<center>表 1. 各个隔离级别下产生的一些问题</center>
-
-<table>
-<thead>
-<tr>
-<th align="left"><strong>隔离级别</strong></th>
-<th align="left"><strong>脏读</strong>(读到可能会回滚的数据)</th>
-<th align="left">(一个事务内)<strong>不可重复读</strong></th>
-<th align="left"><strong>幻读</strong>(读到数据不够新?)</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">读未提交</td>
-<td align="left">可以出现</td>
-<td align="left">可以出现</td>
-<td align="left">可以出现</td>
-</tr>
-<tr>
-<td align="left">读提交</td>
-<td align="left">不允许出现</td>
-<td align="left">可以出现</td>
-<td align="left">可以出现</td>
-</tr>
-<tr>
-<td align="left">可重复读</td>
-<td align="left">不允许出现</td>
-<td align="left">不允许出现</td>
-<td align="left">可以出现</td>
-</tr>
-<tr>
-<td align="left">序列化</td>
-<td align="left">不允许出现</td>
-<td align="left">不允许出现</td>
-<td align="left">不允许出现</td>
-</tr>
-</tbody></table>
-<h2 id="脏读"><a href="#脏读" class="headerlink" title="脏读"></a>脏读</h2><p>脏读指在一个事务处理过程里读取了另一个未提交的事务中的数据，读取数据不一致。<br>事务A对数据进行增删改操作，但未提交，另一事务B可以读取到未提交的数据。如果事务A这时候回滚了，则第二个事务B读取的即为脏数据。</p>
-<p>举例：当一个事务正在多次修改某个数据，而在这个事务中多次的修改都还未提交，这时一个并发的事务来访问该数据，就会造成两个事务得到的数据不一致。<br>例如：用户A向用户B转账100元，对应SQL命令如下:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money + <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’B’;  <span class="comment">--(此时A通知B)</span></span><br><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money - <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’A’;</span><br></pre></td></tr></table></figure>
-
-<p>当只执行第一条SQL时，A通知B查看账户，B发现确实钱已到账（此时即发生了脏读），而之后无论第二条SQL是否执行，只要该事务不提交，则所有操作都将回滚，那么当B以后再次查看账户时就会发现钱其实并没有转。</p>
-<h2 id="不可重复读-虚读"><a href="#不可重复读-虚读" class="headerlink" title="不可重复读(虚读)"></a>不可重复读(虚读)</h2><p>所谓的虚读，也就是大家经常说的不可重复读，是指在数据库访问中，一个事务范围内两个相同的查询却返回了不同数据。<strong>这是由于查询时系统中其他事务修改的提交而引起的。</strong>比如事务T1读取某一数据，事务T2读取并修改了该数据，T1为了对读取值进行检验而再次读取该数据，便得到了不同的结果。<br>一种更易理解的说法是：在一个事务内，多次读同一个数据。在这个事务还没有结束时，另一个事务也访问该同一数据。那么，在第一个事务的两次读数据之间。由于第二个事务的修改，那么第一个事务读到的数据可能不一样，这样就发生了在一个事务内两次读到的数据是不一样的，因此称为不可重复读，即原始读取不可重复。</p>
-<h2 id="幻读"><a href="#幻读" class="headerlink" title="幻读"></a>幻读</h2><p>幻读是指当事务不是独立执行时发生的一种现象，例如第一个事务对一个表中的数据进行了修改，比如这种修改涉及到表中的“全部数据行”。同时，第二个事务也修改这个表中的数据，这种修改是向表中插入“一行新数据”。那么，以后就会发生操作第一个事务的用户发现表中还有没有修改的数据行，就好象发生了幻觉一样.</p>
-<p>一般解决幻读的方法是增加范围锁RangeS，<strong>锁定检锁范围为只读</strong>，这样就避免了幻读。简单来说，幻读是由插入或者删除引起的。</p>
-<h2 id="不可重复读（虚读）和幻读比较"><a href="#不可重复读（虚读）和幻读比较" class="headerlink" title="不可重复读（虚读）和幻读比较"></a>不可重复读（虚读）和幻读比较</h2><p>两者都表现为两次读取的结果不一致.</p>
-<p>大致的区别在于不可重复读是由于另一个事务对数据的更改(<code>update</code>)所造成的，而幻读是由于另一个事务插入(<code>insert</code>)或删除(<code>delete</code>)引起的。</p>
-<p>但如果你从控制的角度来看, 两者的区别就比较大：<br>对于前者, 只需要锁住满足条件的记录<br>对于后者, 要锁住满足条件及其相近的记录</p>
-<h2 id="MySQL-中的锁"><a href="#MySQL-中的锁" class="headerlink" title="MySQL 中的锁"></a>MySQL 中的锁</h2><p>锁也是数据库管理系统区别文件系统的重要特征之一。锁机制使得在对数据库进行并发访问时，可以保障数据的完整性和一致性。对于锁的实现，各个数据库厂商的实现方法都会有所不同。本文讨论 MySQL 中的 InnoDB 引擎的锁。</p>
-<h3 id="锁的类型"><a href="#锁的类型" class="headerlink" title="锁的类型"></a>锁的类型</h3><h5 id="悲观锁-行锁"><a href="#悲观锁-行锁" class="headerlink" title="悲观锁(行锁)"></a>悲观锁(行锁)</h5><p>InnoDB 实现了两种类型的行级锁,属于悲观锁的范畴：</p>
-<ul>
-<li><p><strong>共享锁</strong>（也称为 S 锁,读锁）：允许事务读取一行数据。</p>
-<p>可以使用 SQL 语句 <code>select * from tableName where … lock in share mode;</code> 手动加 S 锁。</p>
-</li>
-<li><p><strong>排他锁</strong>（也称为 X 锁,写锁,独占锁）：允许事务删除或更新一行数据。</p>
-<p>可以使用 SQL 语句 <code>select * from tableName where … for update</code>; 手动加 X 锁。</p>
-</li>
-</ul>
-<p>S 锁和 S 锁是<strong>兼容</strong>的，X 锁和其它锁都<strong>不兼容</strong>.</p>
-<p>举个例子，事务 T1 获取了一个行 r1 的 S 锁，另外事务 T2 可以立即获得行 r1 的 S 锁，此时 T1 和 T2 共同获得行 r1 的 S 锁，此种情况称为<strong>锁兼容</strong>，但是另外一个事务 T2 此时如果想获得行 r1 的 X 锁，则必须等待 T1 对行 r 锁的释放，此种情况也成为<strong>锁冲突</strong>。</p>
-<p>为了实现多粒度的锁机制，InnoDB 还有两种内部使用的<strong>意向锁</strong>，由 InnoDB 自动添加，且都是<strong>表级别的锁</strong>。</p>
-<ul>
-<li><strong>意向共享锁</strong>（IS）：事务即将给表中的各个行设置共享锁S，事务给数据行加 S 锁前必须获得该表的 IS 锁。</li>
-<li><strong>意向排他锁</strong>（IX）：事务即将给表中的各个行设置排他锁X，事务给数据行加 X 锁前必须获得该表 IX 锁。</li>
-</ul>
-<p>意向锁的主要目的是为了使得<strong>行锁</strong>和<strong>表锁</strong>共存。表 2 列出了行级锁(S,X)和表级意向锁(IS,IX)的兼容性。</p>
-<center>表 2. 行级锁和表级意向锁的兼容性</center>
-
-<table>
-<thead>
-<tr>
-<th align="left"><strong>锁类型</strong></th>
-<th align="left"><strong>X</strong></th>
-<th align="left"><strong>IX</strong></th>
-<th align="left"><strong>S</strong></th>
-<th align="left"><strong>IS</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left"><strong>X</strong></td>
-<td align="left">冲突</td>
-<td align="left">冲突</td>
-<td align="left">冲突</td>
-<td align="left">冲突</td>
-</tr>
-<tr>
-<td align="left"><strong>IX</strong></td>
-<td align="left">冲突</td>
-<td align="left">兼容</td>
-<td align="left">冲突</td>
-<td align="left">兼容</td>
-</tr>
-<tr>
-<td align="left"><strong>S</strong></td>
-<td align="left">冲突</td>
-<td align="left">冲突</td>
-<td align="left">兼容</td>
-<td align="left">兼容</td>
-</tr>
-<tr>
-<td align="left"><strong>IS</strong></td>
-<td align="left">冲突</td>
-<td align="left">兼容</td>
-<td align="left">兼容</td>
-<td align="left">兼容</td>
-</tr>
-</tbody></table>
-<h5 id="乐观锁"><a href="#乐观锁" class="headerlink" title="乐观锁"></a>乐观锁</h5><p><strong>乐观锁不是数据库自带的</strong>，需要我们自己去实现。乐观锁是指操作数据库时(更新操作)，想法很乐观，认为这次的操作不会导致冲突，在操作数据时，并不加锁，而在进行更新后，再去判断是否有冲突了(CAS操作)。</p>
-<p>一般来说有以下2种方式：</p>
-<ol>
-<li><p>使用<strong>数据版本（Version）</strong>记录机制实现</p>
-<p>这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</p>
-</li>
-<li><p>使用<strong>时间戳（Timestamp）</strong>记录机制实现</p>
-<p>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</p>
-</li>
-</ol>
-<p>举例：在表中的数据进行操作时(更新)，先给数据表加一个版本(version)字段，每操作一次，将那条记录的版本号加1。也就是先查询出那条记录，获取出version字段,如果要对那条记录进行操作(更新),则先判断此刻version的值是否与刚刚查询出来时的version的值相等，如果相等，则说明这段期间，没有其他程序对其进行操作，则可以执行更新，将version字段的值加1；如果更新时发现此刻的version值与刚刚获取出来的version的值不相等，则说明这段期间已经有其他程序对其进行操作了，则不进行更新操作。</p>
-<p>下单操作包括3步骤：</p>
-<p>1.查询出商品信息</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> (<span class="keyword">status</span>,<span class="keyword">status</span>,<span class="keyword">version</span>) <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125;</span></span><br></pre></td></tr></table></figure>
-
-<p>2.根据商品信息生成订单</p>
-<p>3.修改商品status为2</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> t_goods </span><br><span class="line"><span class="keyword">set</span> <span class="keyword">status</span>=<span class="number">2</span>,<span class="keyword">version</span>=<span class="keyword">version</span>+<span class="number">1</span></span><br><span class="line"><span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125; and version=#&#123;version&#125;;</span></span><br></pre></td></tr></table></figure>
-
-<p>除了自己手动实现乐观锁之外，现在网上许多框架已经封装好了乐观锁的实现，如hiberate实现的乐观锁。</p>
-<h3 id="行锁的算法"><a href="#行锁的算法" class="headerlink" title="行锁的算法"></a>行锁的算法</h3><p>InnoDB 存储引擎使用三种行锁的算法用来满足相关事务隔离级别的要求。</p>
-<ul>
-<li><p>Record Locks</p>
-<p>该锁为索引记录上的锁，如果表中没有定义索引，InnoDB 会默认为该表创建一个隐藏的聚簇索引，并使用该索引锁定记录。</p>
-</li>
-<li><p>Gap Locks</p>
-<p>该锁会锁定一个范围，但是不括记录本身。可以通过修改隔离级别为 <code>READ COMMITTED</code> 或者配置 <code>innodb_locks_unsafe_for_binlog</code> 参数为 <code>ON</code>。</p>
-</li>
-<li><p>Next-key Locks</p>
-<p>该锁就是 Record Locks 和 Gap Locks 的组合，即锁定一个范围并且锁定该记录本身。<strong>InnoDB 使用 Next-key Locks 解决幻读问题</strong>。需要注意的是，如果索引有唯一属性，则 InnnoDB 会自动将 Next-key Locks 降级为 Record Locks。举个例子，如果一个索引有 1, 3, 5 三个值，则该索引锁定的区间为 <code>(-∞,1], (1,3], (3,5], (5,+ ∞)</code>。</p>
-</li>
-</ul>
-<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p><strong>死锁</strong>是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法推进下去。此时称系统处于死锁状态或系统产生了死锁，这些永远在互相等待的进程称为死锁进程。</p>
-<p>InnoDB 引擎采取的是 <code>wait-for graph</code> 等待图的方法来自动检测死锁，如果发现死锁会自动回滚一个事务。</p>
-<p>下面我们通过一个示例来了解死锁。</p>
-<ol>
-<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，再准备一张测试表<code>test</code>写入两条测试数据，并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>),(<span class="number">2</span>);</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ol>
-<ol start="2">
-<li><p>登录 mysql 终端 1，开启一个事务，手动给 ID 为1的记录加 X 锁。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>登录 mysql 终端 2，开启一个事务，手动给 ID 为2的记录加 X 锁。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>切换到 mysql 终端 1，手动给 ID 为2的记录加 X 锁，此时会一直卡住，因为此时在等待第 3 步中 X 锁的释放，直到超时，超时时间由<code>innodb_lock_wait_timeout</code>控制。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>在锁超时前立刻切换到 mysql 终端 2，手动给 ID 为1的记录加 X 锁，此时又会等待第 2 步中 X 所的释放，两个终端都在等待资源的释放，所以 InnoDB 引擎会立马检测到死锁产生，自动回滚一个事务，以防止死锁一直占用资源。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line">   ERROR 1213 (40001): Deadlock found when trying to get <span class="keyword">lock</span>; try restarting transaction</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ol>
-<p>此时，通过 <code>show engine innodb status\G</code> 命令可以看到 <code>LATEST DETECTED DEADLOCK</code> 相关信息，即表明有死锁发生；或者通过配置 <code>innodb_print_all_deadlocks</code>（MySQL 5.6.2 版本开始提供）参数为 <code>ON</code> 将死锁相关信息打印到 MySQL 的错误日志。</p>
-<h3 id="锁的优化建议"><a href="#锁的优化建议" class="headerlink" title="锁的优化建议"></a>锁的优化建议</h3><p>锁如果利用不好，会给业务造成大量的卡顿现象，在了解了锁相关的一些知识点后，我们可以有意识的去避免锁带来的一些问题。</p>
-<ol>
-<li>合理设计索引，让 InnoDB 在索引键上面加锁的时候尽可能准确，尽可能的缩小锁定范围，避免造成不必要的锁定而影响其他 Query 的执行。</li>
-<li>尽可能减少基于范围的数据检索过滤条件，避免因为间隙锁带来的负面影响而锁定了不该锁定的记录。</li>
-<li>尽量控制事务的大小，减少锁定的资源量和锁定时间长度。</li>
-<li>在业务环境允许的情况下，尽量使用较低级别的事务隔离，以减少 MySQL 因为实现事务隔离级别所带来的附加成本。</li>
-</ol>
-<h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h2><p>通过阅读本文，可以让您对数据库的事务还有事务的隔离级别有个基本的了解，同时也介绍了 MySQL 中 InnoDB 引擎中一些锁相关的知识，从而可以让您利用关系型数据库系统设计一个更为健壮的业务模型。</p>
-<h2 id="参考资源"><a href="#参考资源" class="headerlink" title="参考资源"></a>参考资源</h2><ul>
-<li>查看<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html" target="_blank" rel="noopener"> MySQL 官方文档</a>，获取更多关于 MySQL 事务和锁相关的最新信息。</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1677,7 +1841,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">161</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1689,7 +1853,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1733,7 +1897,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">479k</span>
+    <span title="站点总字数">498k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

@@ -22,20 +22,36 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="概述 Innodb中行级锁作用于索引之上，如果没有索引，则只能够锁表。  一次封锁法 为了预防死锁，一般应用中推荐一次封锁法。也就是在方法的开始阶段，已经预先知道会用到哪些数据，然后全部锁住，在方法运行完成之后，再进行解锁。  一次封锁法能够预防死锁，但从该方法的定义中可以看到，每次操作都锁住全部数据，如果这样数据的执行只能是串行化的，性能不高。 两阶段锁协议 数据库遵循的是两段锁协议，将事物分解">
+  <meta name="description" content="锁 锁是用于管理不同事务对共享资源的并发访问  表锁和行锁的区别： 在加锁效率、锁定粒度以及冲突概率上，表锁肯定是大于行锁的 但是在并发性能上，表锁远低于行锁。 表锁是锁定了整个表，在加锁期间，无论读写，这个表的数据都是锁定的，相反行锁只是锁定了这个表中的一条数据，其他数据仍然可以操作，这就可很好的提高了数据库的并发性能。 Mysql Innodb 锁类型 共享锁 Shared Locks  （简">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Innodb 锁类型详解">
+<meta property="og:title" content="InnoDB 锁类型详解">
 <meta property="og:url" content="http://yoursite.com/2020/06/17/Innodb%20%E9%94%81%E7%B1%BB%E5%9E%8B%E8%AF%A6%E8%A7%A3/index.html">
 <meta property="og:site_name" content="Eric&#39;s Blogs">
-<meta property="og:description" content="概述 Innodb中行级锁作用于索引之上，如果没有索引，则只能够锁表。  一次封锁法 为了预防死锁，一般应用中推荐一次封锁法。也就是在方法的开始阶段，已经预先知道会用到哪些数据，然后全部锁住，在方法运行完成之后，再进行解锁。  一次封锁法能够预防死锁，但从该方法的定义中可以看到，每次操作都锁住全部数据，如果这样数据的执行只能是串行化的，性能不高。 两阶段锁协议 数据库遵循的是两段锁协议，将事物分解">
+<meta property="og:description" content="锁 锁是用于管理不同事务对共享资源的并发访问  表锁和行锁的区别： 在加锁效率、锁定粒度以及冲突概率上，表锁肯定是大于行锁的 但是在并发性能上，表锁远低于行锁。 表锁是锁定了整个表，在加锁期间，无论读写，这个表的数据都是锁定的，相反行锁只是锁定了这个表中的一条数据，其他数据仍然可以操作，这就可很好的提高了数据库的并发性能。 Mysql Innodb 锁类型 共享锁 Shared Locks  （简">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUSMPVblzsOic8pMzqSxEZG9NCceMqIfGbZoTqiavicgTtEEDFTfA6nN2gw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU03AHumpzGXmr1O5AgibNvrWfiaRM7bcugVRWBPEvmYdJ3yINaA8H3bvw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUnUUIibyicUY2y445Tlxtych9hXxvZjd3hcS2gz1jPj59ZUWOJx4eWqicg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUAMqY5LzLU8q4ia4owttZo5PvHaWiaMFvuGtsXDfZmsRK1zL6SbicKOeSA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUG3aMMGJmLcQD9F5UT9x5G7DuRicp32T7rQDbnib9XvYcHU0qRymOZQUg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUriaCW7eXTC4wc9ATGKnbJTicjNzSyvgHMP0paA7jHxBVeC8Kp81eNksg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU7uzJrzSQiczd53rt0lFb3v8m4ibzyIfyuHW6WWiaBkq2vy47zKhIEAssg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUOGwehXDXLJzy76EsCnFS8XEuXgJERjQlI27qjuPLT1M5OaqicWtTGgg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUgzrNtMRebpj9SeONiczVcM9ic3ROsuT5liaibQQG4CibhhMHu91OVMEAzPQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU5iboxJuvrEH5zuDEFQU6pfm2w5SVAZqyACxib7U4D7CcW8fBDkN9kiaBw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUA4IMQVFgaOPZjLGicSNKIAc7ramcBU9fVdL9Q5OKG1zicGE9u3Ria50AA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUkVLbVbsqrEa8V7iaaPB3aI7P3dwvFHZMTFCnwia4AdTjjkHYu1V3zPwQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUj5Skvok8TyKtqfh7LKqF1yVhKh3yVicWicLJpibQK4ZUjicDDkgEZeP9TA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUH3k4pG23rtXq1fq06QMn6ib9hicIq9FVDN7z1ibnFTtcmzwxqwuWr2F8A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUWxia5c5BRVpKaegdcbicXic8Wus5BSayicF42tNNuokFzy7MWf0IdthOiaw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
 <meta property="og:image" content="https://user-gold-cdn.xitu.io/2017/5/9/fc76a4b5cf0aeeac6fe08ba3035a183f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
 <meta property="og:image" content="https://user-gold-cdn.xitu.io/2017/5/9/1b13166b10c5b1662a636d5f1614488c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
 <meta property="article:published_time" content="2020-06-17T23:04:20.000Z">
-<meta property="article:modified_time" content="2020-06-18T07:05:43.362Z">
+<meta property="article:modified_time" content="2020-06-19T02:43:43.913Z">
 <meta property="article:author" content="EricMa">
+<meta property="article:tag" content="InnoDB">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2017/5/9/fc76a4b5cf0aeeac6fe08ba3035a183f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta name="twitter:image" content="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUSMPVblzsOic8pMzqSxEZG9NCceMqIfGbZoTqiavicgTtEEDFTfA6nN2gw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
 
 <link rel="canonical" href="http://yoursite.com/2020/06/17/Innodb%20%E9%94%81%E7%B1%BB%E5%9E%8B%E8%AF%A6%E8%A7%A3/">
 
@@ -50,7 +66,7 @@
   };
 </script>
 
-  <title>Innodb 锁类型详解 | Eric's Blogs</title>
+  <title>InnoDB 锁类型详解 | Eric's Blogs</title>
   
 
 
@@ -207,7 +223,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Innodb 锁类型详解
+          InnoDB 锁类型详解
         </h1>
 
         <div class="post-meta">
@@ -216,9 +232,24 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-06-18 07:04:20 / 修改时间：15:05:43" itemprop="dateCreated datePublished" datetime="2020-06-18T07:04:20+08:00">2020-06-18</time>
+              <time title="创建时间：2020-06-18 07:04:20" itemprop="dateCreated datePublished" datetime="2020-06-18T07:04:20+08:00">2020-06-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-19 10:43:43" itemprop="dateModified" datetime="2020-06-19T10:43:43+08:00">2020-06-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
             </span>
 
           <br>
@@ -227,14 +258,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.8k</span>
+              <span>4.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>4 分钟</span>
             </span>
 
         </div>
@@ -246,7 +277,111 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><blockquote>
+        <h2 id="锁"><a href="#锁" class="headerlink" title="锁"></a>锁</h2><blockquote>
+<p>锁是用于管理不同事务对共享资源的并发访问</p>
+</blockquote>
+<p>表锁和行锁的区别：</p>
+<p>在加锁效率、锁定粒度以及冲突概率上，表锁肯定是大于行锁的</p>
+<p>但是在并发性能上，表锁远低于行锁。</p>
+<p>表锁是锁定了整个表，在加锁期间，无论读写，这个表的数据都是锁定的，相反行锁只是锁定了这个表中的一条数据，其他数据仍然可以操作，这就可很好的提高了数据库的并发性能。</p>
+<h2 id="Mysql-Innodb-锁类型"><a href="#Mysql-Innodb-锁类型" class="headerlink" title="Mysql Innodb 锁类型"></a>Mysql Innodb 锁类型</h2><ul>
+<li>共享锁 Shared Locks  （简称 S 锁，属于行锁）</li>
+<li>排他锁 Exclusive Locks（简称 X 锁，属于行锁）</li>
+<li>意向共享锁 Intention Shared Locks （简称 IS 锁，属于表锁）</li>
+<li>意向排他锁 Intention Exclusive Locks （简称 IX 锁，属于表锁）</li>
+<li>自增锁 AUTO-INC Locks</li>
+</ul>
+<h3 id="共享锁（S）与排它锁-（X）"><a href="#共享锁（S）与排它锁-（X）" class="headerlink" title="共享锁（S）与排它锁 （X）"></a>共享锁（S）与排它锁 （X）</h3><h4 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h4><blockquote>
+<p>又称之为 读锁，简称 s 锁，顾名思义，共享锁就是多个事务对于同一数据可以共享一把锁，都能访问到数据库，但是只能读不能修改；</p>
+</blockquote>
+<p>加锁方式：</p>
+<p>select * from users where id = 1 lock in share mode;</p>
+<p>释放方式：</p>
+<p>rollback/commit;</p>
+<p>举例：</p>
+<p>当手动为select语句加上共享锁之后，在右边的会话中我们对该条数据执行update 操作 ，会发现一直卡住，这就是说，加了共享锁的数据，只能被其他事务读取，但是不能被修改</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUSMPVblzsOic8pMzqSxEZG9NCceMqIfGbZoTqiavicgTtEEDFTfA6nN2gw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>当我们 commit/rollback结束掉左边会话框的事务时，会发现右边会话框的update操作可以正常进行了</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU03AHumpzGXmr1O5AgibNvrWfiaRM7bcugVRWBPEvmYdJ3yINaA8H3bvw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>但是我们要注意一点，哪就是共享锁是不影响其他事物读取数据的，如下举例：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUnUUIibyicUY2y445Tlxtych9hXxvZjd3hcS2gz1jPj59ZUWOJx4eWqicg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="排它锁"><a href="#排它锁" class="headerlink" title="排它锁"></a>排它锁</h4><blockquote>
+<p>又称为写锁，简称 X 锁，排它锁不能与其他锁并存，如一个事务获取了一个数据行的排它锁，其他事务就不能再获取改行的锁（包括共享锁和排它锁），只有当前获取了排它锁的事务可以对数据进行读取和修改（此时其他事务要读取数据可从快照获取）</p>
+</blockquote>
+<p>加锁方式：</p>
+<p>delete update  insert 默认加排他锁</p>
+<p>select * from users where id = 1 for update;</p>
+<p>释放方式：</p>
+<p>rollback/commit;</p>
+<p>举例：</p>
+<p>另一事务获取共享锁,排他锁,都会锁住</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUAMqY5LzLU8q4ia4owttZo5PvHaWiaMFvuGtsXDfZmsRK1zL6SbicKOeSA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUG3aMMGJmLcQD9F5UT9x5G7DuRicp32T7rQDbnib9XvYcHU0qRymOZQUg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="InnoDB-行锁到底锁的是什么？"><a href="#InnoDB-行锁到底锁的是什么？" class="headerlink" title="InnoDB 行锁到底锁的是什么？"></a>InnoDB 行锁到底锁的是什么？</h4><p>我们首先来看如下一个例子：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUriaCW7eXTC4wc9ATGKnbJTicjNzSyvgHMP0paA7jHxBVeC8Kp81eNksg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>发现在事务1中对id=1的数据行做了更新操作，但是事务未提交之前，事务2去再去更新这条数据会卡住，也就是被锁住了。</p>
+<p>接下来我们在事务1 未做任何改变，保持事务未提交状态的情况下去更新id = 2 的数据行</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU7uzJrzSQiczd53rt0lFb3v8m4ibzyIfyuHW6WWiaBkq2vy47zKhIEAssg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>结果显而易见，更新数据成功了。</p>
+<p>综上所述：</p>
+<p>InnoDB的行锁是通过<strong>给索引上的索引项加锁</strong>来实现的，只有通过索引条件进行数据检索，Innodb才使用行级锁。否则，将使用表锁（锁住索引的所有记录）。</p>
+<p>借此我们是不是能联想到，如果我们的删除/修改语句是没有命中索引的，哪么，则会锁住整个表，这在性能上的影响还是挺大的。</p>
+<h3 id="意向共享锁-IS-和意向排他锁-IX"><a href="#意向共享锁-IS-和意向排他锁-IX" class="headerlink" title="意向共享锁(IS)和意向排他锁(IX)"></a>意向共享锁(IS)和意向排他锁(IX)</h3><h4 id="意向共享锁"><a href="#意向共享锁" class="headerlink" title="意向共享锁"></a>意向共享锁</h4><p>表示事务准备给数据行加入共享锁，也就是说一个数据行在加共享锁之前必须先取得该表的IS锁。</p>
+<h4 id="意向排他锁"><a href="#意向排他锁" class="headerlink" title="意向排他锁"></a>意向排他锁</h4><p>表示事务准备给数据行加入排它锁，也就是说一个数据行加排它锁之前必须先取得该表的IX锁。</p>
+<ul>
+<li><p>意向锁是InnoDB数据操作之前自动加的，不需要用户干预</p>
+</li>
+<li><p>意向锁是表级锁</p>
+</li>
+</ul>
+<p>关于这两个锁的实际演示例子本文鉴于篇幅便不再赘述，感兴趣的可以根据上边描述的共享锁和排他锁演示过程自己体验一遍.</p>
+<p>这两个意向锁存在的意义是：</p>
+<blockquote>
+<p>当事务想去进行锁表时，可以先判断意向锁是否存在，存在时则可快速的返回，告知该表不能启用表锁（也就是会锁住对应会话），提高了加锁的效率。??</p>
+</blockquote>
+<h3 id="自增锁-（AUTO-INC-Locks）"><a href="#自增锁-（AUTO-INC-Locks）" class="headerlink" title="自增锁 （AUTO -INC Locks）"></a>自增锁 （AUTO -INC Locks）</h3><p>针对自增列自增长的一个特殊的表级别锁</p>
+<p>可以使用如下语句查看 ：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 默认取值1 代表连续 事务未提交则id永久丢失</span></span><br><span class="line"><span class="keyword">SHOW</span> <span class="keyword">VARIABLES</span> <span class="keyword">LIKE</span> <span class="string">'innodb_autoinc_lock_mode'</span>;</span><br></pre></td></tr></table></figure>
+
+<p>实际演示效果如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUOGwehXDXLJzy76EsCnFS8XEuXgJERjQlI27qjuPLT1M5OaqicWtTGgg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>执行结果如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUgzrNtMRebpj9SeONiczVcM9ic3ROsuT5liaibQQG4CibhhMHu91OVMEAzPQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="行锁的算法"><a href="#行锁的算法" class="headerlink" title="行锁的算法"></a>行锁的算法</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>行锁锁的是索引上的索引项</p>
+<p>只有通过索引条件进行数据检索，Innodb才使用行级锁。否则，将使用表锁（锁住索引的所有记录）</p>
+<p>行锁的算法:</p>
+<ul>
+<li><p><strong>临键锁 Next-Key locks</strong></p>
+<p>当sql执行按照索引进行数据的检索时，查询条件为<strong>范围查找</strong>（between and &lt; &gt; 等等）并<strong>有数据命中</strong>，则测试SQL语句加上的锁为Next-Key locks,锁住索引的记录区间加下一个记录区间，这个区间是<strong>左开右闭</strong>的</p>
+</li>
+<li><p><strong>间隙锁 Gap</strong> </p>
+<p>查询条件为<strong>范围查找</strong>（between and &lt; &gt; 等等）且<strong>当记录不存在时</strong>，临键锁退化成Gap. 在上述检索条件下，如果没有命中记录，则退化成Gap锁，锁住数据不存在的区间（<strong>左开右开</strong>）</p>
+</li>
+<li><p><strong>记录锁 Record Lock</strong> </p>
+<p>唯一性索引 条件为<strong>精准匹配</strong>，退化成Record锁. 当SQL执行按照唯一性（Primary Key,Unique Key）索引进行数据的检索时，查询条件等值匹配且<strong>查询的数据存在</strong>，这时SQL语句上加的锁即为记录锁Record locks,锁住具体的索引项。</p>
+</li>
+</ul>
+<h3 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h3><h4 id="临键锁"><a href="#临键锁" class="headerlink" title="临键锁"></a><strong>临键锁</strong></h4><p>Next-Key locks 也是 InnoDB 引擎默认的行锁算法.</p>
+<p>如图：我们假设一张表中的数据行的id 是 1 4 7 10</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU5iboxJuvrEH5zuDEFQU6pfm2w5SVAZqyACxib7U4D7CcW8fBDkN9kiaBw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>则innodb会把这个表的数据划分成如图五个区间(因为有四个记录)，然后我们执行图中的SQL语句之后，会发现有两个区间被锁住了，一个是（4,7] ， 一个是 (7,10]</p>
+<p>为了验证这个结论，我做了如下实验：</p>
+<p>验证区间是否左开右闭：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUA4IMQVFgaOPZjLGicSNKIAc7ramcBU9fVdL9Q5OKG1zicGE9u3Ria50AA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>验证当前记录行是否被锁定：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUkVLbVbsqrEa8V7iaaPB3aI7P3dwvFHZMTFCnwia4AdTjjkHYu1V3zPwQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>验证是否锁定下一区间：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUj5Skvok8TyKtqfh7LKqF1yVhKh3yVicWicLJpibQK4ZUjicDDkgEZeP9TA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>以下两种锁只给出结论，演示过程省略，感兴趣可自行验证哈！都是同样的方法，就不赘述了</p>
+<h4 id="间隙锁"><a href="#间隙锁" class="headerlink" title="间隙锁"></a>间隙锁</h4><p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUH3k4pG23rtXq1fq06QMn6ib9hicIq9FVDN7z1ibnFTtcmzwxqwuWr2F8A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="记录锁"><a href="#记录锁" class="headerlink" title="记录锁"></a>记录锁</h4><p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUWxia5c5BRVpKaegdcbicXic8Wus5BSayicF42tNNuokFzy7MWf0IdthOiaw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>MySQL 的 Innodb引擎正是通过上述不同类型的锁，完成了事务隔离：</p>
+<ul>
+<li>加 X 锁 避免了数据的脏读</li>
+<li>加 S 锁 避免了数据的不可重复读</li>
+<li>加上 Next Key 避免了数据的幻读</li>
+</ul>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><blockquote>
 <p>Innodb中行级锁作用于索引之上，如果没有索引，则只能够锁表。</p>
 </blockquote>
 <h3 id="一次封锁法"><a href="#一次封锁法" class="headerlink" title="一次封锁法"></a>一次封锁法</h3><blockquote>
@@ -263,7 +398,7 @@
 <h3 id="解锁阶段"><a href="#解锁阶段" class="headerlink" title="解锁阶段"></a>解锁阶段</h3><blockquote>
 <p>事务进入解锁阶段将释放其持有的锁，该阶段只能进行解锁操作，而不能再加其它锁。</p>
 </blockquote>
-<h2 id="Innodb中的各种锁"><a href="#Innodb中的各种锁" class="headerlink" title="Innodb中的各种锁"></a>Innodb中的各种锁</h2><h3 id="Shared-Lock-And-Exclusive-Locks"><a href="#Shared-Lock-And-Exclusive-Locks" class="headerlink" title="Shared Lock And Exclusive Locks"></a>Shared Lock And Exclusive Locks</h3><p>这是两个行级锁，包括 <strong>Shared Lock(S 共享锁)</strong> 和 <strong>Exclusive Lock(X 排他锁):</strong></p>
+<h3 id="Innodb中的各种锁"><a href="#Innodb中的各种锁" class="headerlink" title="Innodb中的各种锁"></a>Innodb中的各种锁</h3><h3 id="Shared-Lock-And-Exclusive-Locks"><a href="#Shared-Lock-And-Exclusive-Locks" class="headerlink" title="Shared Lock And Exclusive Locks"></a>Shared Lock And Exclusive Locks</h3><p>这是两个行级锁，包括 <strong>Shared Lock(S 共享锁)</strong> 和 <strong>Exclusive Lock(X 排他锁):</strong></p>
 <ol>
 <li><strong>共享锁</strong> 允许持有锁的事务去读取一行数据，可以有多个事务同时持有共享锁，但当数据被加上共享锁时，不能再被加排他锁。</li>
 <li><strong>排他锁</strong> 允许持有锁的事务去更新或则删除一行数据，同时只能有一个事务持有排他锁，当数据被加上排他锁时，不能再加共享锁。</li>
@@ -288,7 +423,8 @@
 <p>该语句将会在标上加上<code>IX</code>锁，同时在对应的记录上加上<code>X</code>锁。</p>
 <p><strong>表级锁的兼容性矩阵：</strong></p>
 <p><img src="https://user-gold-cdn.xitu.io/2017/5/9/fc76a4b5cf0aeeac6fe08ba3035a183f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Matrix"></p>
-<p>事实上意向锁不会和行级的<code>S</code>和<code>X</code>锁产生冲突，只会和表级的<code>S</code>和<code>X</code>锁产生冲突。</p>
+<p>总结:<strong>意向锁(IX,IS)之间不会产生冲突, 其他情况可将IX锁当做X锁, IS锁当做S锁</strong></p>
+<p>事实上意向锁不会和行级的<code>S</code>和<code>X</code>锁产生冲突，只会和表级的<code>S</code>和<code>X</code>锁产生冲突.</p>
 <h3 id="GAP-Locks"><a href="#GAP-Locks" class="headerlink" title="GAP Locks"></a>GAP Locks</h3><p>Gap锁是一种范围锁，Gap锁作用范围是Record锁之间，或者Record锁之前与Record锁之后的范围。</p>
 <p><img src="https://user-gold-cdn.xitu.io/2017/5/9/1b13166b10c5b1662a636d5f1614488c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Gap"></p>
 <p>如图所示，首先当前该记录存在索引，id为5和30的记录将整个分为了 <code>&lt;=5</code> ，<code>&gt;5&amp;&lt;=30</code> 和 <code>&gt;30</code> 三个区间，如果要更新30的数据，那么 <code>&gt;5</code> 的所有区间都会被锁住。</p>
@@ -296,6 +432,7 @@
 <h3 id="AUTO-INC-Locks"><a href="#AUTO-INC-Locks" class="headerlink" title="AUTO-INC Locks"></a>AUTO-INC Locks</h3><p>AUTO-INC锁是一种特殊的表级别锁，主要处理表中带有自增列的情况。实际上是为了保证自增的正确性，所以有了这种锁。</p>
 <hr>
 <p>本文整理自</p>
+<p><a href="https://mp.weixin.qq.com/s?__biz=MzI1Mzg4OTMxNQ==&mid=100000550&idx=1&sn=8a5cdff008fc1eed7b5c623c1bdf4ed1&chksm=69ccdd6a5ebb547c7b7baf6be78763fc5065e0a58de202f3e25d8d8ed56e6d1c1146332cfec1#rd" target="_blank" rel="noopener">【MySQL （四） | 五分钟搞清楚InnoDB锁机制】</a></p>
 <p><a href="https://juejin.im/entry/59104bdea0bb9f0058a2a1db" target="_blank" rel="noopener">Innodb 锁类型详解</a></p>
 <p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
 <hr>
@@ -307,6 +444,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/InnoDB/" rel="tag"># InnoDB</a>
+          </div>
 
         
 
@@ -317,7 +457,10 @@
     <a href="/2020/06/17/mysql%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/" rel="prev" title="mysql索引实现">
       <i class="fa fa-chevron-left"></i> mysql索引实现
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/18/MySQL%20%E8%BF%90%E7%AE%97%E7%AC%A6%E5%92%8C%E5%87%BD%E6%95%B0/" rel="next" title="MySQL 运算符和函数">
+      MySQL 运算符和函数 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -376,7 +519,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#概述"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一次封锁法"><span class="nav-number">1.1.</span> <span class="nav-text">一次封锁法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#两阶段锁协议"><span class="nav-number">1.2.</span> <span class="nav-text">两阶段锁协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加锁阶段"><span class="nav-number">1.3.</span> <span class="nav-text">加锁阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解锁阶段"><span class="nav-number">1.4.</span> <span class="nav-text">解锁阶段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Innodb中的各种锁"><span class="nav-number">2.</span> <span class="nav-text">Innodb中的各种锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Shared-Lock-And-Exclusive-Locks"><span class="nav-number">2.1.</span> <span class="nav-text">Shared Lock And Exclusive Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Record-Locks"><span class="nav-number">2.2.</span> <span class="nav-text">Record Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Next-key-Locks"><span class="nav-number">2.3.</span> <span class="nav-text">Next-key Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Intention-Locks"><span class="nav-number">2.4.</span> <span class="nav-text">Intention Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GAP-Locks"><span class="nav-number">2.5.</span> <span class="nav-text">GAP Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-Intention-Locks"><span class="nav-number">2.6.</span> <span class="nav-text">Insert Intention Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AUTO-INC-Locks"><span class="nav-number">2.7.</span> <span class="nav-text">AUTO-INC Locks</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#锁"><span class="nav-number">1.</span> <span class="nav-text">锁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mysql-Innodb-锁类型"><span class="nav-number">2.</span> <span class="nav-text">Mysql Innodb 锁类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#共享锁（S）与排它锁-（X）"><span class="nav-number">2.1.</span> <span class="nav-text">共享锁（S）与排它锁 （X）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#共享锁"><span class="nav-number">2.1.1.</span> <span class="nav-text">共享锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#排它锁"><span class="nav-number">2.1.2.</span> <span class="nav-text">排它锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#InnoDB-行锁到底锁的是什么？"><span class="nav-number">2.1.3.</span> <span class="nav-text">InnoDB 行锁到底锁的是什么？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#意向共享锁-IS-和意向排他锁-IX"><span class="nav-number">2.2.</span> <span class="nav-text">意向共享锁(IS)和意向排他锁(IX)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#意向共享锁"><span class="nav-number">2.2.1.</span> <span class="nav-text">意向共享锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#意向排他锁"><span class="nav-number">2.2.2.</span> <span class="nav-text">意向排他锁</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#自增锁-（AUTO-INC-Locks）"><span class="nav-number">2.3.</span> <span class="nav-text">自增锁 （AUTO -INC Locks）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#行锁的算法"><span class="nav-number">3.</span> <span class="nav-text">行锁的算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#简介"><span class="nav-number">3.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#举例"><span class="nav-number">3.2.</span> <span class="nav-text">举例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#临键锁"><span class="nav-number">3.2.1.</span> <span class="nav-text">临键锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#间隙锁"><span class="nav-number">3.2.2.</span> <span class="nav-text">间隙锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#记录锁"><span class="nav-number">3.2.3.</span> <span class="nav-text">记录锁</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#补充"><span class="nav-number">5.</span> <span class="nav-text">补充</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一次封锁法"><span class="nav-number">5.1.</span> <span class="nav-text">一次封锁法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#两阶段锁协议"><span class="nav-number">5.2.</span> <span class="nav-text">两阶段锁协议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加锁阶段"><span class="nav-number">5.3.</span> <span class="nav-text">加锁阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解锁阶段"><span class="nav-number">5.4.</span> <span class="nav-text">解锁阶段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Innodb中的各种锁"><span class="nav-number">5.5.</span> <span class="nav-text">Innodb中的各种锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Shared-Lock-And-Exclusive-Locks"><span class="nav-number">5.6.</span> <span class="nav-text">Shared Lock And Exclusive Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Record-Locks"><span class="nav-number">5.7.</span> <span class="nav-text">Record Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Next-key-Locks"><span class="nav-number">5.8.</span> <span class="nav-text">Next-key Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Intention-Locks"><span class="nav-number">5.9.</span> <span class="nav-text">Intention Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GAP-Locks"><span class="nav-number">5.10.</span> <span class="nav-text">GAP Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert-Intention-Locks"><span class="nav-number">5.11.</span> <span class="nav-text">Insert Intention Locks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AUTO-INC-Locks"><span class="nav-number">5.12.</span> <span class="nav-text">AUTO-INC Locks</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -392,7 +535,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">157</span>
+          <span class="site-state-item-count">161</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -404,7 +547,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -448,7 +591,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">479k</span>
+    <span title="站点总字数">498k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

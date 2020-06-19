@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="目录 手工解析 getopts getopt getopts处理长选项 在函数中解析参数  在Shell脚本中处理命令行参数，可以使用getopts&#x2F;getopt来进行——当然，手工解析也是可以的。 下面通过一个特定的情景来讲一下这三种参数处理方法。 这两天写了一个安全删除的脚本，原理就是将指定的文件移动到某个特定的目录下并保存其原始路径信息，这和在Windows下以及在Linux的桌面环境下”将">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Shell脚本中参数处理方法">
+<meta property="og:url" content="http://yoursite.com/2020/06/18/Shell%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="目录 手工解析 getopts getopt getopts处理长选项 在函数中解析参数  在Shell脚本中处理命令行参数，可以使用getopts&#x2F;getopt来进行——当然，手工解析也是可以的。 下面通过一个特定的情景来讲一下这三种参数处理方法。 这两天写了一个安全删除的脚本，原理就是将指定的文件移动到某个特定的目录下并保存其原始路径信息，这和在Windows下以及在Linux的桌面环境下”将">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.zmonster.me/assets/img/getopts.gif">
+<meta property="og:image" content="https://www.zmonster.me/assets/img/getopt.gif">
+<meta property="article:published_time" content="2020-06-18T23:32:47.000Z">
+<meta property="article:modified_time" content="2020-06-19T07:34:59.299Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.zmonster.me/assets/img/getopts.gif">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/18/Shell%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Shell脚本中参数处理方法 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/Shell%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Shell脚本中参数处理方法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-19 07:32:47 / 修改时间：15:34:59" itemprop="dateCreated datePublished" datetime="2020-06-19T07:32:47+08:00">2020-06-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org242584d" target="_blank" rel="noopener">手工解析</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org039a802" target="_blank" rel="noopener">getopts</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org29fcbdf" target="_blank" rel="noopener">getopt</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#orgefa2c7a" target="_blank" rel="noopener">getopts处理长选项</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org893ba73" target="_blank" rel="noopener">在函数中解析参数</a></li>
+</ul>
+<p>在Shell脚本中处理命令行参数，可以使用getopts/getopt来进行——当然，手工解析也是可以的。</p>
+<p>下面通过一个特定的情景来讲一下这三种参数处理方法。</p>
+<p>这两天写了一个安全删除的脚本，原理就是将指定的文件移动到某个特定的目录下并保存其原始路径信息，这和在Windows下以及在Linux的桌面环境下”将文件移动到回收站”的意义是一样的。就拿这个来做例子吧。</p>
+<p>在这个脚本中，有五个选项，分别代表五种动作:</p>
+<ol>
+<li>-d : 将文件移动到回收站，该选项后需要指定一个文件或目录名</li>
+<li>-l : 列出被移动到回收站的文件及其id，该选项不需要值</li>
+<li>-b : 恢复被移动到回收站的文件，该选项需要指定一个文件对应的id</li>
+<li>-c : 清空回收站，该选项不需要值</li>
+<li>-h : 打印帮助信息</li>
+</ol>
+<h2 id="手工解析"><a href="#手工解析" class="headerlink" title="手工解析"></a>手工解析</h2><p>所谓的手工解析，就是取到参数后手工一个一个解析了，以下是手工解析上述情景参数的过程:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">while [ $# -gt 0 ];do</span><br><span class="line">    case $1 in</span><br><span class="line">        -d)</span><br><span class="line">            shift</span><br><span class="line">            file_to_trash=$1</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        -b)</span><br><span class="line">            shift</span><br><span class="line">            file_to_untrash=$1</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        -h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>这里用到了’shift’这个命令，这个命令的作用是将参数列表以空格为分隔符左移一个单位，或者可以理解为将第一个参数给去掉了，比如获取的命令行参数为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-d hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>在执行了’shift’后，命令行参数就变成了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>这样，在使用了shift后，我们每次都只要去看参数列表中的第一个就行了。当然，其实不用’shift’也是可以的，比如说这样:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">i=1</span><br><span class="line">while [ $i -le $# ];do</span><br><span class="line">    case $&#123;!i&#125; in</span><br><span class="line">        -d)</span><br><span class="line">            i=$(expr $i + 1)</span><br><span class="line">            file_to_trash=$&#123;!i&#125;</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        -b)</span><br><span class="line">            i=$(expr $i + 1)</span><br><span class="line">            file_to_untrash=$&#123;!i&#125;</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        -h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">    i=$(expr $i + 1)</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>对比可以发现使用’shift’会稍微方便一点。</p>
+<p>当然，上面的处理没有进行参数检查，这些检查应该要防止这些错误情况:参数个数为0、完全冲突的”动作”一起出现、选项需要值但未给值。</p>
+<h2 id="getopts"><a href="#getopts" class="headerlink" title="getopts"></a>getopts</h2><p>‘getopts’是POSIX Shell中内置的一个命令，其使用方法是:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getopts &lt;opt_string&gt; &lt;optvar&gt; &lt;arguments&gt;</span><br></pre></td></tr></table></figure>
+
+<p>下面是在Shell中使用该命令的一个示例:</p>
+<p><img src="https://www.zmonster.me/assets/img/getopts.gif" alt="getopts.gif"></p>
+<p>本质上来说，’getopts’的处理和我们手工处理是差不多的，它不过是提供了更便利的方式而已。它的使用方式非常简单明了，其形式为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">while getopts &lt;opt_string&gt; &lt;optvar&gt;</span><br><span class="line">    case $&lt;optvar&gt; in</span><br><span class="line">        # ...</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>其中<opt_string>是要处理的选项的一个集合，每个选项在其中用不包含连字符’-‘的字母来表示，每个代表选项的字母前后可以有一个冒号，前面有冒号表示当处理该选项出错时不输出’getopts’自身产生的错误信息，这方便我们自己编写对应的错误处理方法;后面的冒号表示这个选项需要一个值。对于我们这个”安全删除”的例子，这个<opt_string>应该是:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">d:lb:ch</span><br></pre></td></tr></table></figure>
+
+<p>冒号的归属的话，先到先得吧，大概是这样。</p>
+<p>在使用’getopts’时，有两个特殊的变量，它们是 <strong>OPTIND</strong> 和 <strong>OPTARG</strong> ，前者表示当前参数在参数列表中的位置——相当于手工解析第二种方法中那个自定义的变量 <strong>i</strong> ，其值初始时为1， 会在每次取了选项以及其值(如果有的话)后更新; <strong>OPTARG</strong> 则是在选项需要值时，存储这个选项对应的值。这样，我们这个例子用’getopts’就可以写成:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">while getopts d:lb:ch OPT;do</span><br><span class="line">    case $OPT in</span><br><span class="line">        d)</span><br><span class="line">            file_to_trash=$OPTARG</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        b)</span><br><span class="line">            file_to_untrash=$OPTARG</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>对比可以看到，相比手工解析的第一种办法，又更为简洁一点了。不过需要注意的是，’getopts’会从第一个参数开始，只按照<opt_string>指定的形式来寻找并解析参数，如果给出的实际命令行参数与其所描述的参数形式不符，则会出错中止。</p>
+<p>比如说，对于上面的例子，假设这个脚本已经完全写好了，脚本名为 <strong>trash.sh</strong> ，其参数处理就是上面这样，那么如果我在终端里执行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;trash.sh a -b hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>开始那个多余的参数’a’将会导致’getopts’在解析到选项’-b’前就出错终止。所以呢，像使用’getopts’这样的方法，其自由度不如手工解析，如果要保证脚本在任何情况下都能正确解析参数，它需要多做一点——当然啦，上面这个愚蠢的错误使用情况还是比较少出现的啦，反正我现在写的脚本里压根没考虑这样的情况。</p>
+<h2 id="getopt"><a href="#getopt" class="headerlink" title="getopt"></a>getopt</h2><p>‘getopt’与’getopts’类似，不过’getopts’只能处理短选项，’getopt’则能处理短选项和长选项。所谓的短选项就是类似下面这样的选项:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-a</span><br></pre></td></tr></table></figure>
+
+<p>而下面这样的则是长选项</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--action&#x3D;delete</span><br></pre></td></tr></table></figure>
+
+<p>当然，事无绝对，通过一些技巧，用’getopts’处理长选项也是可能的。这里先说一下如何用’getopt’来处理参数吧。</p>
+<p>需要事先说明的一点是，’getopt’不是Shell内建的命令，而是’util-linux’这个软件包提供的功能，它不是POSIX标准的一部分，所以也有人<a href="http://mywiki.wooledge.org/BashFAQ/035#getopts" target="_blank" rel="noopener">建议不使用’getopt’</a>。</p>
+<p>首先将之前说到的五种动作对应的短选项扩展一下，以便讲解’getopt’的使用:</p>
+<ol>
+<li>-d/–delete : 将文件移动到回收站，该选项后需要指定一个文件或目录名</li>
+<li>-l/–list : 列出被移动到回收站的文件及其id，该选项不需要值</li>
+<li>-b/–back : 恢复被移动到回收站的文件，该选项需要指定一个文件对应的id</li>
+<li>-c/–clear : 清空回收站，该选项不需要值</li>
+<li>-h/–help : 打印帮助信息</li>
+</ol>
+<p>‘getopt’既能处理短选项也能处理长选项，短选项通过参数 <strong>-o</strong> 指定，长选项通过参数 <strong>-l</strong> 指定。同’getopts’一样，它一次也只解析一个选项，所以也需要循环处理，不过与’getopts’不同的是，’getopt’没有使用 <strong>OPTIND</strong> 和 <strong>OPTARG</strong> 这两个变量，所以我们还得手动对参数进行’shift’，对需要值的选项，也得手动去取出值。</p>
+<p>下面是在Shell中使用’getopt’的一个示例:</p>
+<p><img src="https://www.zmonster.me/assets/img/getopt.gif" alt="getopt.gif"></p>
+<p>可以看到，’getopt’将参数中以下形式的内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--longopt&#x3D;argument</span><br></pre></td></tr></table></figure>
+
+<p>在返回结果中替换成下面这样的形式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--longopt argument</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以通过循环和’shift’来进行处理了，不过在脚本中，’shift’命令是对命令行参数起作用的，即特殊变量”$@”，而我们在脚本中只能将’getopt’的返回结果作为字符串存储到一个变量中。为了让’shift’起作用，通常还要使用’set’命令来将变量的值赋给”$@”这个特殊变量。</p>
+<p>真是有够麻烦的……算了，下面再集中吐槽吧……</p>
+<p>然后，在设置好短选项和长选项后，在将实际的参数传给’getopt’时，要在实际参数前加上一个两个连字符 <strong>–</strong> ，而’getopt’会将这两个连字符放到返回结果的最后面，在处理时可以将这两个连字符视为结束标志。</p>
+<p>以下是针对本文假设的情景，使用’getopt’解析参数的流程:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">arg=$(getopt -o d:lb:ch -l delete:,list,back:,clear,help -- $@)</span><br><span class="line"></span><br><span class="line">set -- "$arg"</span><br><span class="line"></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">    case $1 in</span><br><span class="line">        -d|--delete)</span><br><span class="line">            file_to_trash=$2</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            shift 2</span><br><span class="line">            ;;</span><br><span class="line">        -l|--list)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -b|--back)</span><br><span class="line">            file_to_untrash=$2</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -c|--clear)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -h|--help)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        --)</span><br><span class="line">            shift</span><br><span class="line">            break</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>然而，知道了’getopt’的使用及其原理后，自然而然地可以发现，我可以不用去管这个结束标志，用”$#”这个表示参数个数的特殊变量，同样可以控制参数解析的流程，这完全和手工解析是同一个道理。我甚至可以将’getopt’的返回结果存储到一个数组里，直接循环处理这个数组，而不用使用’set’命令了。</p>
+<p>好了，吐槽时间。</p>
+<p>我之前写脚本都是用的’getopts’，一来我用不上长选项，二来’getopts’的使用足够简单。在写本文之前，我倒是知道’getopt’可以处理长选项，但没仔细了解过。这两天了解了一下，觉得还是别用’getopt’的好，理由如下:</p>
+<ol>
+<li><p>‘getopt’不是Shell内建命令，跨平台使用时可能会出现问题；</p>
+</li>
+<li><p>只是将’–longopt=val’这样的参数形式替换成了’–longopt val’，但因此增加了许多复杂性，比如使用了’set’命令，在使用’set’命令时还要考虑’getopt’的返回结果中有无Shell命令，有的话应该使用’eval’命令来消除可能导致的错误</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">eval set -- &quot;$arg&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>调用完还要进行与手工解析类似的工作，相比手工解析，并没有多大优势；</p>
+</li>
+<li><p>真的需要长选项吗？我觉得短选项就足够了</p>
+</li>
+</ol>
+<h2 id="getopts处理长选项"><a href="#getopts处理长选项" class="headerlink" title="getopts处理长选项"></a>getopts处理长选项</h2><p>既然不建议使用’getopt’，那么怎么处理长选项呢？自然是有办法的。</p>
+<p>为了方便讲解，这里假设一个简单的情景吧，在这个情景里，我们只需要处理两个可能的选项</p>
+<ol>
+<li>-f/–file: 设置文件名，该选项需要值</li>
+<li>-h/–help: 打印帮助信息，该选项不需要值</li>
+</ol>
+<p>用’getopts’处理这种情况，可以这么做:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">filename=""</span><br><span class="line">while getopts f:h-: opt;do</span><br><span class="line">    case $opt in</span><br><span class="line">        -)</span><br><span class="line">            case $OPTARG in</span><br><span class="line">                help)</span><br><span class="line">                    usage</span><br><span class="line">                    exit 0</span><br><span class="line">                    ;;</span><br><span class="line">                file=*)</span><br><span class="line">                    filename=$&#123;OPTARG#*=&#125;</span><br><span class="line">                    ;;</span><br><span class="line">            esac</span><br><span class="line">            ;;</span><br><span class="line">        f)</span><br><span class="line">            filename=$OPTARG</span><br><span class="line">            ;;</span><br><span class="line">        h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>当然，也许并不比手工解析简洁多少，但用起来肯定是比’getopt’要舒服的。</p>
+<h2 id="在函数中解析参数"><a href="#在函数中解析参数" class="headerlink" title="在函数中解析参数"></a>在函数中解析参数</h2><p>有时候，我们也许想把参数解析的工作放到函数中去做，比如说定义了一个’main’函数然后在’main’函数中封装整个流程处理逻辑。又或者像我一样，写了几个小小的工具函数，放到了Bash的配置文件 <strong>.bashrc</strong> 中，参数解析的工作必须得在函数中做。</p>
+<p>手工解析是能想到的最直接的办法，简单可行。</p>
+<p>不过假如我们想用’getopts’来处理呢？动手尝试后，你会发现直接在函数中使用’getopts’是会出错的。要在函数中使用’getopts’，必须在这个函数中使用’getopts’前，将 <strong>OPTIND</strong> 这个被’getopts’使用的特殊变量设置为函数局部变量，像这样:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">function main() &#123;</span><br><span class="line"></span><br><span class="line">    local OPTIND</span><br><span class="line"></span><br><span class="line">    while getopts d:lb:ch OPT;do</span><br><span class="line">       case $OPT in</span><br><span class="line">           d)</span><br><span class="line">               file_to_trash=$OPTARG</span><br><span class="line">               trash $file_to_trash # trash is a function</span><br><span class="line">               ;;</span><br><span class="line">           l)</span><br><span class="line">               print_trashed_file  # print_trashed_file is a function</span><br><span class="line">               ;;</span><br><span class="line">           b)</span><br><span class="line">               file_to_untrash=$OPTARG</span><br><span class="line">               untrash $file_to_untrash # untrash is a function</span><br><span class="line">               ;;</span><br><span class="line">           c)</span><br><span class="line">               clean_all           # clean all is a function</span><br><span class="line">               ;;</span><br><span class="line">           h)</span><br><span class="line">               usage</span><br><span class="line">               exit 0</span><br><span class="line">               ;;</span><br><span class="line">           \?)</span><br><span class="line">               usage</span><br><span class="line">               exit 1</span><br><span class="line">               ;;</span><br><span class="line">       esac</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">main $@</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html" target="_blank" rel="noopener">Shell脚本中参数处理方法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/18/Redis%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" rel="prev" title="Redis常见问题总结">
+      <i class="fa fa-chevron-left"></i> Redis常见问题总结
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#目录"><span class="nav-number">1.</span> <span class="nav-text">目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#手工解析"><span class="nav-number">2.</span> <span class="nav-text">手工解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#getopts"><span class="nav-number">3.</span> <span class="nav-text">getopts</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#getopt"><span class="nav-number">4.</span> <span class="nav-text">getopt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#getopts处理长选项"><span class="nav-number">5.</span> <span class="nav-text">getopts处理长选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#在函数中解析参数"><span class="nav-number">6.</span> <span class="nav-text">在函数中解析参数</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">161</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">498k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
