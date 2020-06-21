@@ -22,17 +22,19 @@
     var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="链接：https:&#x2F;&#x2F;www.nowcoder.com&#x2F;questionTerminal&#x2F;490a8b7adb02451dbb5b9414397d9a0b来源：牛客网  管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO">
+  <meta name="description" content="历史linux下的进程通信手段基本上是从Unix平台上的进程通信手段继承而来的。而对Unix发展做出重大贡献的两大主力AT&amp;T的贝尔实验室及BSD（加州大学伯克利分校的伯克利软件发布中心）在进程间通信方面的侧重点有所不同。前者对Unix早期的进程间通信手段进行了系统的改进和扩充，形成了“system V IPC”，通信进程局限在单个计算机内；后者则跳过了该限制，形成了基于套接口（socke">
 <meta property="og:type" content="article">
 <meta property="og:title" content="进程间通信方式">
 <meta property="og:url" content="http://yoursite.com/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/index.html">
 <meta property="og:site_name" content="Eric&#39;s Blogs">
-<meta property="og:description" content="链接：https:&#x2F;&#x2F;www.nowcoder.com&#x2F;questionTerminal&#x2F;490a8b7adb02451dbb5b9414397d9a0b来源：牛客网  管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO">
+<meta property="og:description" content="历史linux下的进程通信手段基本上是从Unix平台上的进程通信手段继承而来的。而对Unix发展做出重大贡献的两大主力AT&amp;T的贝尔实验室及BSD（加州大学伯克利分校的伯克利软件发布中心）在进程间通信方面的侧重点有所不同。前者对Unix早期的进程间通信手段进行了系统的改进和扩充，形成了“system V IPC”，通信进程局限在单个计算机内；后者则跳过了该限制，形成了基于套接口（socke">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://www.ibm.com/developerworks/cn/linux/l-ipc/1.gif">
 <meta property="article:published_time" content="2020-06-07T05:33:34.000Z">
-<meta property="article:modified_time" content="2020-06-07T13:35:04.676Z">
+<meta property="article:modified_time" content="2020-06-21T08:55:52.200Z">
 <meta property="article:author" content="EricMa">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://www.ibm.com/developerworks/cn/linux/l-ipc/1.gif">
 
 <link rel="canonical" href="http://yoursite.com/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/">
 
@@ -213,10 +215,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-06-07 13:33:34 / 修改时间：21:35:04" itemprop="dateCreated datePublished" datetime="2020-06-07T13:33:34+08:00">2020-06-07</time>
+              <time title="创建时间：2020-06-07 13:33:34" itemprop="dateCreated datePublished" datetime="2020-06-07T13:33:34+08:00">2020-06-07</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-21 16:55:52" itemprop="dateModified" datetime="2020-06-21T16:55:52+08:00">2020-06-21</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -233,14 +241,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>693</span>
+              <span>2.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -252,10 +260,28 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>链接：<a href="https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b</a><br>来源：牛客网</p>
+        <h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><p>linux下的进程通信手段基本上是<strong>从Unix平台上的进程通信手段继承而来</strong>的。而对Unix发展做出重大贡献的两大主力AT&amp;T的贝尔实验室及BSD（加州大学伯克利分校的伯克利软件发布中心）在进程间通信方面的侧重点有所不同。前者对Unix早期的进程间通信手段进行了系统的改进和扩充，形成了“system V IPC”，通信进程局限在单个计算机内；后者则跳过了该限制，形成了基于套接口（socket）的进程间通信机制。Linux则把两者继承了下来，如图示：</p>
+<h5 id=""><a href="#" class="headerlink" title=""></a><img src="https://www.ibm.com/developerworks/cn/linux/l-ipc/1.gif" alt="img"></h5><p>其中，最初Unix IPC包括：管道、FIFO、信号；System V IPC包括：System V消息队列、System V信号灯、System V共享内存区；Posix IPC包括： Posix消息队列、Posix信号灯、Posix共享内存区。</p>
+<p>有两点需要简单说明一下：</p>
 <ul>
+<li><p>由于Unix版本的多样性，电子电气工程协会（IEEE）开发了一个独立的Unix标准，这个新的ANSI Unix标准被称为计算机环境的可移植性操作系统界面（POSIX）。现有大部分Unix和流行版本都是遵循POSIX标准的，而Linux从一开始就遵循POSIX标准；</p>
+</li>
+<li><p>BSD并不是没有涉足单机内的进程间通信（socket本身就可以用于单机内的进程间通信）。</p>
+</li>
+</ul>
+<p>事实上，很多Unix版本的单机IPC留有BSD的痕迹，如4.4BSD支持的匿名内存映射、4.3+BSD对可靠信号语义的实现等等。</p>
+<p>图一给出了linux 所支持的各种IPC手段，在本文接下来的讨论中，为了避免概念上的混淆，在尽可能少提及Unix的各个版本的情况下，所有问题的讨论最终都会归结到Linux环境下的进程间通信上来。并且，对于Linux所支持通信手段的不同实现版本（如对于共享内存来说，有Posix共享内存区以及System V共享内存区两个实现版本），将主要介绍Posix API。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>linux下进程间通信的几种主要手段简介：</p>
+<h4 id="管道（Pipe）及有名管道（named-pipe）"><a href="#管道（Pipe）及有名管道（named-pipe）" class="headerlink" title="管道（Pipe）及有名管道（named pipe）"></a>管道（Pipe）及有名管道（named pipe）</h4><p>管道可用于具有亲缘关系进程间的通信，有名管道克服了管道没有名字的限制，因此，除具有管道所具有的功能外，它还允许无亲缘关系进程间的通信；</p>
+<h4 id="信号（Signal）"><a href="#信号（Signal）" class="headerlink" title="信号（Signal）"></a>信号（Signal）</h4><p>信号是比较复杂的通信方式，用于通知接受进程有某种事件发生，除了用于进程间通信外，进程还可以发送信号给进程本身；linux除了支持Unix早期信号语义函数sigal外，还支持语义符合Posix.1标准的信号函数sigaction（实际上，该函数是基于BSD的，BSD为了实现可靠信号机制，又能够统一对外接口，用sigaction函数重新实现了signal函数）；</p>
+<h4 id="报文（Message）队列（消息队列）"><a href="#报文（Message）队列（消息队列）" class="headerlink" title="报文（Message）队列（消息队列）"></a>报文（Message）队列（消息队列）</h4><p>消息队列是<strong>消息的链接表</strong>，包括Posix消息队列system V消息队列。有足够权限的进程可以向队列中添加消息，被赋予读权限的进程则可以读走队列中的消息。消息队列克服了信号承载信息量少，管道只能承载无格式字节流以及缓冲区大小受限等缺点。</p>
+<h4 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h4><p>使得多个进程可以访问同一块内存空间，是<strong>最快的</strong>可用IPC形式。是针对其他通信机制运行效率较低而设计的。往往与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。</p>
+<h4 id="信号量（semaphore）"><a href="#信号量（semaphore）" class="headerlink" title="信号量（semaphore）"></a>信号量（semaphore）</h4><p>主要作为进程间以及同一进程不同线程之间的同步手段。</p>
+<h4 id="套接口（Socket）"><a href="#套接口（Socket）" class="headerlink" title="套接口（Socket）"></a>套接口（Socket）</h4><p>更为一般的进程间通信机制，可用于<strong>不同机器之间</strong>的进程间通信。起初是由Unix系统的BSD分支开发出来的，但现在一般可以移植到其它类Unix系统上：Linux和System V的变种都支持套接字。</p>
+<p>一般来说，linux下的进程包含以下几个关键要素：有一段可执行程序；有专用的系统堆栈空间；内核中有它的控制块（进程控制块），描述进程所占用的资源，这样，进程才能接受内核的调度；具有独立的存储空间进程和线程有时候并不完全区分，而往往根据上下文理解其含义。</p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><ul>
 <li>管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO都有一个名字，允许不相关的进程访问同一个FIFO，因此也成为命名管。      </li>
-<li>消息队列：是用于两个进程之间的通讯，首先在一个进程中创建一个消息队列，然后再往消息队列中写数据，而另一个进程则从那个消息队列中取数据。需要注意的是，消息队列是用创建文件的方式建立的，如果一个进程向某个消息队列中写入了数据之后，另一个进程并没有取出数据，即使向消息队列中写数据的进程已经结束，保存在消息队列中的数据并没有消失，也就是说下次再从这个消息队列读数据的时候，就是上次的数据！！！      </li>
+<li>消息队列：是用于两个进程之间的通讯，首先在一个进程中创建一个消息队列，然后再往消息队列中写数据，而另一个进程则从那个消息队列中取数据。需要注意的是，消息队列是用创建文件的方式建立的，如果一个进程向某个消息队列中写入了数据之后，另一个进程并没有取出数据，即使向消息队列中写数据的进程已经结束，保存在消息队列中的数据并没有消失，也就是说下次再从这个消息队列读数据的时候，就是上次的数据！</li>
 <li>信号量， 不能传递复杂消息，只能用来同步      </li>
 <li>共享内存，只要首先创建一个共享内存区，其它进程按照一定的步骤就能访问到这个共享内存区中的数据，当然可读可写；    </li>
 </ul>
@@ -266,6 +292,11 @@
 <li>​     信号量：不能传递复杂消息，只能用来同步      </li>
 <li>​     共享内存区：能够很容易控制容量，速度快，但要保持同步，比如一个进程在写的时候，另一个进程要注意读写的问题，相当于线程中的线程安全，当然，共享内存区同样可以用作线程间通讯，不过没这个必要，线程间本来就已经共享了一块内存的。</li>
 </ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.ibm.com/developerworks/cn/linux/l-ipc/" target="_blank" rel="noopener">深刻理解Linux进程间通信（IPC）</a></p>
+<p><a href="https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b" target="_blank" rel="noopener">进程间通信</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
 
     </div>
 
@@ -346,6 +377,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#历史"><span class="nav-number">1.</span> <span class="nav-text">历史</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#"><span class="nav-number">1.0.0.1.</span> <span class="nav-text"></span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">2.</span> <span class="nav-text">简介</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#管道（Pipe）及有名管道（named-pipe）"><span class="nav-number">2.0.1.</span> <span class="nav-text">管道（Pipe）及有名管道（named pipe）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#信号（Signal）"><span class="nav-number">2.0.2.</span> <span class="nav-text">信号（Signal）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#报文（Message）队列（消息队列）"><span class="nav-number">2.0.3.</span> <span class="nav-text">报文（Message）队列（消息队列）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#共享内存"><span class="nav-number">2.0.4.</span> <span class="nav-text">共享内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#信号量（semaphore）"><span class="nav-number">2.0.5.</span> <span class="nav-text">信号量（semaphore）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#套接口（Socket）"><span class="nav-number">2.0.6.</span> <span class="nav-text">套接口（Socket）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#补充"><span class="nav-number">3.</span> <span class="nav-text">补充</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -361,14 +393,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">161</span>
+          <span class="site-state-item-count">167</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-count">19</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -417,7 +449,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">498k</span>
+    <span title="站点总字数">525k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
