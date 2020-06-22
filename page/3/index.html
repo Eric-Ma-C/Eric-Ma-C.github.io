@@ -186,6 +186,162 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java8%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/15/Java8%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/" class="post-title-link" itemprop="url">Java8函数式编程</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-16 02:46:42 / 修改时间：11:09:24" itemprop="dateCreated datePublished" datetime="2020-06-16T02:46:42+08:00">2020-06-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="函数式编程的由来"><a href="#函数式编程的由来" class="headerlink" title="函数式编程的由来"></a>函数式编程的由来</h3><p>在很长的一段时间里，Java一直是面向对象的语言，一切皆对象，如果想要调用一个函数，函数必须属于一个类或对象，然后在使用类或对象进行调用。但是在其它的编程语言中，如js，c++，我们可以直接写一个函数，然后在需要的时候进行调用，即可以说是面向对象编程，也可以说是函数式编程。</p>
+<p>从功能上来看，面向对象编程没什么不好的地方，但是从开发的角度来看，面向对象编程会多<strong>写很多可能是重复的代码行</strong>。比如创建一个Runnable的匿名类的时候：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Runnable runnable = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"do something..."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这一段代码中真正有用的只有run方法中的内容，<strong>剩余的部分都是属于Java编程语言的结构部分</strong>，没什么用，但是要写。</p>
+<p>幸运的是Java8开始，引入了函数式编程接口与Lambda表达式，帮助我们<code>写更少更优雅的代码</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 一行即可</span></span><br><span class="line">Runnable runnable = () -&gt; System.out.println(<span class="string">"do something..."</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="函数式接口-Functional-interfaces"><a href="#函数式接口-Functional-interfaces" class="headerlink" title="函数式接口(Functional interfaces)"></a>函数式接口(Functional interfaces)</h3><p>一个接口类<strong>只有一个抽象的方法</strong>叫做函数式接口(Functional Interface)，在JDK中大部分函数式接口都会标记上<code>@FunctionalInterface</code>注解，并不是所有的函数式接口都要写<code>@FunctionalInterface</code>注解，只是用来方便我们区分哪些是函数式接口的，如果标记了这个注解，内部有多个抽象方法的时候，会报编译错误。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Error:(3, 1) java: 意外的 @FunctionalInterface 注释</span><br><span class="line"> xxx 不是函数接口</span><br><span class="line"> 在 接口 xxx 中找到多个非覆盖抽象方法</span><br></pre></td></tr></table></figure>
+
+<p>当一个类是函数式接口的时候，我们可以直接使用Lambda表达式来实例化它，而不用写很多模板式代码。</p>
+<p>写法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 类名称  变量 = (参数) -&gt; (函数体)</span></span><br><span class="line"><span class="comment">// 如</span></span><br><span class="line">FunctionTest test = () -&gt; &#123; &#125;;</span><br></pre></td></tr></table></figure>
+
+<h4 id="内置函数式接口"><a href="#内置函数式接口" class="headerlink" title="内置函数式接口"></a>内置函数式接口</h4><p>JDK中已经内置了一些标准的函数式接口，位于<code>java.util.function</code>包下，满足我们大多数情况下的需求。包下的接口都比较通用，如果我们想要写新的函数式接口，可以首先看这个包下是不是已经提供了。</p>
+<p>那么这个包提供了那些接口呢？</p>
+<ul>
+<li><p>最常见的四种，<strong>Function，Consumer，Supplier，Predicate</strong>。标准输入输出，优雅代码所推荐的写法</p>
+<ul>
+<li>Function：即一个入参一个出参的场景。</li>
+<li>Consumer：一个入参，但是没有出参</li>
+<li>Supplier：无入参，一个出参</li>
+<li>Predicate：可以看做是特殊的Function，一个入参，出参为bool类型。</li>
+</ul>
+</li>
+<li><p>两个入参的函数式接口，即两个入参，一个出参。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BiFunction&lt;T, U, R&gt;</span><br></pre></td></tr></table></figure>
+
+<p>, 最典型的使用案例即Java的Map方法。</p>
+<ul>
+<li>BiFunction： 两个入参，一个泛型出参</li>
+<li>ToDoubleBiFunction,ToIntBiFunction,ToLongBiFunction。两个入参，返回原始类型的出参</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">HashMap&lt;String, Object&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">map.put(<span class="string">"a"</span>,<span class="number">1</span>);</span><br><span class="line">map.put(<span class="string">"b"</span>,<span class="number">2</span>);</span><br><span class="line">map.replaceAll((o, o2) -&gt; o + o2.toString());</span><br><span class="line">System.out.println(map.values())</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>一元函数式接口， 可以看做是特殊的Function接口，入参与出参有相同的类型。UnaryOperator，相同类型的转换。</li>
+<li>原始类型Function，因为Java的原始类型或者叫做主类型，int，short，double之类的，不能作为泛型参数。官方对这些原始类型提供了特殊的函数式接口<ul>
+<li>以int类型：IntFunction, IntComsumer,IntSupplieer, IntPredicate, IntToDoubleFcuntion, IntToLongFunction, IntUnaryOperator, ToIntFunction</li>
+</ul>
+</li>
+</ul>
+<p>官方：</p>
+<p><a href="https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html" target="_blank" rel="noopener">docs.oracle.com/javase/8/do…</a></p>
+<h3 id="Lambda表达式"><a href="#Lambda表达式" class="headerlink" title="Lambda表达式"></a>Lambda表达式</h3><p>如果理解了函数式接口，在一定程度上也是理解了Lambda表达式，<strong>Lambda表达式相当于对函数式接口的使用</strong>，我们不能只去写接口，但不去使用。</p>
+<p>尽管Java支持了函数式接口，但是Java的函数仍然要寄托与类之中，不能单独存在，但是因为函数式接口只有一个抽象的函数，那么我们很明确的知道要使用拿一个方法。所以<strong>编译器可以自动帮我们推导要用哪个方法，不用在写多余的模板式代码</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Runnable runnable = () -&gt; System.out.println(<span class="string">"do something..."</span>);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>首先Runnable是一个函数式的接口，所以我们可以使用Lambda表达式来实例化它</li>
+<li>因为run方法没有参数，所以lambda表达式：<strong>(argument) -&gt; {body}</strong>，参数为空<code>()</code></li>
+<li>关于函数体部分，如果我们只有一行代码可以省略掉{}。</li>
+</ul>
+<p>除了函数调用的Lambda表达式，还有一些<strong>方法的引用操作</strong>，使用<code>::</code>，<strong>引用方法或者构造器而没有真正的实例化对象</strong>，可以探索下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String::toUpperCase</span><br><span class="line">System.out::println</span><br><span class="line">&quot;abc&quot;::length</span><br><span class="line">ArrayList::new</span><br><span class="line">int[]::new</span><br></pre></td></tr></table></figure>
+
+<p>官方：</p>
+<p><a href="https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/Lambda-QuickStart/index.html" target="_blank" rel="noopener">www.oracle.com/webfolder/t…</a></p>
+<p><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html" target="_blank" rel="noopener">docs.oracle.com/javase/tuto…</a></p>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><p>我们可以通过以下实例（Java8Tester.java）来了解函数式接口 Predicate <T> 的使用：</p>
+<p>Java8Tester.java 文件:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.function.Predicate;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Java8Tester</span> </span>&#123;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">      List&lt;Integer&gt; list = Arrays.asList(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate = n -&gt; true</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// n 如果存在则 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出所有数据:"</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// 传递参数 n</span></span><br><span class="line">      eval(list, n-&gt;<span class="keyword">true</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate1 = n -&gt; n%2 == 0</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// 如果 n%2 为 0 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出所有偶数:"</span>);</span><br><span class="line">      eval(list, n-&gt; n%<span class="number">2</span> == <span class="number">0</span> );</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate2 = n -&gt; n &gt; 3</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// 如果 n 大于 3 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出大于 3 的所有数字:"</span>);</span><br><span class="line">      eval(list, n-&gt; n &gt; <span class="number">3</span> );</span><br><span class="line">   &#125;</span><br><span class="line">    </span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">eval</span><span class="params">(List&lt;Integer&gt; list, Predicate&lt;Integer&gt; predicate)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">for</span>(Integer n: list) &#123;</span><br><span class="line">        </span><br><span class="line">         <span class="keyword">if</span>(predicate.test(n)) &#123;</span><br><span class="line">            System.out.println(n + <span class="string">" "</span>);</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行以上脚本，输出结果为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ javac Java8Tester.java </span><br><span class="line">$ java Java8Tester</span><br><span class="line">输出所有数据:</span><br><span class="line">1 </span><br><span class="line">2 </span><br><span class="line">3 </span><br><span class="line">4 </span><br><span class="line">5 </span><br><span class="line">6 </span><br><span class="line">7 </span><br><span class="line">8 </span><br><span class="line">9 </span><br><span class="line">输出所有偶数:</span><br><span class="line">2 </span><br><span class="line">4 </span><br><span class="line">6 </span><br><span class="line">8 </span><br><span class="line">输出大于 3 的所有数字:</span><br><span class="line">4 </span><br><span class="line">5 </span><br><span class="line">6 </span><br><span class="line">7 </span><br><span class="line">8 </span><br><span class="line">9</span><br></pre></td></tr></table></figure>
+
+<h3 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h3><p>Java的函数式编程远远超出这里所表达的内容，还需要更多的探索。当然这里主要介绍了Java的函数式接口，已经在java.util.function包下常见的函数式接口，最后对lambda表达式做了简单的说明。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5df2d501f265da33eb6be914" target="_blank" rel="noopener">Java8函数式编程</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1895,260 +2051,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/13/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3List%E7%AE%80%E4%BB%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/13/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3List%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java集合接口List简介</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-14 07:59:20 / 修改时间：16:09:48" itemprop="dateCreated datePublished" datetime="2020-06-14T07:59:20+08:00">2020-06-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>8.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="使用List"><a href="#使用List" class="headerlink" title="使用List"></a>使用List</h2><p>在集合类中，<code>List</code>是最基础的一种集合：它是一种有序列表。</p>
-<p><code>List</code>的行为和数组几乎完全相同：<code>List</code>内部按照放入元素的先后顺序存放，每个元素都可以通过索引确定自己的位置，<code>List</code>的索引和数组一样，从<code>0</code>开始。</p>
-<p>数组和<code>List</code>类似，也是有序结构，如果我们使用数组，在添加和删除元素的时候，会非常不方便。例如，从一个已有的数组<code>{&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;}</code>中删除索引为<code>2</code>的元素：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">┌───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ C │ D │ E │   │</span><br><span class="line">└───┴───┴───┴───┴───┴───┘</span><br><span class="line">              │   │</span><br><span class="line">          ┌───┘   │</span><br><span class="line">          │   ┌───┘</span><br><span class="line">          │   │</span><br><span class="line">          ▼   ▼</span><br><span class="line">┌───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ D │ E │   │   │</span><br><span class="line">└───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>这个“删除”操作实际上是把<code>&#39;C&#39;</code>后面的元素依次往前挪一个位置，而“添加”操作实际上是把指定位置以后的元素都依次向后挪一个位置，腾出来的位置给新加的元素。这两种操作，用数组实现非常麻烦。</p>
-<p>因此，在实际应用中，需要增删元素的有序列表，我们使用最多的是<code>ArrayList</code>。实际上，<code>ArrayList</code>在内部使用了数组来存储所有元素。例如，一个<code>ArrayList</code>拥有5个元素，实际数组大小为<code>6</code>（即有一个空位）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">size&#x3D;5</span><br><span class="line">┌───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ C │ D │ E │   │</span><br><span class="line">└───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>当添加一个元素并指定索引到<code>ArrayList</code>时，<code>ArrayList</code>自动移动需要移动的元素：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">size&#x3D;5</span><br><span class="line">┌───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │   │ C │ D │ E │</span><br><span class="line">└───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>然后，往内部指定索引的数组位置添加一个元素，然后把<code>size</code>加<code>1</code>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">size&#x3D;6</span><br><span class="line">┌───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ F │ C │ D │ E │</span><br><span class="line">└───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>继续添加元素，但是数组已满，没有空闲位置的时候，<code>ArrayList</code>先创建一个更大的新数组，然后把旧数组的所有元素复制到新数组，紧接着用新数组取代旧数组：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">size&#x3D;6</span><br><span class="line">┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ F │ C │ D │ E │   │   │   │   │   │   │</span><br><span class="line">└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>现在，新数组就有了空位，可以继续添加一个元素到数组末尾，同时<code>size</code>加<code>1</code>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">size&#x3D;7</span><br><span class="line">┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐</span><br><span class="line">│ A │ B │ F │ C │ D │ E │ G │   │   │   │   │   │</span><br><span class="line">└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>可见，<code>ArrayList</code>把添加和删除的操作封装起来，让我们操作<code>List</code>类似于操作数组，却不用关心内部元素如何移动。</p>
-<p>我们考察<code>List</code>接口，可以看到几个主要的接口方法：</p>
-<ul>
-<li>在末尾添加一个元素：<code>void add(E e)</code></li>
-<li>在指定索引添加一个元素：<code>void add(int index, E e)</code></li>
-<li>删除指定索引的元素：<code>int remove(int index)</code></li>
-<li>删除某个元素：<code>int remove(Object e)</code></li>
-<li>获取指定索引的元素：<code>E get(int index)</code></li>
-<li>获取链表大小（包含元素的个数）：<code>int size()</code></li>
-</ul>
-<p>但是，实现<code>List</code>接口并非只能通过数组（即<code>ArrayList</code>的实现方式）来实现，另一种<code>LinkedList</code>通过“链表”也实现了List接口。在<code>LinkedList</code>中，它的内部每个元素都指向下一个元素：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">        ┌───┬───┐   ┌───┬───┐   ┌───┬───┐   ┌───┬───┐</span><br><span class="line">HEAD ──&gt;│ A │ ●─┼──&gt;│ B │ ●─┼──&gt;│ C │ ●─┼──&gt;│ D │   │</span><br><span class="line">        └───┴───┘   └───┴───┘   └───┴───┘   └───┴───┘</span><br></pre></td></tr></table></figure>
-
-<p>我们来比较一下<code>ArrayList</code>和<code>LinkedList</code>：</p>
-<table>
-<thead>
-<tr>
-<th align="left"></th>
-<th align="left">ArrayList</th>
-<th align="left">LinkedList</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">获取指定元素</td>
-<td align="left">速度很快</td>
-<td align="left">需要从头开始查找元素</td>
-</tr>
-<tr>
-<td align="left">添加元素到末尾</td>
-<td align="left">速度很快</td>
-<td align="left">速度很快</td>
-</tr>
-<tr>
-<td align="left">在指定位置添加/删除</td>
-<td align="left">需要移动元素</td>
-<td align="left">不需要移动元素</td>
-</tr>
-<tr>
-<td align="left">内存占用</td>
-<td align="left">少</td>
-<td align="left">较大</td>
-</tr>
-</tbody></table>
-<p>通常情况下，我们总是优先使用<code>ArrayList</code>。</p>
-<h3 id="List的特点"><a href="#List的特点" class="headerlink" title="List的特点"></a>List的特点</h3><p>使用<code>List</code>时，我们要关注<code>List</code>接口的规范。<code>List</code>接口允许我们添加重复的元素，即<code>List</code>内部的元素可以重复,<code>List</code>还允许添加<code>null</code>.</p>
-<h3 id="创建List"><a href="#创建List" class="headerlink" title="创建List"></a>创建List</h3><p>除了使用<code>ArrayList</code>和<code>LinkedList</code>，自JDK 9以后, 我们还可以通过<code>List</code>接口提供的<code>of()</code>方法，根据给定元素快速创建<code>List</code>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">List&lt;Integer&gt; list &#x3D; List.of(1, 2, 5);</span><br></pre></td></tr></table></figure>
-
-<p>但是<code>List.of()</code>方法不接受<code>null</code>值，如果传入<code>null</code>，会抛出<code>NullPointerException</code>异常。</p>
-<h3 id="遍历List"><a href="#遍历List" class="headerlink" title="遍历List"></a>遍历List</h3><p>和数组类型，我们要遍历一个<code>List</code>，完全可以用<code>for</code>循环根据索引配合<code>get(int)</code>方法遍历：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; list = List.of(<span class="string">"apple"</span>, <span class="string">"pear"</span>, <span class="string">"banana"</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;list.size(); i++) &#123;</span><br><span class="line">            String s = list.get(i);</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>但这种方式并不推荐，一是代码复杂，二是因为<code>get(int)</code>方法只有<code>ArrayList</code>的实现是高效的，<strong>换成<code>LinkedList</code>后，索引越大，访问速度越慢。</strong></p>
-<p>所以我们要始终<strong>坚持使用迭代器<code>Iterator</code>来访问<code>List</code></strong>。<code>Iterator</code>本身也是一个对象，但它是由<code>List</code>的实例调用<code>iterator()</code>方法的时候创建的。<code>Iterator</code>对象知道如何遍历一个<code>List</code>，并且不同的<code>List</code>类型，返回的<code>Iterator</code>对象实现也是不同的，但总是具有最高的访问效率。</p>
-<p><code>Iterator</code>对象有两个方法：<code>boolean hasNext()</code>判断是否有下一个元素，<code>E next()</code>返回下一个元素。因此，使用<code>Iterator</code>遍历<code>List</code>代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; list = List.of(<span class="string">"apple"</span>, <span class="string">"pear"</span>, <span class="string">"banana"</span>);</span><br><span class="line">        <span class="keyword">for</span> (Iterator&lt;String&gt; it = list.iterator(); it.hasNext(); ) &#123;</span><br><span class="line">            String s = it.next();</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>有童鞋可能觉得使用<code>Iterator</code>访问<code>List</code>的代码比使用索引更复杂。但是，要记住，通过<code>Iterator</code>遍历<code>List</code>永远是最高效的方式。并且，由于<code>Iterator</code>遍历是如此常用，所以，Java的<strong><code>for each</code>循环本身就可以帮我们使用<code>Iterator</code>遍历</strong>。把上面的代码再改写如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; list = List.of(<span class="string">"apple"</span>, <span class="string">"pear"</span>, <span class="string">"banana"</span>);</span><br><span class="line">        <span class="keyword">for</span> (String s : list) &#123;</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上述代码就是我们编写遍历<code>List</code>的常见代码。</p>
-<p>实际上，只要实现了<code>Iterable</code>接口的集合类都可以直接用<code>for each</code>循环来遍历，Java编译器本身并不知道如何遍历集合对象，但它会自动把<code>for each</code>循环变成<code>Iterator</code>的调用，原因就在于<code>Iterable</code>接口定义了一个<code>Iterator iterator()</code>方法，强迫集合类必须返回一个<code>Iterator</code>实例。</p>
-<h3 id="List和Array转换"><a href="#List和Array转换" class="headerlink" title="List和Array转换"></a>List和Array转换</h3><p>把<code>List</code>变为<code>Array</code>有三种方法，第一种是调用<code>toArray()</code>方法直接返回一个<code>Object[]</code>数组：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public class Main &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        List&lt;String&gt; list &#x3D; List.of(&quot;apple&quot;, &quot;pear&quot;, &quot;banana&quot;);</span><br><span class="line">        Object[] array &#x3D; list.toArray();</span><br><span class="line">        for (Object s : array) &#123;</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这种方法会<strong>丢失类型信息</strong>(降为Object)，所以实际应用很少。</p>
-<p>第二种方式是给<code>toArray(T[])</code>传入一个类型相同的<code>Array</code>，<code>List</code>内部自动把元素复制到传入的<code>Array</code>中：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public class Main &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        List&lt;Integer&gt; list &#x3D; List.of(12, 34, 56);</span><br><span class="line">        Integer[] array &#x3D; list.toArray(new Integer[3]);</span><br><span class="line">        for (Integer n : array) &#123;</span><br><span class="line">            System.out.println(n);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>注意到这个<code>toArray(T[])</code>方法的泛型参数<code>并不是`List`接口定义的泛型参数</code>，所以，我们实际上可以传入其他类型的数组，例如我们传入<code>Number</code>类型的数组，返回的仍然是<code>Number</code>类型：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public class Main &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        List&lt;Integer&gt; list &#x3D; List.of(12, 34, 56);</span><br><span class="line">        Number[] array &#x3D; list.toArray(new Number[3]);</span><br><span class="line">        for (Number n : array) &#123;</span><br><span class="line">            System.out.println(n);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>但是，如果我们传入类型不匹配的数组，例如，<code>String[]</code>类型的数组，由于<code>List</code>的元素是<code>Integer</code>，所以无法放入<code>String</code>数组，这个方法会抛出<code>ArrayStoreException</code>。</p>
-<p>如果我们传入的数组大小和<code>List</code>实际的元素个数不一致怎么办？根据<a href="https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/List.html#toArray(T[])" target="_blank" rel="noopener">List接口</a>的文档，我们可以知道：</p>
-<p>如果传入的数组不够大，那么<code>List</code>内部会创建一个新的刚好够大的数组，填充后返回；如果传入的数组比<code>List</code>元素还要多，那么填充完元素后，剩下的数组元素一律填充<code>null</code>。</p>
-<p>实际上，最常用的是传入一个“恰好”大小的数组：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Integer[] array &#x3D; list.toArray(new Integer[list.size()]);</span><br></pre></td></tr></table></figure>
-
-<p>最后一种更简洁的写法是通过<code>List</code>接口定义的<code>T[] toArray(IntFunction generator)</code>方法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Integer[] array &#x3D; list.toArray(Integer[]::new);</span><br></pre></td></tr></table></figure>
-
-<p>这种函数式写法我们会在后续讲到。</p>
-<p>反过来，把<code>Array</code>变为<code>List</code>就简单多了，JDK 11可以通过<code>List.of(T...)</code>方法最简单：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Integer[] array &#x3D; &#123; 1, 2, 3 &#125;;</span><br><span class="line">List&lt;Integer&gt; list &#x3D; List.of(array);</span><br></pre></td></tr></table></figure>
-
-<p>对于JDK 11之前的版本，可以使用<code>Arrays.asList(T...)</code>方法把数组转换成<code>List</code>。</p>
-<p>要注意的是，返回的<code>List</code>不一定就是<code>ArrayList</code>或者<code>LinkedList</code>，因为<code>List</code>只是一个接口，如果我们调用<code>List.of()</code>，它返回的是一个<strong>只读<code>List</code></strong>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;Integer&gt; list = List.of(<span class="number">12</span>, <span class="number">34</span>, <span class="number">56</span>);</span><br><span class="line">        list.add(<span class="number">999</span>); <span class="comment">// UnsupportedOperationException</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>对只读<code>List</code>调用<code>add()</code>、<code>remove()</code>方法会抛出<code>UnsupportedOperationException</code>。</p>
-<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p><code>List</code>是按索引顺序访问的长度可变的有序表，优先使用<code>ArrayList</code>而不是<code>LinkedList</code>；</p>
-<p>可以直接使用<code>for each</code>遍历<code>List</code>；</p>
-<p><code>List</code>可以和<code>Array</code>相互转换。</p>
-<h2 id="编写equals方法"><a href="#编写equals方法" class="headerlink" title="编写equals方法"></a>编写equals方法</h2><p>我们知道<code>List</code>是一种有序链表：<code>List</code>内部按照放入元素的先后顺序存放，并且每个元素都可以通过索引确定自己的位置。</p>
-<p><code>List</code>还提供了<code>boolean contains(Object o)</code>方法来判断<code>List</code>是否包含某个指定元素。此外，<code>int indexOf(Object o)</code>方法可以返回某个元素的索引，如果元素不存在，就返回<code>-1</code>。</p>
-<p>我们来看一个例子：</p>
-<p><code>import java.util.List;</code> Run</p>
-<p>这里我们注意一个问题，我们往<code>List</code>中添加的<code>&quot;C&quot;</code>和调用<code>contains(&quot;C&quot;)</code>传入的<code>&quot;C&quot;</code>是不是同一个实例？</p>
-<p>如果这两个<code>&quot;C&quot;</code>不是同一个实例，这段代码是否还能得到正确的结果？我们可以改写一下代码测试一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import java.util.List;</span><br></pre></td></tr></table></figure>
-
-<p> Run</p>
-<p>true<br>2</p>
-<p>因为我们传入的是<code>new String(&quot;C&quot;)</code>，所以一定是不同的实例。结果仍然符合预期，这是为什么呢？</p>
-<p>因为<code>List</code>内部并不是通过<code>==</code>判断两个元素是否相等，而是使用<code>equals()</code>方法判断两个元素是否相等，例如<code>contains()</code>方法可以实现如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public class ArrayList &#123;</span><br><span class="line">    Object[] elementData;</span><br><span class="line">    public boolean contains(Object o) &#123;</span><br><span class="line">        for (int i &#x3D; 0; i &lt; size; i++) &#123;</span><br><span class="line">            if (o.equals(elementData[i])) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因此，要正确使用<code>List</code>的<code>contains()</code>、<code>indexOf()</code>这些方法，放入的实例必须正确覆写<code>equals()</code>方法，否则，放进去的实例，查找不到。我们之所以能正常放入<code>String</code>、<code>Integer</code>这些对象，是因为Java标准库定义的这些类已经正确实现了<code>equals()</code>方法。</p>
-<p>我们以<code>Person</code>对象为例，测试一下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import java.util.List;</span><br></pre></td></tr></table></figure>
-
-<p> Run</p>
-<p>false</p>
-<p>不出意外，虽然放入了<code>new Person(&quot;Bob&quot;)</code>，但是用另一个<code>new Person(&quot;Bob&quot;)</code>查询不到，原因就是<code>Person</code>类没有覆写<code>equals()</code>方法。</p>
-<h3 id="编写equals"><a href="#编写equals" class="headerlink" title="编写equals"></a>编写equals</h3><p>如何正确编写<code>equals()</code>方法？<code>equals()</code>方法要求我们必须满足以下条件：</p>
-<ul>
-<li>自反性（Reflexive）：对于非<code>null</code>的<code>x</code>来说，<code>x.equals(x)</code>必须返回<code>true</code>；</li>
-<li>对称性（Symmetric）：对于非<code>null</code>的<code>x</code>和<code>y</code>来说，如果<code>x.equals(y)</code>为<code>true</code>，则<code>y.equals(x)</code>也必须为<code>true</code>；</li>
-<li>传递性（Transitive）：对于非<code>null</code>的<code>x</code>、<code>y</code>和<code>z</code>来说，如果<code>x.equals(y)</code>为<code>true</code>，<code>y.equals(z)</code>也为<code>true</code>，那么<code>x.equals(z)</code>也必须为<code>true</code>；</li>
-<li>一致性（Consistent）：对于非<code>null</code>的<code>x</code>和<code>y</code>来说，只要<code>x</code>和<code>y</code>状态不变，则<code>x.equals(y)</code>总是一致地返回<code>true</code>或者<code>false</code>；</li>
-<li>对<code>null</code>的比较：即<code>x.equals(null)</code>永远返回<code>false</code>。</li>
-</ul>
-<p>上述规则看上去似乎非常复杂，但其实代码实现<code>equals()</code>方法是很简单的，我们以<code>Person</code>类为例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public class Person &#123;</span><br><span class="line">    public String name;</span><br><span class="line">    public int age;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>首先，我们要定义“相等”的逻辑含义。对于<code>Person</code>类，如果<code>name</code>相等，并且<code>age</code>相等，我们就认为两个<code>Person</code>实例相等。</p>
-<p>因此，编写<code>equals()</code>方法如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public boolean equals(Object o) &#123;</span><br><span class="line">    if (o instanceof Person) &#123;</span><br><span class="line">        Person p &#x3D; (Person) o;</span><br><span class="line">        return this.name.equals(p.name) &amp;&amp; this.age &#x3D;&#x3D; p.age;</span><br><span class="line">    &#125;</span><br><span class="line">    return false;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>对于引用字段比较，我们使用<code>equals()</code>，对于基本类型字段的比较，我们使用<code>==</code>。</p>
-<p>如果<code>this.name</code>为<code>null</code>，那么<code>equals()</code>方法会报错，因此，需要继续改写如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public boolean equals(Object o) &#123;</span><br><span class="line">    if (o instanceof Person) &#123;</span><br><span class="line">        Person p &#x3D; (Person) o;</span><br><span class="line">        boolean nameEquals &#x3D; false;</span><br><span class="line">        if (this.name &#x3D;&#x3D; null &amp;&amp; p.name &#x3D;&#x3D; null) &#123;</span><br><span class="line">            nameEquals &#x3D; true;</span><br><span class="line">        &#125;</span><br><span class="line">        if (this.name !&#x3D; null) &#123;</span><br><span class="line">            nameEquals &#x3D; this.name.equals(p.name);</span><br><span class="line">        &#125;</span><br><span class="line">        return nameEquals &amp;&amp; this.age &#x3D;&#x3D; p.age;</span><br><span class="line">    &#125;</span><br><span class="line">    return false;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>如果<code>Person</code>有好几个引用类型的字段，上面的写法就太复杂了。要简化引用类型的比较，我们使用<code>Objects.equals()</code>静态方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (o <span class="keyword">instanceof</span> Person) &#123;</span><br><span class="line">        Person p = (Person) o;</span><br><span class="line">        <span class="keyword">return</span> Objects.equals(<span class="keyword">this</span>.name, p.name) &amp;&amp; <span class="keyword">this</span>.age == p.age;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因此，我们总结一下<code>equals()</code>方法的正确编写方法：</p>
-<ol>
-<li>先确定实例“相等”的逻辑，即哪些字段相等，就认为实例相等；</li>
-<li>用<code>instanceof</code>判断传入的待比较的<code>Object</code>是不是当前类型，如果是，继续比较，否则，返回<code>false</code>；</li>
-<li>对引用类型用<code>Objects.equals()</code>比较，对基本类型直接用<code>==</code>比较。</li>
-</ol>
-<p>使用<code>Objects.equals()</code>比较两个引用类型是否相等的目的是省去了判断<code>null</code>的麻烦。两个引用类型都是<code>null</code>时它们也是相等的。</p>
-<p>如果不调用<code>List</code>的<code>contains()</code>、<code>indexOf()</code>这些方法，那么放入的元素就不需要实现<code>equals()</code>方法。</p>
-<h3 id="小结-1"><a href="#小结-1" class="headerlink" title="小结"></a>小结</h3><p>在<code>List</code>中查找元素时，<code>List</code>的实现类通过元素的<code>equals()</code>方法比较两个元素是否相等，因此，放入的元素必须正确覆写<code>equals()</code>方法，Java标准库提供的<code>String</code>、<code>Integer</code>等已经覆写了<code>equals()</code>方法；</p>
-<p>编写<code>equals()</code>方法可借助<code>Objects.equals()</code>判断。</p>
-<p>如果不在<code>List</code>中查找元素，就不必覆写<code>equals()</code>方法。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265112034799552" target="_blank" rel="noopener">使用List</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2220,7 +2122,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-count">168</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2276,7 +2178,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">525k</span>
+    <span title="站点总字数">543k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
