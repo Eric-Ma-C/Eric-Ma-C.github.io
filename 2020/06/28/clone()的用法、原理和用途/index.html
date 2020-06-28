@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言object clone（对象克隆）网上资料很多，那我为什么还要写下这篇文章呢？主要是想汇聚多篇文章的优秀之处以及我对于对象克隆的理解来加深印象，也使读者能更全面的理解对象克隆的用法、原理和用途。 何谓 “object clone” 顾名思义clone就是一个相同东西的副本,是一个具体存在的复制体，是一个从生物科学开始变得熟悉的术语。在计算机行业，该术语被广泛用于指Compaq，戴尔等人对IB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="clone()的用法、原理和用途">
+<meta property="og:url" content="http://yoursite.com/2020/06/28/clone()%E7%9A%84%E7%94%A8%E6%B3%95%E3%80%81%E5%8E%9F%E7%90%86%E5%92%8C%E7%94%A8%E9%80%94/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="前言object clone（对象克隆）网上资料很多，那我为什么还要写下这篇文章呢？主要是想汇聚多篇文章的优秀之处以及我对于对象克隆的理解来加深印象，也使读者能更全面的理解对象克隆的用法、原理和用途。 何谓 “object clone” 顾名思义clone就是一个相同东西的副本,是一个具体存在的复制体，是一个从生物科学开始变得熟悉的术语。在计算机行业，该术语被广泛用于指Compaq，戴尔等人对IB">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2017/9/18/a931c7c00bdd438d8d012d6a718f83ce?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2017/9/18/428f7259ad2da755de3d2854c025aeb9?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="article:published_time" content="2020-06-28T01:38:12.000Z">
+<meta property="article:modified_time" content="2020-06-28T09:43:58.080Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2017/9/18/a931c7c00bdd438d8d012d6a718f83ce?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+
+<link rel="canonical" href="http://yoursite.com/2020/06/28/clone()%E7%9A%84%E7%94%A8%E6%B3%95%E3%80%81%E5%8E%9F%E7%90%86%E5%92%8C%E7%94%A8%E9%80%94/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>clone()的用法、原理和用途 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/28/clone()%E7%9A%84%E7%94%A8%E6%B3%95%E3%80%81%E5%8E%9F%E7%90%86%E5%92%8C%E7%94%A8%E9%80%94/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          clone()的用法、原理和用途
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-28 09:38:12 / 修改时间：17:43:58" itemprop="dateCreated datePublished" datetime="2020-06-28T09:38:12+08:00">2020-06-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>object clone（对象克隆）网上资料很多，那我为什么还要写下这篇文章呢？主要是想汇聚多篇文章的优秀之处以及我对于对象克隆的理解来加深印象，也使读者能更全面的理解对象克隆的用法、原理和用途。</p>
+<h3 id="何谓-“object-clone”"><a href="#何谓-“object-clone”" class="headerlink" title="何谓 “object clone”"></a>何谓 “object clone”</h3><blockquote>
+<p>顾名思义clone就是一个相同东西的副本,是一个具体存在的复制体，是一个从生物科学开始变得熟悉的术语。在计算机行业，该术语被广泛用于指Compaq，戴尔等人对IBM PC的模仿。而在java语言中，clone方法被对象调用，所以会复制对象。</p>
+</blockquote>
+<h2 id="clone的用法"><a href="#clone的用法" class="headerlink" title="clone的用法"></a>clone的用法</h2><p>（1）方法摘要  </p>
+<table>
+<thead>
+<tr>
+<th align="left">作用域</th>
+<th align="left">类型</th>
+<th align="left">方法</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">protected</td>
+<td align="left">Object</td>
+<td align="left">clone()</td>
+<td align="left">克隆实现了Cloneable接口的对象</td>
+</tr>
+</tbody></table>
+<p>注意事项：clone方法是被native修饰的，简单的讲就是被Native修饰的方法在被调用时指向的是一个非java代码的具体实现，这个实现可能是其他语言或者操作系统。</p>
+<p>（2）clone规则：  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">1、 基本类型  </span><br><span class="line">    如果变量是基本类型，则拷贝其值，比如int、float等。</span><br><span class="line">2、 对象  </span><br><span class="line">    如果变量是一个实例对象，则拷贝其地址引用，也就是说新对象和原来对象是共用实例变量的。</span><br><span class="line">3、 String字符串  </span><br><span class="line">    若变量为String字符串，则拷贝其地址引用。但是在修改时，它会从字符串池中重新生成一个新的字符串，原有的对象保持不变。复制代码</span><br></pre></td></tr></table></figure>
+
+<p>（2）示例1：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">实现clone方法的步骤：</span><br><span class="line"><span class="number">1</span>. 实现Cloneable接口 </span><br><span class="line"><span class="number">2</span>. 重载Object类中的clone()方法，重载时需定义为<span class="keyword">public</span> </span><br><span class="line"><span class="number">3</span>. 在重载方法中，调用<span class="keyword">super</span>.clone()复制代码</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Book</span> <span class="keyword">implements</span> <span class="title">Cloneable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Book</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Book</span><span class="params">(<span class="keyword">int</span> id, String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setId</span><span class="params">(<span class="keyword">int</span> id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (Book)<span class="keyword">super</span>.clone();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">        Book book1 = <span class="keyword">new</span> Book();</span><br><span class="line">        book1.setName(<span class="string">"基础系列1"</span>);</span><br><span class="line">        Book book2 = (Book) book1.clone();</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.getName());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.getName());</span><br><span class="line"></span><br><span class="line">        book2.setName(<span class="string">"基础系列2"</span>);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.getName());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.getName());</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果：  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">图书1:基础系列1</span><br><span class="line">图书2:基础系列1</span><br><span class="line">图书1:基础系列1</span><br><span class="line">图书2:基础系列2复制代码</span><br></pre></td></tr></table></figure>
+
+<p>从运行结果看这应该是深克隆的，但为什么是浅克隆呢？从<em>string不可变</em>（原对象和克隆对象中的string属性引用的是同一地址）的角度出发结果应该是浅克隆，但从结果出发却又是深克隆，所以从这一角度来说clone对string是深克隆。</p>
+<p>注意事项：<strong>如果没有implements Cloneable的类调用Object.clone()方法就会抛出CloneNotSupportedException</strong></p>
+<p>（3）示例2：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Book</span> <span class="keyword">implements</span> <span class="title">Cloneable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//在示例1的基础上增加bookBorrow的引用</span></span><br><span class="line">    <span class="keyword">private</span> BookBorrow bookBorrow;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Book</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Book</span><span class="params">(<span class="keyword">int</span> id, String name, BookBorrow bookBorrow)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.bookBorrow = bookBorrow;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> BookBorrow <span class="title">getBookBorrow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bookBorrow;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setBookBorrow</span><span class="params">(BookBorrow bookBorrow)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">this</span>.bookBorrow = bookBorrow;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">        Book book = (Book)<span class="keyword">super</span>.clone();</span><br><span class="line">        <span class="comment">//这里注释掉就是浅克隆，否则就是深克隆</span></span><br><span class="line">        book.bookBorrow = (BookBorrow)bookBorrow.clone();</span><br><span class="line">        <span class="keyword">return</span> book;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"BOOK[id="</span>+id+<span class="string">",name="</span>+name+<span class="string">",bookBorrow:"</span>+bookBorrow+<span class="string">"]"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        BookBorrow bookBorrow = <span class="keyword">new</span> BookBorrow(<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">        Book book1 = <span class="keyword">new</span> Book(<span class="number">1</span>,<span class="string">"基础系列1"</span>,bookBorrow);</span><br><span class="line">        Book book2 = (Book) book1.clone();</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.toString());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.toString());</span><br><span class="line"></span><br><span class="line">        book2.setName(<span class="string">"基础系列2"</span>);</span><br><span class="line">        book2.setBookBorrow(<span class="keyword">new</span> BookBorrow(<span class="number">5</span>,<span class="number">5</span>));</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.toString());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.toString());</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookBorrow</span>  <span class="keyword">implements</span> <span class="title">Cloneable</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> id;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> borstate;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BookBorrow</span><span class="params">(<span class="keyword">int</span> id, <span class="keyword">int</span> borstate)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">        <span class="keyword">this</span>.borstate = borstate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getId</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setId</span><span class="params">(<span class="keyword">int</span> id)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.id = id;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getBorstate</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> borstate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setBorstate</span><span class="params">(<span class="keyword">int</span> borstate)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.borstate = borstate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (BookBorrow)<span class="keyword">super</span>.clone();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"BookBorrow[id="</span>+id+<span class="string">",borstate="</span>+borstate+<span class="string">"]"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行结果：  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">图书1:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书2:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书1:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书2:BOOK[id&#x3D;1,name&#x3D;基础系列2,bookBorrow:BookBorrow[id&#x3D;5,borstate&#x3D;5]]复制代码</span><br></pre></td></tr></table></figure>
+
+<p>从结果看这里是一个标准的深克隆实现，深克隆实现的一个主要前提是当前对象引用的对象或对象的对象引用的对象都实现了<em>常规用法1</em>并且在重载clone方法中调用其引用对象的clone方法。</p>
+<p>例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">   <span class="function"><span class="keyword">public</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">       Book book = (Book)<span class="keyword">super</span>.clone();</span><br><span class="line">       <span class="comment">//这里注释掉就是浅克隆，否则就是深克隆</span></span><br><span class="line">       book.bookBorrow = (BookBorrow)bookBorrow.clone();</span><br><span class="line">       <span class="keyword">return</span> book;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意事项：示例2给出的例子是相对简单且常见的类，在实际开发中clone的对象可能依赖第三方的jar包或者引用层级过深不好修改的对象，如果是这种情况则建议采用示例3的做法，使用序列化clone。</p>
+<p>（3）示例3： </p>
+<p>序列化clone类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CloneUtils</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> &lt;T extends Serializable&gt; <span class="function">T <span class="title">clone</span><span class="params">(T obj)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        T cloneObj = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//写入字节流</span></span><br><span class="line">            ByteArrayOutputStream out = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line">            ObjectOutputStream obs = <span class="keyword">new</span> ObjectOutputStream(out);</span><br><span class="line">            obs.writeObject(obj);</span><br><span class="line">            obs.close();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//分配内存，写入原始对象，生成新对象</span></span><br><span class="line">            ByteArrayInputStream ios = <span class="keyword">new</span> ByteArrayInputStream(out.toByteArray());</span><br><span class="line">            ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(ios);</span><br><span class="line">            <span class="comment">//返回生成的新对象</span></span><br><span class="line">            cloneObj = (T) ois.readObject();</span><br><span class="line">            ois.close();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> cloneObj;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BookBorrow</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">//去掉clone方法，继承Serializable</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Book</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">//去掉clone方法，继承Serializable</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line"></span><br><span class="line">        BookBorrow bookBorrow = <span class="keyword">new</span> BookBorrow(<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">        Book book1 = <span class="keyword">new</span> Book(<span class="number">1</span>,<span class="string">"基础系列1"</span>,bookBorrow);</span><br><span class="line">        Book book2 = CloneUtils.clone(book1);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.toString());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.toString());</span><br><span class="line"></span><br><span class="line">        book2.setName(<span class="string">"基础系列2"</span>);</span><br><span class="line">        book2.setBookBorrow(<span class="keyword">new</span> BookBorrow(<span class="number">5</span>,<span class="number">5</span>));</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"图书1:"</span> + book1.toString());</span><br><span class="line">        System.out.println(<span class="string">"图书2:"</span> + book2.toString());</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">图书1:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书2:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书1:BOOK[id&#x3D;1,name&#x3D;基础系列1,bookBorrow:BookBorrow[id&#x3D;1,borstate&#x3D;1]]</span><br><span class="line">图书2:BOOK[id&#x3D;1,name&#x3D;基础系列2,bookBorrow:BookBorrow[id&#x3D;5,borstate&#x3D;5]]</span><br></pre></td></tr></table></figure>
+
+<p>序列化克隆无需继承，通过序列化工具类可实现深克隆同等效果。然而<strong>序列化这种方式在效率上不如clone</strong>。</p>
+<h2 id="clone原理"><a href="#clone原理" class="headerlink" title="clone原理"></a>clone原理</h2><p><em>本次讲解将基于示例1做出解释：</em></p>
+<p>为了不丢失上下文而贴出的测试代码，将会以2部分讲解object clone的原理</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">    <span class="comment">//第一部分</span></span><br><span class="line">    Book book1 = <span class="keyword">new</span> Book();</span><br><span class="line">    book1.setName(<span class="string">"基础系列1"</span>);</span><br><span class="line">    Book book2 = (Book) book1.clone();</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"图书1:"</span> + book1.getName());</span><br><span class="line">    System.out.println(<span class="string">"图书2:"</span> + book2.getName());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//第二部分</span></span><br><span class="line">    book2.setName(<span class="string">"基础系列2"</span>);</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"图书1:"</span> + book1.getName());</span><br><span class="line">    System.out.println(<span class="string">"图书2:"</span> + book2.getName());</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第一部分执行结果</strong>： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">图书1:基础系列1</span><br><span class="line">图书2:基础系列1</span><br></pre></td></tr></table></figure>
+
+<p>浅克隆原理图：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/9/18/a931c7c00bdd438d8d012d6a718f83ce?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="image"></p>
+<p>从图中可以看出clone的name引用的是同一个值，那为什么前面又说是深克隆呢？原因就是在这一步中并没有修改name所以他们是浅克隆，引用的是同一个name变量值。那接下来执行第二部分得出的结果和原理图如你所想对象完全隔离了。</p>
+<p><strong>第二部分执行结果</strong>： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">图书1:基础系列1</span><br><span class="line">图书2:基础系列2</span><br></pre></td></tr></table></figure>
+
+<p>深克隆原理图：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/9/18/428f7259ad2da755de3d2854c025aeb9?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="image"></p>
+<p>从图可以看出修改了name属性值，clone会从堆中重新生成一个对象被克隆对象引用，而原对象保持不变，从这一角度出发的确是深克隆。</p>
+<h3 id="clone原理小结"><a href="#clone原理小结" class="headerlink" title="clone原理小结"></a>clone原理小结</h3><p>前面的原理介绍是以示例1做为蓝本介绍的，示例2 的原理和示例1类似，唯一区别是多了属性对象而属性对象在clone中也只会拷贝引用地址，要想实现深克隆就只能在引用的对象或引用对象的对象中中添加clone方法实现即可实现深克隆。</p>
+<h2 id="clone的实际用途"><a href="#clone的实际用途" class="headerlink" title="clone的实际用途"></a>clone的实际用途</h2><p>1、精心设计一个浅克隆对象被程序缓存，作为功能模块模板；每次有用户调用这个模块则将可变部分替换成用户需要的信息即可。<br>示例：<br>功能：发邮件<br>描述：给同组的用户发送邮件，邮件内容相同（不可变）发送的用户不同（可变）  </p>
+<p>2、精心设计一个深克隆对象本程序缓存，作为功能模块的初始对象，例如：“游客模式”每个游客进入系统访问的都是初始对象，基于初始对象发展出多条变化不一的游览路线。只要你想的到设计巧妙，很多功能都能应用object clone。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本文分3部分介绍了object clone，分别介绍了clone的用法、原理和用途； object clone归结就是可变和不可变两个特性，在实际的开发中我们可以基于这2个特性设计出性能良好的功能模块。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/59bfc707f265da0646188bca" target="_blank" rel="noopener">（基础系列）object clone 的用法、原理和用途</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/27/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90LinkedList%E5%8E%9F%E7%90%86/" rel="prev" title="源码分析LinkedList原理">
+      <i class="fa fa-chevron-left"></i> 源码分析LinkedList原理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#何谓-“object-clone”"><span class="nav-number">1.1.</span> <span class="nav-text">何谓 “object clone”</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clone的用法"><span class="nav-number">2.</span> <span class="nav-text">clone的用法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clone原理"><span class="nav-number">3.</span> <span class="nav-text">clone原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#clone原理小结"><span class="nav-number">3.1.</span> <span class="nav-text">clone原理小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clone的实际用途"><span class="nav-number">4.</span> <span class="nav-text">clone的实际用途</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">172</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">576k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
