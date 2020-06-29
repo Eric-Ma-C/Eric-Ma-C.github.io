@@ -186,6 +186,183 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E8%B0%83%E6%95%B4%E6%95%B0%E7%BB%84%E9%A1%BA%E5%BA%8F%E4%BD%BF%E5%A5%87%E6%95%B0%E4%BD%8D%E4%BA%8E%E5%81%B6%E6%95%B0%E5%89%8D%E9%9D%A2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E8%B0%83%E6%95%B4%E6%95%B0%E7%BB%84%E9%A1%BA%E5%BA%8F%E4%BD%BF%E5%A5%87%E6%95%B0%E4%BD%8D%E4%BA%8E%E5%81%B6%E6%95%B0%E5%89%8D%E9%9D%A2/" class="post-title-link" itemprop="url">调整数组顺序使奇数位于偶数前面</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 02:41:37 / 修改时间：10:55:32" itemprop="dateCreated datePublished" datetime="2020-05-23T02:41:37+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入一个整数数组，实现一个函数来调整该数组中数字的顺序，使得所有的奇数位于数组的前半部分，所有的偶数位于数组的后半部分，并保证奇数和奇数，偶数和偶数之间的相对位置不变。</p>
+<p>空间换时间,时间复杂度O(n),空间复杂度O(n)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reOrderArray</span><span class="params">(<span class="keyword">int</span> [] array)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span>[] ans = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span>[] oddList = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span>[] evenList = <span class="keyword">new</span> <span class="keyword">int</span>[array.length];</span><br><span class="line">    <span class="keyword">int</span> oddNum = <span class="number">0</span>, evenNum = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; array.length; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (array[i] % <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">            oddList[oddNum++] = array[i];</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            evenList[evenNum++] = array[i];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; oddNum; k++) &#123;</span><br><span class="line">        ans[k] = oddList[k];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; evenNum; k++) &#123;</span><br><span class="line">        ans[k + oddNum] = evenList[k];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ans.length; i++) &#123;</span><br><span class="line">        array[i] = ans[i];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/beb5aa231adc45b2a5dcc5b62c93f593?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/beb5aa231adc45b2a5dcc5b62c93f593?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<p>思路：参考快速排序</p>
+<ul>
+<li><code>i++</code>往前走碰到偶数停下来，<code>j = i+1</code> </li>
+<li>若<code>a[j]</code>为偶数，<code>j++</code>前进，直到碰到奇数</li>
+<li><code>a[j]</code>对应的奇数插到a[i]位置，<code>j</code>经过的<code>j-i</code>个偶数依次后移 </li>
+<li>如果<code>j==len-1</code>时还没碰到奇数，证明<code>i</code>和<code>j</code>之间都为偶数了，完成整个移动 </li>
+</ul>
+<p><img src="https://uploadfiles.nowcoder.com/images/20190821/807319133_1566376642654_29268C9D65CC420F5579430A2416F419" alt="图片说明"> </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">reOrderArray</span><span class="params">(<span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; &amp;<span class="built_in">array</span>)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> len = <span class="built_in">array</span>.<span class="built_in">size</span>();</span><br><span class="line">        <span class="keyword">if</span>(len &lt;= <span class="number">1</span>)&#123; <span class="comment">// 数组空或长度为1</span></span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span>(i &lt; len)&#123;</span><br><span class="line">            <span class="keyword">int</span> j = i + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span>(<span class="built_in">array</span>[i]%<span class="number">2</span> == <span class="number">0</span>)&#123; <span class="comment">// a[i]为偶数，j前进，直到替换</span></span><br><span class="line">                <span class="keyword">while</span>(<span class="built_in">array</span>[j]%<span class="number">2</span> == <span class="number">0</span>)&#123; <span class="comment">// j为偶数，前进</span></span><br><span class="line">                    <span class="keyword">if</span>(j==len<span class="number">-1</span>)<span class="comment">// i为偶数，j也为偶数，一直后移到了末尾，证明后面都是偶数</span></span><br><span class="line">                         <span class="keyword">return</span>;</span><br><span class="line">                    j++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 此时j为奇数</span></span><br><span class="line">                <span class="keyword">int</span> count = j-i;</span><br><span class="line">                <span class="keyword">int</span> temp = <span class="built_in">array</span>[i];</span><br><span class="line">                <span class="built_in">array</span>[i] = <span class="built_in">array</span>[j];</span><br><span class="line">                <span class="keyword">while</span>(count&gt;<span class="number">1</span>)&#123;</span><br><span class="line">                    <span class="built_in">array</span>[i+count] = <span class="built_in">array</span>[i+count<span class="number">-1</span>];<span class="comment">//数组后移</span></span><br><span class="line">                    count--;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="built_in">array</span>[i+<span class="number">1</span>] = temp;</span><br><span class="line">            &#125;</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%8F%8D%E8%BD%AC%E9%93%BE%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E5%8F%8D%E8%BD%AC%E9%93%BE%E8%A1%A8/" class="post-title-link" itemprop="url">反转链表</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 02:05:05 / 修改时间：10:10:17" itemprop="dateCreated datePublished" datetime="2020-05-23T02:05:05+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>381</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入一个链表，反转链表后，输出新链表的表头。</p>
+<p>三个指针操作,注意将原链表的head.next置为null,同时注意处理原链表为空的情况.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ListNode <span class="title">ReverseList</span><span class="params">(ListNode head)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (head==<span class="keyword">null</span>||head.next == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> head;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode pre=head,cur=head.next,next=head.next.next;</span><br><span class="line">    head.next=<span class="keyword">null</span>;<span class="comment">//容易忘!</span></span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>)&#123;</span><br><span class="line">        cur.next=pre;</span><br><span class="line">        pre=cur;</span><br><span class="line">        cur=next;</span><br><span class="line">        <span class="keyword">if</span> (cur==<span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        next=cur.next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> pre;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E9%93%BE%E8%A1%A8%E4%B8%AD%E5%80%92%E6%95%B0%E7%AC%ACk%E4%B8%AA%E7%BB%93%E7%82%B9/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1054,403 +1231,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E5%BF%AB%E7%85%A7%E4%BD%BF%E7%94%A8%E5%AD%90%E8%BF%9B%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/18/%E4%B8%BA%E4%BB%80%E4%B9%88%20Redis%20%E5%BF%AB%E7%85%A7%E4%BD%BF%E7%94%A8%E5%AD%90%E8%BF%9B%E7%A8%8B/" class="post-title-link" itemprop="url">为什么 Redis 快照使用子进程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-19 06:40:11 / 修改时间：14:41:52" itemprop="dateCreated datePublished" datetime="2020-05-19T06:40:11+08:00">2020-05-19</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://draveness.me/whys-the-design-redis-single-thread/" target="_blank" rel="noopener">原文链接</a> 作者:Draven</p>
-<p>虽然我们经常将 Redis 看做一个纯内存的键值存储系统，但是我们也会用到它的持久化功能，RDB 和 AOF 就是 Redis 为我们提供的两种持久化工具，其中 RDB 就是 Redis 的数据快照，我们在这篇文章想要分析 Redis 为什么在对数据进行快照持久化时会需要使用子进程，而不是将内存中的数据结构直接导出到磁盘上进行存储。</p>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>在具体分析今天的问题之前，我们首先需要了解 Redis 的持久化存储机制 RDB 究竟是什么，RDB 会每隔一段时间中对 Redis 服务中当下的数据集进行快照，除了 Redis 的配置文件可以对快照的间隔进行设置之外，Redis 客户端还同时提供两个命令来生成 RDB 存储文件，也就是 <code>SAVE</code> 和 <code>BGSAVE</code>，通过命令的名字我们就能猜出这两个命令的区别。</p>
-<p><img src="https://img.draveness.me/save-and-bgsave.png" alt="save-and-bgsave"></p>
-<p>其中 <code>SAVE</code> 命令在执行时会直接阻塞当前的线程，由于 Redis 是 <a href="https://draveness.me/whys-the-design-redis-single-thread" target="_blank" rel="noopener">单线程</a> 的，所以 <code>SAVE</code> 命令会直接阻塞来自客户端的所有其他请求，这在很多时候对于需要提供较强可用性保证的 Redis 服务都是无法接受的。</p>
-<p>我们往往需要 <code>BGSAVE</code> 命令在后台生成 Redis 全部数据对应的 RDB 文件，当我们使用 <code>BGSAVE</code> 命令时，Redis 会立刻 <code>fork</code> 出一个子进程，子进程会执行『将内存中的数据以 RDB 格式保存到磁盘中』这一过程，而 Redis 服务在 <code>BGSAVE</code> 工作期间仍然可以处理来自客户端的请求。</p>
-<p><a href="https://github.com/antirez/redis/blob/e916058f0ba59e964f5de3dee17f46ae08f1d385/src/rdb.c#L1343-L1378" target="_blank" rel="noopener"><code>rdbSaveBackground</code></a> 就是用来处理在后台将数据保存到磁盘上的函数：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">rdbSaveBackground</span><span class="params">(<span class="keyword">char</span> *filename, rdbSaveInfo *rsi)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">pid_t</span> childpid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (hasActiveChildProcess()) <span class="keyword">return</span> C_ERR;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((childpid = redisFork()) == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> retval;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Child */</span></span><br><span class="line">        redisSetProcTitle(<span class="string">"redis-rdb-bgsave"</span>);</span><br><span class="line">        retval = rdbSave(filename,rsi);</span><br><span class="line">        <span class="keyword">if</span> (retval == C_OK) &#123;</span><br><span class="line">            sendChildCOWInfo(CHILD_INFO_TYPE_RDB, <span class="string">"RDB"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        exitFromChild((retval == C_OK) ? <span class="number">0</span> : <span class="number">1</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">/* Parent */</span></span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Redis 服务器会在触发 <code>BGSAVE</code> 时调用 <code>redisFork</code> 函数来创建子进程并调用 <code>rdbSave</code> 在子进程中对数据进行持久化，我们在这里虽然省略了函数中的一些内容，但是整体的结构还是非常清晰的，感兴趣的读者可以在点击上面的链接了解整个函数的实现。</p>
-<p>使用 <code>fork</code> 的目的最终一定是为了不阻塞主进程来提升 Redis 服务的可用性，但是到了这里我们其实能够发现两个问题：</p>
-<ol>
-<li>为什么 <code>fork</code> 之后的子进程能够获取父进程内存中的数据？</li>
-<li><code>fork</code> 函数是否会带来额外的性能开销，这些开销我们怎么样才可以避免？</li>
-</ol>
-<p>既然 Redis 选择使用了 <code>fork</code> 的方式来解决快照持久化的问题，那就说明这两个问题已经有了答案，首先 <code>fork</code> 之后的子进程是可以获取父进程内存中的数据的，而 <code>fork</code> 带来的额外性能开销相比阻塞主线程也一定是可以接受的，只有同时具备这两点，Redis 最终才会选择这样的方案。</p>
-<h2 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h2><p>为了分析上一节提出的两个问题，我们在这里需要了解以下的这些内容，这些内容是 Redis 服务器使用 <code>fork</code> 函数的前提条件，也是最终促使它选择这种实现方式的关键：</p>
-<ol>
-<li>通过 <code>fork</code> 生成的父子进程会共享包括内存空间在内的资源；</li>
-<li><code>fork</code> 函数并不会带来明显的性能开销，尤其是对内存进行大量的拷贝，它能通过写时拷贝将拷贝内存这一工作推迟到真正需要的时候；</li>
-</ol>
-<h3 id="子进程"><a href="#子进程" class="headerlink" title="子进程"></a>子进程</h3><p>在计算机编程领域，尤其是 Unix 和类 Unix 系统中，<code>fork</code> 都是一个进程用于创建自己拷贝的操作，它往往都是被操作系统内核实现的系统调用，也是操作系统在 *nix 系统中创建新进程的主要方法。</p>
-<p><img src="https://img.draveness.me/fork-and-processes.png" alt="fork-and-processes"></p>
-<p>当程序调用了 <code>fork</code> 方法之后，我们就可以通过 <code>fork</code> 的返回值确定父子进程，以此来执行不同的操作：</p>
-<ul>
-<li><code>fork</code> 函数返回 0 时，意味着当前进程是子进程；</li>
-<li><code>fork</code> 函数返回非 0 时，意味着当前进程是父进程，返回值是子进程的 <code>pid</code>；</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (fork() == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// child process</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// parent process</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在 <code>fork</code> 的 <a href="http://man7.org/linux/man-pages/man2/fork.2.html" target="_blank" rel="noopener">手册</a> 中，我们会发现调用 <code>fork</code> 后的父子进程会运行在不同的内存空间中，当 <code>fork</code> 发生时两者的内存空间有着完全相同的内容，对内存的写入和修改、文件的映射都是独立的，两个进程不会相互影响。</p>
-<blockquote>
-<p>The child process and the parent process run in separate memory spaces. At the time of fork() both memory spaces have the same content. Memory writes, file mappings (mmap(2)), and unmappings (munmap(2)) performed by one of the processes do not affect other.</p>
-</blockquote>
-<p>除此之外，子进程几乎是父进程的完整副本（Exact duplicate），然而这两个进程在以下的一些方面会有较小的区别：</p>
-<ul>
-<li>子进程用于独立且唯一的进程 ID；</li>
-<li>子进程的父进程 ID 与父进程 ID 完全相同；</li>
-<li>子进程不会继承父进程的内存锁；</li>
-<li>子进程会重新设置进程资源利用率和 CPU 计时器；</li>
-<li>…</li>
-</ul>
-<p>最关键的点在于父子进程的内存在 <code>fork</code> 时是完全相同的，在 <code>fork</code> 之后进行写入和修改也不会相互影响，这其实就完美的解决了快照这个场景的问题 —— 只需要某个时间点下内存中的数据，而父进程可以继续对自己的内存进行修改，这既不会被阻塞，也不会影响生成的快照。</p>
-<h3 id="写时拷贝"><a href="#写时拷贝" class="headerlink" title="写时拷贝"></a>写时拷贝</h3><p>既然父进程和子进程拥有完全相同的内存空间并且两者对内存的写入都不会相互影响，那么是否意味着子进程在 <code>fork</code> 时需要对父进程的内存进行全量的拷贝呢？假设子进程需要对父进程的内存进行拷贝，这对于 Redis 服务来说基本都是灾难性的，尤其是在以下的两个场景中：</p>
-<ol>
-<li>内存中存储大量的数据，<code>fork</code> 时拷贝内存空间会消耗大量的时间和资源，会导致程序一段时间的不可用；</li>
-<li>Redis 占用了 10G 的内存，而物理机或者虚拟机的资源上限只有 16G，在这时我们就无法对 Redis 中的数据进行持久化，也就是说 Redis 对机器上内存资源的最大利用率不能超过 50%；</li>
-</ol>
-<p>如果无法解决上面的两个问题，使用 <code>fork</code> 来生成内存镜像的方式也无法真正落地，不是一个工程中真正可以使用的方法。</p>
-<blockquote>
-<p>就算脱离了 Redis 的场景，<code>fork</code> 时全量拷贝内存也是难以接受的，假设我们需要在命令行中执行一个命令，我们需要先通过 <code>fork</code> 创建一个新的进程再通过 <code>exec</code> 来执行程序，<code>fork</code> 拷贝的大量内存空间对于子进程来说可能完全没有任何作用的，但是却引入了巨大的额外开销。</p>
-</blockquote>
-<p>写时拷贝（Copy-on-Write）的出现就是为了解决这一问题，就像我们在这一节开头介绍的，写时拷贝的主要作用就是<strong>将拷贝推迟到写操作真正发生时</strong>，这也就避免了大量无意义的拷贝操作。在一些早期的 *nix 系统上，系统调用 <code>fork</code> 确实会立刻对父进程的内存空间进行复制，但是在今天的多数系统中，<code>fork</code> 并不会立刻触发这一过程：</p>
-<p><img src="https://img.draveness.me/process-shared-memory.png" alt="process-shared-memory"></p>
-<p>在 <code>fork</code> 函数调用时，父进程和子进程会被 Kernel 分配到不同的虚拟内存空间中，所以在两个进程看来它们访问的是不同的内存：</p>
-<ul>
-<li>在真正访问虚拟内存空间时，Kernel 会将虚拟内存映射到物理内存上，所以父子进程共享了物理上的内存空间；</li>
-<li>当父进程或者子进程对共享的内存进行修改时，共享的内存才会<strong>以页为单位进行拷贝</strong>，父进程会保留原有的物理空间，而子进程会使用拷贝后的新物理空间；</li>
-</ul>
-<p>在 Redis 服务中，子进程只会读取共享内存中的数据，它并不会执行任何写操作，只有父进程会在写入时才会触发这一机制，而对于大多数的 Redis 服务或者数据库，写请求往往都是远小于读请求的，所以使用 <code>fork</code> 加上写时拷贝这一机制能够带来非常好的性能，也让 <code>BGSAVE</code> 这一操作的实现变得非常简单。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Redis 实现后台快照的方式非常巧妙，通过操作系统提供的 <code>fork</code> 和写时拷贝的特性轻而易举的就实现了这个功能，从这里我们就能看出作者对于操作系统知识的掌握还是非常扎实的，大多人在面对类似的场景时，想到的方法可能就是手动实现类似『写时拷贝』的特性，然而这不仅增加了工作量，还增加了程序出现问题的可能性。</p>
-<p>到这里，我们简单总结一下 Redis 为什么在使用 RDB 进行快照时会通过子进程的方式进行实现：</p>
-<ol>
-<li>通过 <code>fork</code> 创建的子进程能够获得和父进程完全相同的内存空间，父进程对内存的修改对于子进程是不可见的，两者不会相互影响；</li>
-<li>通过 <code>fork</code> 创建子进程时不会立刻触发大量内存的拷贝，内存在被修改时会以页为单位进行拷贝，这也就避免了大量拷贝内存而带来的性能问题；</li>
-</ol>
-<p>上述两个原因中，一个为子进程访问父进程提供了支撑，另一个为减少额外开销做了支持，这两者缺一不可，共同成为了 Redis 使用子进程实现快照持久化的原因。到最后，我们还是来看一些比较开放的相关问题，有兴趣的读者可以仔细思考一下下面的问题：</p>
-<ul>
-<li>Nginx 的主进程会在运行时 <code>fork</code> 一组子进程，这些子进程可以分别处理请求，还有哪些服务会使用这一特性？</li>
-<li>写时拷贝其实是一个比较常见的机制，在 Redis 之外还有哪里会用到它？</li>
-</ul>
-<blockquote>
-<p>如果对文章中的内容有疑问或者想要了解更多软件工程上一些设计决策背后的原因，可以在博客下面留言，作者会及时回复本文相关的疑问并选择其中合适的主题作为后续的内容。</p>
-</blockquote>
-<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
-<li><a href="https://redis.io/topics/persistence" target="_blank" rel="noopener">Redis Persistence</a></li>
-<li><a href="https://jobs.zalando.com/tech/blog/understanding-redis-background-memory-usage/?gh_src=4n3gxh1" target="_blank" rel="noopener">Understanding Redis Background Memory Usage</a></li>
-<li><a href="https://redis.io/topics/faq" target="_blank" rel="noopener">FAQ · Redis</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Copy-on-write" target="_blank" rel="noopener">Copy-on-write</a></li>
-<li><a href="https://github.com/antirez/redis/blob/e916058f0ba59e964f5de3dee17f46ae08f1d385/src/rdb.c#L1343-L1378" target="_blank" rel="noopener">rdbSaveBackground · Redis</a></li>
-<li><a href="https://en.wikipedia.org/wiki/Fork_(system_call)" target="_blank" rel="noopener">Fork (system call)</a></li>
-<li><a href="https://unix.stackexchange.com/questions/87551/which-file-in-kernel-specifies-fork-vfork-to-use-sys-clone-system-call" target="_blank" rel="noopener">Which file in kernel specifies fork(), vfork()… to use sys_clone() system call</a></li>
-<li><a href="https://www.reddit.com/r/compsci/comments/31szui/trying_to_understand_fork_and_copyonwrite_cow/" target="_blank" rel="noopener">Trying to understand fork() and Copy-on-Write (COW)</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/18/Copy%20On%20Write%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">Copy On Write机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-05-19 06:35:22" itemprop="dateCreated datePublished" datetime="2020-05-19T06:35:22+08:00">2020-05-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-05-24 17:20:34" itemprop="dateModified" datetime="2020-05-24T17:20:34+08:00">2020-05-24</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="https://juejin.im/post/5bd96bcaf265da396b72f855" target="_blank" rel="noopener">原文链接</a> 作者:Java3y</p>
-<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>在读《Redis设计与实现》关于哈希表扩容的时候，发现这么一段话：</p>
-<blockquote>
-<p>执行BGSAVE命令或者BGREWRITEAOF命令的过程中，Redis需要创建当前服务器进程的子进程，而大多数操作系统都采用<strong>写时复制（copy-on-write）来优化子进程的使用效率</strong>，所以在子进程存在期间，服务器会提高负载因子的阈值，从而避免在子进程存在期间进行哈希表扩展操作，避免不必要的内存写入操作，最大限度地节约内存。</p>
-</blockquote>
-<p>触及到知识的盲区了，于是就去搜了一下copy-on-write写时复制这个技术究竟是怎么样的。发现涉及的东西蛮多的，也挺难读懂的。于是就写下这篇笔记来记录一下我学习copy-on-write的过程。</p>
-<p>本文<strong>力求简单讲清copy-on-write这个知识点</strong>，希望大家看完能有所收获。</p>
-<h1 id="一、Linux下的copy-on-write"><a href="#一、Linux下的copy-on-write" class="headerlink" title="一、Linux下的copy-on-write"></a>一、Linux下的copy-on-write</h1><p>在说明Linux下的copy-on-write机制前，我们首先要知道两个函数：<code>fork()</code>和<code>exec()</code>。需要注意的是<code>exec()</code>并不是一个特定的函数, 它是<strong>一组函数的统称</strong>, 它包括了<code>execl()</code>、<code>execlp()</code>、<code>execv()</code>、<code>execle()</code>、<code>execve()</code>、<code>execvp()</code>。</p>
-<h2 id="1-1简单来用用fork"><a href="#1-1简单来用用fork" class="headerlink" title="1.1简单来用用fork"></a>1.1简单来用用fork</h2><p>首先我们来看一下<code>fork()</code>函数是什么鬼：</p>
-<blockquote>
-<p>fork is an operation whereby a process creates a copy of itself.</p>
-</blockquote>
-<p>fork是类Unix操作系统上<strong>创建进程</strong>的主要方法。fork用于<strong>创建子进程</strong>(等同于当前进程的副本)。</p>
-<ul>
-<li>新的进程要通过老的进程复制自身得到，这就是fork！</li>
-</ul>
-<p>如果接触过Linux，我们会知道Linux下<strong>init进程是所有进程的爹</strong>(相当于Java中的Object对象)</p>
-<ul>
-<li>Linux的进程都通过init进程或init的子进程fork(vfork)出来的。</li>
-</ul>
-<p>下面以例子说明一下fork吧：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;  </span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;  </span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span> <span class="params">()</span>   </span></span><br><span class="line"><span class="function"></span>&#123;   </span><br><span class="line">    <span class="keyword">pid_t</span> fpid; <span class="comment">//fpid表示fork函数返回的值  </span></span><br><span class="line">    <span class="keyword">int</span> count=<span class="number">0</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 调用fork，创建出子进程  </span></span><br><span class="line">    fpid=fork();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 所以下面的代码有两个进程执行！</span></span><br><span class="line">    <span class="keyword">if</span> (fpid &lt; <span class="number">0</span>)   </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"创建进程失败!/n"</span>);   </span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (fpid == <span class="number">0</span>) &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是子进程，由父进程fork出来/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="keyword">else</span> &#123;  </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"我是父进程/n"</span>);   </span><br><span class="line">        count++;  </span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"统计结果是: %d/n"</span>,count);  </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>得到的结果输出为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">我是子进程，由父进程fork出来</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br><span class="line"></span><br><span class="line">我是父进程</span><br><span class="line"></span><br><span class="line">统计结果是: 1</span><br></pre></td></tr></table></figure>
-
-<p>解释一下：</p>
-<ul>
-<li>fork作为一个函数被调用。这个函数会有<strong>两次返回</strong>，将<strong>子进程的PID返回给父进程，0返回给子进程</strong>。(如果小于0，则说明创建子进程失败)。</li>
-<li>再次说明：当前进程调用<code>fork()</code>，会创建一个跟当前进程完全相同的子进程(除了pid)，所以子进程同样是会执行<code>fork()</code>之后的代码。</li>
-</ul>
-<p>所以说：</p>
-<ul>
-<li>父进程在执行if代码块的时候，<code>fpid变量</code>的值是子进程的pid</li>
-<li>子进程在执行if代码块的时候，<code>fpid变量</code>的值是0</li>
-</ul>
-<h2 id="1-2再来看看exec-函数"><a href="#1-2再来看看exec-函数" class="headerlink" title="1.2再来看看exec()函数"></a>1.2再来看看exec()函数</h2><p>从上面我们已经知道了fork会创建一个子进程。<strong>子进程的是父进程的副本</strong>。</p>
-<p>exec函数的作用就是：<strong>装载一个新的程序</strong>（可执行映像）覆盖<strong>当前进程</strong>内存空间中的映像，<strong>从而执行不同的任务</strong>。</p>
-<ul>
-<li>exec系列函数在执行时会<strong>直接替换掉当前进程的地址空间</strong>。</li>
-</ul>
-<p>我去画张图来理解一下：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1728f4e?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="exec函数的作用"></p>
-<p>参考资料：</p>
-<ul>
-<li>程序员必备知识——fork和exec函数详解<a href="https://blog.csdn.net/bad_good_man/article/details/49364947" target="_blank" rel="noopener">blog.csdn.net/bad_good_ma…</a></li>
-<li>linux中fork（）函数详解（原创！！实例讲解）：<a href="https://blog.csdn.net/jason314/article/details/5640969" target="_blank" rel="noopener">blog.csdn.net/jason314/ar…</a></li>
-<li>linux c语言 fork() 和 exec 函数的简介和用法：<a href="https://blog.csdn.net/nvd11/article/details/8856278" target="_blank" rel="noopener">blog.csdn.net/nvd11/artic…</a></li>
-<li>Linux下Fork与Exec使用：<a href="https://www.cnblogs.com/hicjiajia/archive/2011/01/20/1940154.html" target="_blank" rel="noopener">www.cnblogs.com/hicjiajia/a…</a></li>
-<li>Linux 系统调用 —— fork()内核源码剖析：<a href="https://blog.csdn.net/chen892704067/article/details/76596225" target="_blank" rel="noopener">blog.csdn.net/chen8927040…</a></li>
-</ul>
-<h2 id="1-3回头来看Linux下的COW是怎么一回事"><a href="#1-3回头来看Linux下的COW是怎么一回事" class="headerlink" title="1.3回头来看Linux下的COW是怎么一回事"></a>1.3回头来看Linux下的COW是怎么一回事</h2><blockquote>
-<p>fork()会产生一个和父进程完全相同的子进程(除了pid)</p>
-</blockquote>
-<p>如果按<strong>传统</strong>的做法，会<strong>直接</strong>将父进程的数据拷贝到子进程中，拷贝完之后，父进程和子进程之间的数据段和堆栈是<strong>相互独立的</strong>。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1818295?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="父进程的数据拷贝到子进程中"></p>
-<p>但是，以我们的使用经验来说：往往子进程都会执行<code>exec()</code>来做自己想要实现的功能。</p>
-<ul>
-<li>所以，如果按照上面的做法的话，创建子进程时复制过去的数据是没用的(因为子进程执行<code>exec()</code>，原有的数据会被清空)</li>
-</ul>
-<p>既然很多时候复制给子进程的数据是无效的，于是就有了Copy On Write这项技术了，原理也很简单：</p>
-<ul>
-<li>fork创建出的子进程，<strong>与父进程共享内存空间</strong>。也就是说，如果子进程<strong>不对内存空间进行写入操作的话，内存空间中的数据并不会复制给子进程</strong>，这样创建子进程的速度就很快了！(不用复制，直接引用父进程的物理空间)。</li>
-<li>并且如果在fork函数返回之后，子进程<strong>第一时间</strong>exec一个新的可执行映像，那么也不会浪费时间和内存空间了。</li>
-</ul>
-<p>另外的表达方式：</p>
-<blockquote>
-<p>在fork之后exec之前两个进程<strong>用的是相同的物理空间</strong>（内存区），子进程的代码段、数据段、堆栈都是指向父进程的物理空间，也就是说，两者的虚拟空间不同，但其对应的<strong>物理空间是同一个</strong>。</p>
-</blockquote>
-<blockquote>
-<p>当父子进程中<strong>有更改相应段的行为发生时</strong>，再<strong>为子进程相应的段分配物理空间</strong>。</p>
-</blockquote>
-<blockquote>
-<p>如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。</p>
-</blockquote>
-<blockquote>
-<p>而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
-</blockquote>
-<p>Copy On Write技术<strong>实现原理：</strong></p>
-<blockquote>
-<p>fork()之后，kernel把父进程中所有的内存页的权限都设为read-only，然后子进程的地址空间指向父进程。当父子进程都只读内存时，相安无事。当其中某个进程写内存时，CPU硬件检测到内存页是read-only的，于是触发页异常中断（page-fault），陷入kernel的一个中断例程。中断例程中，kernel就会<strong>把触发的异常的页复制一份</strong>，于是父子进程各自持有独立的一份。</p>
-</blockquote>
-<p>Copy On Write技术<strong>好处</strong>是什么？</p>
-<ul>
-<li>COW技术可<strong>减少</strong>分配和复制大量资源时带来的<strong>瞬间延时</strong>。</li>
-<li>COW技术可减少<strong>不必要的资源分配</strong>。比如fork进程时，并不是所有的页面都需要复制，父进程的<strong>代码段和只读数据段都不被允许修改，所以无需复制</strong>。</li>
-</ul>
-<p>Copy On Write技术<strong>缺点</strong>是什么？</p>
-<ul>
-<li>如果在fork()之后，父子进程都还需要继续进行写操作，<strong>那么会产生大量的分页错误(页异常中断page-fault)</strong>，这样就得不偿失。</li>
-</ul>
-<p>几句话总结Linux的Copy On Write技术：</p>
-<ul>
-<li>fork出的子进程共享父进程的物理空间，当父子进程<strong>有内存写入操作时</strong>，read-only内存页发生中断，<strong>将触发的异常的内存页复制一份</strong>(其余的页还是共享父进程的)。</li>
-<li>fork出的子进程功能实现和父进程是一样的。如果有需要，我们会用<code>exec()</code>把当前进程映像替换成新的进程文件，完成自己想要实现的功能。</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>Linux进程基础：<a href="http://www.cnblogs.com/vamei/archive/2012/09/20/2694466.html" target="_blank" rel="noopener">www.cnblogs.com/vamei/archi…</a></li>
-<li>Linux写时拷贝技术(copy-on-write)<a href="http://www.cnblogs.com/biyeymyhjob/archive/2012/07/20/2601655.html" target="_blank" rel="noopener">www.cnblogs.com/biyeymyhjob…</a></li>
-<li>当你在 Linux 上启动一个进程时会发生什么？<a href="https://zhuanlan.zhihu.com/p/33159508" target="_blank" rel="noopener">zhuanlan.zhihu.com/p/33159508</a></li>
-<li>Linux fork()所谓的写时复制(COW)到最后还是要先复制再写吗？<a href="https://www.zhihu.com/question/265400460" target="_blank" rel="noopener">www.zhihu.com/question/26…</a></li>
-<li>写时拷贝（copy－on－write） COW技术<a href="https://blog.csdn.net/u012333003/article/details/25117457" target="_blank" rel="noopener">blog.csdn.net/u012333003/…</a></li>
-<li>Copy-On-Write 写时复制原理<a href="https://blog.csdn.net/ppppppppp2009/article/details/22750939" target="_blank" rel="noopener">blog.csdn.net/ppppppppp20…</a></li>
-</ul>
-<h2 id="二、解释一下Redis的COW"><a href="#二、解释一下Redis的COW" class="headerlink" title="二、解释一下Redis的COW"></a>二、解释一下Redis的COW</h2><p>基于上面的基础，我们应该已经了解COW这么一项技术了。</p>
-<p>下面我来说一下我对《Redis设计与实现》那段话的理解：</p>
-<ul>
-<li>Redis在持久化时，如果是采用BGSAVE命令或者BGREWRITEAOF的方式，那Redis会<strong>fork出一个子进程来读取数据，从而写到磁盘中</strong>。</li>
-<li>总体来看，Redis还是读操作比较多。如果子进程存在期间，发生了大量的写操作，那可能就会出现<strong>很多的分页错误(页异常中断page-fault)</strong>，这样就得耗费不少性能在复制上。</li>
-<li>而在<strong>rehash阶段上，写操作是无法避免</strong>的。所以Redis在fork出子进程之后，<strong>将负载因子阈值提高</strong>，尽量减少写操作，避免不必要的内存写入操作，最大限度地节约内存。</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>fork()后copy on write的一些特性：<a href="https://zhoujianshi.github.io/articles/2017/fork(" target="_blank" rel="noopener">zhoujianshi.github.io/articles/20…</a>后copy on write的一些特性/index.html)</li>
-<li>写时复制：<a href="https://miao1007.github.io/gitbook/java/juc/cow/" target="_blank" rel="noopener">miao1007.github.io/gitbook/jav…</a></li>
-</ul>
-<h1 id="三、文件系统的COW"><a href="#三、文件系统的COW" class="headerlink" title="三、文件系统的COW"></a>三、文件系统的COW</h1><p>下面来看看文件系统中的COW是啥意思：</p>
-<p>Copy-on-write在对数据进行修改的时候，<strong>不会直接在原来的数据位置上进行操作</strong>，而是重新找个位置修改，这样的好处是一旦系统突然断电，重启之后不需要做Fsck。好处就是能<strong>保证数据的完整性，掉电的话容易恢复</strong>。</p>
-<ul>
-<li>比如说：要修改数据块A的内容，先把A读出来，写到B块里面去。如果这时候断电了，原来A的内容还在！</li>
-</ul>
-<p>参考资料：</p>
-<ul>
-<li>文件系统中的 copy-on-write 模式有什么具体的好处？<a href="https://www.zhihu.com/question/19782224/answers/created" target="_blank" rel="noopener">www.zhihu.com/question/19…</a></li>
-<li>新一代 Linux 文件系统 btrfs 简介:<a href="https://www.ibm.com/developerworks/cn/linux/l-cn-btrfs/" target="_blank" rel="noopener">www.ibm.com/developerwo…</a></li>
-</ul>
-<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>最后我们再来看一下写时复制的思想(摘录自维基百科)：</p>
-<blockquote>
-<p>写入时复制（英语：Copy-on-write，简称COW）是一种计算机程序设计领域的优化策略。其核心思想是，如果有多个调用者（callers）同时请求相同资源（如内存或磁盘上的数据存储），他们会共同获取相同的指针指向相同的资源，直到某个调用者试图修改资源的内容时，系统才会真正复制一份专用副本（private copy）给该调用者，而其他调用者所见到的最初的资源仍然保持不变。这过程对其他的调用者都是透明的（transparently）。此作法主要的优点是如果调用者没有修改该资源，就不会有副本（private copy）被建立，因此多个调用者只是读取操作时可以共享同一份资源。</p>
-</blockquote>
-<p>至少从本文我们可以总结出：</p>
-<ul>
-<li>Linux通过Copy On Write技术极大地<strong>减少了Fork的开销</strong>。</li>
-<li>文件系统通过Copy On Write技术一定程度上保证<strong>数据的完整性</strong>。</li>
-</ul>
-<p>其实在Java里边，也有Copy On Write技术，称为延迟拷贝。</p>
-<p>Java中有三种类型的对象拷贝：浅拷贝(Shallow Copy)、深拷贝(Deep Copy)、延迟拷贝(Lazy Copy)。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/10/31/166c94cfc1b8a75f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Java中的COW"></p>
-<p>这部分留到下一篇来说，敬请期待~</p>
-<p>参考资料：</p>
-<ul>
-<li>写时复制，写时拷贝，写时分裂，Copy on write：<a href="https://my.oschina.net/dubenju/blog/815836" target="_blank" rel="noopener">my.oschina.net/dubenju/blo…</a></li>
-<li>不会产奶的COW(Copy-On-Write)<a href="https://www.jianshu.com/p/b2fb2ee5e3a0" target="_blank" rel="noopener">www.jianshu.com/p/b2fb2ee5e…</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1522,7 +1302,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">172</span>
+          <span class="site-state-item-count">174</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1578,7 +1358,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">576k</span>
+    <span title="站点总字数">580k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

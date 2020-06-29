@@ -186,6 +186,250 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/10/Java%E5%B9%B6%E5%8F%91%E4%B9%8B%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8C%E9%9A%90%E5%BC%8F%E9%94%81%E6%AF%94%E8%BE%83/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/10/Java%E5%B9%B6%E5%8F%91%E4%B9%8B%E6%98%BE%E5%BC%8F%E9%94%81%E5%92%8C%E9%9A%90%E5%BC%8F%E9%94%81%E6%AF%94%E8%BE%83/" class="post-title-link" itemprop="url">Java显式锁和隐式锁比较</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-11 04:03:03 / 修改时间：13:36:47" itemprop="dateCreated datePublished" datetime="2020-06-11T04:03:03+08:00">2020-06-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://blog.csdn.net/kaizi_1992/article/details/105550689" target="_blank" rel="noopener">Java并发之显式锁和隐式锁的区别</a></p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQVJGZzVn?x-oss-process=image/format,png" alt="img"></p>
+<p>在Java并发编程中，锁有两种实现：使用隐式锁和使用显示锁分别是什么？两者的区别是什么？所谓的显式锁和隐式锁的区别也就是说说Synchronized(下文简称：sync)和lock(下文就用ReentrantLock来代之lock)的区别。</p>
+<p>本文主要内容：将通过七个方面详细介绍sync和lock的区别。</p>
+<p>Java中隐式锁：synchronized；显式锁：lock</p>
+<h2 id="sync和lock的区别"><a href="#sync和lock的区别" class="headerlink" title="sync和lock的区别"></a>sync和lock的区别</h2><h3 id="一：出身不同"><a href="#一：出身不同" class="headerlink" title="一：出身不同"></a>一：出身不同</h3><p>从sync和lock的出身(原始的构成)来看看两者的不同。</p>
+<ul>
+<li><p>Sync:Java中的关键字，是由JVM来维护的。是JVM层面的锁。</p>
+</li>
+<li><p>Lock：是JDK5以后才出现的具体的类。使用lock是调用对应的API。是API层面的锁</p>
+</li>
+</ul>
+<p>sync是底层是通过monitorenter进行加锁（底层是通过monitor对象来完成的，其中的wait/notify等方法也是依赖于monitor对象的。只有在同步块或者是同步方法中才可以调用wait/notify等方法的。因为只有在同步块或者是同步方法中，JVM才会调用monitory对象的）；通过monitorexit来退出锁的。</p>
+<p>而lock是通过调用对应的API方法来获取锁和释放锁的。</p>
+<p>我们通过Javap命令来查看调用sync和lock的汇编指令：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQjBJam5V?x-oss-process=image/format,png" alt="img"></p>
+<p>从编译后的汇编指令，我们也能够清晰的看出sync关键字和lock的区别。</p>
+<h3 id="二：使用方式"><a href="#二：使用方式" class="headerlink" title="二：使用方式"></a>二：使用方式</h3><ul>
+<li><p>Sync是隐式锁。</p>
+</li>
+<li><p>Lock是显示锁</p>
+</li>
+</ul>
+<p>所谓的显示和隐式就是在使用的时候，使用者<strong>要不要手动写代码去获取锁和释放锁</strong>的操作。</p>
+<p>我们大家都知道，在使用sync关键字的时候，我们使用者根本不用写其他的代码，然后程序就能够获取锁和释放锁了。那是因为当sync代码块执行完成之后，系统会自动的让程序释放占用的锁。Sync是由系统维护的，如果非逻辑问题的话话，是不会出现死锁的。</p>
+<p>在使用lock的时候，我们使用者需要手动的获取和释放锁。如果没有释放锁，就有可能导致出现死锁的现象。手动获取锁方法：lock.lock()。释放锁：unlock方法。需要配合tyr/finaly语句块来完成。</p>
+<p>两者用法对比如下：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQmFBVjBx?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="三：等待是否可中断"><a href="#三：等待是否可中断" class="headerlink" title="三：等待是否可中断"></a>三：等待是否可中断</h3><p>Sync是不可中断的。除非抛出异常或者正常运行完成</p>
+<p>Lock可以中断的。中断方式：</p>
+<p>1：调用设置超时方法<code>tryLock(long timeout ,timeUnit unit)</code></p>
+<p>2：调用<code>lockInterruptibly()</code>放到代码块中，然后调用<code>interrupt()</code>方法可以中断</p>
+<p>四：加锁的时候是否可以公平</p>
+<ul>
+<li><p>Sync;非公平锁</p>
+</li>
+<li><p>lock：两者都可以的。默认是非公平锁。在其构造方法的时候可以传入Boolean值。true：公平锁 false：非公平锁</p>
+</li>
+</ul>
+<p>Lock的公平锁和非公平锁：</p>
+<p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQzE2aEpR?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="五：锁能否绑定多个条件condition"><a href="#五：锁能否绑定多个条件condition" class="headerlink" title="五：锁能否绑定多个条件condition"></a>五：锁能否绑定多个条件condition</h3><p>Sync:没有。要么随机唤醒一个线程；要么是唤醒所有等待的线程。</p>
+<p>Lock:用来实现分组唤醒需要唤醒的线程，可以精确的唤醒，而不是像sync那样，不能精确唤醒线程。</p>
+<h3 id="六：性能"><a href="#六：性能" class="headerlink" title="六：性能"></a>六：性能</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtQ3lBem15?x-oss-process=image/format,png" alt="img"></p>
+<h3 id="七-使用锁的方式"><a href="#七-使用锁的方式" class="headerlink" title="七:  使用锁的方式"></a>七:  使用锁的方式</h3><p><img src="https://imgconvert.csdnimg.cn/aHR0cDovL3NpMS5nbzJ5ZC5jb20vZ2V0LWltYWdlLzBmeFNtRG9URWxF?x-oss-process=image/format,png" alt="img"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/10/%E6%98%BE%E5%BC%8F%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/10/%E6%98%BE%E5%BC%8F%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/" class="post-title-link" itemprop="url">显式锁（Lock）及Condition的学习与使用</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-10 08:37:08" itemprop="dateCreated datePublished" datetime="2020-06-10T08:37:08+08:00">2020-06-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-11 12:02:46" itemprop="dateModified" datetime="2020-06-11T12:02:46+08:00">2020-06-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="[https://silencedut.github.io/2016/06/12/%E6%98%BE%E7%A4%BA%E9%94%81%EF%BC%88Lock%EF%BC%89%E5%8F%8ACondition%E7%9A%84%E5%AD%A6%E4%B9%A0%E4%B8%8E%E4%BD%BF%E7%94%A8/](https://silencedut.github.io/2016/06/12/显示锁（Lock）及Condition的学习与使用/)">显示锁（Lock）及Condition的学习与使用</a></p>
+<p>synchronized是不错，但它并不完美。它有一些功能性的限制，比如</p>
+<ul>
+<li>它无法中断一个正在等候获得锁的线程，也无法通过投票得到锁。多线程竞争一个锁时，其余未得到锁的线程只能不停的尝试获得锁，而不能中断。<br>高并发的情况下会导致性能下降。</li>
+<li>synchronized上是非公平的,新来的线程有可能立即获得监视器，而在等待区中等候已久的线程可能再次等待。</li>
+</ul>
+<p>而Lock的一些实现类则很好的解决了这些问题。</p>
+<h2 id="可重入锁ReentrantLock"><a href="#可重入锁ReentrantLock" class="headerlink" title="可重入锁ReentrantLock"></a>可重入锁ReentrantLock</h2><p>java.util.concurrent.lock 中的Lock 框架是锁定的一个抽象，它允许把锁定的实现作为 Java 类，而不是作为语言的特性来实现。这就为Lock 的多种实现留下了空间，各种实现可能有不同的调度算法、性能特性或者锁定语义。</p>
+<p>ReentrantLock 类实现了Lock ，它拥有与synchronized 相同的并发性和内存语义，但是添加了类似锁投票、定时锁等候和可中断锁等候的一些特性。此外，它还提供了在激烈争用情况下更佳的性能。（换句话说，当许多线程都想访问共享资源时，JVM 可以花更少的时候来调度线程，把更多时间用在执行线程上。）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LockStudy</span> </span>&#123;     </span><br><span class="line">       </span><br><span class="line">    <span class="keyword">private</span> Lock lock = <span class="keyword">new</span> ReentrantLock();<span class="comment">// 锁对象   </span></span><br><span class="line">             </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">output</span><span class="params">(String name)</span> </span>&#123;  </span><br><span class="line">                        </span><br><span class="line">        lock.lock();      <span class="comment">// 得到锁       </span></span><br><span class="line">        <span class="keyword">try</span> &#123;                   </span><br><span class="line">            <span class="comment">//doSomething            </span></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;                  </span><br><span class="line">            lock.unlock();<span class="comment">// 释放锁                </span></span><br><span class="line">        &#125;            </span><br><span class="line">    &#125;        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，用synchronized修饰的方法或者语句块在代码执行完之后锁自动释放，而是用Lock需要我们手动释放锁，所以为了保证锁最终被释放(发生异常情况)，要把互斥区放在try内，释放锁放在finally内。</p>
+<h2 id="Condition"><a href="#Condition" class="headerlink" title="Condition"></a>Condition</h2><p>ReentrantLock里有个函数newCondition(),该函数得到一个锁上的”条件”，用于实现线程间的通信，条件变量很大一个程度上是为了解决Object.wait/notify/notifyAll难以使用的问题。</p>
+<p>Condition拥有await(),signal(),signalAll(),<strong>await</strong>对应于<strong>Object.wait</strong>，<strong>signal</strong>对应于<strong>Object.notify</strong>，<strong>signalAll</strong>对应于<strong>Object.notifyAll</strong>。特别说明的是<strong>Condition</strong>的接口改变名称就是为了避免与Object中的<strong>wait/notify/notifyAll</strong>的语义和使用上混淆，因为Condition同样有<strong>wait/notify/notifyAll</strong>方法()因为任何类都拥有这些方法。</p>
+<p>每一个<strong>Lock</strong>可以有任意数据的<strong>Condition</strong>对象，<strong>Condition</strong>是与<strong>Lock</strong>绑定的，所以就有<strong>Lock</strong>的公平性特性：如果是公平锁，线程为按照FIFO的顺序从<strong>Condition.await</strong>中释放，如果是非公平锁，那么后续的锁竞争就不保证FIFO顺序了。下面是一个用Lock和Condition实现的一个生产者消费者的模式：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProductQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">        </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> T[] items;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Lock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="keyword">private</span> Condition notFull = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> Condition notEmpty = lock.newCondition();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> head, tail, count;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ProductQueue</span><span class="params">(<span class="keyword">int</span> maxSize)</span> </span>&#123;</span><br><span class="line">        items = T[] <span class="keyword">new</span> Object[maxSize];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ProductQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>(<span class="number">10</span>);</span><br><span class="line">    &#125;</span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">put</span><span class="params">(T t)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="keyword">while</span>(count == getCapacity()) &#123;</span><br><span class="line">                notFull.await();</span><br><span class="line">            &#125;</span><br><span class="line">            items[tail] = t;</span><br><span class="line">            <span class="keyword">if</span>(++tail==getCapacity())&#123;</span><br><span class="line">                tail = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            ++count;</span><br><span class="line">            notEmpty.signalAll();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span>(count == <span class="number">0</span>) &#123;</span><br><span class="line">                notEmpty.await();</span><br><span class="line">            &#125;</span><br><span class="line">            T ret = items[head];</span><br><span class="line">            items[head] = <span class="keyword">null</span>;<span class="comment">//GC  </span></span><br><span class="line">            <span class="keyword">if</span> (++head == getCapacity()) &#123;</span><br><span class="line">                head = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            --count;</span><br><span class="line">            notFull.signalAll();</span><br><span class="line">            <span class="keyword">return</span> ret;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getCapacity</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> items.length;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">size</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> count;</span><br><span class="line">        &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这就是多个Condition的强大之处，假设缓存队列中已经存满，那么阻塞的肯定是写线程，唤醒的肯定是读线程，相反，阻塞的肯定是读线程，唤醒的肯定是写线程，那么假设只有一个Condition会有什么效果呢，缓存队列中已经存满，这个Lock不知道唤醒的是读线程还是写线程了，如果唤醒的是读线程，皆大欢喜，如果唤醒的是写线程，那么线程刚被唤醒，又被阻塞了，这时又去唤醒，这样就浪费了很多时间。</p>
+<h2 id="ReentrantLock与synchronized的对比"><a href="#ReentrantLock与synchronized的对比" class="headerlink" title="ReentrantLock与synchronized的对比"></a>ReentrantLock与synchronized的对比</h2><p>ReentrantLock同样是一个可重入锁，但与目前的 synchronized 实现相比，争用下的 ReentrantLock 实现更具可伸缩性。除了synchronized的功能,多了三个高级功能.</p>
+<p>等待可中断,公平锁,绑定多个Condition。</p>
+<p>1.等待可中断</p>
+<p>在持有锁的线程长时间不释放锁的时候,等待的线程可以选择放弃等待.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tryLock(long timeout, TimeUnit unit)；</span><br></pre></td></tr></table></figure>
+
+<p>2.公平锁</p>
+<p>按照申请锁的顺序来一次获得锁称为公平锁.synchronized的是非公平锁,ReentrantLock可以通过构造函数实现公平锁.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new RenentrantLock(boolean fair)；</span><br></pre></td></tr></table></figure>
+
+<p>3.绑定多个Condition</p>
+<p>通过多次newCondition可以获得多个Condition对象,可以简单的实现比较复杂的线程同步的功能。通过await(),signal()等方法实现。</p>
+<h2 id="Lock的其他实现类"><a href="#Lock的其他实现类" class="headerlink" title="Lock的其他实现类"></a>Lock的其他实现类</h2><p>如ReadWriteLock。ReentrantReadWriteLock实现了ReadWriteLock接口，构造器提供了公平锁和非公平锁两种创建方式。读-写锁定允许对共享数据进行更高级别的并发访问。虽然一次只有一个线程（writer 线程）可以修改共享数据，但在许多情况下，任何数量的线程可以同时读取共享数据（reader 线程）。读写锁适用于读多写少的情况，可以实现更好的并发性。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/09/%E5%93%B2%E5%AD%A6%E5%AE%B6%E5%B0%B1%E9%A4%90%E9%97%AE%E9%A2%98/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1519,246 +1763,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/" class="post-title-link" itemprop="url">进程间通信方式</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-06-07 13:33:34" itemprop="dateCreated datePublished" datetime="2020-06-07T13:33:34+08:00">2020-06-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-06-21 16:55:52" itemprop="dateModified" datetime="2020-06-21T16:55:52+08:00">2020-06-21</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><p>linux下的进程通信手段基本上是<strong>从Unix平台上的进程通信手段继承而来</strong>的。而对Unix发展做出重大贡献的两大主力AT&amp;T的贝尔实验室及BSD（加州大学伯克利分校的伯克利软件发布中心）在进程间通信方面的侧重点有所不同。前者对Unix早期的进程间通信手段进行了系统的改进和扩充，形成了“system V IPC”，通信进程局限在单个计算机内；后者则跳过了该限制，形成了基于套接口（socket）的进程间通信机制。Linux则把两者继承了下来，如图示：</p>
-<h5 id=""><a href="#" class="headerlink" title=""></a><img src="https://www.ibm.com/developerworks/cn/linux/l-ipc/1.gif" alt="img"></h5><p>其中，最初Unix IPC包括：管道、FIFO、信号；System V IPC包括：System V消息队列、System V信号灯、System V共享内存区；Posix IPC包括： Posix消息队列、Posix信号灯、Posix共享内存区。</p>
-<p>有两点需要简单说明一下：</p>
-<ul>
-<li><p>由于Unix版本的多样性，电子电气工程协会（IEEE）开发了一个独立的Unix标准，这个新的ANSI Unix标准被称为计算机环境的可移植性操作系统界面（POSIX）。现有大部分Unix和流行版本都是遵循POSIX标准的，而Linux从一开始就遵循POSIX标准；</p>
-</li>
-<li><p>BSD并不是没有涉足单机内的进程间通信（socket本身就可以用于单机内的进程间通信）。</p>
-</li>
-</ul>
-<p>事实上，很多Unix版本的单机IPC留有BSD的痕迹，如4.4BSD支持的匿名内存映射、4.3+BSD对可靠信号语义的实现等等。</p>
-<p>图一给出了linux 所支持的各种IPC手段，在本文接下来的讨论中，为了避免概念上的混淆，在尽可能少提及Unix的各个版本的情况下，所有问题的讨论最终都会归结到Linux环境下的进程间通信上来。并且，对于Linux所支持通信手段的不同实现版本（如对于共享内存来说，有Posix共享内存区以及System V共享内存区两个实现版本），将主要介绍Posix API。</p>
-<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>linux下进程间通信的几种主要手段简介：</p>
-<h4 id="管道（Pipe）及有名管道（named-pipe）"><a href="#管道（Pipe）及有名管道（named-pipe）" class="headerlink" title="管道（Pipe）及有名管道（named pipe）"></a>管道（Pipe）及有名管道（named pipe）</h4><p>管道可用于具有亲缘关系进程间的通信，有名管道克服了管道没有名字的限制，因此，除具有管道所具有的功能外，它还允许无亲缘关系进程间的通信；</p>
-<h4 id="信号（Signal）"><a href="#信号（Signal）" class="headerlink" title="信号（Signal）"></a>信号（Signal）</h4><p>信号是比较复杂的通信方式，用于通知接受进程有某种事件发生，除了用于进程间通信外，进程还可以发送信号给进程本身；linux除了支持Unix早期信号语义函数sigal外，还支持语义符合Posix.1标准的信号函数sigaction（实际上，该函数是基于BSD的，BSD为了实现可靠信号机制，又能够统一对外接口，用sigaction函数重新实现了signal函数）；</p>
-<h4 id="报文（Message）队列（消息队列）"><a href="#报文（Message）队列（消息队列）" class="headerlink" title="报文（Message）队列（消息队列）"></a>报文（Message）队列（消息队列）</h4><p>消息队列是<strong>消息的链接表</strong>，包括Posix消息队列system V消息队列。有足够权限的进程可以向队列中添加消息，被赋予读权限的进程则可以读走队列中的消息。消息队列克服了信号承载信息量少，管道只能承载无格式字节流以及缓冲区大小受限等缺点。</p>
-<h4 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h4><p>使得多个进程可以访问同一块内存空间，是<strong>最快的</strong>可用IPC形式。是针对其他通信机制运行效率较低而设计的。往往与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。</p>
-<h4 id="信号量（semaphore）"><a href="#信号量（semaphore）" class="headerlink" title="信号量（semaphore）"></a>信号量（semaphore）</h4><p>主要作为进程间以及同一进程不同线程之间的同步手段。</p>
-<h4 id="套接口（Socket）"><a href="#套接口（Socket）" class="headerlink" title="套接口（Socket）"></a>套接口（Socket）</h4><p>更为一般的进程间通信机制，可用于<strong>不同机器之间</strong>的进程间通信。起初是由Unix系统的BSD分支开发出来的，但现在一般可以移植到其它类Unix系统上：Linux和System V的变种都支持套接字。</p>
-<p>一般来说，linux下的进程包含以下几个关键要素：有一段可执行程序；有专用的系统堆栈空间；内核中有它的控制块（进程控制块），描述进程所占用的资源，这样，进程才能接受内核的调度；具有独立的存储空间进程和线程有时候并不完全区分，而往往根据上下文理解其含义。</p>
-<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><ul>
-<li>管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO都有一个名字，允许不相关的进程访问同一个FIFO，因此也成为命名管。      </li>
-<li>消息队列：是用于两个进程之间的通讯，首先在一个进程中创建一个消息队列，然后再往消息队列中写数据，而另一个进程则从那个消息队列中取数据。需要注意的是，消息队列是用创建文件的方式建立的，如果一个进程向某个消息队列中写入了数据之后，另一个进程并没有取出数据，即使向消息队列中写数据的进程已经结束，保存在消息队列中的数据并没有消失，也就是说下次再从这个消息队列读数据的时候，就是上次的数据！</li>
-<li>信号量， 不能传递复杂消息，只能用来同步      </li>
-<li>共享内存，只要首先创建一个共享内存区，其它进程按照一定的步骤就能访问到这个共享内存区中的数据，当然可读可写；    </li>
-</ul>
-<p>​    几种方式的比较：   </p>
-<ul>
-<li>​     管道：速度慢，容量有限      </li>
-<li>​     消息队列：容量受到系统限制，且要注意第一次读的时候，要考虑上一次没有读完数据的问题。      </li>
-<li>​     信号量：不能传递复杂消息，只能用来同步      </li>
-<li>​     共享内存区：能够很容易控制容量，速度快，但要保持同步，比如一个进程在写的时候，另一个进程要注意读写的问题，相当于线程中的线程安全，当然，共享内存区同样可以用作线程间通讯，不过没这个必要，线程间本来就已经共享了一块内存的。</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.ibm.com/developerworks/cn/linux/l-ipc/" target="_blank" rel="noopener">深刻理解Linux进程间通信（IPC）</a></p>
-<p><a href="https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b" target="_blank" rel="noopener">进程间通信</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E6%AD%BB%E9%94%81%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%92%8C%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/%E6%AD%BB%E9%94%81%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%92%8C%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/" class="post-title-link" itemprop="url">死锁的条件和解决办法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-07 13:11:12 / 修改时间：21:23:33" itemprop="dateCreated datePublished" datetime="2020-06-07T13:11:12+08:00">2020-06-07</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="死锁概念和产生原因"><a href="#死锁概念和产生原因" class="headerlink" title="死锁概念和产生原因"></a>死锁概念和产生原因</h3><p>死锁是指多个进程循环等待彼此占有的资源而无限期的僵持等待下去的局面。原因是：</p>
-<ul>
-<li>系统提供的资源太少了，远不能满足并发进程对资源的需求</li>
-<li>进程推进顺序不合适，互相占有彼此需要的资源，同时请求对方占有的资源，往往是程序设计不合理</li>
-</ul>
-<h3 id="死锁产生的必要条件"><a href="#死锁产生的必要条件" class="headerlink" title="死锁产生的必要条件"></a>死锁产生的必要条件</h3><p>需要同时具有以下四个条件：</p>
-<ul>
-<li><strong>互斥</strong>条件：即某个资源在一段时间内只能由一个进程占有，不能同时被两个或两个以上的进程占有</li>
-<li><strong>不可抢占</strong>条件：进程所获得的资源在未使用完毕之前，资源申请者不能强行的从资源占有者手中夺取资源，而只能由该资源的占有者进程自行释放</li>
-<li><strong>占有且等待</strong>条件：进程至少已经占有了一个资源，但又申请了一个新的被其他进程所占有的资源，此时处于等待状态</li>
-<li><strong>循环等待</strong>条件：若干个进程形成环形链，每个都占用对方申请的下一个资源</li>
-</ul>
-<p>只要系统发生死锁，这些条件必然成立，而只要上述条件之一不满足，就不会发生死锁。</p>
-<h3 id="死锁的处理策略"><a href="#死锁的处理策略" class="headerlink" title="死锁的处理策略"></a>死锁的处理策略</h3><p>为使系统不发生死锁，必须设法破坏产生死锁的四个必要条件之一，或者允许死锁产生，但当死锁发生时能检测出思索，并有能力实现恢复。<br> 一般有死锁的预防、死锁避免、死锁的检测与恢复三种方法。<br> (1) <strong>死锁预防</strong>：破坏导致死锁必要条件中的任意一个就可以预防死锁。例如，要求用户申请资源时一次性申请所需要的全部资源，这就破坏了保持和等待条件；将资源分层，得到上一层资源后，才能够申请下一层资源，它破坏了环路等待条件。预防通常会<strong>降低系统的效率</strong>。</p>
-<p>(2) <strong>死锁避免</strong>：避免是指进程在每次申请资源时判断这些操作是否安全，例如，使用银行家算法。死锁避免算法的执行会增加系统的开销。允许前三个必要条件，但通过明智的选择，确保永远不会到达死锁点，因此死锁避免比死锁预防允许更多的并发。</p>
-<p>(3) <strong>死锁检测</strong>：不须实现采取任何限制性措施，而是允许系统在运行过程发生死锁，但可通过系统设置的检测机构及时检测出死锁的发生，并精确地确定于死锁相关的进程和资源，然后采取适当的措施，从系统中将已发生的死锁清除掉。死锁预防和避免都是事前措施，而死锁的检测则是判断系统是否处于死锁状态，如果是，则执行死锁解除策略。</p>
-<p>(4) <strong>死锁解除</strong>：这是与死锁检测结合使用的，它使用的方式就是剥夺。即将某进程所拥有的资源强行收回，分配给其他的进程。常用方法：撤销或挂起一些进程，以便回收一些资源，再将这些资源分配给已处于阻塞状态的进程。死锁检测盒解除有可能使系统获得较好的资源利用率和吞吐量，但在实现上难度也最大。</p>
-<h4 id="死锁预防："><a href="#死锁预防：" class="headerlink" title="死锁预防："></a>死锁预防：</h4><ul>
-<li>打破互斥条件：允许进程同时访问资源（有些资源就是不可以同时访问的，它是设备的固有属性所决定的，不仅不能改变，还应该加以保证。无实用价值）</li>
-<li>打破不可抢占条件：比如给进程设置优先级，高优先级的可以抢占资源(实现困难，降低系统性能)</li>
-<li>打破占有且等待条件：实行资源预分配策略，即进程在运行前一次性的向系统申请它所需要的全部资源(不可预测资源的使用，利用率低，降低并发性)</li>
-<li>破坏循环等待条件：把资源事先分类编号，按优先级分配，使进程在申请，占用资源时不会形成环路。所有进程对资源的请求必须严格按资源序号递增的顺序提出（限制和编号实现困难，增加系统开销，有些资源暂时不用也需要先申请，增加了进程对资源的占用时间）</li>
-</ul>
-<h4 id="死锁避免"><a href="#死锁避免" class="headerlink" title="死锁避免"></a>死锁避免</h4><p>允许进程动态的申请资源，但系统在进行资源分配前，应先计算此次资源分配的安全性。若此次分配不会导致系统进入不安全状态，则将资源你分配给进程，否则，让进程等待。<br> 所谓安全状态，是指系统能按某种进程推进顺序，为每个进程分配其所需的资源，直至满足每个进程对资源的最大需求，是每个进程都可以顺序的完成。此时成P1P2P3…为安全序列，如果系统无法找到一个安全序列，则称系统处于不安全状态。<br> 并非所有的不安全状态都是死锁状态，但当系统进入不安全状态后，便可能进入死锁状态；反之，只要系统处于安全状态，系统便可以避免进入死锁状态。</p>
-<p> 银行家算法是最著名的死锁避免算法。</p>
-<p>(1)两种死锁避免算法：</p>
-<p>进程启动拒绝：如果一个进程的请求会导致死锁，则不启动该进程。</p>
-<p>资源分配拒绝：如果一个进程增加的资源请求会导致死锁，则不允许此分配(<strong>银行家算法</strong>)。</p>
-<p>(2)<strong>银行家算法</strong>：</p>
-<p>1.如果request&lt;=need，转向步骤2；否则认为出错，因为请求资源大于需要资源。</p>
-<p>2.如果request&lt;=available，转向步骤3,；否则尚无足够资源，进程p阻塞；</p>
-<p>3.系统尝试为把资源分配给进程P，并修改available、allocation和need的数值。</p>
-<p>4.系统执行安全性算法，检查此次分配后系统是否处于安全状态，若安全，才正式将资源分配给进程P，否则将本次试探性分配作废，让进程P等待。</p>
-<h4 id="死锁的检测"><a href="#死锁的检测" class="headerlink" title="死锁的检测"></a>死锁的检测</h4><p>资源分配图&amp;&amp;死锁定理</p>
-<h4 id="死锁解除"><a href="#死锁解除" class="headerlink" title="死锁解除"></a>死锁解除</h4><p>1）资源剥夺法。挂起某些思索进程，并抢占它的资源，将这些资源分配给其他的死锁进程。但应防止被挂起的进程长时间得不到资源时，而处于资源匮乏的状态。<br> 2）进程撤销法。强制撤销一个或一部分进程并剥夺这些进程的资源。撤销的原则可以按进程的优先级和撤销进程代价的高低进行。<br> 3）进程回退法。让一个或多个进程回退到足以回避死锁的地步，进程回退时资源释放资源而不是被剥夺。要求系统保持进程的历史信息，设置还原点。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1830,7 +1834,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">172</span>
+          <span class="site-state-item-count">174</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1886,7 +1890,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">576k</span>
+    <span title="站点总字数">580k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

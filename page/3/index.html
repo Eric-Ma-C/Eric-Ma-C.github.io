@@ -186,6 +186,383 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/%E4%BA%92%E6%96%A5%E9%94%81mutex%E7%9A%84%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/16/%E4%BA%92%E6%96%A5%E9%94%81mutex%E7%9A%84%E7%AE%80%E5%8D%95%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">互斥锁mutex的简单实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-16 12:55:36 / 修改时间：20:57:18" itemprop="dateCreated datePublished" datetime="2020-06-16T12:55:36+08:00">2020-06-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>mutex一般用于为一段代码加锁，以保证这段代码的原子性（atomic）操作，即：要么不执行这段代码，要么将这段代码<strong>全部</strong>执行完毕。</p>
+<p>例如，最简单的并发冲突问题就是一个变量自增1：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">balance &#x3D; balance + 1;</span><br></pre></td></tr></table></figure>
+
+<p>表面看这是一条语句，可是在背后的汇编中我们可以看到，指令集操作过程中会引入中间变量来保存右边的值，进而这个操作至少会被扩充为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> tmp = balance + <span class="number">1</span>;</span><br><span class="line">balance = tmp;</span><br></pre></td></tr></table></figure>
+
+<p>这就需要一把互斥锁（mutual exclusive, mutex）将这段代码给锁住，使其达到任何一个线程“要么全部执行上述代码，要么不执行这段代码”的效果。这个用法可以表示为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">lock_t</span> mutex;</span><br><span class="line">...</span><br><span class="line">lock(&amp;mutex)</span><br><span class="line">    balance = balance + <span class="number">1</span>;</span><br><span class="line">unlock(&amp;mutex);</span><br></pre></td></tr></table></figure>
+
+<p>那么，一个自然的问题便是，我如何实现上面的这个<code>lock()</code>函数呢？</p>
+<p>乍一看这个问题是非常复杂的，特别是考虑到它能够被适用于各种代码的各种情况。但经过各种简化，这个<code>lock()</code>实现，可以通过几个test和set的组合得以实现。</p>
+<p>例如，</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> __<span class="title">lock_t</span> &#123;</span> <span class="keyword">int</span> flag; &#125; <span class="keyword">lock_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">(<span class="keyword">lock_t</span> *mutex)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 0: lock is available</span></span><br><span class="line">    <span class="comment">// 1: lock is held</span></span><br><span class="line">    mutex-&gt;flag = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lock</span><span class="params">(<span class="keyword">lock_t</span> *mutex)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (mutex-&gt;flag == <span class="number">1</span>) &#123;  <span class="comment">// Test the flag.</span></span><br><span class="line">        ;    <span class="comment">// Wait the lock</span></span><br><span class="line">    mutex-&gt;flag = <span class="number">1</span>;  <span class="comment">// Set the lock, i.e. start to hold lock</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">unlock</span><span class="params">(<span class="keyword">lock_t</span> *mutex)</span> </span>&#123;</span><br><span class="line">    mutex-&gt;flag = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我第一次看到这个算法的时候非常惊讶，一个本来极其复杂的问题就这么优雅地被解决了。它仅仅涉及到对条件的检验和变量的复制，然后整个问题就这么轻而易举地被攻破了。</p>
+<p>当然，我并没能看到上述代码的“坑”，也即是必须依靠指令集级别的支持才能真正做到atomic。这同样说明了并发程序的困难，稍微不注意便会调入一个万劫不复的坑里，并且你还不知道哪里出错了。</p>
+<p>上述极端优雅的代码，有一个隐藏的坑，那便是在<code>lock()</code>函数的实现里，<code>while</code>循环那一段其实是可以被乱入的。</p>
+<p>假设thread A是第一个运行到此的线程，那么它得到的<code>mutex-&gt;flag</code>就肯定是0，于是它继续跳出循环往下运行，希望通过下面的<code>mutex-&gt;flag = 1</code>来持有锁，使得其它线程在检测<code>while</code>循环时为真，进而进入循环的等待状态。</p>
+<p>可如果在A执行到这个赋值为1的语句之前，又有另外一个thread B运行到了这个<code>while</code>循环部分，由于<code>mutex-&gt;flag</code>还未被赋值为1，B同样可以跳出<code>while</code>，从而跟A一样拿到这把锁！这就出现了冲突。</p>
+<p>那怎么办呢？仔细后可以发现，其实关键问题就在于：</p>
+<ul>
+<li>对<code>mutex-&gt;flag</code>的检测</li>
+<li>对<code>mutex-&gt;flag</code>的赋值</li>
+</ul>
+<p>这两个操作必须是不被干扰的，也就是它必须是atomic的，要么这两段代码不被执行，要么这两段代码被不中断地完整执行。</p>
+<p>这就需要借助CPU指令集的帮助，来保证上述两条语句的atomic操作，也即是著名的<code>TestAndSet()</code>操作。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TestAndSet</span><span class="params">(<span class="keyword">int</span> *ptr, <span class="keyword">int</span> <span class="keyword">new</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> old = *ptr;</span><br><span class="line">    *ptr = <span class="keyword">new</span>;</span><br><span class="line">    <span class="keyword">return</span> old;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>CPU的指令集，并不需要支持繁复的各种atomic操作。仅仅支持上面这个函数，各种互斥加锁的情形，便都能够被涵盖。</p>
+<p>此时，在回到我们最开始的那个优雅的<code>lock()</code>实现，就可以将其改造为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> __<span class="title">lock_t</span> &#123;</span> <span class="keyword">int</span> flag; &#125; <span class="keyword">lock_t</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">(<span class="keyword">lock_t</span> *lock)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 0: lock is available</span></span><br><span class="line">    <span class="comment">// 1: lock is held</span></span><br><span class="line">    mutex-&gt;flag = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lock</span><span class="params">(<span class="keyword">lock_t</span> *mutex)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">while</span> (TestAndSet(&amp;<span class="keyword">lock_t</span>-&gt;flag, <span class="number">1</span>) == <span class="number">1</span>) &#123;</span><br><span class="line">        ;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">unlock</span><span class="params">(<span class="keyword">lock_t</span> *lock)</span> </span>&#123;</span><br><span class="line">    lock-&gt;flag = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述代码极其精巧。乍一看在<code>lock()</code>实现里不是还缺少一行<code>mutex-&gt;flag = 1;</code>么？可其实呢，它已经被整合到了<code>TestAndSet()</code>函数中。</p>
+<p>这样的支持<code>TestAndSet()</code>的实现，便是最简单的spin lock，弹簧锁。之所以叫弹簧锁，那是因为在各类锁当中，弹簧锁就是最初的被投入工业使用的最简单的实现技术。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000017102063" target="_blank" rel="noopener">互斥锁mutex的简单实现</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/ORM%E6%98%AF%E4%BB%80%E4%B9%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/16/ORM%E6%98%AF%E4%BB%80%E4%B9%88/" class="post-title-link" itemprop="url">ORM是什么</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-16 12:35:26 / 修改时间：20:40:32" itemprop="dateCreated datePublished" datetime="2020-06-16T12:35:26+08:00">2020-06-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="JDBC介绍"><a href="#JDBC介绍" class="headerlink" title="JDBC介绍"></a>JDBC介绍</h3><p>​    jdbc是java数据库连接(java DataBase Connectivity)技术的简称，由一组使用java语言编写的类与接口组成，可以为多种关系数据库提供统一访问</p>
+<ul>
+<li><strong>实现步骤</strong></li>
+</ul>
+<ol>
+<li><ol>
+<li>使用JDBC编程需要连接数据库，注册驱动和数据库信息</li>
+<li>操作Connection，打开 Statement 对象 。</li>
+<li>通过Statement执行SQL， 返回结果到ResultSet对象。</li>
+<li>使用ResultSet读取数据，然后通过代码转化为具体的POJO对象。</li>
+<li>关闭数据库的相关资源。</li>
+</ol>
+</li>
+</ol>
+<ul>
+<li><strong>优点</strong></li>
+</ul>
+<p>​    直接底层操作，提供了很简单、便捷的访问数据库的方法，跨平台性比较强。灵活性比较强。可以写很复杂的SQL语句。</p>
+<ul>
+<li><strong>缺点</strong></li>
+</ul>
+<p>​    工作量相对较大。我们需要先连接，然后处理JDBC底层事务，处理数据类型。我们还需要操作Connection对象、Statement对象和ResultSet对象去拿到数据，并准确的关闭它们。</p>
+<p>我们要对JDBC编程可能产生的异常进行捕捉处理并正确关闭资源。</p>
+<h3 id="ORM介绍"><a href="#ORM介绍" class="headerlink" title="ORM介绍"></a>ORM介绍</h3><p>​    由于JDBC存在的缺陷，所以我们在实际工作中很少使用JDBC进行操作数据库的编程。于是我们就提出了<strong>对象关系映射</strong>（Object Relational Mapping）简称 ORM，或者O/RM，或者 O/R mapping。</p>
+<ul>
+<li><strong>介绍</strong></li>
+</ul>
+<ol>
+<li>ORM模型就是数据库的表和简单Java对象（Plain Ordinary Java Object，简称POJO）的映射关系模型。 </li>
+<li>它主要解决数据库数据和POJO对象的相互映射。我们通过这层映射就可以简单的把数据库表的数据转化为POJO。以便程序员更加容易的理解和应用Java程序.而且程序员一般只需要了解Java应用而无需对数据库进行深入的了解。此外，ORM模型提供了统一的规则使得数据库的数据通过配置便可轻易的映射到POJO上。</li>
+</ol>
+<ul>
+<li>常用的ORM框架</li>
+</ul>
+<ol>
+<li><strong>Java系列</strong>：</li>
+</ol>
+<p>​      Hibernate全自动需要写hql语句</p>
+<p>​      Mybatis半自动自己写sql语句,可操作性强,小巧（前身iBatis）</p>
+<p>​      Apache OJB</p>
+<p>​      TopLink     是位居第一的Java对象关系可持续性体系结构 （待研究）</p>
+<p>​      Jaxor  ：是一个简单但功能强大的创建到关系映像层对象的工具。它允许开发者轻松地 在表中插入、更新、删除行，但也可被扩展为创建一个可扩展的映像层，这个层可创建一 个完全的域模型，透明地映射到数据库表</p>
+<ol start="2">
+<li><strong>.Net系列</strong>：EF6与EFCore、Dapper</li>
+</ol>
+<ul>
+<li><strong>优点</strong></li>
+</ul>
+<p>目前我们接触（用）到比较多的是Hibernate和MyBatis。 </p>
+<p><strong>MyBatis优点：</strong></p>
+<ol>
+<li>易于上手和掌握。</li>
+<li>sql写在xml里，便于统一管理和优化。</li>
+<li>解除sql与程序代码的耦合。</li>
+<li>提供映射标签，支持对象与数据库的orm字段关系映射</li>
+<li>提供对象关系映射标签，支持对象关系组建维护</li>
+<li>提供xml标签，支持编写动态sql。</li>
+</ol>
+<p><strong>Hibernate优点：</strong></p>
+<ol>
+<li>消除了代码的映射规则，它全部被分离到XML或者注解里面去配置。</li>
+<li>无需再管理数据库连接，它也配置到XML里面。</li>
+<li>一个会话中，不要操作多个对象，只要操作Sesison即可。</li>
+<li>关闭资源只需要关闭一个Session即可。</li>
+</ol>
+<ul>
+<li><strong>缺点</strong></li>
+</ul>
+<p><strong>MyBatis缺点：</strong></p>
+<ol>
+<li>sql工作量很大，尤其是字段多、关联表多时，更是如此。</li>
+<li>sql依赖于数据库，导致数据库移植性差。</li>
+<li>由于xml里标签id必须唯一，导致DAO中方法不支持方法重载。</li>
+<li>字段映射标签和对象关系映射标签仅仅是对映射关系的描述，具体实现仍然依赖于sql。（比如配置了一对多Collection标签，如果sql里没有join子表或查询子表的话，查询后返回的对象是不具备对象关系的，即Collection的对象为null）</li>
+<li>DAO层过于简单，对象组装的工作量较大。</li>
+<li>不支持级联更新、级联删除。</li>
+<li>编写动态sql时,不方便调试，尤其逻辑复杂时。</li>
+<li>提供的写动态sql的xml标签功能简单（连struts都比不上），编写动态sql仍然受限，且可读性低。</li>
+<li>若不查询主键字段，容易造成查询出的对象有“覆盖”现象。</li>
+<li>参数的数据类型支持不完善。（如参数为Date类型时，容易报没有get、set方法，需在参数上加@param）</li>
+<li>多参数时，使用不方便，功能不够强大。（目前支持的方法有map、对象、注解@param以及默认采用012索引位的方式）</li>
+<li>缓存使用不当，容易产生脏数据。</li>
+</ol>
+<p><strong>Hibernate缺点：</strong></p>
+<ol>
+<li>全表映射带来的不便，比如更新时需要发送所有的字段。</li>
+<li>无法根据不同的条件组装不同的SQL。　</li>
+<li>对多表关联和复杂的SQL查询支持较差。需要自己写SQL，返回后，需要自己将数据组装到POJO中。</li>
+<li>不能有效支持存储过程。</li>
+<li>虽然有HQL，但是性能较差，大型互联网往往需要优化SQL，而Hibernate做不到。</li>
+</ol>
+<ul>
+<li><strong>框架选择</strong></li>
+</ul>
+<p>​    Hibernate作为Java ORM框架，它确实编程简易，需要我们提供映射的规则，完全可以通过IDE生成。同时无需编写SQL确实开发效率优于MyBatis。而且，它也提供了缓存、日志、级联、等强大的功能，但是Hibernate的缺陷也是十分的明显的。就是在多表关联复杂的SQL时，数据系统权限限制时，根据条件变化的SQL时。存储过程等使用场景。Hibernate十分不便。而性能又难以通过SQL来优化。所以Hibernate一般只适用于场景不太复杂的、性能要求不太苛刻的时候使用。</p>
+<p>​    MyBatis 是一个灵活的、可以动态生成映射关系的框架，它几物可以替代JDBC。拥有动态列、动态表名，存储过程都支持。同时提供了简易的缓存（如(默认)一级缓存，还有二级缓存）、日志、级联。但是它的缺陷是需要你提供映射规则和SQL，所以它的开发工作量一般要比Hibernate略大一些。</p>
+<p>​    总结。你需要根据你的项目的实际情况去选择框架。MyBatis具有高度灵活、可优化、易维护等特点,所以目前还是myBatis比较合适我们。</p>
+<h3 id="JDBC-Mybatis性能比较（无事务）"><a href="#JDBC-Mybatis性能比较（无事务）" class="headerlink" title="JDBC,Mybatis性能比较（无事务）"></a>JDBC,Mybatis性能比较（无事务）</h3><ul>
+<li><strong>测试向本机的数据库插入数据</strong></li>
+</ul>
+<p><strong>JDBC：批量操作</strong></p>
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>210</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>551</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>1963</td>
+</tr>
+</tbody></table>
+<p><strong>MyBatis：</strong></p>
+<ol>
+<li>批量处理（SQL拼接）代码如下</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">     Map&lt;String,Object&gt; param &#x3D; Maps.newHashMap();</span><br><span class="line">        param.put(&quot;recordList&quot;, recordList);</span><br><span class="line">        recordDao.insertList(param);复制代码</span><br><span class="line">&lt;insert id&#x3D;&quot;insertList&quot; parameterType&#x3D;&quot;java.util.Map&quot;&gt;</span><br><span class="line">        insert into test</span><br><span class="line">        (aa,bb,cc,dd,ee,ff,gg,hh,ii)</span><br><span class="line">        values</span><br><span class="line">        &lt;foreach collection&#x3D;&quot;recordList&quot; item&#x3D;&quot;recordList&quot; open&#x3D;&quot;&quot; close&#x3D;&quot;&quot;</span><br><span class="line">                 separator&#x3D;&quot;,&quot;&gt;</span><br><span class="line">            (</span><br><span class="line">            null,</span><br><span class="line">            #&#123;recordList.aa,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.bb,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.cc,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.dd,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ee,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ff,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.gg,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.hh,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            #&#123;recordList.ii,jdbcType&#x3D;VARCHAR&#125;,</span><br><span class="line">            )</span><br><span class="line">        &lt;&#x2F;foreach&gt;</span><br><span class="line">        ;</span><br><span class="line">    &lt;&#x2F;insert&gt;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>414</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>1035</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>4899</td>
+</tr>
+</tbody></table>
+<ol start="2">
+<li>for 循环插入，一条条的执行插入</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>记录条数</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100</td>
+<td>9624</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>102275</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>1183339</td>
+</tr>
+</tbody></table>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5d5cf777e51d45621320311b" target="_blank" rel="noopener">传统JDBC与ORM框架之间的性能比较</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/HTTP%20%E7%8A%B6%E6%80%81%E7%A0%81%E8%AF%A6%E8%A7%A3%E4%B8%8E%E9%80%89%E7%94%A8/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2053,305 +2430,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/14/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Java%E5%86%85%E9%83%A8%E7%B1%BB/" class="post-title-link" itemprop="url">深入理解Java内部类</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-15 02:18:34 / 修改时间：10:40:13" itemprop="dateCreated datePublished" datetime="2020-06-15T02:18:34+08:00">2020-06-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p> 内部类就是定义在一个类中的另外一个类，是一种从属关系。在没有实际了解内部类之前，我始终困惑，为什么要在一个类中定义另外一个类，这不是增加代码结构复杂度么？现在才大致能知道这种设计的优势是大于其劣势的。比如，我们可以通过内部类解决类的单继承问题，外部类不能再继承的类可以交给内部类继承。我们可以通过定义内部类来实现一个类私属于一个类，实现更好的封装性。具体的我们接下来介绍，本文主要通过介绍内部类的四种不同类型的定义，实例的创建，内部实现原理以及使用场景几种不同角度来学习内部类。</p>
-<ul>
-<li>静态内部类</li>
-<li>成员内部类</li>
-<li>方法内部类</li>
-<li>匿名内部类</li>
-</ul>
-<h2 id="一、静态内部类"><a href="#一、静态内部类" class="headerlink" title="一、静态内部类"></a><strong>一、静态内部类</strong></h2><p>静态内部类的定义和普通的静态变量或者静态方法的定义方法是一样的，使用static关键字，只不过这次static是修饰在class上的，一般而言，只有静态内部类才允许使用static关键字修饰，普通类的定义是不能用static关键字修饰的，这一点需要注意一下。下面定义一个静态内部类：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    private int age;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        private int age;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            </span><br><span class="line">            System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            <span class="comment">//--编译报错---</span></span><br><span class="line">            <span class="comment">//System.out.println("my age is :"+ age);</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>在上述代码中，In这个类就是一个静态内部类。我们说内部类是可以访问外部类的私有字段和私有方法的，对于静态内部类，它遵循一致的原则，只能访问外部类的静态成员。上述代码中，外部类的非静态私有字段age在静态内部类中使不允许访问的，而静态字段name则是可访问的。下面我们看，如何创建一个静态内部类的实例对象。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out.In innerClass = <span class="keyword">new</span> Out.In();</span><br><span class="line">    innerClass.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>静态内部类的实例对象创建还是比较简洁的，不同于成员内部类，它不需要关联外部类实例（具体的下文介绍），下面我们再看一段代码：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上述代码在内部类中两次访问了外部类的静态成员，第一次访问了静态字段name，第二次访问的静态方法showName。在我们反编译这个类之前，首先需要知道的是，所谓的内部类的概念只是出现在编译阶段，对于jvm层是没有内部类这个概念的。也就是说，编译器会将一个类编译成一个源文件，对于内部类也是一样，它会从它的外部类中抽离出来，增加一些与外部类的联系，然后被编译成一个单独的源文件。下面我们先编译运行之后，利用Dj反编译class文件看看编译器都做了些什么事情。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//这是我们的Out外部类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省去了一些不重要的部分</span></span><br><span class="line">    private <span class="keyword">static</span> <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">static</span> <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>()&#123;<span class="keyword">return</span> name;&#125;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">void</span> access$<span class="number">100</span>()&#123;showName();&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//这是我们的内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>());</span><br><span class="line">        Out.access$<span class="number">100</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>相信大家也已经看出来这两者之间的某种联系，编译器将Out这个类编译成两个独立的class源文件。对于Out中所有的私有成员（也就是内部类分离出去之后不能访问的成员），增设了可供调用的access$xxx方法，从而实现内部类与外部类之间的联系。这就是他们的本质。</p>
-<p>至于使用场景，一般来说，对于和外部类联系紧密但是并不依赖于外部类实例的情况下，可以考虑定义成静态内部类。下面我们看稍显复杂的成员内部类。</p>
-<h2 id="二、成员内部类"><a href="#二、成员内部类" class="headerlink" title="二、成员内部类"></a><strong>二、成员内部类</strong></h2><p>我们说了，四种不同类型的内部类都各自有各自的使用场景，静态内部类适合于那种和外部类关系密切但是并不依赖外部类实例的情况。但是对于需要和外部类实例相关联的情况下，可以选择将内部类定义成成员内部类。以下代码定义了一个简单的成员内部类：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(name);</span><br><span class="line">            Out.this.showName();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>以上定义了一个简单的内部类In，我们的成员内部类可以直接访问外部类的成员字段和成员方法，因为它是关联着一个外部类实例的。下面我们看看在外部是如何创建该内部类实例的。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out();</span><br><span class="line">    Out.In <span class="keyword">in</span> = out.new In();</span><br><span class="line">    <span class="keyword">in</span>.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因为成员内部类是关联着一个具体的外部类实例的，所以它的实例创建必然是由外部类实例来创建的。对于实例的创建，我们只需要记住即可，成员内部类的实例创建需要关联外部类实例对象，静态内部类实例创建相对简单。下面我们主要看看在编译阶段编译器是如何保持内部类对外部类成员信息可访问的。</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译的Out外部类源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="comment">//省略部分非核心代码</span></span><br><span class="line">    public <span class="keyword">void</span> showName()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println((<span class="keyword">new</span> StringBuilder()).append(<span class="string">"my name is : "</span>).append(name).toString());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">String</span> access$<span class="number">000</span>(Out o)&#123;<span class="keyword">return</span> o.name;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//反编译的内部类In源码</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span>$<span class="title">In</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(Out.access$<span class="number">000</span>(Out.this));</span><br><span class="line">        showName();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    final Out <span class="keyword">this</span>$<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    public Out$In()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.this$<span class="number">0</span> = Out.this;</span><br><span class="line">        <span class="keyword">super</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>由上述代码其实我们可以知道，当我们利用外部类实例创建内部类实例的时候，会将外部类实例作为初始资源传入内部类构造过程。这样我们就可以通过该实例访问外部类所有的成员信息，包括私有成员。（显式增加了暴露方法）</p>
-<p>至于使用场景，对于那种要高度依赖外部类实例的情况下，定义一个成员内部类则会显的更加明智。</p>
-<h2 id="三、方法-局部-内部类"><a href="#三、方法-局部-内部类" class="headerlink" title="三、方法(局部)内部类"></a><strong>三、方法(局部)内部类</strong></h2><p>方法内部类，顾名思义，定义在一个方法内部的类。方法内部类相对而言要复杂一些，下面定义一个方法内部类：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        <span class="class"><span class="keyword">class</span> <span class="title">In</span></span>&#123;</span><br><span class="line">            public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">                System.out.println(<span class="string">"my name is : "</span>+name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        In <span class="keyword">in</span> = <span class="keyword">new</span> In();</span><br><span class="line">        <span class="keyword">in</span>.showName();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们定义了一个类，在该类中又定义了一个方法sayHello，然而在该方法中我们定义了一个内部类，类In就是一个方法内部类。我们的方法内部类的生命周期不超过包含它的方法的生命周期，也就是说，方法内部类只能在方法中使用。所以在声明的时候，任何的访问修饰符都是没有意义的，于是Java干脆不允许使用任何的访问修饰符修饰方法内部类。其中还需要注意一点的是，定义和使用时两回事，别看那一大串定义类的代码，你实际想要使用该类，就必须new对象，而对于方法内部类而言，只能在方法内部new对象。这就是方法内部类的简单介绍，下面我们看看其实现原理。</p>
-<p>有关方法内部类的实现原理其实是和成员内部类差不太多的，也是在内部类初始化的时候为其传入一个外部类实例，区别在哪呢？就在于方法内部类是定义在具体方法的内部的，所以该类除了可以通过传入的外部实例访问外部类中的字段和方法，对于包含它的方法中被传入的参数也会随着外部类实例一起初始化给内部类。</p>
-<p>毋庸置疑的是，方法内部类的封装性比之前介绍的两种都要完善。所以一般只有在需要高度封装的时候才会将类定义成方法内部类。</p>
-<h2 id="四、匿名内部类"><a href="#四、匿名内部类" class="headerlink" title="四、匿名内部类"></a><strong>四、匿名内部类</strong></h2><p>可能内部类的所有分类中，匿名内部类的名号是最大的，也是我们最常用到的，多见于函数式编程，lambda表达式等。下面我们重点看看这个匿名内部类。</p>
-<p>匿名内部类就是没有名字的内部类，在定义完成同时，实例也创建好了，常常和new关键字紧密结合。当然，它也不局限于类，也可以是接口 ，可以出现在任何位置。下面我们定义一个匿名内部类：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//首先定义一个普通类</span></span><br><span class="line">public <span class="class"><span class="keyword">class</span> <span class="title">Out</span> </span>&#123;</span><br><span class="line">    private <span class="built_in">String</span> name;</span><br><span class="line"></span><br><span class="line">    private <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is :"</span> + name);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//定义和使用一个匿名内部类</span></span><br><span class="line">public <span class="keyword">static</span> <span class="keyword">void</span> main(<span class="built_in">String</span> [] args)&#123;</span><br><span class="line">    Out out = <span class="keyword">new</span> Out()&#123;</span><br><span class="line">        @Override</span><br><span class="line">        public <span class="keyword">void</span> sayHello()&#123;</span><br><span class="line">            System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        public <span class="keyword">void</span> showName()&#123;</span><br><span class="line">            System.out.println(<span class="string">"hello single"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">    out.sayHello();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>从上述代码中可以很显然的让我们看出来，我们的匿名内部类必定是要依托一个父类的，因为它是没有名字的，无法用一个具体的类型来表示。所以匿名内部类往往都是通过继承一个父类，重写或者重新声明一些成员来实现一个匿名内部类的定义。实际上还是利用了里式转换原理。</p>
-<p>从中我们也可以看到，一个匿名内部类定义的完成就意味着该内部类实例创建的完成。下面我们看看其实现原理：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//反编译出来的匿名内部类</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span>$1 <span class="keyword">extends</span> <span class="title">Out</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    Out out;</span><br><span class="line">    public <span class="keyword">void</span> sayHello()</span><br><span class="line">    &#123;</span><br><span class="line">        System.out.println(<span class="string">"my name is cyy"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Test$<span class="number">1</span>(Out o)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">this</span>.out = o;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>其实在看了上述三种内部类的原理之后，反而觉得匿名内部类的实现较为简单了。主要思路还是将内部类抽离出来，通过初始化传入外部类的实例以达到对外部类所有成员的访问。只是在匿名内部类中，被依托的父类不是他的外部类。匿名内部类的主要特点在于，没有名字，对象只能被使用一次，可以出现在任意位置。所以它的使用场景也是呼之欲出，对于一些对代码简洁度有所要求的情况下，可首选匿名内部类。</p>
-<p>以上完成了对四种内部类的简单介绍，对于他们各自实现的原理也都已经介绍过了。其实大致相同，由于jvm对每个类都要求一个单独的源码文件，所以编译阶段就完成了分离的操作，但是在分离的过程中又要保持内部类和外部类之间的这种联系，于是编译器添加了一些接口保持这种信息共享的结构。使用内部类可以大大增加程序的封装性，使得代码整体简洁度较高。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://cloud.tencent.com/developer/article/1013592" target="_blank" rel="noopener">深入理解Java内部类</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/14/Java%E9%9B%86%E5%90%88%E6%8E%A5%E5%8F%A3Stack%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Java集合接口Stack简介</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-14 11:41:53 / 修改时间：20:03:47" itemprop="dateCreated datePublished" datetime="2020-06-14T11:41:53+08:00">2020-06-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>栈（Stack）是一种后进先出（LIFO：Last In First Out）的数据结构。</p>
-<p>什么是LIFO呢？我们先回顾一下<code>Queue</code>的特点FIFO：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">          ────────────────────────</span><br><span class="line">  (\(\      (\(\    (\(\    (\(\      (\(\</span><br><span class="line"> (&#x3D;&#39;.&#39;) ─&gt; (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;) ─&gt; (&#x3D;&#39;.&#39;)</span><br><span class="line">O(_&quot;)&quot;)   O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;)   O(_&quot;)&quot;)</span><br><span class="line">          ────────────────────────</span><br></pre></td></tr></table></figure>
-
-<p>所谓FIFO，是最先进队列的元素一定最早出队列，而LIFO是最后进<code>Stack</code>的元素一定最早出<code>Stack</code>。如何做到这一点呢？只需要把队列的一端封死：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">           ───────────────────────────────┐</span><br><span class="line">  (\(\       (\(\    (\(\    (\(\    (\(\ │</span><br><span class="line"> (&#x3D;&#39;.&#39;) &lt;─&gt; (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)  (&#x3D;&#39;.&#39;)│</span><br><span class="line">O(_&quot;)&quot;)    O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;) O(_&quot;)&quot;)│</span><br><span class="line">           ───────────────────────────────┘</span><br></pre></td></tr></table></figure>
-
-<p>因此，<code>Stack</code>是这样一种数据结构：只能不断地往<code>Stack</code>中压入（push）元素，最后进去的必须最早弹出（pop）来：</p>
-<p><img src="https://www.liaoxuefeng.com/files/attachments/1285759053070401/l" alt="donuts-stack"></p>
-<p><code>Stack</code>只有入栈和出栈的操作：</p>
-<ul>
-<li>把元素压栈：<code>push(E)</code>；</li>
-<li>把栈顶的元素“弹出”：<code>pop(E)</code>；</li>
-<li>取栈顶元素但不弹出：<code>peek(E)</code>。</li>
-</ul>
-<p>在Java中，我们用<code>Deque</code>可以实现<code>Stack</code>的功能：</p>
-<ul>
-<li>把元素压栈：<code>push(E)</code>/<code>addFirst(E)</code>；</li>
-<li>把栈顶的元素“弹出”：<code>pop(E)</code>/<code>removeFirst()</code>；</li>
-<li>取栈顶元素但不弹出：<code>peek(E)</code>/<code>peekFirst()</code>。</li>
-</ul>
-<p>为什么<strong>Java的集合类没有单独的<code>Stack</code>接口</strong>呢？因为有个遗留<strong>类</strong>名字就叫<code>Stack</code>, 继承自<code>Vector</code>，已不建议使用. </p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Stack</span>&lt;<span class="title">E</span>&gt; <span class="keyword">extends</span> <span class="title">Vector</span>&lt;<span class="title">E</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>出于兼容性考虑，所以没办法创建<code>Stack</code>接口，<strong>只能用<code>Deque</code>接口来“模拟”一个<code>Stack</code>了</strong>。</p>
-<p>当我们把<code>Deque</code>作为<code>Stack</code>使用时，注意<strong>只调用<code>push()</code>/<code>pop()</code>/<code>peek()</code>方法</strong>，不要调用<code>addFirst()</code>/<code>removeFirst()</code>/<code>peekFirst()</code>方法，这样代码更加清晰。</p>
-<h3 id="Stack的作用"><a href="#Stack的作用" class="headerlink" title="Stack的作用"></a>Stack的作用</h3><p>Stack在计算机中使用非常广泛，JVM在处理Java方法调用的时候就会通过栈这种数据结构维护方法调用的层次。例如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">static void main(String[] args) &#123;</span><br><span class="line">    foo(123);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static String foo(x) &#123;</span><br><span class="line">    return &quot;F-&quot; + bar(x + 1);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static int bar(int x) &#123;</span><br><span class="line">    return x &lt;&lt; 2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>JVM会创建方法调用栈，每调用一个方法时，先将参数压栈，然后执行对应的方法；当方法返回时，返回值压栈，调用方法通过出栈操作获得方法返回值。</p>
-<p>因为方法调用栈有容量限制，嵌套调用过多会造成栈溢出，即引发<code>StackOverflowError</code>.</p>
-<p>我们再来看一个<code>Stack</code>的用途：对整数进行进制的转换就可以利用栈。</p>
-<p>例如，我们要把一个<code>int</code>整数<code>12500</code>转换为十六进制表示的字符串，如何实现这个功能？</p>
-<p>首先我们准备一个空栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>然后计算12500÷16=781…4，余数是<code>4</code>，把余数<code>4</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>然后计算781÷16=48…13，余数是<code>13</code>，<code>13</code>的十六进制用字母<code>D</code>表示，把余数<code>D</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>然后计算48÷16=3…0，余数是<code>0</code>，把余数<code>0</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 0 │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>最后计算3÷16=0…3，余数是<code>3</code>，把余数<code>3</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│ 3 │</span><br><span class="line">│   │</span><br><span class="line">│ 0 │</span><br><span class="line">│   │</span><br><span class="line">│ D │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>当商是<code>0</code>的时候，计算结束，我们把栈的所有元素依次弹出，组成字符串<code>30D4</code>，这就是十进制整数<code>12500</code>的十六进制表示的字符串。</p>
-<h3 id="计算中缀表达式"><a href="#计算中缀表达式" class="headerlink" title="计算中缀表达式"></a>计算中缀表达式</h3><p>在编写程序的时候，我们使用的带括号的数学表达式实际上是中缀表达式，即运算符在中间，例如：<code>1 + 2 * (9 - 5)</code>。</p>
-<p>但是计算机执行表达式的时候，它并不能直接计算中缀表达式，而是通过编译器<strong>把中缀表达式转换为后缀表达式</strong>，例如：<code>1 2 9 5 - * +</code>。</p>
-<p>这个编译过程就会用到栈。我们先跳过编译这一步（涉及运算优先级，代码比较复杂），看看如何通过栈计算后缀表达式。</p>
-<p>计算后缀表达式不考虑优先级，直接从左到右依次计算，因此计算起来简单。首先准备一个空的栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>然后我们依次扫描后缀表达式<code>1 2 9 5 - * +</code>，遇到数字<code>1</code>，就直接扔到栈里：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>紧接着，遇到数字<code>2</code>，<code>9</code>，<code>5</code>，也扔到栈里：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│ 5 │</span><br><span class="line">│   │</span><br><span class="line">│ 9 │</span><br><span class="line">│   │</span><br><span class="line">│ 2 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>接下来遇到减号时，弹出栈顶的两个元素，并计算<code>9-5=4</code>，把结果<code>4</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 4 │</span><br><span class="line">│   │</span><br><span class="line">│ 2 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>接下来遇到<code>*</code>号时，弹出栈顶的两个元素，并计算<code>2*4=8</code>，把结果<code>8</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 8 │</span><br><span class="line">│   │</span><br><span class="line">│ 1 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>接下来遇到<code>+</code>号时，弹出栈顶的两个元素，并计算<code>1+8=9</code>，把结果<code>9</code>压栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│   │</span><br><span class="line">│ 9 │</span><br><span class="line">└───┘</span><br></pre></td></tr></table></figure>
-
-<p>扫描结束后，没有更多的计算了，弹出栈的唯一一个元素，得到计算结果<code>9</code>。</p>
-<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>栈（Stack）是一种后进先出（LIFO）的数据结构，操作栈的元素的方法有：</p>
-<ul>
-<li>把元素压栈：<code>push(E)</code>；</li>
-<li>把栈顶的元素“弹出”：<code>pop(E)</code>；</li>
-<li>取栈顶元素但不弹出：<code>peek(E)</code>。</li>
-</ul>
-<p>在Java中，我们用<code>Deque</code>可以实现<code>Stack</code>的功能，注意只调用<code>push()</code>/<code>pop()</code>/<code>peek()</code>方法，避免调用<code>Deque</code>的其他方法。</p>
-<p>最后，不要使用遗留类<code>Stack</code>。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.liaoxuefeng.com/wiki/1252599548343744/1265121668997888" target="_blank" rel="noopener">使用Stack</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2423,7 +2501,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">172</span>
+          <span class="site-state-item-count">174</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2479,7 +2557,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">576k</span>
+    <span title="站点总字数">580k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
