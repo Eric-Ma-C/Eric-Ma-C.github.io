@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="编译器的工作步骤在开始说任何东西之前，我们先来大致看一下编译器是怎么工作的——从代码到程序，大概要经过下面这样的步骤——这里用粗浅的语言进行解释，先有个印象即可，后面还会提到   词法分析：编程语言的语句，由一堆堆的单词组成——比如变量类型名、变量名、函数名、值、符号等。既然我们要让机器来分析源程序然后编译，那么就需要首先让计算机能够明白我们写的语句是什么意思，而理解语句的第一步就是理解每个词。所">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编译原理简介">
+<meta property="og:url" content="http://yoursite.com/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="编译器的工作步骤在开始说任何东西之前，我们先来大致看一下编译器是怎么工作的——从代码到程序，大概要经过下面这样的步骤——这里用粗浅的语言进行解释，先有个印象即可，后面还会提到   词法分析：编程语言的语句，由一堆堆的单词组成——比如变量类型名、变量名、函数名、值、符号等。既然我们要让机器来分析源程序然后编译，那么就需要首先让计算机能够明白我们写的语句是什么意思，而理解语句的第一步就是理解每个词。所">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c3079359573?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c355a8f32d6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c3c115a1cfa?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c42f98beb0b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c518b98ba42?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c4d53a02901?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c599e972afb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="article:published_time" content="2020-07-02T18:43:35.000Z">
+<meta property="article:modified_time" content="2020-07-03T02:52:50.705Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>编译原理简介 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          编译原理简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-03 02:43:35 / 修改时间：10:52:50" itemprop="dateCreated datePublished" datetime="2020-07-03T02:43:35+08:00">2020-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="编译器的工作步骤"><a href="#编译器的工作步骤" class="headerlink" title="编译器的工作步骤"></a>编译器的工作步骤</h2><p>在开始说任何东西之前，我们先来大致看一下编译器是怎么工作的——从代码到程序，大概要经过下面这样的步骤——这里用粗浅的语言进行解释，先有个印象即可，后面还会提到</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<ul>
+<li>词法分析：编程语言的语句，由一堆堆的单词组成——比如变量类型名、变量名、函数名、值、符号等。既然我们要让机器来分析源程序然后编译，那么就需要首先让计算机能够明白我们写的语句是什么意思，而理解语句的第一步就是理解每个词。所谓词法分析，进行的工作就是让计算机识别单词；</li>
+<li>语法分析：完成语法分析，就是识别语句的结构；</li>
+<li>语义分析：该步骤的目标，就是确定“某一条语句是什么意思”，检查一下说的有没有不合法的地方；</li>
+<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
+<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
+<li>中间代码优化：中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率；</li>
+<li>目标代码生成：中间代码经过优化，就可以生成目标代码了。比如二进制程序的机器码，或者各种 VM 用的字节码。</li>
+</ul>
+<h2 id="词法分析器-Lex-和词法分析器-Yacc："><a href="#词法分析器-Lex-和词法分析器-Yacc：" class="headerlink" title="词法分析器 Lex 和词法分析器 Yacc："></a>词法分析器 Lex 和词法分析器 Yacc：</h2><p>Lex（Lexical Analyzar） 是词法分析器， Yacc（Yet Another Compiler Compiler） 是语法分析器。</p>
+<p>虽然从名字上看，这两个东西就已经是“分析器”了，然而实际上并不是，他们是用来生成“分析器”的工具。Lex 是用来生成词法分析器的工具，Yacc 是用来生成语法分析器的工具。</p>
+<p>这两个工具可以根据我们输入的词法 / 语法规则，自动生成相应的语法分析器、词法分析器，然后这些分析器就可以帮助我们简单地完成对源代码的词法、语法分析。</p>
+<p>因这两样工具的存在，开发编译器、解释器的词语法分析器的难度被极大降低。在现代编译器、解释器的开发中，真正有难度的地方在于语义分析和后期优化。</p>
+<h4 id="Lex正规式示例："><a href="#Lex正规式示例：" class="headerlink" title="Lex正规式示例："></a>Lex正规式示例：</h4><p>在 Lex 中，我们可以使用一种被称为“正规式”的字符串，来简单地定义“某种符号应该长成什么样子”。 我们先直接体验一下。 比如下面这个实际定义 Number 和 Identifier 的例子：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3079359573?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h4 id="Yacc-的产生式示例："><a href="#Yacc-的产生式示例：" class="headerlink" title="Yacc 的产生式示例："></a>Yacc 的产生式示例：</h4><p>Yacc 用如下这种形式来定义“一个表达式应该长成什么样子”： <code>E : E &#39;+&#39; E | E &#39;*&#39; E | id</code> 这段代码说明，一个表达式 E 可以有三种情况组成：最简单的情况就是 id 。一个变量 x ，他自己就是一个表达式，两个表达式相加是一个表达式，两个表达式相乘还是一个表达式。</p>
+<p>对于这个产生式，如果我们写<code>x-y</code>就是不合法的——因为我们并没有定义两个表达式可以被 ‘-‘ 连接</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c355a8f32d6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>例：对于 Yacc 而言，-x–y也是合法的。对于表达式“-2–3”，这里的减号有一元操作也有二元操作，实际计算的情况是这样的：(-2)-(-3 )</p>
+<h2 id="语言之间的翻译"><a href="#语言之间的翻译" class="headerlink" title="语言之间的翻译"></a>语言之间的翻译</h2><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3c115a1cfa?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>高级语言之间可以实现跨语言的翻译。</p>
+<p>预编译的例子：sql、c 混合编程。 sql、c 混合编程，实际上的运行方式是先把 sql 变成 c 语言，再对由 sql 转换来的 c 和本来就是 c 的部分进行整体编译。把 sql 转成 c 的过程就叫“预编译”，Lex、Yacc 就是这样的。</p>
+<p>在 UltraGram 中，就可以把我们写的 Lex、Yacc 变成合法的 C 代码。我们就可以把这两份代码和我们自己写的 C 代码一起编译，实现开发自己的解释器/编译器。（lex yacc 就是开发解释器编译器这种东西的工具，将曾需要手工实现的词法语法分析自动化实现）。</p>
+<p>对于反汇编，编译器为了防止反汇编会在编译时加入一些无效代码。</p>
+<h2 id="编译器与解释器"><a href="#编译器与解释器" class="headerlink" title="编译器与解释器"></a>编译器与解释器</h2><h3 id="语言翻译"><a href="#语言翻译" class="headerlink" title="语言翻译"></a>语言翻译</h3><p>语言翻译分为两种，分别是先翻译后执行和边翻译边执行。二者基本功能相同。且在翻译的角度来看，两种方式涉及的原理、方法、技术都是类似的</p>
+<h4 id="先翻译后执行"><a href="#先翻译后执行" class="headerlink" title="先翻译后执行"></a>先翻译后执行</h4><p>比如 C 这种需要编译的语言。特点是效率高、省空间。但交互性、动态性差，可移植性也差。。多数语言都是这种。</p>
+<p>![img](data:image/svg+xml;utf8,<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1277" height="458"></svg>)</p>
+<h4 id="边翻译边执行"><a href="#边翻译边执行" class="headerlink" title="边翻译边执行"></a>边翻译边执行</h4><p>比如 py、js、java 这种使用解释器工作的语言。跟上面的基本相反。</p>
+<p>生成字节码然后运行。从高级语言到字节码实际上是翻译，在运行时再从字节码转化成机器码执行。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c42f98beb0b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h2 id="编译器的工作原理和基本组成"><a href="#编译器的工作原理和基本组成" class="headerlink" title="编译器的工作原理和基本组成"></a>编译器的工作原理和基本组成</h2><h3 id="通用程序设计语言的主要成分"><a href="#通用程序设计语言的主要成分" class="headerlink" title="通用程序设计语言的主要成分"></a>通用程序设计语言的主要成分</h3><p>语言都由声明、操作两大部分组成，声明+操作=语言的完整定义。</p>
+<h4 id="例：过程式语言："><a href="#例：过程式语言：" class="headerlink" title="例：过程式语言："></a>例：过程式语言：</h4><p>过程式语言有<strong>两种语句</strong>：声明性语句和操作性语句。前者提供操作对象的性质（比如数据类型、数据值、对象的作用域）。后者则描述各个操作（比如赋值）的次序，进行实际操作。</p>
+<p>编译器对上述两种语句使用不同的方式进行处理。对于声明性的，就是给被声明的对象<strong>分配一块空间</strong>（称为“环境”）。操作则是<strong>生成针对环境的可执行代码序列</strong>，比如从某个被声明的空间中取值，进行某些运算后将结果放到某个空间中。</p>
+<p>因此，“先声明后引用”的规则，能够方便编译器对语言进行处理，也能提升执行效率。</p>
+<p>例如，一些语言支持如下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i&#x3D;10;           &#x2F;&#x2F; 在没有对 i 进行声明的情况下直接赋整数值</span><br><span class="line">i&#x3D;&quot;abcdefg&quot;;    &#x2F;&#x2F; 直接重新赋字符串值</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>虽然看起来是两行代码，但是在实际执行中，执行过程是：为整型分配空间-&gt;写入整数值10-&gt;重新分配空间-&gt;写入字符串值。将导致效率的降低。</p>
+<h3 id="以阶段划分编译器"><a href="#以阶段划分编译器" class="headerlink" title="以阶段划分编译器"></a>以阶段划分编译器</h3><p>编译器的工作过程可以大致划分为四步：词法分析、语法分析、语义分析、目标代码生成。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>其中，中间代码生成及其之前的步骤，编译器和解释器可以是一致的。</p>
+<ul>
+<li>词法分析：相当于识别每个词代表什么。进行的工作就是识别单词。单词至少分为：关键字、标识符、字面量、特殊符号；</li>
+<li>语法分析：识别语句的结构。通常以树的形式表示；</li>
+<li>语义分析：前两者正确的情况下，语义未必正确。确保“什么语句是什么意思”——检查结构正确的句子是否语义合法，也可以修改语法树的结构；</li>
+<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
+<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
+<li>中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率。</li>
+</ul>
+<h4 id="例：编译器各阶段工作："><a href="#例：编译器各阶段工作：" class="headerlink" title="例：编译器各阶段工作："></a>例：编译器各阶段工作：</h4><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c518b98ba42?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<ul>
+<li><p>词法分析：将源程序转化为记号流（记号流是线性结构的），源代码中的变量名在记号流中被替换为id1、id2这样的标识符。若我们只写一个 <code>real x</code>，在词法分析执行完后仍然是正确的——词法分析只看代码中的单词是否符合规则，而不关心结构。但在语法分析中就过不了了；</p>
+</li>
+<li><p>语法分析：该步骤，我们将记号流分析为两个语法树。因为句子是有层次关系的，树又可以用于描述层次关系，因此我们使用语法树来描述句子的语法结构。右下角语法树的意思是：对 id3 和 60 使用 * 进行运算，再将结果和 id2 使用 + 进行操作…… 最后赋值给 id1；</p>
+</li>
+<li><p>语义分析：对语法分析生成的两个语法树进行分析。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c4d53a02901?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>语义分析这一步，要看语法结构正确的语法树的含义是否正确——这一步也可以做些附加的操作，比如这里对60的转换，这就是编译器为了简化语言而自动进行的附加工作——对类型进行了自动转换。另又如C语言中，我们可以写 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1+2.0</span><br></pre></td></tr></table></figure>
+
+<p> 这样的式子，与此同理，也是编译器自动在语义分析时进行了类型转换。</p>
+</li>
+</ul>
+<ul>
+<li><p>中间代码优化：将4条语句转为了两条；</p>
+</li>
+<li><p>目标代码生成，解决汇编、可重定位、内存形式（Load-and-Go）问题</p>
+</li>
+</ul>
+<h3 id="编译器的分析-综合模式"><a href="#编译器的分析-综合模式" class="headerlink" title="编译器的分析/综合模式"></a>编译器的分析/综合模式</h3><p>编译器可分为前后端，前端进行语言结构和意义的分析，后端进行语言意义的处理。</p>
+<p>中间代码是前后端的分界。编译器的基础架构就分为前端、源代码的中间表示和后端。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c599e972afb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h3 id="编译器扫描遍数"><a href="#编译器扫描遍数" class="headerlink" title="编译器扫描遍数"></a>编译器扫描遍数</h3><p>在编译原理中有个术语，叫做“扫描”，“一遍扫描”是指：在编译的每个阶段中，编译程序将程序代码完整分析一遍的工作模式。</p>
+<p>比如：</p>
+<ol>
+<li>词法分析阶段，把整个程序转化为记号流，这叫一遍；</li>
+<li>词法分析，对记号流（记号流本身就是一种程序的变体）分析得到语法树，这又叫一遍；</li>
+<li>语义分析，对语法树（语法树是记号流的变体，也就是程序的变体）进行修改，分析得到中间代码，这又叫一遍；</li>
+</ol>
+<p>扫描遍数的影响因素：</p>
+<ol>
+<li><p>软硬件条件：如内存太小或者要做全局优化。想要做比较好的优化就需要全面了解程序，扫描的遍数就要增加；</p>
+</li>
+<li><p>语言结构：如果先声明后引用，就只需要扫描一遍；但如果先引用后声明，处理起来就比较复杂，需要多扫描一遍；</p>
+</li>
+<li><p>编译技术，比如拉链-回填</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">goto lab1;</span><br><span class="line">...</span><br><span class="line">goto lab2;</span><br><span class="line">...</span><br><span class="line">lab1:...</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>拉链-回填实际上也是先引用后声明，但只需要扫描一遍——当第一次读到引用时，先把后面的目标位置填个问号，读到多次也都填上问号——因为引用了相同的东西，所以这个问号可以“拉成一条链”。当我们确定了lab1的具体标号位置时，就回头把那一串的内容都填上。这并不是第二次扫描，叫做“拉链-回填”</p>
+</li>
+</ol>
+<h3 id="编译器的编写"><a href="#编译器的编写" class="headerlink" title="编译器的编写"></a>编译器的编写</h3><ol>
+<li>直接用语言写；</li>
+<li>使用编译器编写工具：包括语法/词法分析工具、语法制导翻译、代码生成、数据流分析等；</li>
+<li>基于编译器基础架构的编译器构造系统。也就是开放式编译器，比如LLVM、GCC、SUIF等。这样开发，就是自己用工具搞定词法分析、语法分析，再用这玩意做后端，就能开发出来自己的编译器了</li>
+</ol>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5eca2d53f265da76e97d31ba" target="_blank" rel="noopener">编译原理笔记1：概述编译相关的基本知识</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/02/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86%E5%8F%8A%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/" rel="prev" title="MySQL索引原理及慢查询优化-转载">
+      <i class="fa fa-chevron-left"></i> MySQL索引原理及慢查询优化-转载
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/" rel="next" title="磁盘调度算法">
+      磁盘调度算法 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#编译器的工作步骤"><span class="nav-number">1.</span> <span class="nav-text">编译器的工作步骤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#词法分析器-Lex-和词法分析器-Yacc："><span class="nav-number">2.</span> <span class="nav-text">词法分析器 Lex 和词法分析器 Yacc：</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Lex正规式示例："><span class="nav-number">2.0.1.</span> <span class="nav-text">Lex正规式示例：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Yacc-的产生式示例："><span class="nav-number">2.0.2.</span> <span class="nav-text">Yacc 的产生式示例：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#语言之间的翻译"><span class="nav-number">3.</span> <span class="nav-text">语言之间的翻译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译器与解释器"><span class="nav-number">4.</span> <span class="nav-text">编译器与解释器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#语言翻译"><span class="nav-number">4.1.</span> <span class="nav-text">语言翻译</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#先翻译后执行"><span class="nav-number">4.1.1.</span> <span class="nav-text">先翻译后执行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#边翻译边执行"><span class="nav-number">4.1.2.</span> <span class="nav-text">边翻译边执行</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译器的工作原理和基本组成"><span class="nav-number">5.</span> <span class="nav-text">编译器的工作原理和基本组成</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#通用程序设计语言的主要成分"><span class="nav-number">5.1.</span> <span class="nav-text">通用程序设计语言的主要成分</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#例：过程式语言："><span class="nav-number">5.1.1.</span> <span class="nav-text">例：过程式语言：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#以阶段划分编译器"><span class="nav-number">5.2.</span> <span class="nav-text">以阶段划分编译器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#例：编译器各阶段工作："><span class="nav-number">5.2.1.</span> <span class="nav-text">例：编译器各阶段工作：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译器的分析-综合模式"><span class="nav-number">5.3.</span> <span class="nav-text">编译器的分析&#x2F;综合模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译器扫描遍数"><span class="nav-number">5.4.</span> <span class="nav-text">编译器扫描遍数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#编译器的编写"><span class="nav-number">5.5.</span> <span class="nav-text">编译器的编写</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">188</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">686k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

@@ -186,6 +186,1033 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/MySQL%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E9%94%81/" class="post-title-link" itemprop="url">MySQL事务隔离级别和锁</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-08 02:40:04" itemprop="dateCreated datePublished" datetime="2020-06-08T02:40:04+08:00">2020-06-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-18 15:21:34" itemprop="dateModified" datetime="2020-06-18T15:21:34+08:00">2020-06-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载,整理自</p>
+<p>1.<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html" target="_blank" rel="noopener">MySQL 事务隔离级别和锁</a></p>
+<p>2.<a href="https://blog.csdn.net/puhaiyang/article/details/72284702" target="_blank" rel="noopener">对mysql乐观锁、悲观锁、共享锁、排它锁、行锁、表锁概念的理解</a></p>
+<p>3.<a href="https://blog.csdn.net/hh1sdfsf56456/article/details/79449714" target="_blank" rel="noopener">mysql乐观锁总结和实践：用version或者时间戳</a></p>
+<h2 id="事务及其特性"><a href="#事务及其特性" class="headerlink" title="事务及其特性"></a>事务及其特性</h2><p>数据库事务（简称:事务）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。事务的使用是数据库管理系统区别文件系统的重要特征之一。</p>
+<p>事务拥有四个重要的特性：<strong>原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）</strong>，人们习惯称之为 ACID 特性。下面我逐一对其进行解释。</p>
+<ul>
+<li><p>原子性（Atomicity）</p>
+<p>事务开始后所有操作，要么全部做完，要么全部不做，不可能停滞在中间环节。事务执行过程中出错，会回滚到事务开始前的状态，所有的操作就像没有发生一样。例如，如果一个事务需要新增 100 条记录，但是在新增了 10 条记录之后就失败了，那么数据库将回滚对这 10 条新增的记录。也就是说事务是一个不可分割的整体，就像化学中学过的原子，是物质构成的基本单位。</p>
+</li>
+<li><p>一致性（Consistency）</p>
+<p>指事务将数据库从一种状态转变为另一种一致的的状态。事务开始前和结束后，数据库的完整性约束没有被破坏。例如工号带有唯一属性，如果经过一个修改工号的事务后，工号变的非唯一了，则表明一致性遭到了破坏。</p>
+</li>
+<li><p>隔离性（Isolation）</p>
+<p>要求每个读写事务的对象对其他事务的操作对象能互相分离，即该事务提交前对其他事务不可见。 也可以理解为多个事务并发访问时，事务之间是隔离的，一个事务不应该影响其它事务运行效果。这指的是在并发环境中，当不同的事务同时操纵相同的数据时，每个事务都有各自的完整数据空间。由并发事务所做的修改必须与任何其他并发事务所做的修改隔离。例如一个用户在更新自己的个人信息的同时，是不能看到系统管理员也在更新该用户的个人信息（此时更新事务还未提交）。</p>
+<p>注：MySQL 通过锁机制来保证事务的隔离性。</p>
+</li>
+<li><p>持久性（Durability）</p>
+<p>事务一旦提交，则其结果就是永久性的。即使发生宕机的故障，数据库也能将数据恢复，也就是说事务完成后，事务对数据库的所有更新将被保存到数据库，不能回滚。这只是从事务本身的角度来保证，排除 RDBMS（关系型数据库管理系统，例如 Oracle、MySQL 等）本身发生的故障。</p>
+<p>注：MySQL 使用 <code>redo log</code> 来保证事务的持久性。</p>
+</li>
+</ul>
+<h2 id="事务的隔离级别"><a href="#事务的隔离级别" class="headerlink" title="事务的隔离级别"></a>事务的隔离级别</h2><p>SQL 标准定义的四种隔离级别被 ANSI（美国国家标准学会）和 ISO/IEC（国际标准）采用，每种级别对事务的处理能力会有不同程度的影响。</p>
+<p>我们分别对四种隔离级别从并发程度由高到低进行描述，并用代码进行演示，数据库环境为 MySQL 5.7。</p>
+<h3 id="READ-UNCOMMITTED（读未提交）"><a href="#READ-UNCOMMITTED（读未提交）" class="headerlink" title="READ UNCOMMITTED（读未提交）"></a>READ UNCOMMITTED（读未提交）</h3><p>该隔离级别的事务会读到其它未提交事务的数据，此现象也称之为<strong>脏读</strong>。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ UNCOMMITTED</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-UNCOMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条ID为2的记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务后查看表中的数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>最后一步读取到了 mysql 终端 1 中未提交的事务（没有 commit 提交动作），即产生了<strong>脏读</strong>，<strong>大部分业务场景都不允许脏读</strong>出现，<strong>但</strong>是此隔离级别下数据库的<strong>并发是最好的</strong>。</p>
+<h3 id="READ-COMMITTED（读提交）"><a href="#READ-COMMITTED（读提交）" class="headerlink" title="READ COMMITTED（读提交）"></a>READ COMMITTED（读提交）</h3><p>一个事务可以读取另一个已提交的事务，这次事务内多次读取会得到不一样的结果，此现象称为<strong>不可重复读(也称虚读)</strong>问题，Oracle 和 SQL Server 的默认隔离级别。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，再准备一张测试表<code>test</code>，写入一条测试数据并调整隔离级别为<code>READ COMMITTED</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'READ-COMMITTED'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务，将 ID 为1的记录更新为2，并确认记录数变更过来。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">update</span> <span class="keyword">test</span> <span class="keyword">set</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条记录为 2</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务后，查看表中的数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看一条 ID 为 1 的记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，提交事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时看到一条 ID 为 2 的记录</span></span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ol>
+<p>mysql 终端 2 在开启了一个事务之后，在第一次读取 <code>test</code> 表（此时 mysql 终端 1 的事务还未提交）时 ID 为 <code>1</code>，在第二次读取 <code>test</code> 表（此时 mysql 终端 1 的事务已经提交）时 ID 已经变为 <code>2</code>，说明在此隔离级别下已经<strong>读取到已提交的事务。</strong></p>
+<h3 id="REPEATABLE-READ（可重复读）"><a href="#REPEATABLE-READ（可重复读）" class="headerlink" title="REPEATABLE READ（可重复读）"></a>REPEATABLE READ（可重复读）</h3><p>该隔离级别是 <strong>MySQL 默认的隔离级别</strong>，在同一个事务里，<code>select</code> 的结果是事务开始时时间点的状态，因此，同样的 <code>select</code> 操作读到的结果会是一致的，但是，会有<strong>幻读</strong>现象。MySQL 的 InnoDB 引擎可以通过 <code>next-key locks</code> 机制（参考下文<a href="https://www.ibm.com/developerworks/cn/opensource/os-mysql-transaction-isolation-levels-and-locks/index.html#1行锁的算法outline" target="_blank" rel="noopener">“行锁的算法”</a>一节）来避免幻读。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，准备一张测试表<code>test</code>并调整隔离级别为<code>REPEATABLE READ</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>,<span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">20</span>));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 无记录</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 1，增加一条记录并提交。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'a'</span>);</span><br><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 msyql 终端 2。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">--此时查询还是无记录</span></span><br></pre></td></tr></table></figure>
+
+<p>通过这一步可以证明，在该隔离级别下已经<strong>读取不到别的已提交的事务</strong>，如果想看到 mysql 终端 1 提交的事务，在 mysql 终端 2 将当前事务提交后再次查询就可以读取到 mysql 终端 1 提交的事务。我们接着实验，看看在该隔离级别下是否会存在别的问题。</p>
+</li>
+<li><p>此时接着在 mysql 终端 2 插入一条数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>,<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'b'</span>); <span class="comment">-- 此时报主键冲突的错误</span></span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>也许到这里您心里可能会有疑问，明明在第 5 步没有数据，为什么在这里会报错呢？其实这就是该隔离级别下可能产生的问题，MySQL 称之为<strong>幻读</strong>。注意我在这里强调的是 MySQL 数据库，Oracle 数据库对于幻读的定义可能有所不同。</p>
+<h3 id="SERIALIZABLE（序列化）"><a href="#SERIALIZABLE（序列化）" class="headerlink" title="SERIALIZABLE（序列化）"></a>SERIALIZABLE（序列化）</h3><p>在该隔离级别下事务都是串行顺序执行的，MySQL 数据库的 <strong>InnoDB 引擎会给读操作隐式加一把读共享锁</strong>，从而<strong>避免了脏读、不可重读复读和幻读</strong>问题。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，准备一张测试表 test 并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'SERIALIZABLE'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 1，开启一个事务，并写入一条数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span>; <span class="comment">-- 此时会一直卡住</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>立马切换到 mysql 终端 1,提交事务。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">commit</span>;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<p>一旦事务提交，msyql 终端 2 会立马返回 ID 为 1 的记录，否则会一直卡住，直到超时，其中超时参数是由 <code>innodb_lock_wait_timeout</code> 控制。由于每条 <code>select</code> 语句都会加锁，所以该隔离级别的数据库并发能力最弱，但是有些资料表明该结论也不一定对，如果感兴趣，您可以自行做个压力测试。</p>
+<p>表 1 总结了各个隔离级别下产生的一些问题。</p>
+<center>表 1. 各个隔离级别下产生的一些问题</center>
+
+<table>
+<thead>
+<tr>
+<th align="left"><strong>隔离级别</strong></th>
+<th align="left"><strong>脏读</strong>(读到可能会回滚的数据)</th>
+<th align="left">(一个事务内)<strong>不可重复读</strong></th>
+<th align="left"><strong>幻读</strong>(读到数据不够新?)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">读未提交</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">读提交</td>
+<td align="left">不允许出现</td>
+<td align="left">可以出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">可重复读</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+<td align="left">可以出现</td>
+</tr>
+<tr>
+<td align="left">序列化</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+<td align="left">不允许出现</td>
+</tr>
+</tbody></table>
+<h2 id="脏读"><a href="#脏读" class="headerlink" title="脏读"></a>脏读</h2><p>脏读指在一个事务处理过程里读取了另一个未提交的事务中的数据，读取数据不一致。<br>事务A对数据进行增删改操作，但未提交，另一事务B可以读取到未提交的数据。如果事务A这时候回滚了，则第二个事务B读取的即为脏数据。</p>
+<p>举例：当一个事务正在多次修改某个数据，而在这个事务中多次的修改都还未提交，这时一个并发的事务来访问该数据，就会造成两个事务得到的数据不一致。<br>例如：用户A向用户B转账100元，对应SQL命令如下:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money + <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’B’;  <span class="comment">--(此时A通知B)</span></span><br><span class="line"><span class="keyword">update</span> <span class="keyword">account</span> <span class="keyword">set</span> money = money - <span class="number">100</span> <span class="keyword">where</span> <span class="keyword">name</span>=’A’;</span><br></pre></td></tr></table></figure>
+
+<p>当只执行第一条SQL时，A通知B查看账户，B发现确实钱已到账（此时即发生了脏读），而之后无论第二条SQL是否执行，只要该事务不提交，则所有操作都将回滚，那么当B以后再次查看账户时就会发现钱其实并没有转。</p>
+<h2 id="不可重复读-虚读"><a href="#不可重复读-虚读" class="headerlink" title="不可重复读(虚读)"></a>不可重复读(虚读)</h2><p>所谓的虚读，也就是大家经常说的不可重复读，是指在数据库访问中，一个事务范围内两个相同的查询却返回了不同数据。<strong>这是由于查询时系统中其他事务修改的提交而引起的。</strong>比如事务T1读取某一数据，事务T2读取并修改了该数据，T1为了对读取值进行检验而再次读取该数据，便得到了不同的结果。<br>一种更易理解的说法是：在一个事务内，多次读同一个数据。在这个事务还没有结束时，另一个事务也访问该同一数据。那么，在第一个事务的两次读数据之间。由于第二个事务的修改，那么第一个事务读到的数据可能不一样，这样就发生了在一个事务内两次读到的数据是不一样的，因此称为不可重复读，即原始读取不可重复。</p>
+<h2 id="幻读"><a href="#幻读" class="headerlink" title="幻读"></a>幻读</h2><p>幻读是指当事务不是独立执行时发生的一种现象，例如第一个事务对一个表中的数据进行了修改，比如这种修改涉及到表中的“全部数据行”。同时，第二个事务也修改这个表中的数据，这种修改是向表中插入“一行新数据”。那么，以后就会发生操作第一个事务的用户发现表中还有没有修改的数据行，就好象发生了幻觉一样.</p>
+<p>一般解决幻读的方法是增加范围锁RangeS，<strong>锁定检锁范围为只读</strong>，这样就避免了幻读。简单来说，幻读是由插入或者删除引起的。</p>
+<h2 id="不可重复读（虚读）和幻读比较"><a href="#不可重复读（虚读）和幻读比较" class="headerlink" title="不可重复读（虚读）和幻读比较"></a>不可重复读（虚读）和幻读比较</h2><p>两者都表现为两次读取的结果不一致.</p>
+<p>大致的区别在于不可重复读是由于另一个事务对数据的更改(<code>update</code>)所造成的，而幻读是由于另一个事务插入(<code>insert</code>)或删除(<code>delete</code>)引起的。</p>
+<p>但如果你从控制的角度来看, 两者的区别就比较大：<br>对于前者, 只需要锁住满足条件的记录<br>对于后者, 要锁住满足条件及其相近的记录</p>
+<h2 id="MySQL-中的锁"><a href="#MySQL-中的锁" class="headerlink" title="MySQL 中的锁"></a>MySQL 中的锁</h2><p>锁也是数据库管理系统区别文件系统的重要特征之一。锁机制使得在对数据库进行并发访问时，可以保障数据的完整性和一致性。对于锁的实现，各个数据库厂商的实现方法都会有所不同。本文讨论 MySQL 中的 InnoDB 引擎的锁。</p>
+<h3 id="锁的类型"><a href="#锁的类型" class="headerlink" title="锁的类型"></a>锁的类型</h3><h5 id="悲观锁-行锁"><a href="#悲观锁-行锁" class="headerlink" title="悲观锁(行锁)"></a>悲观锁(行锁)</h5><p>InnoDB 实现了两种类型的行级锁,属于悲观锁的范畴：</p>
+<ul>
+<li><p><strong>共享锁</strong>（也称为 S 锁,读锁）：允许事务读取一行数据。</p>
+<p>可以使用 SQL 语句 <code>select * from tableName where … lock in share mode;</code> 手动加 S 锁。</p>
+</li>
+<li><p><strong>排他锁</strong>（也称为 X 锁,写锁,独占锁）：允许事务删除或更新一行数据。</p>
+<p>可以使用 SQL 语句 <code>select * from tableName where … for update</code>; 手动加 X 锁。</p>
+</li>
+</ul>
+<p>S 锁和 S 锁是<strong>兼容</strong>的，X 锁和其它锁都<strong>不兼容</strong>.</p>
+<p>举个例子，事务 T1 获取了一个行 r1 的 S 锁，另外事务 T2 可以立即获得行 r1 的 S 锁，此时 T1 和 T2 共同获得行 r1 的 S 锁，此种情况称为<strong>锁兼容</strong>，但是另外一个事务 T2 此时如果想获得行 r1 的 X 锁，则必须等待 T1 对行 r 锁的释放，此种情况也成为<strong>锁冲突</strong>。</p>
+<p>为了实现多粒度的锁机制，InnoDB 还有两种内部使用的<strong>意向锁</strong>，由 InnoDB 自动添加，且都是<strong>表级别的锁</strong>。</p>
+<ul>
+<li><strong>意向共享锁</strong>（IS）：事务即将给表中的各个行设置共享锁S，事务给数据行加 S 锁前必须获得该表的 IS 锁。</li>
+<li><strong>意向排他锁</strong>（IX）：事务即将给表中的各个行设置排他锁X，事务给数据行加 X 锁前必须获得该表 IX 锁。</li>
+</ul>
+<p>意向锁的主要目的是为了使得<strong>行锁</strong>和<strong>表锁</strong>共存。表 2 列出了行级锁(S,X)和表级意向锁(IS,IX)的兼容性。</p>
+<center>表 2. 行级锁和表级意向锁的兼容性</center>
+
+<table>
+<thead>
+<tr>
+<th align="left"><strong>锁类型</strong></th>
+<th align="left"><strong>X</strong></th>
+<th align="left"><strong>IX</strong></th>
+<th align="left"><strong>S</strong></th>
+<th align="left"><strong>IS</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>X</strong></td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+</tr>
+<tr>
+<td align="left"><strong>IX</strong></td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+</tr>
+<tr>
+<td align="left"><strong>S</strong></td>
+<td align="left">冲突</td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+</tr>
+<tr>
+<td align="left"><strong>IS</strong></td>
+<td align="left">冲突</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+<td align="left">兼容</td>
+</tr>
+</tbody></table>
+<p>总结:<strong>意向锁(IX,IS)之间不会产生冲突, 其他情况可将IX锁当做X锁, IS锁当做S锁</strong></p>
+<h5 id="乐观锁"><a href="#乐观锁" class="headerlink" title="乐观锁"></a>乐观锁</h5><p><strong>乐观锁不是数据库自带的</strong>，需要我们自己去实现。乐观锁是指操作数据库时(更新操作)，想法很乐观，认为这次的操作不会导致冲突，在操作数据时，并不加锁，而在进行更新后，再去判断是否有冲突了(CAS操作)。</p>
+<p>一般来说有以下2种方式：</p>
+<ol>
+<li><p>使用<strong>数据版本（Version）</strong>记录机制实现</p>
+<p>这是乐观锁最常用的一种实现方式。何谓数据版本？即为数据增加一个版本标识，一般是通过为数据库表增加一个数字类型的 “version” 字段来实现。当读取数据时，将version字段的值一同读出，数据每更新一次，对此version值加一。当我们提交更新的时候，判断数据库表对应记录的当前版本信息与第一次取出来的version值进行比对，如果数据库表当前版本号与第一次取出来的version值相等，则予以更新，否则认为是过期数据。</p>
+</li>
+<li><p>使用<strong>时间戳（Timestamp）</strong>记录机制实现</p>
+<p>乐观锁定的第二种实现方式和第一种差不多，同样是在需要乐观锁控制的table中增加一个字段，名称无所谓，字段类型使用时间戳（timestamp）, 和上面的version类似，也是在更新提交的时候检查当前数据库中数据的时间戳和自己更新前取到的时间戳进行对比，如果一致则OK，否则就是版本冲突。</p>
+</li>
+</ol>
+<p>举例：在表中的数据进行操作时(更新)，先给数据表加一个版本(version)字段，每操作一次，将那条记录的版本号加1。也就是先查询出那条记录，获取出version字段,如果要对那条记录进行操作(更新),则先判断此刻version的值是否与刚刚查询出来时的version的值相等，如果相等，则说明这段期间，没有其他程序对其进行操作，则可以执行更新，将version字段的值加1；如果更新时发现此刻的version值与刚刚获取出来的version的值不相等，则说明这段期间已经有其他程序对其进行操作了，则不进行更新操作。</p>
+<p>下单操作包括3步骤：</p>
+<p>1.查询出商品信息</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> (<span class="keyword">status</span>,<span class="keyword">status</span>,<span class="keyword">version</span>) <span class="keyword">from</span> t_goods <span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>2.根据商品信息生成订单</p>
+<p>3.修改商品status为2</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">update</span> t_goods </span><br><span class="line"><span class="keyword">set</span> <span class="keyword">status</span>=<span class="number">2</span>,<span class="keyword">version</span>=<span class="keyword">version</span>+<span class="number">1</span></span><br><span class="line"><span class="keyword">where</span> <span class="keyword">id</span>=<span class="comment">#&#123;id&#125; and version=#&#123;version&#125;;</span></span><br></pre></td></tr></table></figure>
+
+<p>除了自己手动实现乐观锁之外，现在网上许多框架已经封装好了乐观锁的实现，如hiberate实现的乐观锁。</p>
+<h3 id="行锁的算法"><a href="#行锁的算法" class="headerlink" title="行锁的算法"></a>行锁的算法</h3><p>InnoDB 存储引擎使用三种行锁的算法用来满足相关事务隔离级别的要求。</p>
+<ul>
+<li><p>Record Locks</p>
+<p>该锁为索引记录上的锁，如果表中没有定义索引，InnoDB 会默认为该表创建一个隐藏的聚簇索引，并使用该索引锁定记录。</p>
+</li>
+<li><p>Gap Locks</p>
+<p>该锁会锁定一个范围，但是不括记录本身。可以通过修改隔离级别为 <code>READ COMMITTED</code> 或者配置 <code>innodb_locks_unsafe_for_binlog</code> 参数为 <code>ON</code>。</p>
+</li>
+<li><p>Next-key Locks</p>
+<p>该锁就是 Record Locks 和 Gap Locks 的组合，即锁定一个范围并且锁定该记录本身。<strong>InnoDB 使用 Next-key Locks 解决幻读问题</strong>。需要注意的是，如果索引有唯一属性，则 InnnoDB 会自动将 Next-key Locks 降级为 Record Locks。举个例子，如果一个索引有 1, 3, 5 三个值，则该索引锁定的区间为 <code>(-∞,1], (1,3], (3,5], (5,+ ∞)</code>。</p>
+</li>
+</ul>
+<h3 id="死锁"><a href="#死锁" class="headerlink" title="死锁"></a>死锁</h3><p><strong>死锁</strong>是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法推进下去。此时称系统处于死锁状态或系统产生了死锁，这些永远在互相等待的进程称为死锁进程。</p>
+<p>InnoDB 引擎采取的是 <code>wait-for graph</code> 等待图的方法来自动检测死锁，如果发现死锁会自动回滚一个事务。</p>
+<p>下面我们通过一个示例来了解死锁。</p>
+<ol>
+<li><p>准备两个终端，在此命名为 mysql 终端 1 和 mysql 终端 2，分别登入 mysql，再准备一张测试表<code>test</code>写入两条测试数据，并调整隔离级别为<code>SERIALIZABLE</code>，任意一个终端执行即可。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> @@session.transaction_isolation = <span class="string">'REPEATABLE-READ'</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="keyword">test</span>;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="keyword">test</span>(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="keyword">test</span>(<span class="keyword">id</span>) <span class="keyword">values</span>(<span class="number">1</span>),(<span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>登录 mysql 终端 1，开启一个事务，手动给 ID 为1的记录加 X 锁。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>登录 mysql 终端 2，开启一个事务，手动给 ID 为2的记录加 X 锁。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line">   <span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>切换到 mysql 终端 1，手动给 ID 为2的记录加 X 锁，此时会一直卡住，因为此时在等待第 3 步中 X 锁的释放，直到超时，超时时间由<code>innodb_lock_wait_timeout</code>控制。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">2</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在锁超时前立刻切换到 mysql 终端 2，手动给 ID 为1的记录加 X 锁，此时又会等待第 2 步中 X 所的释放，两个终端都在等待资源的释放，所以 InnoDB 引擎会立马检测到死锁产生，自动回滚一个事务，以防止死锁一直占用资源。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> <span class="keyword">test</span> <span class="keyword">where</span> <span class="keyword">id</span> = <span class="number">1</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line">   ERROR 1213 (40001): Deadlock found when trying to get <span class="keyword">lock</span>; try restarting transaction</span><br></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>此时，通过 <code>show engine innodb status\G</code> 命令可以看到 <code>LATEST DETECTED DEADLOCK</code> 相关信息，即表明有死锁发生；或者通过配置 <code>innodb_print_all_deadlocks</code>（MySQL 5.6.2 版本开始提供）参数为 <code>ON</code> 将死锁相关信息打印到 MySQL 的错误日志。</p>
+<h3 id="锁的优化建议"><a href="#锁的优化建议" class="headerlink" title="锁的优化建议"></a>锁的优化建议</h3><p>锁如果利用不好，会给业务造成大量的卡顿现象，在了解了锁相关的一些知识点后，我们可以有意识的去避免锁带来的一些问题。</p>
+<ol>
+<li>合理设计索引，让 InnoDB 在索引键上面加锁的时候尽可能准确，尽可能的缩小锁定范围，避免造成不必要的锁定而影响其他 Query 的执行。</li>
+<li>尽可能减少基于范围的数据检索过滤条件，避免因为间隙锁带来的负面影响而锁定了不该锁定的记录。</li>
+<li>尽量控制事务的大小，减少锁定的资源量和锁定时间长度。</li>
+<li>在业务环境允许的情况下，尽量使用较低级别的事务隔离，以减少 MySQL 因为实现事务隔离级别所带来的附加成本。</li>
+</ol>
+<h2 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h2><p>通过阅读本文，可以让您对数据库的事务还有事务的隔离级别有个基本的了解，同时也介绍了 MySQL 中 InnoDB 引擎中一些锁相关的知识，从而可以让您利用关系型数据库系统设计一个更为健壮的业务模型。</p>
+<h2 id="参考资源"><a href="#参考资源" class="headerlink" title="参考资源"></a>参考资源</h2><ul>
+<li>查看<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-transaction-model.html" target="_blank" rel="noopener"> MySQL 官方文档</a>，获取更多关于 MySQL 事务和锁相关的最新信息。</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/%E5%9F%BA%E4%BA%8E%E6%A6%82%E7%8E%87%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%20%E5%B8%83%E9%9A%86%E8%BF%87%E6%BB%A4%E5%99%A8/" class="post-title-link" itemprop="url">基于概率的数据结构:布隆过滤器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:33:36 / 修改时间：10:39:06" itemprop="dateCreated datePublished" datetime="2020-06-08T02:33:36+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>11k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>10 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832" target="_blank" rel="noopener">Probabilistic Data structures: Bloom filter</a></p>
+<p>If you have a glass-protected bookshelf, that will protect your books from dust and insects, but it will cost you more time to access the books when you need them. Because you first need to slide or open the glass and then can get the books. On the other hand, if it’s an open bookshelf, that will give you quicker access but you will lose the protection. Similarly, if you organize your books in lexicographic order of their name, you can easily search for a book if you know it’s name. But if your bookshelf has cases of different size and you organize your books based on their size, it will look nice, but can you find a book in a hurry? I don’t think so.</p>
+<p>Data structures are nothing different. They are like the bookshelves of your application where you can organize your data. Different data structures will give you different facility and benefits. To properly use the power and accessibility of the data structures you need to know the trade-offs of using one.</p>
+<p>When main-stream data structures like Lists, Maps, Sets, Trees etc. are mostly used for achieving certain results about whether the data exist or not, maybe along with their number of occurrences and such, Probabilistic data structures will give you memory-efficient, faster result with a cost of providing a ‘probable’ result instead of a ‘certain’ one. It might not seems intuitive to use such data structures for now, but I’ll try to convince you in this post that these type of data structures have their specific use cases and you might find them useful in certain scenarios.</p>
+<p>In this post, I’ll talk about one of the most popular probabilistic data structures called <strong>‘Bloom filter’</strong>. In future, I’ll try to write about some others.</p>
+<h3 id="Bloom-filter"><a href="#Bloom-filter" class="headerlink" title="Bloom filter"></a>Bloom filter</h3><p>Do you know how hash tables work? When you insert a new data in a simple array or list, the index, where this data would be inserted, is not determined from the value to be inserted. That means there is no direct relationship between the ‘key(index)’ and the ‘value(data)’. As a result, if you need to search for a value in the array you have to search in all of the indexes. Now, in hash tables, you determine the ‘key’ or ‘index’ by hashing the ‘value’. Then you put this value in that index in the list. That means the ‘key’ is determined from the ‘value’ and every time you need to check if the value exists in the list you just hash the value and search on that key. It’s pretty fast and will require <em>O(1)</em> searching time in <a href="https://en.wikipedia.org/wiki/Big_O_notation" target="_blank" rel="noopener">Big-O notation</a>.</p>
+<p><img src="https://hackernoon.com/hn-images/1*BEkGh72F09juiD6wtg6q4A.png" alt="img"></p>
+<p>Now, let’s consider that you have a huge list of weak passwords and it is stored on some remote server. It’s not possible to load them at once in the memory/RAM because of the size. Each time a user enters his/her password you want to check if it is one of the weak passwords and if it is, you want to give him/her a warning to change it to something stronger. What can you do? As you already have the list of the weak passwords, you can store them in a hash table or something like that and each time you want to match, you can check against it if the given password has any match. The matching might be fast but the cost of searching it on the disk or over the network on a remote server would make it slow. Don’t forget that you would need to do it for every password given by every user. How can we reduce the cost?</p>
+<p>Well, Bloom filter can help us here. How? I’m going to answer it after explaining how a bloom filter works. OK?</p>
+<p>By definition, Bloom filter can check for if a value is <strong>‘possibly in the set’</strong> or <strong>‘definitely not in the set’</strong>. The subtle difference between <strong>‘possibly’</strong> and <strong>‘definitely not’ —</strong> is very crucial here. This <em>‘possibly in the set’</em> is exactly why it is called <strong>probabilistic</strong>. Using smart words it means that <a href="https://en.wikipedia.org/wiki/False_positives_and_false_negatives" target="_blank" rel="noopener">false positive</a> is possible <em>(there can be cases where it falsely thinks that the element is positive)</em> but false negative is impossible. Don’t be impatient, we are explaining what does it actually mean, shortly.</p>
+<p>The bloom filter essentially consists of a bit-vector or bit-list<em>(a list containing only either 0 or 1-bit value)</em> of length <strong>m</strong>, initially all values set to 0, as shown below.</p>
+<p><img src="https://hackernoon.com/hn-images/1*VssbV2VQmWn8CHlhfA-oNw.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>To add an item to the bloom filter, we feed it to <strong>k</strong> different hash functions and set the bits to ‘1’ at the resulting positions. As you can see, in hash tables we would’ve used a single hash function and as a result get only a single index as output. But in the case of the bloom filter, we would use multiple hash functions, which would give us multiple indexes.</p>
+<p><img src="https://hackernoon.com/hn-images/1*xm1aM4Hwevn8tizTSe7LKA.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>As you can see in the above example, for the given input ‘geeks’ our 3 hash functions will give 3 different output — 1, 4 and 7. We’ve marked them.</p>
+<p><img src="https://hackernoon.com/hn-images/1*WpJpIEfjWkKPnR6GGbbVvQ.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>For another input ‘nerd’, the hash functions give us 3, 4 and 5. You might’ve noticed that the index ‘4’ is already marked by the previous ‘geeks’ input. Hold your thought, this point is interesting and we’re going to discuss it shortly.</p>
+<p>We’ve already populated our bit vector with two inputs, now we can check for a value for its existence. How can we do that?<br>Easy. Just as we would’ve done it in a hash table. We would hash the ‘searched input’ with our 3 hash functions and see what are the resulting indexes hold.</p>
+<p><img src="https://hackernoon.com/hn-images/1*Fg3dBnWiip3Sbz3_XkKn7w.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>So, searching for ‘cat’, our hash functions are giving us 1, 3 and 7 this time. And we can see that all of the indexes are already marked as 1. That means we can say, <em>“maybe ‘cat’ is already inserted on our list”</em>. But it didn’t. So, what’s went wrong?<br>Actually, nothing went wrong. The thing is, this is the case of a <strong>‘false positive’</strong>. Bloom filter is telling us that it seems that maybe ‘cat’ was inserted before, because the indexes should’ve been marked by ‘cat’ are already marked (though by other different data).<br>So, if that’s the case, how it is helpful? Well, let’s consider if ‘cat’ would’ve given us the output of 1, 6, 7 instead of 1, 3, 7, what would happen then? We can see that among 3 indexes, 6 is ‘0’, that means it wasn’t marked by any of the previous inputs. That means obviously ‘cat’ never inserted before, if it was, there was no chance of 6 to be ‘0’, right? That’s how bloom filter can tell <strong>‘certainly’</strong> if a data is not on the list.</p>
+<p>So, in a nutshell:</p>
+<ul>
+<li>If we search for a value and see any of the hashed indexes for this value is ‘0’ then, the value is definitely not on the list.</li>
+<li>If all of the hashed indexes is ‘1’ then ‘maybe’ the searched value is on the list.</li>
+</ul>
+<p>Does it start making sense? A little maybe?</p>
+<p>Fine, now, back to the ‘password’ example we were talking earlier. If we implement our weak password checking with this type of bloom filter, you can see that initially, we would mark our bloom filter with our list of passwords, which will give us a bit vector with some indexes marked as ‘1’ and others left as 0. As the size of the bloom filter won’t be very large and will be a fixed size, it can easily be stored in the memory and also on the client side if necessary. That’s why bloom filter is very space-efficient. Where a hash table requires being of arbitrary size based on the input data, the bloom filters can work well with a fixed size.<br>So, every time a user enters their password, we will feed it to our hash functions and check it against our bit vector. If the password is strong enough, the bloom filter will show us that the password is certainly not in the ‘weak password list’ and we don’t have to do any more query. But if the password seems weak and gives us a ‘positive’ (might be false positive) result we will then send it to our server and check our actual list to confirm.</p>
+<p>As you can see, most of the time we don’t even need to make a request to our server or read from disk to check the list, this will be a significant improvement in speed of the application. In case, if we don’t want to store the bit-vector at the client side, we can still load it in the server memory and that will at least saves some disk lookup time. Also consider that, if your bloom filters false positive rate is 1%(we will talk about the error rate in details later), that means among the costly round-trips to the server or the disk, only 1% of the query will be returned with false result, other 99% won’t go in vain.<br>Not bad, huh?</p>
+<p><img src="https://hackernoon.com/hn-images/1*MYeocwtT6dtNYnihEh6tUA.png" alt="img"></p>
+<p>Nice visual simulation about how bloom filters work. Image Credit: <a href="https://en.wikipedia.org/wiki/Bloom_filter" target="_blank" rel="noopener">WikiPedia</a></p>
+<h4 id="Bloom-filter-operations"><a href="#Bloom-filter-operations" class="headerlink" title="Bloom filter operations"></a>Bloom filter operations</h4><p>The basic bloom filter supports two operations: <strong>test</strong> and <strong>add</strong>.</p>
+<p><strong>Test</strong> is used to check whether a given element is in the set or not.</p>
+<p><strong>Add</strong> simply adds an element to the set.</p>
+<p>Now a little quiz for you.</p>
+<p>Based on what we’ve discussed so far, is it possible to <strong>Remove</strong> an item from the bloom filter? If yes, then how?</p>
+<p>Take a 2 minutes break and think about the solution.</p>
+<p>Got anything? Nothing? Let me help you a bit. Let’s bring back the bit-vector after inserting ‘geeks’ and ‘nerd’ in it.</p>
+<p><img src="https://hackernoon.com/hn-images/1*xm1aM4Hwevn8tizTSe7LKA.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p><img src="https://hackernoon.com/hn-images/1*WpJpIEfjWkKPnR6GGbbVvQ.png" alt="img"></p>
+<p>Image Credit: <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">GeeksforGeeks</a></p>
+<p>Now we want to remove ‘geeks’ from it. So, if we remove 1, 4, 7 from the bit vector, as they are marked by ‘geeks’, and convert them to ‘0’, what will happen? You can easily see that, next time if we search for ‘nerd’, as the index ‘4’ will show ‘0’, it will definitely tell us that ‘nerd’ is not on the list, though it actually is. That means removal is impossible without introducing false negatives.</p>
+<p>So, what’s the solution?</p>
+<p>The solution is we can’t support Remove operation in this simple bloom filters. But if we really need to have a Removal functionality we can use a variation of the bloom filter known as <strong>‘Counting bloom filter’</strong>. The idea is simple. Instead of storing a single bit of values, we will store an integer value and our bit vector will then be an integer vector. This will increase the size and costs more space to gives us the Removal functionality. Instead of just marking a bit value to ‘1’ when inserting a value, we will increment the integer value by 1. To check if an element exists, check if the corresponding indexes after hashing the element is greater than 0.<br>If you are having a hard time to understand how a ‘Counting bloom filter’ can give us ‘deletion’ feature, I’ll suggest you take a pen and a paper and simulate our bloom filter as a counting filter and then try a deletion on it. Hopefully, you’ll get it easily. If you failed, try again. If you failed again then please leave a comment and I’ll try to describe it.</p>
+<h4 id="Bloom-filter-size-and-number-of-Hash-functions"><a href="#Bloom-filter-size-and-number-of-Hash-functions" class="headerlink" title="Bloom filter size and number of Hash functions"></a>Bloom filter size and number of Hash functions</h4><p>You might already understand that if the size of the bloom filter is too small, soon enough all of the bit fields will turn into ‘1’ and then our bloom filter will return ‘false positive’ for every input. So, the size of the bloom filter is a very important decision to be made. A larger filter will have less false positives, and a smaller one more. So, we can tune our bloom filter to how much precise we need it to be based on the ‘false positive error rate’.<br>Another important parameter is ‘how many hash functions we will use’. The more hash functions we use, the slower the bloom filter will be, and the quicker it fills up. If we have too few, however, we may suffer too many false positives.</p>
+<p><img src="https://hackernoon.com/hn-images/1*sSuuWFeLpwVZIPuNSoAiyQ.png" alt="img"></p>
+<p>Image Credit: <a href="https://engineering.semantics3.com/use-the-bloom-filter-luke-b59fd0839fc4" target="_blank" rel="noopener">Abishek Bhat’s article about bloom filter</a></p>
+<p>You can see from the above graph that, increasing the number of hash functions, <strong>k</strong>, will drastically reduce the error rate, <strong>p</strong>.</p>
+<p>We can calculate the false positive error rate, <strong><em>p\</em></strong>, based on the size of the filter, <strong><em>m\</em></strong>, the number of hash functions, <strong><em>k\</em></strong>, and the number of elements inserted, <strong><em>n\</em></strong>, with the formula:</p>
+<p><img src="https://hackernoon.com/hn-images/1*4QvZrOV7d9XgQXqVaIOGPg.png" alt="img"></p>
+<p>Seems like WTF? Don’t worry, we would actually mostly need to decide what our <strong><em>m\</em></strong> and <strong><em>k\</em></strong> would be. So, if we set an error tolerance value <strong><em>p\</em></strong> and the number of elements <strong><em>n\</em></strong> by ourselves we can use the following formulas to calculate these parameters:</p>
+<p><img src="https://hackernoon.com/hn-images/1*eDTlEUQCLRB8wL96GileXA.png" alt="img"></p>
+<p>Another important point I also need to mention here. As the sole purpose of using bloom filter is to search faster, we can’t use slow hash functions, right? Cryptographic hash functions such as Sha-1, MD5 won’t be good choice for bloom filters as they are a bit slow. So, the better choices from the faster hash function implementations would be <a href="https://sites.google.com/site/murmurhash/" target="_blank" rel="noopener">murmur</a>, the <a href="http://isthe.com/chongo/tech/comp/fnv/" target="_blank" rel="noopener">fnv</a> series of hashes, Jenkins hashes and <a href="http://www.google.com/codesearch/url?ct=ext&url=http://www.concentric.net/~Ttwang/tech/inthash.htm&usg=AFQjCNEBOwEAd_jb5vYSckmG7OxrkeQhLA" target="_blank" rel="noopener">HashMix</a>.</p>
+<h4 id="Applications"><a href="#Applications" class="headerlink" title="Applications"></a>Applications</h4><p>Bloom filter is all about testing Membership in a set. The classic example of using bloom filters is to reduce expensive disk (or network) lookups for non-existent keys. As we can see that bloom filters can search for a key in O(k) constant time, where k is the number of hash functions, it will be very fast to test non-existence of a key.</p>
+<p>If the element is not in the bloom filter, then we know for sure we don’t need to perform the expensive lookup. On the other hand, if it <em>is</em> in the bloom filter, we perform the lookup, and we can expect it to fail some proportion of the time (the false positive rate).</p>
+<p>For some more concrete examples:</p>
+<ul>
+<li>You’ve seen in our given example that we could’ve use it to warn the user for weak passwords.</li>
+<li>You can use bloom filter to <a href="https://medium.com/@nathankrishnan/using-a-bloom-filter-to-prevent-users-of-your-ios-app-from-accessing-malicious-sites-7ad555a69598" target="_blank" rel="noopener">prevent your users</a> from <a href="https://stackoverflow.com/a/14403897/4230330" target="_blank" rel="noopener">accessing malicious sites</a>.</li>
+<li>Instead of making a query to an SQL database to check if a user with a certain email exists, you could first use a bloom filter for an inexpensive lookup check. If the email doesn’t exist, great! If it does exist, you might have to make an extra query to the database. You can do the same to <a href="http://www.geeksforgeeks.org/bloom-filters-introduction-and-python-implementation/" target="_blank" rel="noopener">search for if a ‘Username is already taken’</a>.</li>
+<li>You can keep a bloom filter based on the IP address of the visitors to your website to check if a user to your website is a ‘returning user’ or a ‘new user’. Some false positive value for ‘returning user’ won’t hurt you, right?</li>
+<li>You can also make a <a href="http://codekata.com/kata/kata05-bloom-filters/" target="_blank" rel="noopener">Spell-checker by using bloom filter</a> to track the dictionary words.</li>
+<li>Want to know how Medium used bloom filter to decide if a user already read post? Read this <a href="https://blog.medium.com/what-are-bloom-filters-1ec2a50c68ff" target="_blank" rel="noopener">mind-blowing, freaking awesome article</a> about it.</li>
+</ul>
+<p>Do you still think that you won’t ever need bloom filter? Well, we don’t use all of the algorithms we’ve learned in our everyday life. But maybe someday it might save your arse. Who knows? Learning a new thing never hurts, right?</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/How%20does%20the%20default%20hashCode()%20work/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/How%20does%20the%20default%20hashCode()%20work/" class="post-title-link" itemprop="url">How does the default hashCode() work?</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:13:35 / 修改时间：10:17:15" itemprop="dateCreated datePublished" datetime="2020-06-08T02:13:35+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>15 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://srvaroa.github.io/jvm/java/openjdk/biased-locking/2017/01/30/hashCode.html" target="_blank" rel="noopener">How does the default hashCode() work?</a></p>
+<p><a href="https://www.javazhiyin.com/55723.html" target="_blank" rel="noopener">参考译文</a></p>
+<p><em>In which scratching the surface of <code>hashCode()</code> leads to a speleology trip through the JVM source reaching object layout, biased locking, and surprising performance implications of relying on the default <code>hashCode()</code>.</em></p>
+<p><em>Abundant thanks to <a href="https://twitter.com/giltene" target="_blank" rel="noopener">Gil Tene</a> and <a href="https://twitter.com/duarte_nunes" target="_blank" rel="noopener">Duarte Nunes</a> reviewing drafts of this article and their very valuable insights, suggestions and edits. Any remaining errors are my own.</em></p>
+<h2 id="A-trivial-mystery"><a href="#A-trivial-mystery" class="headerlink" title="A trivial mystery"></a>A trivial mystery</h2><p>Last week at work I submitted a trivial change to a class, an implementation of <code>toString()</code> so logs would be meaningful. To my surprise, the change caused a ~5% coverage drop in the class. I knew that all new code was covered by existing unit tests so, what could be wrong? Comparing coverage reports a sharper colleague noticed that the implementation of <code>hashCode()</code> was covered before the change but not after. Of course, that made sense: the default <code>toString()</code> calls <code>hashCode()</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public String toString() &#123;</span><br><span class="line">    return getClass().getName() + &quot;@&quot; + Integer.toHexString(hashCode());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>After overriding <code>toString()</code>, our custom <code>hashCode()</code> was no longer being called. We were missing a test.</p>
+<p>Everyone knew the default <code>toString()</code> but..</p>
+<h2 id="What-is-the-default-implementation-of-hashCode"><a href="#What-is-the-default-implementation-of-hashCode" class="headerlink" title="What is the default implementation of hashCode()?"></a>What is the default implementation of <code>hashCode()</code>?</h2><p>The value returned by the default implementation of <code>hashCode()</code> is called <strong>identity hash code</strong> so I will use this term from now on to distinguish it from the hash provided by overriden implementations of <code>hashCode()</code>. FYI: even if a class overrides <code>hashCode()</code>, you can always get the identity hash code of an object <code>o</code> by calling <code>System.identityHashCode(o)</code>.</p>
+<p>Common wisdom is that the identity hash code uses the integer representation of the memory address. That’s also what the <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--" target="_blank" rel="noopener">J2SE JavaDocs for Object.hashCode()</a> imply:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">... is typically implemented by converting the internal address of</span><br><span class="line">the object into an integer, but this implementation technique is not</span><br><span class="line">required by the Java™ programming language.</span><br></pre></td></tr></table></figure>
+
+<p>Still, this seems problematic as the method contract requires that:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Whenever it is invoked on the same object more than once during an</span><br><span class="line">execution of a Java application, the hashCode method must consistently</span><br><span class="line">return the same integer.</span><br></pre></td></tr></table></figure>
+
+<p>Given that the JVM will relocate objects (e.g. during garbage collection cycles due to promotion or compaction), after we calculate an object’s identity hash we must be able to retain it in a way that survives object relocation.</p>
+<p>A possibility could be to take the current memory position of the object on the first call to <code>hashCode()</code>, and save it somewhere along with the object, like the object’s header. That way, if the object is moved to a different memory location, it would carry the original hash with it. A caveat of this method is that it won’t prevent two objects from having the same identity hash, but that’s allowed by the <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--" target="_blank" rel="noopener">spec</a>.</p>
+<p>The best confirmation would be to to look at the source. Unfortunately, the default <code>java.lang.Object::hashCode()</code> <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/jdk/file/a71d26266469/src/share/classes/java/lang/Object.java#l100" target="_blank" rel="noopener">is a native function</a>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public native int hashCode();</span><br></pre></td></tr></table></figure>
+
+<p>Helmets on.</p>
+<h2 id="Will-the-real-hashCode-please-stand-up"><a href="#Will-the-real-hashCode-please-stand-up" class="headerlink" title="Will the real hashCode() please stand up"></a>Will the real <code>hashCode()</code> please stand up</h2><p>Note that the identity <code>hashCode()</code> implementation <strong>is dependant on the JVM</strong>. Since I will only look at OpenJDK sources, you should assume this specific implementation whenever I talk about the JVM. All links refer to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509" target="_blank" rel="noopener">changeset 5820:87ee5ee27509</a> of the <a href="http://hg.openjdk.java.net/jdk8/jdk8/hotspot" target="_blank" rel="noopener">Hotspot tree</a>, I assume that most of it will also be applicable to Oracle’s JVM, but things could (in fact, are) different in others (more about this later.)</p>
+<p>OpenJDK defines entry points for <code>hashCode()</code> at <code>src/share/vm/prims/jvm.h</code> and <code>src/share/vm/prims/jvm.cpp</code>. The latter has:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">508 JVM_ENTRY(jint, JVM_IHashCode(JNIEnv* env, jobject handle))</span><br><span class="line">509   JVMWrapper(&quot;JVM_IHashCode&quot;);</span><br><span class="line">510   &#x2F;&#x2F; as implemented in the classic virtual machine; return 0 if object is NULL</span><br><span class="line">511   return handle &#x3D;&#x3D; NULL ? 0 : ObjectSynchronizer::FastHashCode (THREAD, JNIHandles::resolve_non_null(handle)) ;</span><br><span class="line">512 JVM_END</span><br></pre></td></tr></table></figure>
+
+<p><a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> is also called from <code>identity_hash_value_for</code>, which is used from a few other call sites (e.g.: <code>System.identityHashCode()</code>)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">708 intptr_t ObjectSynchronizer::identity_hash_value_for(Handle obj) &#123;</span><br><span class="line">709   return FastHashCode (Thread::current(), obj()) ;</span><br><span class="line">710 &#125;</span><br></pre></td></tr></table></figure>
+
+<p>One might naively expect <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> to do something like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">if (obj.hash() &#x3D;&#x3D; 0) &#123;</span><br><span class="line">    obj.set_hash(generate_new_hash());</span><br><span class="line">&#125;</span><br><span class="line">return obj.hash();</span><br></pre></td></tr></table></figure>
+
+<p>But it turns out to be a hundred line function that seems to be far more complicated. At least we can spot a couple of if-not-exists-generate blocks like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">685   mark &#x3D; monitor-&gt;header();</span><br><span class="line">...</span><br><span class="line">687   hash &#x3D; mark-&gt;hash();</span><br><span class="line">688   if (hash &#x3D;&#x3D; 0) &#123;</span><br><span class="line">689     hash &#x3D; get_next_hash(Self, obj);</span><br><span class="line">...</span><br><span class="line">701   &#125;</span><br><span class="line">...</span><br><span class="line">703   return hash;</span><br></pre></td></tr></table></figure>
+
+<p>Which seems to confirm our hypothesis. Let’s ignore that <code>monitor</code> for now, and be satisfied that it gives us the object header. It is kept at <code>mark</code>, a pointer to an instance of <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp" target="_blank" rel="noopener">markOop</a>, which represents the <a href="http://openjdk.java.net/groups/hotspot/docs/HotSpotGlossary.html#markWord" target="_blank" rel="noopener">mark word</a> that belongs in the low bits of the object header. So, tries to get a hash inside the mark word. If it’s not there, it’s generated using <code>get_next_hash</code>, saved, and returned.</p>
+<h2 id="The-actual-identity-hash-generation"><a href="#The-actual-identity-hash-generation" class="headerlink" title="The actual identity hash generation"></a>The actual identity hash generation</h2><p>As we saw, this happens at <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l555" target="_blank" rel="noopener">get_next_hash</a>. This function offers six methods based on the value of some <code>hashCode</code> variable.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0. A randomly generated number.</span><br><span class="line">1. A function of memory address of the object.</span><br><span class="line">2. A hardcoded 1 (used for sensitivity testing.)</span><br><span class="line">3. A sequence.</span><br><span class="line">4. The memory address of the object, cast to int.</span><br><span class="line">5. Thread state combined with xorshift (https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Xorshift)</span><br></pre></td></tr></table></figure>
+
+<p>So what’s the default method? OpenJDK 8 seems to default on 5 according to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/globals.hpp#l1127" target="_blank" rel="noopener">globals.hpp</a>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1127   product(intx, hashCode, 5,                                                \</span><br><span class="line">1128           &quot;(Unstable) select hashCode generation algorithm&quot;)                \</span><br></pre></td></tr></table></figure>
+
+<p>OpenJDK 9 <a href="http://hg.openjdk.java.net/jdk9/jdk9/hotspot/file/fc7e94cb7485/src/share/vm/runtime/globals.hpp#l1198" target="_blank" rel="noopener">keeps the same default</a>. Looking at previous versions, both <a href="http://hg.openjdk.java.net/jdk7u/jdk7u/hotspot/file/5b9a416a5632/src/share/vm/runtime/globals.hpp#l1100" target="_blank" rel="noopener">OpenJDK 7</a> and <a href="http://hg.openjdk.java.net/jdk6/jdk6/hotspot/file/5cec449cc409/src/share/vm/runtime/globals.hpp#l1128" target="_blank" rel="noopener">OpenJDK 6</a> use the first method, a <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/os.cpp#l814" target="_blank" rel="noopener">random number generator</a>.</p>
+<p>So, unless I’m looking at the wrong place <strong>the default hashCode implementation in OpenJDK has nothing to do with the memory address</strong>, at least since version 6.</p>
+<h2 id="Object-headers-and-synchronization"><a href="#Object-headers-and-synchronization" class="headerlink" title="Object headers and synchronization"></a>Object headers and synchronization</h2><p>Let’s go back a couple of points that we left unexamined. First, <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer::FastHashCode()</a> seems overly complex, needing over 100 lines to perform what we though was a trivial get-or-generate operation. Second, who is this <code>monitor</code> and why does it have our object’s header?</p>
+<p>The structure of the mark word is a good place to start making progress. In OpenJDK, it looks <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp#l37" target="_blank" rel="noopener">like this</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">30 &#x2F;&#x2F; The markOop describes the header of an object.</span><br><span class="line">31 &#x2F;&#x2F;</span><br><span class="line">32 &#x2F;&#x2F; Note that the mark is not a real oop but just a word.</span><br><span class="line">33 &#x2F;&#x2F; It is placed in the oop hierarchy for historical reasons.</span><br><span class="line">34 &#x2F;&#x2F;</span><br><span class="line">35 &#x2F;&#x2F; Bit-format of an object header (most significant first, big endian layout below):</span><br><span class="line">36 &#x2F;&#x2F;</span><br><span class="line">37 &#x2F;&#x2F;  32 bits:</span><br><span class="line">38 &#x2F;&#x2F;  --------</span><br><span class="line">39 &#x2F;&#x2F;             hash:25 ------------&gt;| age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">40 &#x2F;&#x2F;             JavaThread*:23 epoch:2 age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">41 &#x2F;&#x2F;             size:32 ------------------------------------------&gt;| (CMS free block)</span><br><span class="line">42 &#x2F;&#x2F;             PromotedObject*:29 ----------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">43 &#x2F;&#x2F;</span><br><span class="line">44 &#x2F;&#x2F;  64 bits:</span><br><span class="line">45 &#x2F;&#x2F;  --------</span><br><span class="line">46 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| unused:1   age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">47 &#x2F;&#x2F;  JavaThread*:54 epoch:2 unused:1   age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">48 &#x2F;&#x2F;  PromotedObject*:61 ---------------------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">49 &#x2F;&#x2F;  size:64 -----------------------------------------------------&gt;| (CMS free block)</span><br><span class="line">50 &#x2F;&#x2F;</span><br><span class="line">51 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; normal object)</span><br><span class="line">52 &#x2F;&#x2F;  JavaThread*:54 epoch:2 cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; biased object)</span><br><span class="line">53 &#x2F;&#x2F;  narrowOop:32 unused:24 cms_free:1 unused:4 promo_bits:3 -----&gt;| (COOPs &amp;&amp; CMS promoted object)</span><br><span class="line">54 &#x2F;&#x2F;  unused:21 size:35 --&gt;| cms_free:1 unused:7 ------------------&gt;| (COOPs &amp;&amp; CMS free block)</span><br></pre></td></tr></table></figure>
+
+<p>The format is slightly different on 32 and 64 bits. The latter has two variants depending on whether <a href="https://wiki.openjdk.java.net/display/HotSpot/CompressedOops" target="_blank" rel="noopener">Compressed Object Pointers</a> are enabled. Both Oracle and OpenJDK 8 <strong>do</strong> by default.</p>
+<p>Object headers may thus relate to a free block or an actual object, in which case there are multiple possible states. In the simplest, (“normal object”) the identity hash is stored directly in the low addresses of the header.</p>
+<p>But in other states, we find a pointer to a <code>JavaThread</code> or a <code>PromotedObject</code>. The plot thickens: if we put the identity hash in a “normal object”, will someone take it away? Where? If the object is biased, where can we get/set the hash? What is a biased object?</p>
+<p>Let’s try to answer those questions.</p>
+<h2 id="Biased-locking"><a href="#Biased-locking" class="headerlink" title="Biased locking"></a>Biased locking</h2><p>Biased objects appear as a result of <a href="https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot" target="_blank" rel="noopener">Biased Locking</a>. A (<a href="https://www.google.com/patents/US7814488" target="_blank" rel="noopener">patented</a>!) feature enabled by default from HotSpot 6 that tries to alleviate the cost of locking objects. Such operations are expensive because their implementation often relies on atomic CPU instructions (<a href="https://en.wikipedia.org/wiki/Compare-and-swap" target="_blank" rel="noopener">CAS</a>) in order to safely handle lock/unlock requests on the object from different threads. It was observed that in most applications, the majority of objects are only ever locked by one thread so paying the cost of the atomic operation was often a waste. To avoid it, JVMs with biased locking allow threads to try and “bias” an object towards themselves. While an object is biased, the lucky thread can lock/unlock the object without atomic instructions. As long as there are no threads contending for the same object, we’ll gain performance.</p>
+<p>The <code>biased_lock</code> bit in the header indicates whether an object is biased by the thread pointed at by <code>JavaThread*</code>. The <code>lock</code> bits indicate whether the object is locked.</p>
+<p>Precisely because OpenJDK’s implementation of biased locking requires writing a pointer in the mark word, it also needs to relocate the real mark word (which contains the identity hash.)</p>
+<p>This could explain the additional complexity in <code>FastHashCode</code>. The header not only holds the identity hash code, but also locking state (like the pointer to the lock’s owner thread). So we need to consider all cases and find where the identity hash resides.</p>
+<p>Let’s go read <code>FastHashCode</code>. The first thing we find is:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">601 intptr_t ObjectSynchronizer::FastHashCode (Thread * Self, oop obj) &#123;</span><br><span class="line">602   if (UseBiasedLocking) &#123;</span><br><span class="line">610     if (obj-&gt;mark()-&gt;has_bias_pattern()) &#123;</span><br><span class="line">          ...</span><br><span class="line">617       BiasedLocking::revoke_and_rebias(hobj, false, JavaThread::current());</span><br><span class="line">          ...</span><br><span class="line">619       assert(!obj-&gt;mark()-&gt;has_bias_pattern(), &quot;biases should be revoked by now&quot;);</span><br><span class="line">620     &#125;</span><br><span class="line">621   &#125;</span><br></pre></td></tr></table></figure>
+
+<p>Wait. It just <strong>revoked existing biases, and disabled biased locking on the object</strong> (the <code>false</code> means “don’t attempt rebias”). A few lines down, this is indeed an invariant:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">637   &#x2F;&#x2F; object should remain ineligible for biased locking</span><br><span class="line">638   assert (!mark-&gt;has_bias_pattern(), &quot;invariant&quot;) ;</span><br></pre></td></tr></table></figure>
+
+<p>If I’m reading correctly, this means that <strong>simply asking for the identity hash code of an object will disable biased locking</strong>, which in turn forces any attempt to lock the object to use expensive atomic instructions. Even if there is only one thread.</p>
+<p>Oh boy.</p>
+<h2 id="Why-does-keeping-biased-locking-state-conflict-with-keeping-the-identity-hash-code"><a href="#Why-does-keeping-biased-locking-state-conflict-with-keeping-the-identity-hash-code" class="headerlink" title="Why does keeping biased locking state conflict with keeping the identity hash code?"></a>Why does keeping biased locking state conflict with keeping the identity hash code?</h2><p>To answer this question we must understand which are the possible locations of the mark word (that contains the identity hash) depending on the lock state of the object. The transitions are illustrated in this diagram from the <a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener">HotSpot Wiki</a>:</p>
+<p><a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener"><img src="https://srvaroa.github.io/assets/hotspot_object_states.gif" alt="img"></a></p>
+<p>My (fallible) reasoning is the following.</p>
+<p>For the 4 states at the top of the diagram, the OpenJDK will be able to use “thin” lock representations. In the simplest case (no locks) this means having the identity hash and other data directly in the object’s space for the mark word:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">46 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| unused:1   age:4    biased_lock:1 lock:2 (normal object)</span><br></pre></td></tr></table></figure>
+
+<p>in more complex cases, it needs that space to keep a pointer to the “lock record”. The mark word will thus be “displaced” and put somewhere else.</p>
+<p>While we have only one thread trying to lock the object, that pointer will actually refer to a memory location in the thread’s own stack. Which is twice good: it’s fast (no contention or coordination to access that memory location), and it suffices for the thread to identify that it owns the lock (because the memory location points to its own stack.)</p>
+<p>But this won’t work in all cases. If we have contended objects (e.g. objects used on synchronized statements that many threads traverse) we will need a more complex structure that fits not only a copy of the object’s header (again, “displaced”), but also a <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/objectMonitor.hpp#l126" target="_blank" rel="noopener">list of waiters</a>. A similar need for a list of waiters appears if a thread executes <code>object.wait()</code>.</p>
+<p>This richer data structure is the <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/objectMonitor.hpp" target="_blank" rel="noopener">ObjectMonitor</a>, which is referred to as a the “heavyweight” monitor in the diagram. The value left in the object’s header doesn’t point to a “displaced mark word” anymore, but to an actual object (the monitor). Accessing the identity hash code will now require “inflating the monitor”: chasing a pointer to an object and reading/mutating whichever field contains the displaced mark word. Which is more expensive and requires coordination.</p>
+<p><code>FastHashCode</code> does have work to do.</p>
+<p>Lines <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l640" target="_blank" rel="noopener">L640</a> to <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l680" target="_blank" rel="noopener">L680</a> deal with finding the header and checking for a cached identity hash. I believe these are a fast path that probe for cases that don’t need to inflate the monitor.</p>
+<p>From <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l682" target="_blank" rel="noopener">L682</a> it needs to bite the bullet:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">682   &#x2F;&#x2F; Inflate the monitor to set hash code</span><br><span class="line">683   monitor &#x3D; ObjectSynchronizer::inflate(Self, obj);</span><br><span class="line"></span><br><span class="line">684   &#x2F;&#x2F; Load displaced header and check it has hash code</span><br><span class="line">685   mark &#x3D; monitor-&gt;header();</span><br><span class="line">...</span><br><span class="line">687   hash &#x3D; mark-&gt;hash();</span><br></pre></td></tr></table></figure>
+
+<p>At this point, if the id. hash is there (<code>hash != 0</code>), the JVM can return. Otherwise we’ll get one from <code>get_next_hash</code> and safely store it in the displaced header kept by the <code>ObjectMonitor</code>.</p>
+<p>This seems to offer a reasonable explanation to why calling <code>hashCode()</code> on an object of a class that doesn’t override the default implementation makes the object ineligible for biased locking:</p>
+<ul>
+<li>In order to keep the identity hash of an object consistent after relocation we need to store the hash in the object’s header.</li>
+<li>Threads asking for the identity hash may not even care about locking the object, but in practise they will be sharing data structures used by the locking mechanism. This is a complex beast in itself that might be not only mutating, but also <strong>moving</strong> (displacing) the header contents.</li>
+<li>Biased locking helped perform lock/unlock operations without atomic operations, and this was effective as long as only one thread locked the object because we could keep the lock state in the mark word. I’m not 100% sure here, but I understand that since other threads may ask for the identity hash, <strong>even if there is a single thread interested in the lock</strong>, the header word will be contended and require atomic operations to be handled correctly. Which defeats the whole point of biased locking.</li>
+</ul>
+<h2 id="Recap"><a href="#Recap" class="headerlink" title="Recap"></a>Recap</h2><ul>
+<li>The default</li>
+</ul>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hashCode()</span><br></pre></td></tr></table></figure>
+
+
+
+<p>  implementation (identity hash code)</p>
+<p>  has nothing to do with the object’s memory address</p>
+<p>  , at least in OpenJDK. In versions 6 and 7 it is a randomly generated number. In 8 and, for now, 9, it is a number based on the thread state.</p>
+<p>  Here</p>
+<p>  is a test that yields the same conclusion.</p>
+<ul>
+<li>Proving that “implementation-dependent” warns are not aesthetic: <a href="https://www.azul.com/products/zing/virtual-machine/" target="_blank" rel="noopener">Azul’s Zing</a> <strong>does</strong> generate the identity hash from the object’s memory address.</li>
+</ul>
+<ul>
+<li>In HotSpot, the result of the identity hash generation is generated once, and cached in the</li>
+</ul>
+<p>  mark word</p>
+<p>  of the object’s header.</p>
+<ul>
+<li>Zing uses a different solution to keep it consistent despite object relocations, in which they delay storing the id. hash until the object relocates. At that point, it’s stored in a “pre-header”</li>
+</ul>
+<ul>
+<li>In HotSpot, calling the default</li>
+</ul>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hashCode()</span><br></pre></td></tr></table></figure>
+
+<p>  , or</p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">System.identityHashCode()</span><br></pre></td></tr></table></figure>
+
+
+
+<p>  will make the object ineligible for biased locking.</p>
+<ul>
+<li>This implies that <strong>if you are synchronizing on objects that have no contention, you’d better override the default <code>hashCode()</code> implementation</strong> or you’ll miss out on JVM optimizations.</li>
+</ul>
+<ul>
+<li>It is possible</li>
+</ul>
+<p>  to disable biased locking in HotSpot, on a per-object basis.</p>
+<ul>
+<li>This can be very useful. I’ve seen applications very heavy on contended producer/consumer queues where biased locking was causing more trouble than benefit, so we disabled the feature completely. Turns out, we could’ve done this only on specific objects/classes simply by calling System.identityHashCode() on them.</li>
+</ul>
+<ul>
+<li><p>I have found no HotSpot flag that allows changing the default generator, so experimenting with other options might need to compile from source</p>
+<p>.</p>
+<ul>
+<li>Admittedly, I didn’t look much. <a href="https://twitter.com/jmichaelras" target="_blank" rel="noopener">Michael Rasmussen</a> <a href="https://twitter.com/jmichaelras/status/827441456059187200" target="_blank" rel="noopener">kindly pointed out</a> that <strong>-XX:hashCode=2</strong> can be used to change the default. Thanks!</li>
+</ul>
+</li>
+</ul>
+<h2 id="Benchmarks"><a href="#Benchmarks" class="headerlink" title="Benchmarks"></a>Benchmarks</h2><p>I wrote a simple <a href="http://openjdk.java.net/projects/code-tools/jmh/" target="_blank" rel="noopener">JMH</a> harness to verify those conclusions.</p>
+<p>The benchmark (<a href="https://gist.github.com/srvaroa/aa1f6c273ea6ae215bbf43e481f7689e" target="_blank" rel="noopener">source</a>) does something equivalent to this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">object.hashCode();</span><br><span class="line">while(true) &#123;</span><br><span class="line">    synchronized(object) &#123;</span><br><span class="line">        counter++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>One configuration (<code>withIdHash</code>) synchronizes on an object that uses the identity hash, so we expect that biased locking will be disabled as soon as <code>hashCode()</code> is invoked. A second configuration (<code>withoutIdHash</code>) implements a custom hash code so biased locking should not be disabled. Each configuration is ran first with one thread, then with two threads (these have the suffix “Contended”.)</p>
+<p>By the way, we must enable <code>-XX:BiasedLockingStartupDelay=0</code> as otherwise the JVM will take 4s to trigger the optimisation distorting the results.</p>
+<p>The first execution:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                                       Mode  Cnt       Score      Error   Units</span><br><span class="line">BiasedLockingBenchmark.withIdHash              thrpt  100   35168,021 ±  230,252  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHash           thrpt  100  173742,468 ± 4364,491  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withIdHashContended     thrpt  100   22478,109 ± 1650,649  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHashContended  thrpt  100   20061,973 ±  786,021  ops&#x2F;ms</span><br></pre></td></tr></table></figure>
+
+<p>We can see that the using a custom hash code makes the lock/unlock loop work 4x faster than the one using the identity hash code (which disables biased locking.) When two threads contend for the lock, biased locking is disabled anyway so there is no significative difference between both hash methods.</p>
+<p>A second run disables biased locking (<code>-XX:-UseBiasedLocking</code>) in all configurations.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Benchmark                                       Mode  Cnt      Score      Error   Units</span><br><span class="line">BiasedLockingBenchmark.withIdHash              thrpt  100  37374,774 ±  204,795  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHash           thrpt  100  36961,826 ±  214,083  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withIdHashContended     thrpt  100  18349,906 ± 1246,372  ops&#x2F;ms</span><br><span class="line">BiasedLockingBenchmark.withoutIdHashContended  thrpt  100  18262,290 ± 1371,588  ops&#x2F;ms</span><br></pre></td></tr></table></figure>
+
+<p>The hash method no longer has any impact and <code>withoutIdHash</code> loses its advantage.</p>
+<p>(All benchmarks were ran on a 2,7 GHz Intel Core i5.)</p>
+<h2 id="References"><a href="#References" class="headerlink" title="References"></a>References</h2><p>Whatever is not wild speculation and my weak reasoning trying to make sense of the JVM sources, comes from stitching together various sources about layout, biased locking, etc. The main ones are below:</p>
+<ul>
+<li><a href="https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot" target="_blank" rel="noopener">https://blogs.oracle.com/dave/entry/biased_locking_in_hotspot</a></li>
+<li><a href="http://fuseyism.com/openjdk/cvmi/java2vm.xhtml" target="_blank" rel="noopener">http://fuseyism.com/openjdk/cvmi/java2vm.xhtml</a></li>
+<li><a href="http://www.dcs.gla.ac.uk/~jsinger/pdfs/sicsa_openjdk/OpenJDKArchitecture.pdf" target="_blank" rel="noopener">http://www.dcs.gla.ac.uk/~jsinger/pdfs/sicsa_openjdk/OpenJDKArchitecture.pdf</a></li>
+<li><a href="https://www.infoq.com/articles/Introduction-to-HotSpot" target="_blank" rel="noopener">https://www.infoq.com/articles/Introduction-to-HotSpot</a></li>
+<li><a href="http://blog.takipi.com/5-things-you-didnt-know-about-synchronization-in-java-and-scala/#comment-1006598967" target="_blank" rel="noopener">http://blog.takipi.com/5-things-you-didnt-know-about-synchronization-in-java-and-scala/#comment-1006598967</a></li>
+<li><a href="http://www.azulsystems.com/blog/cliff/2010-01-09-biased-locking" target="_blank" rel="noopener">http://www.azulsystems.com/blog/cliff/2010-01-09-biased-locking</a></li>
+<li><a href="https://dzone.com/articles/why-should-you-care-about-equals-and-hashcode" target="_blank" rel="noopener">https://dzone.com/articles/why-should-you-care-about-equals-and-hashcode</a></li>
+<li><a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener">https://wiki.openjdk.java.net/display/HotSpot/Synchronization</a></li>
+<li><a href="https://mechanical-sympathy.blogspot.com.es/2011/11/biased-locking-osr-and-benchmarking-fun.html" target="_blank" rel="noopener">https://mechanical-sympathy.blogspot.com.es/2011/11/biased-locking-osr-and-benchmarking-fun.html</a>:</li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/java%E9%BB%98%E8%AE%A4%E7%9A%84hashcode%E6%96%B9%E6%B3%95%E5%88%B0%E5%BA%95%E5%BE%97%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/java%E9%BB%98%E8%AE%A4%E7%9A%84hashcode%E6%96%B9%E6%B3%95%E5%88%B0%E5%BA%95%E5%BE%97%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F/" class="post-title-link" itemprop="url">java默认的hashcode方法到底得到的是什么？</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-08 02:07:04 / 修改时间：10:10:30" itemprop="dateCreated datePublished" datetime="2020-06-08T02:07:04+08:00">2020-06-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>转载自<a href="https://blog.gavinzh.com/2018/08/23/what-is-hashcode-of-java/" target="_blank" rel="noopener">java默认的hashcode方法到底得到的是什么？</a></p>
+<p>hashcode方法会影响jvm性能？听上去天方夜谭，实际上蕴藏着一些微小的原理，接下来让我们走进hashcode方法，一探native方法源头。</p>
+<h2 id="默认实现是什么？"><a href="#默认实现是什么？" class="headerlink" title="默认实现是什么？"></a>默认实现是什么？</h2><p>调用hashCode方法默认返回的值被称为<strong>identity hash code（标识哈希码）</strong>，接下来我们会用标识哈希码来区分重写hashCode方法。如果一个类重写了hashCode方法，那么通过调用<code>System.identityHashCode(Object o)</code>方法获得标识哈希码。</p>
+<p>在hashCode方法注释中，说hashCode一般是通过对象内存地址映射过来的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">As much as is reasonably practical, the hashCode method defined by</span><br><span class="line"> class &#123;@code Object&#125; does return distinct integers for distinct</span><br><span class="line"> objects. (This is typically implemented by converting the internal</span><br><span class="line"> address of the object into an integer, but this implementation</span><br><span class="line"> technique is not required by the</span><br><span class="line"> Java&lt;font size&#x3D;&quot;-2&quot;&gt;&lt;sup&gt;TM&lt;&#x2F;sup&gt;&lt;&#x2F;font&gt; programming language.)</span><br></pre></td></tr></table></figure>
+
+<p>但是了解jvm的同学肯定知道，不管是<strong>标记复制算法</strong>还是<strong>标记整理算法</strong>，都会改变对象的内存地址。鉴于jvm重定位对象地址，但该hashCode又不能变化，那么该值一定是被保存在对象的某个地方了。</p>
+<p>我们推测，很有可能是在第一次调用hashCode方法时获取当前内存地址，并将其保存在对象的某个地方，当下次调用时，只用从对象的某个地方获取值即可。但这样实际是有问题的，你想想，如果对象被归集到别的内存上了，那在对象以前的内存上创建的新对象其hashCode方法返回的值岂不是和旧对象的一样了？这倒没关系，java<a href="https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#hashCode--" target="_blank" rel="noopener">规范</a>允许这样做。</p>
+<p>以上都是我们的猜测，并没有实锤。我们来看一下源码吧，可恶，hashCode方法是一个本地方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="真正的hashCode方法"><a href="#真正的hashCode方法" class="headerlink" title="真正的hashCode方法"></a>真正的hashCode方法</h2><p>hashCode方法的实现依赖于jvm，不同的jvm有不同的实现，我们目前能看到jvm源码就是OpenJDK的源码，OpenJDK的源码大部分和Oracle的JVM源码一致。</p>
+<p>OpenJDK定义hashCode的方法在<code>src/share/vm/prims/jvm.h</code>和<code>src/share/vm/prims/jvm.cpp</code>。</p>
+<p>jvm.cpp:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">508</span> JVM_ENTRY(jint, JVM_IHashCode(JNIEnv* env, jobject handle))</span><br><span class="line"><span class="number">509</span>   JVMWrapper(<span class="string">"JVM_IHashCode"</span>);</span><br><span class="line"><span class="number">510</span>   <span class="comment">// as implemented in the classic virtual machine; return 0 if object is NULL</span></span><br><span class="line"><span class="number">511</span>   <span class="keyword">return</span> handle == <span class="literal">NULL</span> ? <span class="number">0</span> : ObjectSynchronizer::FastHashCode (THREAD, JNIHandles::resolve_non_null(handle)) ;</span><br><span class="line"><span class="number">512</span> JVM_END</span><br></pre></td></tr></table></figure>
+
+<p><a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer :: FastHashCode（）</a> 也是通过调用<code>identity_hash_value_for</code>方法返回值的，<code>System.identityHashCode()</code>调用的也是这个方法。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">708</span> <span class="function"><span class="keyword">intptr_t</span> <span class="title">ObjectSynchronizer::identity_hash_value_for</span><span class="params">(Handle obj)</span> </span>&#123;</span><br><span class="line"><span class="number">709</span>   <span class="keyword">return</span> FastHashCode (Thread::current(), obj()) ;</span><br><span class="line"><span class="number">710</span> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们可能会认为 <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l601" target="_blank" rel="noopener">ObjectSynchronizer :: FastHashCode（）</a> 会判断当前的hash值是否为0，如果是0则生成一个新的hash值。实际上没那么简单，来看看其中的代码。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">685</span>   mark = monitor-&gt;header();</span><br><span class="line">...</span><br><span class="line"><span class="number">687</span>   hash = mark-&gt;hash();</span><br><span class="line"><span class="number">688</span>   <span class="keyword">if</span> (hash == <span class="number">0</span>) &#123;</span><br><span class="line"><span class="number">689</span>     hash = get_next_hash(Self, obj);</span><br><span class="line">...</span><br><span class="line"><span class="number">701</span>   &#125;</span><br><span class="line">...</span><br><span class="line"><span class="number">703</span>   <span class="keyword">return</span> hash;</span><br></pre></td></tr></table></figure>
+
+<p>上边的片段展示了hash值是如何生成的，可以看到hash值是存放在对象头中的，如果hash值不存在，则使用<code>get_next_hash</code>方法生成。</p>
+<h2 id="真正的-identity-hash-code-生成"><a href="#真正的-identity-hash-code-生成" class="headerlink" title="真正的 identity hash code 生成"></a>真正的 identity hash code 生成</h2><p>在第二节中，我们终于找到了生成hash的最终函数 <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/synchronizer.cpp#l555" target="_blank" rel="noopener">get_next_hash</a>，这个函数提供了6种生成hash值的方法。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0. A randomly generated number.</span><br><span class="line">1. A function of memory address of the object.</span><br><span class="line">2. A hardcoded 1 (used for sensitivity testing.)</span><br><span class="line">3. A sequence.</span><br><span class="line">4. The memory address of the object, cast to int.</span><br><span class="line">5. Thread state combined with xorshift (https:&#x2F;&#x2F;en.wikipedia.org&#x2F;wiki&#x2F;Xorshift)</span><br></pre></td></tr></table></figure>
+
+<p>那么默认用哪一个呢？根据<a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/globals.hpp#l1127" target="_blank" rel="noopener">globals.hpp</a>，OpenJDK8默认采用第五种方法。而 <a href="http://hg.openjdk.java.net/jdk7u/jdk7u/hotspot/file/5b9a416a5632/src/share/vm/runtime/globals.hpp#l1100" target="_blank" rel="noopener">OpenJDK7</a> 和 <a href="http://hg.openjdk.java.net/jdk6/jdk6/hotspot/file/5cec449cc409/src/share/vm/runtime/globals.hpp#l1128" target="_blank" rel="noopener">OpenJDK6</a> 都是使用第一种方法，即 <a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/runtime/os.cpp#l814" target="_blank" rel="noopener">随机数生成器</a>。</p>
+<p>大家也看到了，JDK的注释算是欺骗了我们，明明在678版本上都是随机生成的值，为什么要引导说是内存地址映射呢？我理解可能以前就是通过第4种方法实现的。</p>
+<h2 id="对象头格式"><a href="#对象头格式" class="headerlink" title="对象头格式"></a>对象头格式</h2><p>在上一节，我们知道了hash值是放在对象头里的，那就来了解一下对象头的结构吧。</p>
+<p><a href="http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/87ee5ee27509/src/share/vm/oops/markOop.hpp#l37" target="_blank" rel="noopener">markOop.hpp</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">30 &#x2F;&#x2F; The markOop describes the header of an object.</span><br><span class="line">31 &#x2F;&#x2F;</span><br><span class="line">32 &#x2F;&#x2F; Note that the mark is not a real oop but just a word.</span><br><span class="line">33 &#x2F;&#x2F; It is placed in the oop hierarchy for historical reasons.</span><br><span class="line">34 &#x2F;&#x2F;</span><br><span class="line">35 &#x2F;&#x2F; Bit-format of an object header (most significant first, big endian layout below):</span><br><span class="line">36 &#x2F;&#x2F;</span><br><span class="line">37 &#x2F;&#x2F;  32 bits:</span><br><span class="line">38 &#x2F;&#x2F;  --------</span><br><span class="line">39 &#x2F;&#x2F;             hash:25 ------------&gt;| age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">40 &#x2F;&#x2F;             JavaThread*:23 epoch:2 age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">41 &#x2F;&#x2F;             size:32 ------------------------------------------&gt;| (CMS free block)</span><br><span class="line">42 &#x2F;&#x2F;             PromotedObject*:29 ----------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">43 &#x2F;&#x2F;</span><br><span class="line">44 &#x2F;&#x2F;  64 bits:</span><br><span class="line">45 &#x2F;&#x2F;  --------</span><br><span class="line">46 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| unused:1   age:4    biased_lock:1 lock:2 (normal object)</span><br><span class="line">47 &#x2F;&#x2F;  JavaThread*:54 epoch:2 unused:1   age:4    biased_lock:1 lock:2 (biased object)</span><br><span class="line">48 &#x2F;&#x2F;  PromotedObject*:61 ---------------------&gt;| promo_bits:3 -----&gt;| (CMS promoted object)</span><br><span class="line">49 &#x2F;&#x2F;  size:64 -----------------------------------------------------&gt;| (CMS free block)</span><br><span class="line">50 &#x2F;&#x2F;</span><br><span class="line">51 &#x2F;&#x2F;  unused:25 hash:31 --&gt;| cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; normal object)</span><br><span class="line">52 &#x2F;&#x2F;  JavaThread*:54 epoch:2 cms_free:1 age:4    biased_lock:1 lock:2 (COOPs &amp;&amp; biased object)</span><br><span class="line">53 &#x2F;&#x2F;  narrowOop:32 unused:24 cms_free:1 unused:4 promo_bits:3 -----&gt;| (COOPs &amp;&amp; CMS promoted object)</span><br><span class="line">54 &#x2F;&#x2F;  unused:21 size:35 --&gt;| cms_free:1 unused:7 ------------------&gt;| (COOPs &amp;&amp; CMS free block)</span><br></pre></td></tr></table></figure>
+
+<p>它的格式在32位和64位上略有不同，64位有两种变体，具体取决于是否启用了压缩对象指针。</p>
+<h2 id="对象头中偏向锁和hashcode的冲突"><a href="#对象头中偏向锁和hashcode的冲突" class="headerlink" title="对象头中偏向锁和hashcode的冲突"></a>对象头中偏向锁和hashcode的冲突</h2><p>在上一节我们看到，normal object和biased object分别存放的是hashcode和java的线程id。因此也就是说如果调用了本地方法hashCode，就会占用偏向锁对象使用的位置，偏向锁将会失效，晋升为轻量级锁。</p>
+<p>这个过程我们可以看看<a href="https://wiki.openjdk.java.net/display/HotSpot/Synchronization" target="_blank" rel="noopener">这个图</a>：</p>
+<p><img src="https://blog.gavinzh.com/usr/uploads/hexo/216/pasted-106.png" alt="upload successful"></p>
+<p>这里我来简单解读一下，首先在jvm启动时，可以使用<code>-XX:+UseBiasedLocking=true</code>参数开启偏向锁。</p>
+<p>接下来，如果偏向锁可用，那分配的对象中标记字格式为可包含线程ID，当未锁定时，线程ID为0，第一次获取锁时，线程会把自己的线程ID写到ThreadID字段内，这样，下一次获取锁时直接检查标记字中的线程ID和自身ID是否一致，如果一致就认为获取了锁，因此不需要再次获取锁。</p>
+<p>假设这时有别的线程需要竞争锁了，此时该线程会通知持有偏向锁的线程释放锁，假设持有偏向锁的线程已经销毁，则将对象头设置为无锁状态，如果线程活着，则尝试切换，如果不成功，那么锁就会升级为轻量级锁。</p>
+<p>这时有个问题来了，如果需要获取对象的identity hash code，偏向锁就会被禁用，然后给原先设置线程ID的位置写入hash值。</p>
+<p>如果hash有值，或者偏向锁无法撤销，则会进入轻量级锁。轻量级锁竞争时，每个线程会先将hashCode值保存到自己的栈内存中，然后通过CAS尝试将自己新建的记录空间地址写入到对象头中，谁先写成功谁就拥有了该对象。</p>
+<p>轻量级锁竞争失败的线程会自旋尝试获取锁一段时间，一段时间过后还没获取到锁，则升级为重量级锁，没获取锁的线程会被真正阻塞。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>OpenJDK默认的hashCode方法实现和对象内存地址无关，在版本6和7中，它是随机生成的数字，在版本8中，它是基于线程状态的数字。（<a href="https://www.azul.com/products/zing/virtual-machine/" target="_blank" rel="noopener">AZUL-ZING</a>的hashcode是基于地址的）</li>
+<li>在Hotspot中，hash值会存在标记字中。</li>
+<li>hashCode方法和<code>System.identityHashCode()</code>会让对象不能使用偏向锁，所以如果想使用偏向锁，那就最好重写hashCode方法。</li>
+<li>如果大量对象跨线程使用，可以禁用偏向锁。</li>
+<li>使用<code>-XX:hashCode=4</code>来修改默认的hash方法实现。</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://srvaroa.github.io/jvm/java/openjdk/biased-locking/2017/01/30/hashCode.html" target="_blank" rel="noopener">https://srvaroa.github.io/jvm/java/openjdk/biased-locking/2017/01/30/hashCode.html</a></li>
+<li><a href="https://www.cnblogs.com/javaminer/p/3892288.html" target="_blank" rel="noopener">https://www.cnblogs.com/javaminer/p/3892288.html</a></li>
+<li><a href="https://www.cnblogs.com/charlesblc/p/5994162.html" target="_blank" rel="noopener">https://www.cnblogs.com/charlesblc/p/5994162.html</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/07/%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F/" class="post-title-link" itemprop="url">进程间通信方式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-07 13:33:34" itemprop="dateCreated datePublished" datetime="2020-06-07T13:33:34+08:00">2020-06-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-06-21 16:55:52" itemprop="dateModified" datetime="2020-06-21T16:55:52+08:00">2020-06-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="历史"><a href="#历史" class="headerlink" title="历史"></a>历史</h2><p>linux下的进程通信手段基本上是<strong>从Unix平台上的进程通信手段继承而来</strong>的。而对Unix发展做出重大贡献的两大主力AT&amp;T的贝尔实验室及BSD（加州大学伯克利分校的伯克利软件发布中心）在进程间通信方面的侧重点有所不同。前者对Unix早期的进程间通信手段进行了系统的改进和扩充，形成了“system V IPC”，通信进程局限在单个计算机内；后者则跳过了该限制，形成了基于套接口（socket）的进程间通信机制。Linux则把两者继承了下来，如图示：</p>
+<h5 id=""><a href="#" class="headerlink" title=""></a><img src="https://www.ibm.com/developerworks/cn/linux/l-ipc/1.gif" alt="img"></h5><p>其中，最初Unix IPC包括：管道、FIFO、信号；System V IPC包括：System V消息队列、System V信号灯、System V共享内存区；Posix IPC包括： Posix消息队列、Posix信号灯、Posix共享内存区。</p>
+<p>有两点需要简单说明一下：</p>
+<ul>
+<li><p>由于Unix版本的多样性，电子电气工程协会（IEEE）开发了一个独立的Unix标准，这个新的ANSI Unix标准被称为计算机环境的可移植性操作系统界面（POSIX）。现有大部分Unix和流行版本都是遵循POSIX标准的，而Linux从一开始就遵循POSIX标准；</p>
+</li>
+<li><p>BSD并不是没有涉足单机内的进程间通信（socket本身就可以用于单机内的进程间通信）。</p>
+</li>
+</ul>
+<p>事实上，很多Unix版本的单机IPC留有BSD的痕迹，如4.4BSD支持的匿名内存映射、4.3+BSD对可靠信号语义的实现等等。</p>
+<p>图一给出了linux 所支持的各种IPC手段，在本文接下来的讨论中，为了避免概念上的混淆，在尽可能少提及Unix的各个版本的情况下，所有问题的讨论最终都会归结到Linux环境下的进程间通信上来。并且，对于Linux所支持通信手段的不同实现版本（如对于共享内存来说，有Posix共享内存区以及System V共享内存区两个实现版本），将主要介绍Posix API。</p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>linux下进程间通信的几种主要手段简介：</p>
+<h4 id="管道（Pipe）及有名管道（named-pipe）"><a href="#管道（Pipe）及有名管道（named-pipe）" class="headerlink" title="管道（Pipe）及有名管道（named pipe）"></a>管道（Pipe）及有名管道（named pipe）</h4><p>管道可用于具有亲缘关系进程间的通信，有名管道克服了管道没有名字的限制，因此，除具有管道所具有的功能外，它还允许无亲缘关系进程间的通信；</p>
+<h4 id="信号（Signal）"><a href="#信号（Signal）" class="headerlink" title="信号（Signal）"></a>信号（Signal）</h4><p>信号是比较复杂的通信方式，用于通知接受进程有某种事件发生，除了用于进程间通信外，进程还可以发送信号给进程本身；linux除了支持Unix早期信号语义函数sigal外，还支持语义符合Posix.1标准的信号函数sigaction（实际上，该函数是基于BSD的，BSD为了实现可靠信号机制，又能够统一对外接口，用sigaction函数重新实现了signal函数）；</p>
+<h4 id="报文（Message）队列（消息队列）"><a href="#报文（Message）队列（消息队列）" class="headerlink" title="报文（Message）队列（消息队列）"></a>报文（Message）队列（消息队列）</h4><p>消息队列是<strong>消息的链接表</strong>，包括Posix消息队列system V消息队列。有足够权限的进程可以向队列中添加消息，被赋予读权限的进程则可以读走队列中的消息。消息队列克服了信号承载信息量少，管道只能承载无格式字节流以及缓冲区大小受限等缺点。</p>
+<h4 id="共享内存"><a href="#共享内存" class="headerlink" title="共享内存"></a>共享内存</h4><p>使得多个进程可以访问同一块内存空间，是<strong>最快的</strong>可用IPC形式。是针对其他通信机制运行效率较低而设计的。往往与其它通信机制，如信号量结合使用，来达到进程间的同步及互斥。</p>
+<h4 id="信号量（semaphore）"><a href="#信号量（semaphore）" class="headerlink" title="信号量（semaphore）"></a>信号量（semaphore）</h4><p>主要作为进程间以及同一进程不同线程之间的同步手段。</p>
+<h4 id="套接口（Socket）"><a href="#套接口（Socket）" class="headerlink" title="套接口（Socket）"></a>套接口（Socket）</h4><p>更为一般的进程间通信机制，可用于<strong>不同机器之间</strong>的进程间通信。起初是由Unix系统的BSD分支开发出来的，但现在一般可以移植到其它类Unix系统上：Linux和System V的变种都支持套接字。</p>
+<p>一般来说，linux下的进程包含以下几个关键要素：有一段可执行程序；有专用的系统堆栈空间；内核中有它的控制块（进程控制块），描述进程所占用的资源，这样，进程才能接受内核的调度；具有独立的存储空间进程和线程有时候并不完全区分，而往往根据上下文理解其含义。</p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><ul>
+<li>管道:管道中还有命名管道和非命名管道之分，非命名管道只能用于父子进程通讯，命名管道可用于非父子进程，命名管道就是FIFO，管道是先进先出的通讯方式。FIFO是一种先进先出的队列。它类似于一个管道，只允许数据的单向流动。每个FIFO都有一个名字，允许不相关的进程访问同一个FIFO，因此也成为命名管。      </li>
+<li>消息队列：是用于两个进程之间的通讯，首先在一个进程中创建一个消息队列，然后再往消息队列中写数据，而另一个进程则从那个消息队列中取数据。需要注意的是，消息队列是用创建文件的方式建立的，如果一个进程向某个消息队列中写入了数据之后，另一个进程并没有取出数据，即使向消息队列中写数据的进程已经结束，保存在消息队列中的数据并没有消失，也就是说下次再从这个消息队列读数据的时候，就是上次的数据！</li>
+<li>信号量， 不能传递复杂消息，只能用来同步      </li>
+<li>共享内存，只要首先创建一个共享内存区，其它进程按照一定的步骤就能访问到这个共享内存区中的数据，当然可读可写；    </li>
+</ul>
+<p>​    几种方式的比较：   </p>
+<ul>
+<li>​     管道：速度慢，容量有限      </li>
+<li>​     消息队列：容量受到系统限制，且要注意第一次读的时候，要考虑上一次没有读完数据的问题。      </li>
+<li>​     信号量：不能传递复杂消息，只能用来同步      </li>
+<li>​     共享内存区：能够很容易控制容量，速度快，但要保持同步，比如一个进程在写的时候，另一个进程要注意读写的问题，相当于线程中的线程安全，当然，共享内存区同样可以用作线程间通讯，不过没这个必要，线程间本来就已经共享了一块内存的。</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.ibm.com/developerworks/cn/linux/l-ipc/" target="_blank" rel="noopener">深刻理解Linux进程间通信（IPC）</a></p>
+<p><a href="https://www.nowcoder.com/questionTerminal/490a8b7adb02451dbb5b9414397d9a0b" target="_blank" rel="noopener">进程间通信</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/07/%E6%AD%BB%E9%94%81%E7%9A%84%E6%9D%A1%E4%BB%B6%E5%92%8C%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -725,564 +1752,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E6%9E%84%E5%BB%BA%E4%B9%98%E7%A7%AF%E6%95%B0%E7%BB%84/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/%E6%9E%84%E5%BB%BA%E4%B9%98%E7%A7%AF%E6%95%B0%E7%BB%84/" class="post-title-link" itemprop="url">构建乘积数组</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-06 02:05:51 / 修改时间：10:45:40" itemprop="dateCreated datePublished" datetime="2020-06-06T02:05:51+08:00">2020-06-06</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>给定一个数组A[0,1,…,n-1],请构建一个数组B[0,1,…,n-1],其中B中的元素B[i]=A[0]<em>A[1]</em>…<em>A[i-1]*A[i+1]</em>…*A[n-1]。不能使用除法。（注意：规定B[0] = A[1] * A[2] * … * A[n-1]，B[n-1] = A[0] * A[1] * … * A[n-2];）</p>
-<h2 id="解答"><a href="#解答" class="headerlink" title="解答"></a>解答</h2><p>不能用除法,只能尽量减少乘法次数</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">int</span>[] multiply(<span class="keyword">int</span>[] A) &#123;</span><br><span class="line">    <span class="keyword">int</span>[] B = <span class="keyword">new</span> <span class="keyword">int</span>[A.length];</span><br><span class="line">    <span class="keyword">int</span>[] D = <span class="keyword">new</span> <span class="keyword">int</span>[A.length];</span><br><span class="line">    D[D.length - <span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = D.length - <span class="number">2</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">        D[i] = D[i + <span class="number">1</span>] * A[i + <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> C = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; B.length; i++) &#123;</span><br><span class="line">        B[i] = C * D[i];</span><br><span class="line">        C *= A[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> B;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="官方题解"><a href="#官方题解" class="headerlink" title="官方题解"></a>官方题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/94a4d381a68b47b7a8bed86f2975db46?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/94a4d381a68b47b7a8bed86f2975db46?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="方法："><a href="#方法：" class="headerlink" title="方法："></a>方法：</h2><p>根据题目描述，如果可以使用除法，就很简单。但是要求不能使用。</p>
-<p>假设：<br><code>left[i] = A[0]*...*A[i-1]</code><br><code>right[i] = A[i+1]*...*A[n-1]</code><br>所以：<br><code>B[i] = left[i] * right[i]</code></p>
-<p>这样就避免使用了除法。但是如果对每个B[i], 0&lt;=i&lt;n,都这么求，显然时间复杂度太高。</p>
-<p>我们把整个结果画到下面图：<br><img src="https://uploadfiles.nowcoder.com/images/20200506/284295_1588756073632_8F528B3C1F44C5BD5ED7012E809F9A49" alt="图片说明"> </p>
-<p>可知：<br><code>left[i+1] = A[0]*...A[i-1]*A[i]</code><br><code>right[i+1] = A{i+2]*...*A[n-1]</code></p>
-<p>于是，<br><code>left[i+1] = left[i] * A[i]</code><br><code>right[i] = right[i+1] * A[i+1]</code></p>
-<p>所以，我们可以先把所有的left[i]求出，right[i]求出。</p>
-<p>代码如下：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> &#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">multiply</span><span class="params">(<span class="keyword">const</span> <span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt;&amp; A)</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="built_in">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="title">B</span><span class="params">(A.<span class="built_in">size</span>(), <span class="number">1</span>)</span></span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">1</span>; i&lt;A.<span class="built_in">size</span>(); ++i) &#123;</span><br><span class="line">            B[i] = B[i<span class="number">-1</span>] * A[i<span class="number">-1</span>]; <span class="comment">// left[i]用B[i]代替</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> tmp = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j=A.<span class="built_in">size</span>()<span class="number">-2</span>; j&gt;=<span class="number">0</span>; --j) &#123;</span><br><span class="line">            tmp *= A[j+<span class="number">1</span>]; <span class="comment">// right[i]用tmp代替</span></span><br><span class="line">            B[j] *= tmp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> B;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>时间复杂度：O(N)<br>空间复杂度: O(1)</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/%E9%80%9A%E8%BF%87HashMap%E8%AE%A4%E8%AF%86equals%E4%B8%8Ehashcode/" class="post-title-link" itemprop="url">通过HashMap认识equals与hashcode</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 12:17:27 / 修改时间：20:19:37" itemprop="dateCreated datePublished" datetime="2020-06-05T12:17:27+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载 <a href="https://www.jianshu.com/p/56e793643d8f" target="_blank" rel="noopener">原文链接</a></p>
-<h2 id="什么是hashcode-hashcode的作用是什么"><a href="#什么是hashcode-hashcode的作用是什么" class="headerlink" title="什么是hashcode,hashcode的作用是什么"></a>什么是hashcode,hashcode的作用是什么</h2><p>hashcode并不是java中独有的。设想一下，如果让你设计一个算法，根据关键码去得到一个集合中的某个值或者这个关键码所在的位置。普通的做法就是挨个比较，高级一点的使用二分检索或者树形检索等算法。但是以上的检索算法都跟集合的长度N有关，当问题规模N很大时，这些检索的效率可能十分低下。</p>
-<p>理想的情况是，根据关键码，我们就可以定位记录所在的位置，而不用去挨个进行比较。也就是说，在关键码与记录存放的位置之间做一种映射。这个映射的方法就是hash(哈希)函数，或者叫散列函数，也就是java中的hashCode()方法，他所返回的值就是hashcode，根据hashcode可以找到记录的位置。</p>
-<p>按照散列的存储方式构造的存储结构叫做散列表。散列表中的一个位置称之为一个槽。</p>
-<p>hashCode()方法存在于java.lang.Object类当中，任何类都可以继承修改这个方法。hashCode()方法返回调用它的实例的hashCode值，是个int值。</p>
-<p>注：以下代码均来自jdk1.7</p>
-<p>String中hashCode()方法的实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hash;</span><br><span class="line">        <span class="keyword">if</span> (h == <span class="number">0</span> &amp;&amp; value.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">char</span> val[] = value;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; value.length; i++) &#123;</span><br><span class="line">                h = <span class="number">31</span> * h + val[i];</span><br><span class="line">            &#125;</span><br><span class="line">            hash = h;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> h;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="什么是equals-Object-obj-方法"><a href="#什么是equals-Object-obj-方法" class="headerlink" title="什么是equals(Object obj)方法"></a>什么是equals(Object obj)方法</h2><p>equals(Object obj)方法同样来自Object类。在Object类中，他是这样实现的：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object obj)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (<span class="keyword">this</span> == obj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>也就是说，默认的equals(Object obj)方法直接将要比较的两个对象的内存地址进行了比较，一致则返回true。</p>
-<p>这个方法主要用来实现两个对象间的比较，确认他们在逻辑上是否相等。我们同样可以实现自己的equals(Object obj)方法。</p>
-<p>String中equals(Object obj)方法的实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object anObject)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> == anObject) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (anObject <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            String anotherString = (String) anObject;</span><br><span class="line">            <span class="keyword">int</span> n = value.length;</span><br><span class="line">            <span class="keyword">if</span> (n == anotherString.value.length) &#123;</span><br><span class="line">                <span class="keyword">char</span> v1[] = value;</span><br><span class="line">                <span class="keyword">char</span> v2[] = anotherString.value;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span> (n-- != <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (v1[i] != v2[i])</span><br><span class="line">                            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="在java中hashcode方法与equals方法的作用"><a href="#在java中hashcode方法与equals方法的作用" class="headerlink" title="在java中hashcode方法与equals方法的作用"></a>在java中hashcode方法与equals方法的作用</h2><p>首先看一下HashMap中的put方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">put</span><span class="params">(K key, V value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (table == EMPTY_TABLE) &#123;</span><br><span class="line">            inflateTable(threshold);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (key == <span class="keyword">null</span>)</span><br><span class="line">            <span class="keyword">return</span> putForNullKey(value);</span><br><span class="line">        <span class="keyword">int</span> hash = hash(key);<span class="comment">//得到hash值</span></span><br><span class="line">        <span class="keyword">int</span> i = indexFor(hash, table.length);<span class="comment">//找到槽</span></span><br><span class="line">        <span class="keyword">for</span> (Entry&lt;K,V&gt; e = table[i]; e != <span class="keyword">null</span>; e = e.next) &#123;</span><br><span class="line">            Object k;</span><br><span class="line">            <span class="keyword">if</span> (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) &#123;</span><br><span class="line">                V oldValue = e.value;</span><br><span class="line">                e.value = value;</span><br><span class="line">                e.recordAccess(<span class="keyword">this</span>);</span><br><span class="line">                <span class="keyword">return</span> oldValue;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        modCount++;</span><br><span class="line">        addEntry(hash, key, value, i);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们从 int hash = hash(key); 这一行看起，这行起才是put方法的核心。</p>
-<p>首先 int hash = hash(key); key就是我们之前提到的关键码，我们看看HashMap中的这个hash方法做了些什么：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> <span class="keyword">int</span> <span class="title">hash</span><span class="params">(Object k)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hashSeed;</span><br><span class="line">        <span class="keyword">if</span> (<span class="number">0</span> != h &amp;&amp; k <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            <span class="keyword">return</span> sun.misc.Hashing.stringHash32((String) k);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        h ^= k.hashCode();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// This function ensures that hashCodes that differ only by</span></span><br><span class="line">        <span class="comment">// constant multiples at each bit position have a bounded</span></span><br><span class="line">        <span class="comment">// number of collisions (approximately 8 at default load factor).</span></span><br><span class="line">        h ^= (h &gt;&gt;&gt; <span class="number">20</span>) ^ (h &gt;&gt;&gt; <span class="number">12</span>);</span><br><span class="line">        <span class="keyword">return</span> h ^ (h &gt;&gt;&gt; <span class="number">7</span>) ^ (h &gt;&gt;&gt; <span class="number">4</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，这个方法里调用了key本身的hashCode方法，得到了key的hashcode，然后对该hashcode进行了一些移位操作，最终返回操作后的int值。返回的这个值就是HashMap要用到的hashcode值，通过他可以找到记录所在的位置。那么现在有一个问题：为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？可以直接使用key的hashcode的呀，这样做看起来不是多此一举吗？</p>
-<p>其实这样做的目的是为下面的函数做准备的，我们看接下来要执行的代码：</p>
-<p><code>int i = indexFor(hash, table.length);</code>找到所谓的槽，也就是记录存在的位置。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Returns index for hash code h.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">indexFor</span><span class="params">(<span class="keyword">int</span> h, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">     <span class="comment">// assert Integer.bitCount(length) == 1 : "length must be a non-zero power of 2";</span></span><br><span class="line">    <span class="keyword">return</span> h &amp; (length<span class="number">-1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，indexFor(int h, int length)如何通过hashcode得到记录的位置。indexFor方法内部是一个取模运算，h是我们通过上面的hash方法得到的，length是散列表的长度。HashMap中的散列表是一个数组，通过取模运算能保证indexFor方法的返回值(记录的位置)一定在这个数组内，没有超过其长度。因为h往往是一个很大的数字(int可以表示40亿这么大的数字)，而散列表的初始长度是可以由我们指定的(默认是16),另一方面，就算给他这么大的数组，内存也是放不下的。所以取模运算是必须的。经过取模运算得到的才是真正的槽值。</p>
-<p>回到上一个问题，<strong>为什么要专门调用这个hash(Onject key)方法来对key的hashcode进行包装然后再使用呢？而不是直接使用key的hashcode的</strong>？</p>
-<p>想明白这个问题，参考<a href="https://link.jianshu.com?t=https://www.zhihu.com/question/20733617" target="_blank" rel="noopener">JDK 源码中 HashMap 的 hash 方法原理是什么？</a>。我们上面也说了这样做的目的是为indexFor方法做准备的，总的来说就是为了让取模运算不会出现一种极端情况：<strong>大量的不同的h经过取模后返回同样的槽值</strong>。这样会带来严重的性能问题，也就是严重的冲突情况导致性能下降。关于冲突，看下文。</p>
-<p>要理解接下来的代码，我们就需要知道哈希算法的另一个概念：冲突。</p>
-<p>散列函数可能对于不相等的关键码计算出相同的hashcode，该现象称为冲突。怎么理解呢？</p>
-<p>比如我们有这样一个串abcd，我们给出这样一个散列函数：将每一个字符的ascii值加起来除以字符的个数，得到他们的平均值就是这个串的hashcode。那么，可以保证没有其他的串经过这样的算法得到相同的hashcode吗？也就是说，无限多的元素通过散列函数映射到有穷集合上，一定会产生冲突。这也是我们理解hashcode的一个重要的点：<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。</p>
-<p>那么，产生冲突怎么办呢？产生冲突之后，不同的对象在散列表中找到了相同的位置，为了解决这个问题，我们将这个槽中的内容设计成一个链表，当产生冲突的时候，就将新的元素放到链表中，他看起来是这样的：</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/5555632-b4a42ccffa5bf44f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/580/format/webp" alt="img"></p>
-<p>其中：A，B，C分别为三条记录，他们就是产生冲突的三条记录。1,2,3….为散列表的索引位置。</p>
-<p>接下来的代码  <code>for (Entry e = table[i]; e != null; e = e.next)</code>就容易理解了。找到记录所对应的槽之后，遍历这个链表直到找到与关键码相同的位置(可能之前已经有以这个关键码为key的value插入)。如果遍历完链表还没有找到这样的值，说明还不存在此关键码对应的记录，直接插入即可：<code>addEntry(hash, key, value, i);</code>.</p>
-<p>那么，怎么判断两个关键码在逻辑上是否相同呢？</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if (e.hash &#x3D;&#x3D; hash &amp;&amp; ((k &#x3D; e.key) &#x3D;&#x3D; key || key.equals(k)))</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，首先判断关键码的hashcode与链表记录的关键码hashcode是否相同：·<code>e.hash == hash</code>。为什么要加这样的判断？回头看看indexFor方法，经过取模运算后，不同的hashcode可以被散列在同一个槽中。通过这句代码可以将那些因为取模运算散列到同一个槽里的不同对象排除。</p>
-<p>我们知道<strong>不同的对象(equals返回false)可以有相同的hashcode</strong>。相同的对象hashcode也必须相等吗？试想一下，如果两个对象相同，但是他们的hashcode不同，那么这两个对象很有可能被散列在不同的槽里，造成了同一个对象重复存储的问题。所以，我们又得出一个重要结论：<strong>相同的对象(equals返回true)hashcode一定相等</strong>。</p>
-<p><code>e.hash == hash &amp;&amp; ((k = e.key) == key</code>：这段代码首先判断hashcode是否相等，然后判断关键码是否相等。注意，是判断<strong>关键码是否相等</strong>，直接比较内存地址，如果满足以上条件，那么可以断定两个关键码相同，是我们要找的记录。</p>
-<p><code>key.equals(k)</code>：如果上述两个条件没有满足，并不能够断定这两个关键码相等，此刻要使用equals方法判断这两个关键码是否相同。如果相同，说明是我们要找的记录。</p>
-<p><code>if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k)))</code>这句代码中其实包含了一种短路思想，|| 之前的判断如果生效，那么之后的key.equals(k)就不会再执行。很明显内存地址的比较要比equals方法高效的多。这也是Hashmap提高查找效率的一个重要手段。</p>
-<p>至此，我们应该对equals和hashcode有了一个相对清晰的认识：hashcode提高了查找指定对象的效率。euqals定义了两个对象之间是否在逻辑上相同。hashcode只在HashMap，HashSet等这样使用了散列思想的地方用到，而equals在判断两个对象之间是否相同时需要用到，比如排序等。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过上面的分析，我们知道了hashcode与equals的几个关键：</p>
-<h4 id="1-不同的对象-equals返回false-可以有相同的hashcode"><a href="#1-不同的对象-equals返回false-可以有相同的hashcode" class="headerlink" title="1.不同的对象(equals返回false)可以有相同的hashcode"></a>1.<strong>不同的对象(equals返回false)可以有相同的hashcode</strong></h4><h4 id="2-相同的对象-equals返回true-hashcode一定相等"><a href="#2-相同的对象-equals返回true-hashcode一定相等" class="headerlink" title="2.相同的对象(equals返回true)hashcode一定相等"></a>2.<strong>相同的对象(equals返回true)hashcode一定相等</strong></h4><h4 id="3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"><a href="#3-若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）" class="headerlink" title="3.若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义（对1、2的遵守）"></a>3.<strong>若重新定义了上面两种方法中的一种，那么另一种方法也需要重新定义</strong>（对1、2的遵守）</h4><p><a href="https://link.jianshu.com?t=http://stackoverflow.com/questions/27581/what-issues-should-be-considered-when-overriding-equals-and-hashcode-in-java" target="_blank" rel="noopener">关于如何重写equals方法与hashCode方法</a></p>
-<h2 id="equals与"><a href="#equals与" class="headerlink" title="equals与=="></a>equals与==</h2><p>“==” 比较的是两个对象的内存地址，是物理意义上的相等</p>
-<p>equals比较的是两个对象逻辑意义上的相等，是逻辑意义上的相等</p>
-<p>两个对象进行比较：</p>
-<p><strong>== 返回true，则equals一定返回true</strong>；</p>
-<p><strong>equals返回true，== 不一定返回true</strong>。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/sleep()%EF%BC%8Cwait()%EF%BC%8Cyield()%E5%92%8Cjoin()%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/sleep()%EF%BC%8Cwait()%EF%BC%8Cyield()%E5%92%8Cjoin()%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">sleep()，wait()，yield()和join()方法的区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 11:37:59 / 修改时间：19:46:25" itemprop="dateCreated datePublished" datetime="2020-06-05T11:37:59+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="sleep"><a href="#sleep" class="headerlink" title="sleep()"></a>sleep()</h2><p>​    sleep()方法需要<strong>指定等待的时间</strong>，它可以让当前正在执行的线程在指定的时间内暂停执行，进入阻塞状态.</p>
-<p>​    该方法既可以让其他同优先级或者高优先级的线程得到执行的机会，也可以让低优先级的线程得到执行机会。但是sleep()方法<strong>不会释放“锁标志”</strong>，也就是说如果有synchronized同步块，其他线程仍然不能访问共享数据。
-　　</p>
-<h2 id="wait"><a href="#wait" class="headerlink" title="wait()"></a>wait()</h2><p>　　wait()方法需要和<code>notify()</code>及<code>notifyAll()</code>两个方法一起介绍，这三个方法用于协调多个线程对共享数据的存取，所以必须在synchronized语句块内使用，也就是说，调用<code>wait()</code>，<code>notify()</code>和<code>notifyAll()</code>的任务在调用这些方法前必须拥有对象的锁。注意，它们都是Object类的方法，而不是Thread类的方法。<br>　　<code>wait()</code>方法与<code>sleep()</code>方法的不同之处在于，<code>wait()</code>方法<strong>会释放对象的“锁标志”</strong>。当调用某一对象的<code>wait()</code>方法后，会使当前线程暂停执行，并<strong>将当前线程放入对象等待池中</strong>，直到调用了<code>notify()</code>方法后，将从对象等待池中<strong>移出任意一个线程</strong>并放入锁标志等待池中，只有<strong>锁标志等待池中的线程可以获取锁标志，它们随时准备争夺锁的拥有权。</strong>当调用了某个对象的<code>notifyAll()</code>方法，会<strong>将对象等待池中的所有线程</strong>都移动到该对象的锁标志等待池。<br>　　除了使用<code>notify()</code>和<code>notifyAll()</code>方法，还可以使用带毫秒参数的<code>wait(long timeout)</code>方法，效果是<strong>在延迟timeout毫秒后，被暂停的线程将被恢复到锁标志等待池。</strong><br>　　此外，<code>wait()</code>，<code>notify()</code>及<code>notifyAll()</code>只能在<code>synchronized</code>语句中使用，但是如果使用的是<code>ReenTrantLock</code>实现同步，该如何达到这三个方法的效果呢？解决方法是使用<code>ReenTrantLock.newCondition()</code>获取一个<code>Condition</code>类对象，然后<code>Condition</code>的<code>await()</code>，<code>signal()</code>以及<code>signalAll()</code>分别对应上面的三个方法。</p>
-<h2 id="yield"><a href="#yield" class="headerlink" title="yield()"></a>yield()</h2><p>　　<code>yield()</code>方法和<code>sleep()</code>方法类似，也<strong>不会释放“锁标志”</strong>，区别在于，它没有参数，即<code>yield()</code>方法只是<strong>使当前线程重新回到可执行状态</strong>，所以执行<code>yield()</code>的线程有可能在进入到可执行状态后马上又被执行，另外<strong>yield()方法只能使同优先级或者高优先级的线程得到执行机会</strong>，这也和sleep()方法不同。</p>
-<h2 id="join"><a href="#join" class="headerlink" title="join()"></a>join()</h2><p>　　<code>join()</code>方法会使当前线程<strong>等待调用join()方法的线程结束</strong>后才能继续执行</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/Object%E7%B1%BB%E7%9A%84%E6%96%B9%E6%B3%95/" class="post-title-link" itemprop="url">Object类的方法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 11:26:02 / 修改时间：20:28:33" itemprop="dateCreated datePublished" datetime="2020-06-05T11:26:02+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Object有几种方法呢？</p>
-<blockquote>
-<p>Java语言是一种单继承结构语言，Java中所有的类都有一个共同的祖先。这个祖先就是Object类。</p>
-<p>如果一个类没有用extends明确指出继承于某个类，那么它默认继承Object类。</p>
-</blockquote>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>Object类是Java中所有类的基类。位于java.lang包中，一共有13个方法。如下图：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XC97BDOiblPU3PjicVfd5IIXibJr1EPadLZ2U28FVeSfBEpDhmYwHHiceviaxzZvOZX99Z8BZWehcSiaupA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<h2 id="具体解答"><a href="#具体解答" class="headerlink" title="具体解答"></a>具体解答</h2><h3 id="1-Object"><a href="#1-Object" class="headerlink" title="1.Object()"></a>1.Object()</h3><p>这个没什么可说的，Object类的构造方法。(非重点)</p>
-<h3 id="2-registerNatives"><a href="#2-registerNatives" class="headerlink" title="2.registerNatives()"></a>2.registerNatives()</h3><p>为了使JVM发现本机功能，他们被一定的方式命名。例如，对于java.lang.Object.registerNatives，对应的C函数命名为Java_java_lang_Object_registerNatives。</p>
-<p>通过使用registerNatives（或者更确切地说，JNI函数RegisterNatives），可以命名任何你想要你的C函数。(非重点)</p>
-<h3 id="3-clone"><a href="#3-clone" class="headerlink" title="3.clone()"></a>3.clone()</h3><p>clone()函数的用途是用来另存一个当前存在的对象。只有实现了Cloneable接口才可以调用该方法，否则抛出CloneNotSupportedException异常。（注意：回答这里时可能会引出设计模式的提问）</p>
-<h3 id="4-getClass"><a href="#4-getClass" class="headerlink" title="4.getClass()"></a>4.getClass()</h3><p>final方法，用于获得运行时的类型。该方法返回的是此Object对象的类对象/运行时类对象Class。效果与Object.class相同。（注意：回答这里时可能会引出类加载，反射等知识点的提问）</p>
-<h3 id="5-equals"><a href="#5-equals" class="headerlink" title="5.equals()"></a>5.equals()</h3><p>equals用来比较两个对象的内容是否相等。默认情况下(继承自Object类)，equals和==是一样的，除非被覆写(override)了。（注意：这里可能引出更常问的“equals与==的区别”及hashmap实现原理的提问）</p>
-<h3 id="6-hashCode"><a href="#6-hashCode" class="headerlink" title="6.hashCode()"></a>6.hashCode()</h3><p>该方法用来返回其所在对象的物理地址（哈希码值），常会和equals方法同时重写，确保相等的两个对象拥有相等的hashCode。（同样，可能引出hashmap实现原理的提问）</p>
-<h3 id="7-toString"><a href="#7-toString" class="headerlink" title="7.toString()"></a>7.toString()</h3><p>toString()方法返回该对象的字符串表示，这个方法没什么可说的。</p>
-<h3 id="8-wait"><a href="#8-wait" class="headerlink" title="8.wait()"></a>8.wait()</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法。（引出线程通信及“wait和sleep的区别”的提问）</p>
-<h3 id="9-wait-long-timeout"><a href="#9-wait-long-timeout" class="headerlink" title="9.wait(long timeout)"></a>9.wait(long timeout)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者超过指定的时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
-<h3 id="10-wait-long-timeout-int-nanos"><a href="#10-wait-long-timeout-int-nanos" class="headerlink" title="10.wait(long timeout, int nanos)"></a>10.wait(long timeout, int nanos)</h3><p>导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 方法，或者其他某个线程中断当前线程，或者已超过某个实际时间量。（引出线程通信及“wait和sleep的区别”的提问）</p>
-<h3 id="11-notify"><a href="#11-notify" class="headerlink" title="11.notify()"></a>11.notify()</h3><p>唤醒在此对象监视器上等待的单个线程。（引出线程通信的提问）</p>
-<h3 id="12-notifyAll"><a href="#12-notifyAll" class="headerlink" title="12. notifyAll()"></a>12. notifyAll()</h3><p>唤醒在此对象监视器上等待的所有线程。（引出线程通信的提问）</p>
-<h3 id="13-finalize"><a href="#13-finalize" class="headerlink" title="13.finalize()"></a>13.finalize()</h3><p>当垃圾回收器确定不存在对该对象的更多引用时，由对象的垃圾回收器调用此方法。（非重点，但小心引出垃圾回收的提问）</p>
-<h2 id="引申常见问题"><a href="#引申常见问题" class="headerlink" title="引申常见问题"></a>引申常见问题</h2><ul>
-<li>equals() 与 == 的区别是什么？</li>
-<li>hashCode() 和 equals() 之间有什么联系？</li>
-<li>wait()方法与sleep()方法的区别</li>
-<li>为什么重写了equals就必须重写hashCode</li>
-<li>HashMap的实现原理</li>
-<li>谈谈类加载机制</li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/05/%E7%90%86%E8%A7%A3Netty%E4%B8%AD%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D%EF%BC%88Zero-Copy%EF%BC%89%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">理解Netty中的零拷贝（Zero-Copy）机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-05 11:01:27 / 修改时间：19:05:52" itemprop="dateCreated datePublished" datetime="2020-06-05T11:01:27+08:00">2020-06-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>转载 <a href="https://my.oschina.net/plucury/blog/192577" target="_blank" rel="noopener">原文地址</a></p>
-<h2 id="理解零拷贝"><a href="#理解零拷贝" class="headerlink" title="理解零拷贝"></a>理解零拷贝</h2><p>零拷贝是Netty的重要特性之一，而究竟什么是零拷贝呢？ WIKI中对其有如下定义：</p>
-<blockquote>
-<p>“Zero-copy” describes computer operations in which the CPU does not perform the task of copying data from one memory area to another.</p>
-</blockquote>
-<p>从WIKI的定义中，我们看到“零拷贝”是指计算机操作的过程中，CPU不需要为数据在内存之间的拷贝消耗资源。而它通常是指计算机在网络上发送文件时，不需要将文件内容拷贝到用户空间（User Space）而直接在内核空间（Kernel Space）中传输到网络的方式。</p>
-<p>Non-Zero Copy方式： <img src="http://static.oschina.net/uploads/space/2014/0108/104700_qc4H_859646.png" alt="Non-Zero Copy"></p>
-<p>Zero Copy方式： <img src="http://static.oschina.net/uploads/space/2014/0108/104957_UW6E_859646.png" alt="在此输入图片描述"></p>
-<p>从上图中可以清楚的看到，Zero Copy的模式中，避免了数据在用户空间和内存空间之间的拷贝，从而提高了系统的整体性能。Linux中的<code>sendfile()</code>以及Java NIO中的<code>FileChannel.transferTo()</code>方法都实现了零拷贝的功能，而在Netty中也通过在<code>FileRegion</code>中包装了NIO的<code>FileChannel.transferTo()</code>方法实现了零拷贝。</p>
-<p>而在Netty中还有另一种形式的零拷贝，即Netty允许我们将多段数据合并为一整段虚拟数据供用户使用，而过程中不需要对数据进行拷贝操作，这也是我们今天要讲的重点。我们都知道在stream-based transport（如TCP/IP）的传输过程中，数据包有可能会被重新封装在不同的数据包中，例如当你发送如下数据时：</p>
-<p><img src="http://static.oschina.net/uploads/space/2014/0108/112132_6ASE_859646.png" alt="Data Stream Sent"></p>
-<p>有可能实际收到的数据如下：</p>
-<p><img src="http://static.oschina.net/uploads/space/2014/0108/112212_qD2w_859646.png" alt="Data Stream Received"></p>
-<p>因此在实际应用中，很有可能一条完整的消息被分割为多个数据包进行网络传输，而单个的数据包对你而言是没有意义的，只有当这些数据包组成一条完整的消息时你才能做出正确的处理，而Netty可以通过零拷贝的方式将这些数据包组合成一条完整的消息供你来使用。而此时，零拷贝的作用范围仅在用户空间中。</p>
-<p><img src="http://static.oschina.net/uploads/space/2014/0108/113714_EoXP_859646.png" alt="Virtual Buffer"> ##Netty3中零拷贝的实现机制 <em>以下以Netty 3.8.0.Final的源代码来进行说明</em> </p>
-<h3 id="ChannelBuffer接口"><a href="#ChannelBuffer接口" class="headerlink" title="ChannelBuffer接口"></a>ChannelBuffer接口</h3><p>Netty为需要传输的数据制定了统一的<code>ChannelBuffer</code>接口。该接口的主要设计思路如下：</p>
-<ul>
-<li>使用<code>getByte(int index)</code>方法来实现随机访问</li>
-<li>使用双指针的方式实现顺序访问<ul>
-<li>每个Buffer都有一个读指针（readIndex）和写指针（writeIndex）</li>
-<li>在读取数据时读指针后移，在写入数据时写指针后移 <img src="http://static.oschina.net/uploads/space/2014/0113/105411_Hrta_859646.png" alt="在此输入图片描述"></li>
-</ul>
-</li>
-</ul>
-<p>定义了统一的接口之后，就是来做各种实现了。Netty主要实现了<code>HeapChannelBuffer</code>,<code>ByteBufferBackedChannelBuffer</code>等等，下面我们就来讲讲与Zero Copy直接相关的<code>CompositeChannelBuffer</code>类。 </p>
-<h3 id="CompositeChannelBuffer类"><a href="#CompositeChannelBuffer类" class="headerlink" title="CompositeChannelBuffer类"></a>CompositeChannelBuffer类</h3><p><code>CompositeChannelBuffer</code>类的作用是将多个<code>ChannelBuffer</code>组成一个虚拟的<code>ChannelBuffer</code>来进行操作。为什么说是虚拟的呢，因为<code>CompositeChannelBuffer</code>并没有将多个<code>ChannelBuffer</code>真正的组合起来，而只是保存了他们的引用，这样就避免了数据的拷贝，实现了Zero Copy。 下面我们来看看具体的代码实现，首先是成员变量</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">private int readerIndex;</span><br><span class="line">private int writerIndex;</span><br><span class="line">private ChannelBuffer[] components;</span><br><span class="line">private int[] indices;</span><br><span class="line">private int lastAccessedComponentId;</span><br></pre></td></tr></table></figure>
-
-<p>以上这里列出了几个比较重要的成员变量。其中<code>readerIndex</code>既读指针和<code>writerIndex</code>既写指针是从<code>AbstractChannelBuffer</code>继承而来的；然后<code>components</code>是一个<code>ChannelBuffer</code>的数组，他保存了组成这个虚拟Buffer的所有子Buffer，<code>indices</code>是一个<code>int</code>类型的数组，它保存的是各个Buffer的索引值；最后的<code>lastAccessedComponentId</code>是一个<code>int</code>值，它记录了最后一次访问时的子Buffer ID。从这个数据结构，我们不难发现所谓的<code>CompositeChannelBuffer</code>实际上就是将一系列的Buffer通过数组保存起来，然后实现了<code>ChannelBuffer</code> 的接口，使得在上层看来，操作这些Buffer就像是操作一个单独的Buffer一样。</p>
-<h3 id="创建"><a href="#创建" class="headerlink" title="创建"></a>创建</h3><p> 接下来，我们再看一下<code>CompositeChannelBuffer.setComponents</code>方法，它会在初始化<code>CompositeChannelBuffer</code>时被调用。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Setup this ChannelBuffer from the list</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setComponents</span><span class="params">(List&lt;ChannelBuffer&gt; newComponents)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> !newComponents.isEmpty();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Clear the cache.</span></span><br><span class="line">    lastAccessedComponentId = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Build the component array.</span></span><br><span class="line">    components = <span class="keyword">new</span> ChannelBuffer[newComponents.size()];</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; components.length; i ++) &#123;</span><br><span class="line">        ChannelBuffer c = newComponents.get(i);</span><br><span class="line">        <span class="keyword">if</span> (c.order() != order()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(</span><br><span class="line">                    <span class="string">"All buffers must have the same endianness."</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">assert</span> c.readerIndex() == <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">assert</span> c.writerIndex() == c.capacity();</span><br><span class="line"></span><br><span class="line">        components[i] = c;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Build the component lookup table.</span></span><br><span class="line">    indices = <span class="keyword">new</span> <span class="keyword">int</span>[components.length + <span class="number">1</span>];</span><br><span class="line">    indices[<span class="number">0</span>] = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt;= components.length; i ++) &#123;</span><br><span class="line">        indices[i] = indices[i - <span class="number">1</span>] + components[i - <span class="number">1</span>].capacity();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Reset the indexes.</span></span><br><span class="line">    setIndex(<span class="number">0</span>, capacity());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过代码可以看到该方法的功能就是将一个<code>ChannelBuffer</code>的List给组合起来。它首先将List中得元素放入到<code>components</code>数组中，然后创建<code>indices</code>用于数据的查找，最后使用<code>setIndex</code>来重置指针。这里需要注意的是<code>setIndex(0, capacity())</code>会将读指针设置为0，写指针设置为当前Buffer的长度，这也就是前面需要做<code>assert c.readerIndex() == 0</code>和<code>assert c.writerIndex() == c.capacity()</code>这两个判断的原因，否则很容易会造成数据重复读写的问题，所以Netty推荐我们使用<code>ChannelBuffers.wrappedBuffer</code>方法来进行Buffer的合并，因为在该方法中Netty会通过<code>slice()</code>方法来确保构建<code>CompositeChannelBuffer</code>是传入的所有子Buffer都是符合要求的。</p>
-<h3 id="数据访问"><a href="#数据访问" class="headerlink" title="数据访问"></a>数据访问</h3><p><code>CompositeChannelBuffer.getByte(int index)</code>的实现如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">byte</span> <span class="title">getByte</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> componentId = componentId(index);</span><br><span class="line">    <span class="keyword">return</span> components[componentId].getByte(index - indices[componentId]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>从代码我们可以看到，在随机查找时会首先通过index获取这个字节所在的<code>componentId</code>既字节所在的子Buffer序列，然后通过<code>index - indices[componentId]</code>计算出它在这个子Buffer中的第几个字节，然后返回结果。</p>
-<p>下面再来看一下<code>componentId(int index)</code>的实现：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">componentId</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> lastComponentId = lastAccessedComponentId;</span><br><span class="line">    <span class="keyword">if</span> (index &gt;= indices[lastComponentId]) &#123;</span><br><span class="line">        <span class="keyword">if</span> (index &lt; indices[lastComponentId + <span class="number">1</span>]) &#123;</span><br><span class="line">            <span class="keyword">return</span> lastComponentId;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Search right</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = lastComponentId + <span class="number">1</span>; i &lt; components.length; i ++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (index &lt; indices[i + <span class="number">1</span>]) &#123;</span><br><span class="line">                lastAccessedComponentId = i;</span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Search left</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = lastComponentId - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i --) &#123;</span><br><span class="line">            <span class="keyword">if</span> (index &gt;= indices[i]) &#123;</span><br><span class="line">                lastAccessedComponentId = i;</span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IndexOutOfBoundsException(<span class="string">"Invalid index: "</span> + index + <span class="string">", maximum: "</span> + indices.length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>从代码中我们发现，Netty以<code>lastComponentId</code>既上次访问的子Buffer序号为中心，向左右两边进行搜索，这样做的目的是，当我们两次随机查找的字符序列相近时（大部分情况下都是这样），可以最快的搜索到目标索引的<code>componentId</code>。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
-<li><a href="http://my.oschina.net/flashsword/blog/164237" target="_blank" rel="noopener">http://my.oschina.net/flashsword/blog/164237</a></li>
-<li><a href="http://en.wikipedia.org/wiki/Zero-copy" target="_blank" rel="noopener">http://en.wikipedia.org/wiki/Zero-copy</a></li>
-<li><a href="http://stackoverflow.com/questions/20727615/is-nettys-zero-copy-different-from-os-level-zero-copy" target="_blank" rel="noopener">http://stackoverflow.com/questions/20727615/is-nettys-zero-copy-different-from-os-level-zero-copy</a></li>
-<li><a href="http://www-old.itm.uni-luebeck.de/teaching/ws1112/vs/Uebung/GrossUebungNetty/VS-WS1112-xx-Zero-Copy_Event-Driven_Servers_with_Netty.pdf?lang=de" target="_blank" rel="noopener">http://www-old.itm.uni-luebeck.de/teaching/ws1112/vs/Uebung/GrossUebungNetty/VS-WS1112-xx-Zero-Copy_Event-Driven_Servers_with_Netty.pdf?lang=de</a></li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1354,7 +1823,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">183</span>
+          <span class="site-state-item-count">188</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1410,7 +1879,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">649k</span>
+    <span title="站点总字数">686k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

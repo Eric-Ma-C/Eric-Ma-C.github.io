@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。  本文内容  1 一次磁盘读&#x2F;写操作需要的时间 寻找时间（寻道时间）Ts：在读&#x2F;写数据前，需要将磁头移动到指定磁道所花费的时间。  寻道时间分两步：  (1) 启动磁头臂消耗的时间：s。 (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。   则寻道时间  Ts &#x3D; s + m * n。  磁头">
+<meta property="og:type" content="article">
+<meta property="og:title" content="磁盘调度算法">
+<meta property="og:url" content="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="前言 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。  本文内容  1 一次磁盘读&#x2F;写操作需要的时间 寻找时间（寻道时间）Ts：在读&#x2F;写数据前，需要将磁头移动到指定磁道所花费的时间。  寻道时间分两步：  (1) 启动磁头臂消耗的时间：s。 (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。   则寻道时间  Ts &#x3D; s + m * n。  磁头">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-c31119740df4673d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/397/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-b03c89ed3cc6cdbd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/618/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-592a5a7f84d61fba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/586/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-c340b6ad722b5403.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-53c43dcf70a1f1fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/793/format/webp">
+<meta property="og:image" content="https://upload-images.jianshu.io/upload_images/18464438-51a047178ff21028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1017/format/webp">
+<meta property="article:published_time" content="2020-07-02T19:19:07.000Z">
+<meta property="article:modified_time" content="2020-07-03T03:20:24.168Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>磁盘调度算法 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          磁盘调度算法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-03 03:19:07 / 修改时间：11:20:24" itemprop="dateCreated datePublished" datetime="2020-07-03T03:19:07+08:00">2020-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p> 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。<br>  <strong>本文内容</strong></p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp" alt="img"></p>
+<h2 id="1-一次磁盘读-写操作需要的时间"><a href="#1-一次磁盘读-写操作需要的时间" class="headerlink" title="1 一次磁盘读/写操作需要的时间"></a>1 一次磁盘读/写操作需要的时间</h2><p> <strong>寻找时间（寻道时间）</strong>Ts：在读/写数据前，需要将磁头移动到指定磁道所花费的时间。<br>  寻道时间分两步：</p>
+<blockquote>
+<p>(1) 启动磁头臂消耗的时间：s。<br> (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。</p>
+</blockquote>
+<p> 则寻道时间  <strong>Ts = s + m * n。</strong></p>
+<p> 磁头移动到指定的磁道，但是不一定正好在所需要读/写的扇区，所以需要通过磁盘旋转使磁头定位到目标扇区。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c31119740df4673d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/397/format/webp" alt="img"></p>
+<p> <strong>延迟时间TR</strong>：通过旋转磁盘，使磁头定位到目标扇区所需要的时间。设磁盘转速为r（单位：转/秒，或转/分），则<strong>平均所需延迟时间TR</strong> = (1/2)*(1/r) = 1/2r。</p>
+<blockquote>
+<p>1/r就是转一圈所需的时间。找到目标扇区平均需要转半圈，因此再乘以1/2。</p>
+</blockquote>
+<p> <strong>传输时间TR</strong>：从磁盘读出或向磁盘中写入数据所经历的时间，假设磁盘转速为r，此次读/写的字节数为b，每个磁道上的字节数为N，则传输时间<strong>TR</strong> = (b/N) * (1/r) = b/(rN)。</p>
+<blockquote>
+<p>每个磁道可存N字节数据，因此b字节数据需要b/N个磁道才能存储。而读/写一个磁道所需的时间刚好是转一圈的时间1/r。</p>
+</blockquote>
+<p> 总的平均时间<strong>Ta = Ts + 1/2r + b/(rN)</strong>，由于延迟时间和传输时间都是与磁盘转速有关的，且是线性相关。而转速又是磁盘的固有属性，因此无法通过操作系统优化延迟时间和传输时间。所以只能优化寻找时间。</p>
+<h2 id="2-磁盘调度算法"><a href="#2-磁盘调度算法" class="headerlink" title="2 磁盘调度算法"></a>2 磁盘调度算法</h2><h4 id="2-1-先来先服务算法（FCFS）"><a href="#2-1-先来先服务算法（FCFS）" class="headerlink" title="2.1 先来先服务算法（FCFS）"></a>2.1 先来先服务算法（FCFS）</h4><p> 算法思想：<strong>根据进程请求访问磁盘的先后顺序进行调度。</strong><br>  假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。<br>  按照先来先服务算法规则，按照请求到达的顺序，磁头需要一次移动到55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-b03c89ed3cc6cdbd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/618/format/webp" alt="img"></p>
+<p> 磁头共移动了 45 + 3 + 19 + 21 + 72 + 70 + 10 + 112 + 146 = 498个磁道。响应一个请求平均需要移动498 / 9 = 55.3个磁道（平均寻找长度）。<br>  优点：<strong>公平；如果请求访问的磁道比较集中的话，算法性能还算可以</strong>。<br>  缺点：<strong>如果大量进程竞争使用磁盘，请求访问的磁道很分散，FCFS在性能上很差，寻道时间长</strong>。</p>
+<h4 id="2-2-最短寻找时间优先（SSTF）"><a href="#2-2-最短寻找时间优先（SSTF）" class="headerlink" title="2.2 最短寻找时间优先（SSTF）"></a>2.2 最短寻找时间优先（SSTF）</h4><p> 算法思想：<strong>优先处理的磁道是与当前磁头最近的磁道。可以保证每次寻道时间最短，但是不能保证总的寻道时间最短</strong>。（其实是贪心算法的思想，只是选择眼前最优，但是总体未必最优）。</p>
+<p> 假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-592a5a7f84d61fba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/586/format/webp" alt="img"></p>
+<p> 磁头总共移动了（100 -18）+ （184 -18） = 248个磁道。响应一个请求平均需要移动248 / 9 = 27.5个磁道（平均寻找长度）。<br>  缺点：<strong>可能产生饥饿现象</strong>。<br>  本例中，如果在处理18号磁道的访问请求时又来了一个38号磁道的访问请求，处理38号磁道的访问请求又来了一个18号磁道访问请求。如果有源源不断的18号、38号磁道访问请求，那么150、160、184号磁道请求的访问就永远得不到满足，从而产生饥饿现象。这里产生饥饿的原因是<strong>磁头在一小块区域来回移动。</strong></p>
+<h4 id="2-3-扫描算法（SCAN）"><a href="#2-3-扫描算法（SCAN）" class="headerlink" title="2.3 扫描算法（SCAN）"></a>2.3 扫描算法（SCAN）</h4><p> SSTF算法会产生饥饿的原因在于：磁头有可能再一个小区域内来回得移动。为了防止这个问题，可以规定：<strong>磁头只有移动到请求最外侧磁道或最内侧磁道才可以反向移动，如果在磁头移动的方向上已经没有请求，就可以立即改变磁头移动，不必移动到最内/外侧的磁道。</strong>这就是扫描算法的思想。由于磁头移动的方式很像电梯，因此也叫<strong>电梯算法</strong>。</p>
+<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c340b6ad722b5403.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp" alt="img"></p>
+<p> 磁头共移动了（184 - 100）+ （184 -18） = 250个磁道。响应一个请求平均需要移动 250 / 9 = 27.5个磁道（平均寻找长度）。</p>
+<p> 优点：<strong>性能较好，寻道时间较短，不会产生饥饿现象。</strong><br>  缺点：<strong>SCAN算法对于各个位置磁道的响应频率不平均</strong>。（假设此时磁头正在往右移动，且刚处理过90号磁道，那么下次处理90号磁道的请求就需要等待低头移动很长一段距离；而响应了184号磁道的请求之后，很快又可以再次响应184号磁道请求了。）</p>
+<h4 id="2-4-循环扫描算法（C-SCAN）"><a href="#2-4-循环扫描算法（C-SCAN）" class="headerlink" title="2.4 循环扫描算法（C-SCAN）"></a>2.4 循环扫描算法（C-SCAN）</h4><p> SCAN算法对各个位置磁道的响应频率不平均，而C-SCAN算法就是为了解决这个问题。规定只有磁头朝某个特定方向移动时才处理磁道访问请求，而<strong>返回时直接快速移动至最靠边缘的并且需要访问的磁道上而不处理任何请求。</strong><br>  通俗理解就是SCAN算在改变磁头方向时不处理磁盘访问请求而是直接移动到另一端最靠边的磁盘访问请求的磁道上。</p>
+<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-53c43dcf70a1f1fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/793/format/webp" alt="img"></p>
+<p> 磁头共移动了（184 -100）+ （184 - 18）+（90 - 18）=322个磁道。响应一个请求平均需要移动322 / 9 = 35.8个磁道（平均寻找长度）。</p>
+<p> 优点：<strong>相比于SCAN算法，对于各个位置磁道响应频率很平均。</strong><br>  缺点：<strong>相比于SCAN算法，平均寻道时间更长。</strong></p>
+<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3 小结"></a>3 小结</h2><p><img src="https:////upload-images.jianshu.io/upload_images/18464438-51a047178ff21028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1017/format/webp" alt="img"></p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/3c2b79af130b" target="_blank" rel="noopener">磁盘调度算法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/" rel="prev" title="编译原理简介">
+      <i class="fa fa-chevron-left"></i> 编译原理简介
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-一次磁盘读-写操作需要的时间"><span class="nav-number">2.</span> <span class="nav-text">1 一次磁盘读&#x2F;写操作需要的时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-磁盘调度算法"><span class="nav-number">3.</span> <span class="nav-text">2 磁盘调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-先来先服务算法（FCFS）"><span class="nav-number">3.0.1.</span> <span class="nav-text">2.1 先来先服务算法（FCFS）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-最短寻找时间优先（SSTF）"><span class="nav-number">3.0.2.</span> <span class="nav-text">2.2 最短寻找时间优先（SSTF）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-扫描算法（SCAN）"><span class="nav-number">3.0.3.</span> <span class="nav-text">2.3 扫描算法（SCAN）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-循环扫描算法（C-SCAN）"><span class="nav-number">3.0.4.</span> <span class="nav-text">2.4 循环扫描算法（C-SCAN）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-小结"><span class="nav-number">4.</span> <span class="nav-text">3 小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">188</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">686k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
