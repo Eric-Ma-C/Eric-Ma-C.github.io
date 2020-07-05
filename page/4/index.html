@@ -186,6 +186,670 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/Shell%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/18/Shell%E8%84%9A%E6%9C%AC%E4%B8%AD%E5%8F%82%E6%95%B0%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95/" class="post-title-link" itemprop="url">Shell脚本中参数处理方法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-19 07:32:47 / 修改时间：15:34:59" itemprop="dateCreated datePublished" datetime="2020-06-19T07:32:47+08:00">2020-06-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org242584d" target="_blank" rel="noopener">手工解析</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org039a802" target="_blank" rel="noopener">getopts</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org29fcbdf" target="_blank" rel="noopener">getopt</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#orgefa2c7a" target="_blank" rel="noopener">getopts处理长选项</a></li>
+<li><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html#org893ba73" target="_blank" rel="noopener">在函数中解析参数</a></li>
+</ul>
+<p>在Shell脚本中处理命令行参数，可以使用getopts/getopt来进行——当然，手工解析也是可以的。</p>
+<p>下面通过一个特定的情景来讲一下这三种参数处理方法。</p>
+<p>这两天写了一个安全删除的脚本，原理就是将指定的文件移动到某个特定的目录下并保存其原始路径信息，这和在Windows下以及在Linux的桌面环境下”将文件移动到回收站”的意义是一样的。就拿这个来做例子吧。</p>
+<p>在这个脚本中，有五个选项，分别代表五种动作:</p>
+<ol>
+<li>-d : 将文件移动到回收站，该选项后需要指定一个文件或目录名</li>
+<li>-l : 列出被移动到回收站的文件及其id，该选项不需要值</li>
+<li>-b : 恢复被移动到回收站的文件，该选项需要指定一个文件对应的id</li>
+<li>-c : 清空回收站，该选项不需要值</li>
+<li>-h : 打印帮助信息</li>
+</ol>
+<h2 id="手工解析"><a href="#手工解析" class="headerlink" title="手工解析"></a>手工解析</h2><p>所谓的手工解析，就是取到参数后手工一个一个解析了，以下是手工解析上述情景参数的过程:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">while [ $# -gt 0 ];do</span><br><span class="line">    case $1 in</span><br><span class="line">        -d)</span><br><span class="line">            shift</span><br><span class="line">            file_to_trash=$1</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        -b)</span><br><span class="line">            shift</span><br><span class="line">            file_to_untrash=$1</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        -h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>这里用到了’shift’这个命令，这个命令的作用是将参数列表以空格为分隔符左移一个单位，或者可以理解为将第一个参数给去掉了，比如获取的命令行参数为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-d hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>在执行了’shift’后，命令行参数就变成了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>这样，在使用了shift后，我们每次都只要去看参数列表中的第一个就行了。当然，其实不用’shift’也是可以的，比如说这样:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">i=1</span><br><span class="line">while [ $i -le $# ];do</span><br><span class="line">    case $&#123;!i&#125; in</span><br><span class="line">        -d)</span><br><span class="line">            i=$(expr $i + 1)</span><br><span class="line">            file_to_trash=$&#123;!i&#125;</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        -b)</span><br><span class="line">            i=$(expr $i + 1)</span><br><span class="line">            file_to_untrash=$&#123;!i&#125;</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        -c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        -h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">    i=$(expr $i + 1)</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>对比可以发现使用’shift’会稍微方便一点。</p>
+<p>当然，上面的处理没有进行参数检查，这些检查应该要防止这些错误情况:参数个数为0、完全冲突的”动作”一起出现、选项需要值但未给值。</p>
+<h2 id="getopts"><a href="#getopts" class="headerlink" title="getopts"></a>getopts</h2><p>‘getopts’是POSIX Shell中内置的一个命令，其使用方法是:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">getopts &lt;opt_string&gt; &lt;optvar&gt; &lt;arguments&gt;</span><br></pre></td></tr></table></figure>
+
+<p>下面是在Shell中使用该命令的一个示例:</p>
+<p><img src="https://www.zmonster.me/assets/img/getopts.gif" alt="getopts.gif"></p>
+<p>本质上来说，’getopts’的处理和我们手工处理是差不多的，它不过是提供了更便利的方式而已。它的使用方式非常简单明了，其形式为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">while getopts &lt;opt_string&gt; &lt;optvar&gt;</span><br><span class="line">    case $&lt;optvar&gt; in</span><br><span class="line">        # ...</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>其中<opt_string>是要处理的选项的一个集合，每个选项在其中用不包含连字符’-‘的字母来表示，每个代表选项的字母前后可以有一个冒号，前面有冒号表示当处理该选项出错时不输出’getopts’自身产生的错误信息，这方便我们自己编写对应的错误处理方法;后面的冒号表示这个选项需要一个值。对于我们这个”安全删除”的例子，这个<opt_string>应该是:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">d:lb:ch</span><br></pre></td></tr></table></figure>
+
+<p>冒号的归属的话，先到先得吧，大概是这样。</p>
+<p>在使用’getopts’时，有两个特殊的变量，它们是 <strong>OPTIND</strong> 和 <strong>OPTARG</strong> ，前者表示当前参数在参数列表中的位置——相当于手工解析第二种方法中那个自定义的变量 <strong>i</strong> ，其值初始时为1， 会在每次取了选项以及其值(如果有的话)后更新; <strong>OPTARG</strong> 则是在选项需要值时，存储这个选项对应的值。这样，我们这个例子用’getopts’就可以写成:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">while getopts d:lb:ch OPT;do</span><br><span class="line">    case $OPT in</span><br><span class="line">        d)</span><br><span class="line">            file_to_trash=$OPTARG</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            ;;</span><br><span class="line">        l)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            ;;</span><br><span class="line">        b)</span><br><span class="line">            file_to_untrash=$OPTARG</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            ;;</span><br><span class="line">        c)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            ;;</span><br><span class="line">        h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>对比可以看到，相比手工解析的第一种办法，又更为简洁一点了。不过需要注意的是，’getopts’会从第一个参数开始，只按照<opt_string>指定的形式来寻找并解析参数，如果给出的实际命令行参数与其所描述的参数形式不符，则会出错中止。</p>
+<p>比如说，对于上面的例子，假设这个脚本已经完全写好了，脚本名为 <strong>trash.sh</strong> ，其参数处理就是上面这样，那么如果我在终端里执行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;trash.sh a -b hello.txt</span><br></pre></td></tr></table></figure>
+
+<p>开始那个多余的参数’a’将会导致’getopts’在解析到选项’-b’前就出错终止。所以呢，像使用’getopts’这样的方法，其自由度不如手工解析，如果要保证脚本在任何情况下都能正确解析参数，它需要多做一点——当然啦，上面这个愚蠢的错误使用情况还是比较少出现的啦，反正我现在写的脚本里压根没考虑这样的情况。</p>
+<h2 id="getopt"><a href="#getopt" class="headerlink" title="getopt"></a>getopt</h2><p>‘getopt’与’getopts’类似，不过’getopts’只能处理短选项，’getopt’则能处理短选项和长选项。所谓的短选项就是类似下面这样的选项:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-a</span><br></pre></td></tr></table></figure>
+
+<p>而下面这样的则是长选项</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--action&#x3D;delete</span><br></pre></td></tr></table></figure>
+
+<p>当然，事无绝对，通过一些技巧，用’getopts’处理长选项也是可能的。这里先说一下如何用’getopt’来处理参数吧。</p>
+<p>需要事先说明的一点是，’getopt’不是Shell内建的命令，而是’util-linux’这个软件包提供的功能，它不是POSIX标准的一部分，所以也有人<a href="http://mywiki.wooledge.org/BashFAQ/035#getopts" target="_blank" rel="noopener">建议不使用’getopt’</a>。</p>
+<p>首先将之前说到的五种动作对应的短选项扩展一下，以便讲解’getopt’的使用:</p>
+<ol>
+<li>-d/–delete : 将文件移动到回收站，该选项后需要指定一个文件或目录名</li>
+<li>-l/–list : 列出被移动到回收站的文件及其id，该选项不需要值</li>
+<li>-b/–back : 恢复被移动到回收站的文件，该选项需要指定一个文件对应的id</li>
+<li>-c/–clear : 清空回收站，该选项不需要值</li>
+<li>-h/–help : 打印帮助信息</li>
+</ol>
+<p>‘getopt’既能处理短选项也能处理长选项，短选项通过参数 <strong>-o</strong> 指定，长选项通过参数 <strong>-l</strong> 指定。同’getopts’一样，它一次也只解析一个选项，所以也需要循环处理，不过与’getopts’不同的是，’getopt’没有使用 <strong>OPTIND</strong> 和 <strong>OPTARG</strong> 这两个变量，所以我们还得手动对参数进行’shift’，对需要值的选项，也得手动去取出值。</p>
+<p>下面是在Shell中使用’getopt’的一个示例:</p>
+<p><img src="https://www.zmonster.me/assets/img/getopt.gif" alt="getopt.gif"></p>
+<p>可以看到，’getopt’将参数中以下形式的内容:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--longopt&#x3D;argument</span><br></pre></td></tr></table></figure>
+
+<p>在返回结果中替换成下面这样的形式:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--longopt argument</span><br></pre></td></tr></table></figure>
+
+<p>这样就可以通过循环和’shift’来进行处理了，不过在脚本中，’shift’命令是对命令行参数起作用的，即特殊变量”$@”，而我们在脚本中只能将’getopt’的返回结果作为字符串存储到一个变量中。为了让’shift’起作用，通常还要使用’set’命令来将变量的值赋给”$@”这个特殊变量。</p>
+<p>真是有够麻烦的……算了，下面再集中吐槽吧……</p>
+<p>然后，在设置好短选项和长选项后，在将实际的参数传给’getopt’时，要在实际参数前加上一个两个连字符 <strong>–</strong> ，而’getopt’会将这两个连字符放到返回结果的最后面，在处理时可以将这两个连字符视为结束标志。</p>
+<p>以下是针对本文假设的情景，使用’getopt’解析参数的流程:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">arg=$(getopt -o d:lb:ch -l delete:,list,back:,clear,help -- $@)</span><br><span class="line"></span><br><span class="line">set -- "$arg"</span><br><span class="line"></span><br><span class="line">while true</span><br><span class="line">do</span><br><span class="line">    case $1 in</span><br><span class="line">        -d|--delete)</span><br><span class="line">            file_to_trash=$2</span><br><span class="line">            trash $file_to_trash # trash is a function</span><br><span class="line">            shift 2</span><br><span class="line">            ;;</span><br><span class="line">        -l|--list)</span><br><span class="line">            print_trashed_file  # print_trashed_file is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -b|--back)</span><br><span class="line">            file_to_untrash=$2</span><br><span class="line">            untrash $file_to_untrash # untrash is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -c|--clear)</span><br><span class="line">            clean_all           # clean all is a function</span><br><span class="line">            shift</span><br><span class="line">            ;;</span><br><span class="line">        -h|--help)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        --)</span><br><span class="line">            shift</span><br><span class="line">            break</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>然而，知道了’getopt’的使用及其原理后，自然而然地可以发现，我可以不用去管这个结束标志，用”$#”这个表示参数个数的特殊变量，同样可以控制参数解析的流程，这完全和手工解析是同一个道理。我甚至可以将’getopt’的返回结果存储到一个数组里，直接循环处理这个数组，而不用使用’set’命令了。</p>
+<p>好了，吐槽时间。</p>
+<p>我之前写脚本都是用的’getopts’，一来我用不上长选项，二来’getopts’的使用足够简单。在写本文之前，我倒是知道’getopt’可以处理长选项，但没仔细了解过。这两天了解了一下，觉得还是别用’getopt’的好，理由如下:</p>
+<ol>
+<li><p>‘getopt’不是Shell内建命令，跨平台使用时可能会出现问题；</p>
+</li>
+<li><p>只是将’–longopt=val’这样的参数形式替换成了’–longopt val’，但因此增加了许多复杂性，比如使用了’set’命令，在使用’set’命令时还要考虑’getopt’的返回结果中有无Shell命令，有的话应该使用’eval’命令来消除可能导致的错误</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">eval set -- &quot;$arg&quot;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>调用完还要进行与手工解析类似的工作，相比手工解析，并没有多大优势；</p>
+</li>
+<li><p>真的需要长选项吗？我觉得短选项就足够了</p>
+</li>
+</ol>
+<h2 id="getopts处理长选项"><a href="#getopts处理长选项" class="headerlink" title="getopts处理长选项"></a>getopts处理长选项</h2><p>既然不建议使用’getopt’，那么怎么处理长选项呢？自然是有办法的。</p>
+<p>为了方便讲解，这里假设一个简单的情景吧，在这个情景里，我们只需要处理两个可能的选项</p>
+<ol>
+<li>-f/–file: 设置文件名，该选项需要值</li>
+<li>-h/–help: 打印帮助信息，该选项不需要值</li>
+</ol>
+<p>用’getopts’处理这种情况，可以这么做:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">filename=""</span><br><span class="line">while getopts f:h-: opt;do</span><br><span class="line">    case $opt in</span><br><span class="line">        -)</span><br><span class="line">            case $OPTARG in</span><br><span class="line">                help)</span><br><span class="line">                    usage</span><br><span class="line">                    exit 0</span><br><span class="line">                    ;;</span><br><span class="line">                file=*)</span><br><span class="line">                    filename=$&#123;OPTARG#*=&#125;</span><br><span class="line">                    ;;</span><br><span class="line">            esac</span><br><span class="line">            ;;</span><br><span class="line">        f)</span><br><span class="line">            filename=$OPTARG</span><br><span class="line">            ;;</span><br><span class="line">        h)</span><br><span class="line">            usage</span><br><span class="line">            exit 0</span><br><span class="line">            ;;</span><br><span class="line">        \?)</span><br><span class="line">            usage</span><br><span class="line">            exit 1</span><br><span class="line">            ;;</span><br><span class="line">    esac</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+
+<p>当然，也许并不比手工解析简洁多少，但用起来肯定是比’getopt’要舒服的。</p>
+<h2 id="在函数中解析参数"><a href="#在函数中解析参数" class="headerlink" title="在函数中解析参数"></a>在函数中解析参数</h2><p>有时候，我们也许想把参数解析的工作放到函数中去做，比如说定义了一个’main’函数然后在’main’函数中封装整个流程处理逻辑。又或者像我一样，写了几个小小的工具函数，放到了Bash的配置文件 <strong>.bashrc</strong> 中，参数解析的工作必须得在函数中做。</p>
+<p>手工解析是能想到的最直接的办法，简单可行。</p>
+<p>不过假如我们想用’getopts’来处理呢？动手尝试后，你会发现直接在函数中使用’getopts’是会出错的。要在函数中使用’getopts’，必须在这个函数中使用’getopts’前，将 <strong>OPTIND</strong> 这个被’getopts’使用的特殊变量设置为函数局部变量，像这样:</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">function main() &#123;</span><br><span class="line"></span><br><span class="line">    local OPTIND</span><br><span class="line"></span><br><span class="line">    while getopts d:lb:ch OPT;do</span><br><span class="line">       case $OPT in</span><br><span class="line">           d)</span><br><span class="line">               file_to_trash=$OPTARG</span><br><span class="line">               trash $file_to_trash # trash is a function</span><br><span class="line">               ;;</span><br><span class="line">           l)</span><br><span class="line">               print_trashed_file  # print_trashed_file is a function</span><br><span class="line">               ;;</span><br><span class="line">           b)</span><br><span class="line">               file_to_untrash=$OPTARG</span><br><span class="line">               untrash $file_to_untrash # untrash is a function</span><br><span class="line">               ;;</span><br><span class="line">           c)</span><br><span class="line">               clean_all           # clean all is a function</span><br><span class="line">               ;;</span><br><span class="line">           h)</span><br><span class="line">               usage</span><br><span class="line">               exit 0</span><br><span class="line">               ;;</span><br><span class="line">           \?)</span><br><span class="line">               usage</span><br><span class="line">               exit 1</span><br><span class="line">               ;;</span><br><span class="line">       esac</span><br><span class="line">    done</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">main $@</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.zmonster.me/2014/08/09/pare-arguments-in-shell-function.html" target="_blank" rel="noopener">Shell脚本中参数处理方法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/Redis%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/18/Redis%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Redis常见问题总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-19 02:48:59 / 修改时间：11:18:19" itemprop="dateCreated datePublished" datetime="2020-06-19T02:48:59+08:00">2020-06-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>就我个人而言，我觉得Redis的基本使用是我们每个Java程序员都应该会的。《Redis实战》、《Redis设计与实现》是我比较推荐的两本学习Redis的书籍。</p>
+<ol>
+<li><strong>Redis的两种持久化操作以及如何保障数据安全（快照和AOF）</strong></li>
+<li><strong>如何防止数据出错（Redis事务）</strong></li>
+<li><strong>如何使用流水线来提升性能</strong></li>
+<li><strong>Redis主从复制</strong></li>
+<li><strong>Redis集群的搭建</strong></li>
+<li><strong>Redis的几种淘汰策略</strong></li>
+<li><strong>Redis集群宕机，数据迁移问题</strong></li>
+<li><strong>Redis缓存使用有很多，怎么解决缓存雪崩和缓存穿透？</strong></li>
+</ol>
+<p><strong>下面就一些问题给大家详细说一下。</strong></p>
+<h3 id="什么是Redis？"><a href="#什么是Redis？" class="headerlink" title="什么是Redis？"></a>什么是Redis？</h3><blockquote>
+<p>Redis 是一个使用 C 语言写成的，开源的 key-value 数据库。。和Memcached类似，它支持存储的value类型相对更多，包括string(字符串)、list(链表)、set(集合)、zset(sorted set –有序集合)和hash（哈希类型）。这些数据类型都支持push/pop、add/remove及取交集并集和差集及更丰富的操作，而且这些操作都是原子性的。在此基础上，redis支持各种不同方式的排序。与memcached一样，为了保证效率，数据都是缓存在内存中。区别的是redis会周期性的把更新的数据写入磁盘或者把修改操作写入追加的记录文件，并且在此基础上实现了master-slave(主从)同步。目前，Vmware在资助着redis项目的开发和维护。</p>
+</blockquote>
+<h3 id="Redis与Memcached的区别与比较"><a href="#Redis与Memcached的区别与比较" class="headerlink" title="Redis与Memcached的区别与比较"></a>Redis与Memcached的区别与比较</h3><p>1 、Redis不仅仅支持简单的k/v类型的数据，同时还提供list，set，zset，hash等数据结构的存储。memcache支持简单的数据类型，String。</p>
+<p>2 、Redis支持数据的备份，即master-slave模式的数据备份。</p>
+<p>3 、Redis支持数据的持久化，可以将内存中的数据保持在磁盘中，重启的时候可以再次加载进行使用,而Memecache把数据全部存在内存之中</p>
+<p>4、 redis的速度比memcached快很多</p>
+<p>5、Memcached是多线程，非阻塞IO复用的网络模型；Redis使用单线程的IO复用模型。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2018/4/18/162d7773080d4570?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Redis与Memcached的区别与比较"></p>
+<p>如果想要更详细了解的话，可以查看慕课网上的这篇手记（非常推荐） <strong>：《脚踏两只船的困惑 - Memcached与Redis》</strong>：<a href="https://www.imooc.com/article/23549" target="_blank" rel="noopener">www.imooc.com/article/235…</a></p>
+<h3 id="Redis与Memcached的选择"><a href="#Redis与Memcached的选择" class="headerlink" title="Redis与Memcached的选择"></a>Redis与Memcached的选择</h3><p><strong>终极策略：</strong> 使用Redis的String类型做的事，都可以用Memcached替换，以此换取更好的性能提升； 除此以外，优先考虑Redis；</p>
+<h3 id="使用redis有哪些好处？"><a href="#使用redis有哪些好处？" class="headerlink" title="使用redis有哪些好处？"></a>使用redis有哪些好处？</h3><p>(1) <strong>速度快</strong>，因为数据存在内存中，类似于HashMap，HashMap的优势就是查找和操作的时间复杂度都是O(1)</p>
+<p>(2)<strong>支持丰富数据类型</strong>，支持string，list，set，sorted set，hash</p>
+<p>(3) <strong>支持事务</strong> ：redis对事务是部分支持的，如果是在入队时报错，那么都不会执行；在非入队时报错，那么成功的就会成功执行。详细了解请参考：《Redis事务介绍（四）》：<a href="https://blog.csdn.net/cuipeng0916/article/details/53698774" target="_blank" rel="noopener">blog.csdn.net/cuipeng0916…</a></p>
+<p>redis监控：锁的介绍</p>
+<p>(4) <strong>丰富的特性</strong>：可用于缓存，消息，按key设置过期时间，过期后将会自动删除</p>
+<h3 id="Redis常见数据结构使用场景"><a href="#Redis常见数据结构使用场景" class="headerlink" title="Redis常见数据结构使用场景"></a>Redis常见数据结构使用场景</h3><h4 id="1-String"><a href="#1-String" class="headerlink" title="1. String"></a>1. String</h4><blockquote>
+<p><strong>常用命令:</strong>  set,get,decr,incr,mget 等。</p>
+</blockquote>
+<p>String数据结构是简单的key-value类型，value其实不仅可以是String，也可以是数字。 常规key-value缓存应用； 常规计数：微博数，粉丝数等。</p>
+<h4 id="2-Hash"><a href="#2-Hash" class="headerlink" title="2.Hash"></a>2.Hash</h4><blockquote>
+<p><strong>常用命令：</strong> hget,hset,hgetall 等。</p>
+</blockquote>
+<p>Hash是一个<strong>String类型的field和value的映射表</strong>，hash特别适合用于存储对象。 比如我们可以Hash数据结构来存储用户信息，商品信息等等。</p>
+<p><strong>举个例子：</strong> 最近做的一个电商网站项目的首页就使用了redis的hash数据结构进行缓存，因为一个网站的首页访问量是最大的，所以通常网站的首页可以通过redis缓存来提高性能和并发量。我用<strong>jedis客户端</strong>来连接和操作我搭建的redis集群或者单机redis，利用jedis可以很容易的对redis进行相关操作，总的来说从搭一个简单的集群到实现redis作为缓存的整个步骤不难。感兴趣的可以看我昨天写的这篇文章：</p>
+<p><strong>《一文轻松搞懂redis集群原理及搭建与使用》：</strong> <a href="https://juejin.im/post/5ad54d76f265da23970759d3" target="_blank" rel="noopener">juejin.im/post/5ad54d…</a></p>
+<h4 id="3-List"><a href="#3-List" class="headerlink" title="3.List"></a>3.List</h4><blockquote>
+<p><strong>常用命令:</strong> lpush,rpush,lpop,rpop,lrange等</p>
+</blockquote>
+<p>list就是链表，Redis list的应用场景非常多，也是Redis最重要的数据结构之一，比如微博的关注列表，粉丝列表，最新消息排行等功能都可以用Redis的list结构来实现。</p>
+<p>Redis list的实现为一个双向链表，即可以支持反向查找和遍历，更方便操作，不过带来了部分额外的内存开销。</p>
+<h4 id="4-Set"><a href="#4-Set" class="headerlink" title="4.Set"></a>4.Set</h4><blockquote>
+<p><strong>常用命令：</strong> sadd,spop,smembers,sunion 等</p>
+</blockquote>
+<p>set对外提供的功能与list类似是一个列表的功能，特殊之处在于set是可以自动排重的。 当你需要存储一个列表数据，又不希望出现重复数据时，set是一个很好的选择，并且set提供了判断某个成员是否在一个set集合内的重要接口，这个也是list所不能提供的。</p>
+<p>在微博应用中，可以将一个用户所有的关注人存在一个集合中，将其所有粉丝存在一个集合。Redis可以非常方便的实现如共同关注、共同喜好、二度好友等功能。</p>
+<h4 id="5-Sorted-Set"><a href="#5-Sorted-Set" class="headerlink" title="5.Sorted Set"></a>5.Sorted Set</h4><blockquote>
+<p><strong>常用命令：</strong> zadd,zrange,zrem,zcard等</p>
+</blockquote>
+<p>和set相比，sorted set增加了一个权重参数score，使得集合中的元素能够按score进行有序排列。</p>
+<p><strong>举例：</strong> 在直播系统中，实时排行信息包含直播间在线用户列表，各种礼物排行榜，弹幕消息（可以理解为按消息维度的消息排行榜）等信息，适合使用Redis中的SortedSet结构进行存储。</p>
+<h3 id="MySQL里有2000w数据，Redis中只存20w的数据，如何保证Redis中的数据都是热点数据（redis有哪些数据淘汰策略？？？）"><a href="#MySQL里有2000w数据，Redis中只存20w的数据，如何保证Redis中的数据都是热点数据（redis有哪些数据淘汰策略？？？）" class="headerlink" title="MySQL里有2000w数据，Redis中只存20w的数据，如何保证Redis中的数据都是热点数据（redis有哪些数据淘汰策略？？？）"></a>MySQL里有2000w数据，Redis中只存20w的数据，如何保证Redis中的数据都是热点数据（redis有哪些数据淘汰策略？？？）</h3><p>   相关知识：redis 内存数据集大小上升到一定大小的时候，就会施行数据淘汰策略（回收策略）。redis 提供 6种数据淘汰策略：</p>
+<ol>
+<li><strong>volatile-lru</strong>：从已设置过期时间的数据集（server.db[i].expires）中挑选最近最少使用的数据淘汰</li>
+<li><strong>volatile-ttl</strong>：从已设置过期时间的数据集（server.db[i].expires）中挑选将要过期的数据淘汰</li>
+<li><strong>volatile-random</strong>：从已设置过期时间的数据集（server.db[i].expires）中任意选择数据淘汰</li>
+<li><strong>allkeys-lru</strong>：从数据集（server.db[i].dict）中挑选最近最少使用的数据淘汰</li>
+<li><strong>allkeys-random</strong>：从数据集（server.db[i].dict）中任意选择数据淘汰</li>
+<li><strong>no-enviction</strong>：禁止驱逐(淘汰)数据</li>
+</ol>
+<h3 id="Redis的并发竞争问题如何解决"><a href="#Redis的并发竞争问题如何解决" class="headerlink" title="Redis的并发竞争问题如何解决?"></a>Redis的并发竞争问题如何解决?</h3><p>Redis为单进程<strong>单线程</strong>模式，<strong>采用队列模式将并发访问变为串行访问</strong>。Redis本身没有锁的概念，Redis对于多个客户端连接并不存在竞争，但是在Jedis客户端对Redis进行并发访问时会发生连接超时、数据转换错误、阻塞、客户端关闭连接等问题，这些问题均是由于客户端连接混乱造成。对此有2种解决方法：</p>
+<p> 1. 客户端角度，为保证每个客户端间正常有序与Redis进行通信，对连接进行池化，同时对客户端读写Redis操作采用内部锁synchronized。  </p>
+<ol start="2">
+<li>服务器角度，利用setnx实现锁。</li>
+</ol>
+<p> 注：对于第一种，需要应用程序自己处理资源的同步，可以使用的方法比较通俗，可以使用synchronized也可以使用lock；第二种需要用到Redis的setnx命令，但是需要注意一些问题。</p>
+<h3 id="Redis回收进程如何工作的-Redis回收使用的是什么算法"><a href="#Redis回收进程如何工作的-Redis回收使用的是什么算法" class="headerlink" title="Redis回收进程如何工作的? Redis回收使用的是什么算法?"></a>Redis回收进程如何工作的? Redis回收使用的是什么算法?</h3><p><strong>Redis内存回收:LRU算法（写的很不错，推荐）</strong>：<a href="https://www.cnblogs.com/WJ5888/p/4371647.html" target="_blank" rel="noopener">www.cnblogs.com/WJ5888/p/43…</a></p>
+<h3 id="Redis-大量数据插入"><a href="#Redis-大量数据插入" class="headerlink" title="Redis 大量数据插入"></a>Redis 大量数据插入</h3><p>官方文档给的解释：<a href="http://www.redis.cn/topics/mass-insert.html" target="_blank" rel="noopener">www.redis.cn/topics/mass…</a></p>
+<h3 id="Redis-分区的优势、不足以及分区类型"><a href="#Redis-分区的优势、不足以及分区类型" class="headerlink" title="Redis 分区的优势、不足以及分区类型"></a>Redis 分区的优势、不足以及分区类型</h3><p>官方文档提供的讲解：<a href="http://www.redis.net.cn/tutorial/3524.html" target="_blank" rel="noopener">www.redis.net.cn/tutorial/35…</a></p>
+<h3 id="Redis持久化数据和缓存怎么做扩容？"><a href="#Redis持久化数据和缓存怎么做扩容？" class="headerlink" title="Redis持久化数据和缓存怎么做扩容？"></a>Redis持久化数据和缓存怎么做扩容？</h3><p><strong>《redis的持久化和缓存机制》</strong> ：<a href="https://github.com/Snailclimb/Java-Guide/blob/master/数据存储/春夏秋冬又一春之Redis持久化.md" target="_blank" rel="noopener">github.com/Snailclimb/…</a></p>
+<p>扩容的话可以通过redis集群实现，之前做项目的时候用过自己搭的redis集群 然后写了一篇关于redis集群的文章：<strong>《一文轻松搞懂redis集群原理及搭建与使用》</strong>：<a href="https://juejin.im/post/5ad54d76f265da23970759d3" target="_blank" rel="noopener">juejin.im/post/5ad54d…</a></p>
+<h3 id="Redis常见性能问题和解决方案"><a href="#Redis常见性能问题和解决方案" class="headerlink" title="Redis常见性能问题和解决方案:"></a>Redis常见性能问题和解决方案:</h3><ol>
+<li>Master最好不要做任何持久化工作，如RDB内存快照和AOF日志文件</li>
+<li>如果数据比较重要，某个Slave开启AOF备份数据，策略设置为每秒同步一次</li>
+<li>为了主从复制的速度和连接的稳定性，Master和Slave最好在同一个局域网内</li>
+<li>尽量避免在压力很大的主库上增加从库</li>
+</ol>
+<h3 id="Redis与消息队列"><a href="#Redis与消息队列" class="headerlink" title="Redis与消息队列"></a>Redis与消息队列</h3><blockquote>
+<p>作者：翁伟 链接：<a href="https://www.zhihu.com/question/20795043/answer/345073457" target="_blank" rel="noopener">https://www.zhihu.com/question/20795043/answer/345073457</a></p>
+</blockquote>
+<p>不要使用redis去做消息队列，这不是redis的设计目标。但实在太多人使用redis去做去消息队列，redis的作者看不下去，另外基于redis的核心代码，另外实现了一个消息队列disque： antirez/disque:<a href="https://github.com/antirez/disque" target="_blank" rel="noopener">github.com/antirez/dis…</a>部署、协议等方面都跟redis非常类似，并且支持集群，延迟消息等等。</p>
+<p>我在做网站过程接触比较多的还是使用redis做缓存，比如秒杀系统，首页缓存等等。</p>
+<h3 id="好文Mark"><a href="#好文Mark" class="headerlink" title="好文Mark"></a>好文Mark</h3><p><strong>非常非常推荐下面几篇文章。。。</strong></p>
+<p><strong>《Redis深入之道：原理解析、场景使用以及视频解读》</strong>：<a href="https://zhuanlan.zhihu.com/p/28073983" target="_blank" rel="noopener">zhuanlan.zhihu.com/p/28073983</a>: 主要介绍了：Redis集群开源的方案、Redis协议简介及持久化Aof文件解析、Redis短连接性能优化等等内容，文章干货太大，容量很大，建议时间充裕可以看看。另外文章里面还提供了视频讲解，可以说是非常非常用心了。</p>
+<p><strong>《阿里云Redis混合存储典型场景：如何轻松搭建视频直播间系统》：</strong><a href="https://yq.aliyun.com/articles/582487?utm_content=m_46529" target="_blank" rel="noopener">yq.aliyun.com/articles/58…</a>: 主要介绍视频直播间系统，以及如何使用阿里云Redis混合存储实例方便快捷的构建大数据量，低延迟的视频直播间服务。还介绍到了我们之前提高过的redis的数据结构的使用场景</p>
+<p><strong>《美团在Redis上踩过的一些坑-5.redis cluster遇到的一些问》</strong>：<a href="http://carlosfu.iteye.com/blog/2254573" target="_blank" rel="noopener">carlosfu.iteye.com/blog/225457…</a>：主要介绍了redis集群的两个常见问题，然后分享了 一些关于redis集群不错的文章。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5ad6e4066fb9a028d82c4b66" target="_blank" rel="noopener">面试中关于Redis的问题看这篇就够了</a></p>
+<p><a href="https://www.cnblogs.com/Survivalist/p/8119891.html" target="_blank" rel="noopener">https://www.cnblogs.com/Survivalist/p/8119891.html</a></p>
+<p><a href="http://www.redis.net.cn/tutorial/3524.html" target="_blank" rel="noopener">http://www.redis.net.cn/tutorial/3524.html</a></p>
+<p><a href="https://redis.io/" target="_blank" rel="noopener">https://redis.io/</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/MySql%20MVCC%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/18/MySql%20MVCC%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">MySql MVCC机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-19 01:45:34 / 修改时间：09:59:50" itemprop="dateCreated datePublished" datetime="2020-06-19T01:45:34+08:00">2020-06-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>Multiversion concurrency control 多版本并发控制</p>
+<p>并发访问（读或者写）数据库时，对正在事务内处理的数据做多版本的管理，用来避免由于写操作的堵塞，而引发读操作失败的并发问题。</p>
+</blockquote>
+<h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>先看一个案例：</p>
+<p>1.查看数据的事务隔离级别</p>
+<p>对事务隔离级别不熟悉的同学可以参考文章 <a href="https://mp.weixin.qq.com/s/WIqoR0-l7h9SObIzmGDatQ" target="_blank" rel="noopener">【MySQL （三） | 五分钟搞清楚MySQL事务隔离级别】</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT @@tx_isolation;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c4a50c54d63?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="查看数据库的事务隔离级别"></p>
+<p>可见 数据库隔离级别使用的是MySQL默认的RR级别。</p>
+<p><strong>REPEATABLE READ</strong> 意味着：</p>
+<ul>
+<li>同一个事务中多次执行同一个select,读取到的数据没有发生改变；</li>
+<li>此时：允许幻读，但不允许不可重复读和脏读，所以RR隔离级别要求解决不可重复读；</li>
+</ul>
+<p>2.在不同会话中执行以下SQL</p>
+<p>补充一下建表语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="string">`test_zq`</span> (</span><br><span class="line">	<span class="string">`id`</span> <span class="built_in">int</span> (<span class="number">11</span>),</span><br><span class="line">	<span class="string">`test_id`</span> <span class="built_in">int</span> (<span class="number">11</span>)</span><br><span class="line">); </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'1'</span>,<span class="string">'18'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'4'</span>,<span class="string">'8'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'7'</span>,<span class="string">'4'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'10'</span>,<span class="string">'1234'</span>);</span><br></pre></td></tr></table></figure>
+
+<p>用户1：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="comment">-- 更新 id 为 1 的数据</span></span><br><span class="line"><span class="keyword">UPDATE</span> test_zq <span class="keyword">SET</span> test_id = <span class="number">20</span> <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>用户2:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="comment">--查询 id 为 1 的数据</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> test_zq <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果大致如下：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c50888174f0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="执行结果"></p>
+<p>根据事务隔离级别来看，我们理论上对获得 X 锁（关于锁的概念可以参考 <a href="http://mp.weixin.qq.com/s?__biz=MzI1Mzg4OTMxNQ==&mid=100000550&idx=1&sn=8a5cdff008fc1eed7b5c623c1bdf4ed1&chksm=69ccdd6a5ebb547c7b7baf6be78763fc5065e0a58de202f3e25d8d8ed56e6d1c1146332cfec1#rd" target="_blank" rel="noopener">【MySQL （四） | 五分钟搞清楚InnoDB锁机制】</a>）的数据行是不能再被获取读锁而访问的，但是事实上我们依然访问到了这个数据！</p>
+<p><strong>通过结果说明</strong>：我们可以在一个事务未进行 commit/rollback操作之前，另一个事务仍然可以读取到数据库中的数据，只不过是读取到的是其他事务未改变之前的数据。此处是利用了MVCC多数据做了多版本处理，读取的数据来源于快照。</p>
+<p>3.同理，在不同会话中执行以下SQL</p>
+<p>用户1：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">begin;</span><br><span class="line">SELECT * FROM test_zq WHERE id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>用户2：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">begin;</span><br><span class="line">update test_zq set test_id &#x3D; 22 where id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>执行完之后再回到用户1进行一次数据查询</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM test_zq WHERE id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c6166f8fecf?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="执行结果2"></p>
+<p>执行结果和上一步的执行结果一样，只不过区别在于2步骤中是先 update 后 select , 3 步骤是先 select 后 update.</p>
+<p>虽然两者执行结果是一致的，但是我们要思考两个问题：</p>
+<ul>
+<li>他们的底层实现是一样的吗？</li>
+<li>他们的实现和MVCC有什么关系呢？</li>
+</ul>
+<p>接下来我们便开始了解一下 MVCC 机制</p>
+<h3 id="什么是MVCC"><a href="#什么是MVCC" class="headerlink" title="什么是MVCC"></a>什么是MVCC</h3><blockquote>
+<p>MVCC，Multi-Version Concurrency Control，多版本并发控制。MVCC 是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问；在编程语言中实现事务内存。</p>
+</blockquote>
+<p>如果有人从数据库中读数据的同时，有另外的人写入数据，有可能读数据的人会看到『半写』或者不一致的数据。有很多种方法来解决这个问题，叫做并发控制方法。最简单的方法，通过加锁，让所有的读者等待写者工作完成，但是这样效率会很差。MVCC 使用了一种不同的手段，每个连接到数据库的读者，<strong>在某个瞬间看到的是数据库的一个快照</strong>，写者写操作造成的变化在写操作完成之前（或者数据库事务提交之前）对于其他的读者来说是不可见的。</p>
+<p>当一个 MVCC 数据库需要更一个一条数据记录的时候，它不会直接用新数据覆盖旧数据，而是将旧数据标记为过时（obsolete）并在别处增加新版本的数据。这样就会有存储多个版本的数据，但是只有一个是最新的。这种方式允许读者读取在他读之前已经存在的数据，即使这些在读的过程中半路被别人修改、删除了，也对先前正在读的用户没有影响。<strong>这种多版本的方式避免了填充删除操作在内存和磁盘存储结构造成的空洞的开销，但是需要系统周期性整理（sweep through）以真实删除老的、过时的数据。</strong>对于面向文档的数据库（Document-oriented database，也即半结构化数据库）来说，这种方式允许系统将整个文档写到磁盘的一块连续区域上，当需要更新的时候，直接重写一个版本，而不是对文档的某些比特位、分片切除，或者维护一个链式的、非连续的数据库结构。</p>
+<p>MVCC 提供了时点（point in time）一致性视图。MVCC 并发控制下的读事务一般使用<strong>时间戳或者事务 ID</strong>去标记当前读的数据库的状态（版本），读取这个版本的数据。读、写事务相互隔离，不需要加锁。<strong>读写并存的时候，写操作会根据目前数据库的状态，创建一个新版本，并发的读则依旧访问旧版本的数据。</strong></p>
+<p>一句话总结就是：</p>
+<blockquote>
+<p>MVCC(<code>Multiversion concurrency control</code>) 就是 同一份数据临时保留多版本的一种方式，进而实现并发控制</p>
+</blockquote>
+<p>哪么此处需要注意的点就是：</p>
+<ul>
+<li>在读写并发的过程中如何实现多版本？</li>
+<li>在读写并发之后，如何实现旧版本的删除（毕竟很多时候只需要一份最新版的数据就够了）？</li>
+</ul>
+<p>下面介绍一下MySQL中对于 MVCC 的逻辑实现</p>
+<h3 id="MVCC逻辑流程-插入"><a href="#MVCC逻辑流程-插入" class="headerlink" title="MVCC逻辑流程-插入"></a>MVCC逻辑流程-插入</h3><p>在MySQL中建表时，每个表都会有三列隐藏记录，其中和MVCC有关系的有两列</p>
+<ul>
+<li>数据行的版本号 （DB_TRX_ID）</li>
+<li>删除版本号 (DB_ROLL_PT)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+<p>在插入数据的时候，假设系统的全局事务ID从1开始，以下SQL语句执行分析参考注释信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 获取到全局事务ID</span><br><span class="line">insert into &#96;test_zq&#96; (&#96;id&#96;, &#96;test_id&#96;) values(&#39;5&#39;,&#39;68&#39;);</span><br><span class="line">insert into &#96;test_zq&#96; (&#96;id&#96;, &#96;test_id&#96;) values(&#39;6&#39;,&#39;78&#39;);</span><br><span class="line">commit;-- 提交事务</span><br></pre></td></tr></table></figure>
+
+<p>当执行完以上SQL语句之后，表格中的内容会变成：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<p>可以看到，插入的过程中会把全局事务ID记录到列 DB_TRX_ID 中去</p>
+<h3 id="MVCC逻辑流程-删除"><a href="#MVCC逻辑流程-删除" class="headerlink" title="MVCC逻辑流程-删除"></a>MVCC逻辑流程-删除</h3><p>对上述表格做删除逻辑，执行以下SQL语句（假设获取到的事务逻辑ID为 3）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin；--获得全局事务ID &#x3D; 3</span><br><span class="line">delete test_zq where id &#x3D; 6;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行完上述SQL之后数据并没有被真正删除，而是对删除版本号做改变，如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">3</td>
+</tr>
+</tbody></table>
+<h3 id="MVCC逻辑流程-修改"><a href="#MVCC逻辑流程-修改" class="headerlink" title="MVCC逻辑流程-修改"></a>MVCC逻辑流程-修改</h3><p>修改逻辑和删除逻辑有点相似，修改数据的时候 会先复制一条当前记录行数据，同事标记这条数据的数据行版本号为当前是事务版本号，最后把原来的数据行的删除版本号标记为当前是事务。</p>
+<p>执行以下SQL语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 获取全局系统事务ID 假设为 10</span><br><span class="line">update test_zq set test_id &#x3D; 22 where id &#x3D; 5;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行后表格实际数据应该是：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">22</td>
+<td align="center">10</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<h3 id="MVCC逻辑流程-查询"><a href="#MVCC逻辑流程-查询" class="headerlink" title="MVCC逻辑流程-查询"></a>MVCC逻辑流程-查询</h3><p>此时，数据查询规则如下：</p>
+<ul>
+<li><p>查找<strong>数据行版本号早于当前事务版本号</strong>的数据行记录</p>
+<p>也就是说，数据行的版本号要小于或等于当前是事务的系统版本号，这样也就确保了读取到的数据是当前事务开始前已经存在的数据，或者是自身事务改变过的数据</p>
+</li>
+<li><p>查找<strong>删除版本号</strong>要么为NULL，要么<strong>大于当前事务版本号</strong>的记录</p>
+<p>这样确保查询出来的数据行记录在事务开启之前没有被删除</p>
+</li>
+</ul>
+<p>根据上述规则，我们继续以上张表格为例，对此做查询操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 假设拿到的系统事务ID为 12</span><br><span class="line">select * from test_zq;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果应该是：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">6</td>
+<td align="center">22</td>
+<td align="center">10</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5c68a4056fb9a049e063e0ab" target="_blank" rel="noopener">【MySQL（5）| 五分钟搞清楚 MVCC 机制】</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/MySQL%20%E8%BF%90%E7%AE%97%E7%AC%A6%E5%92%8C%E5%87%BD%E6%95%B0/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1798,403 +2462,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/JAVA%E9%94%81%E4%BC%98%E5%8C%96/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/16/JAVA%E9%94%81%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">JAVA锁优化</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-16 09:26:16 / 修改时间：18:52:22" itemprop="dateCreated datePublished" datetime="2020-06-16T09:26:16+08:00">2020-06-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>5.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="锁优化思路"><a href="#锁优化思路" class="headerlink" title="锁优化思路"></a>锁优化思路</h1><p>最好的方式不加锁，如果必须加锁，可以从如下几个方面入手进行锁优化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">1. 减少锁持有时间</span><br><span class="line">2. 减小锁粒度</span><br><span class="line">3. 读写锁替代独占锁</span><br><span class="line">4. 锁分离</span><br><span class="line">5. 锁粗化</span><br></pre></td></tr></table></figure>
-
-<h2 id="减少锁的持有时间"><a href="#减少锁的持有时间" class="headerlink" title="减少锁的持有时间"></a>减少锁的持有时间</h2><p>减少锁的持有时间，即减少锁内代码执行时间，可以通过减少锁内代码量实现，例如避免给整个方法加锁、将不需要加锁的代码移出去，例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    System.out.println(<span class="string">"before"</span>);</span><br><span class="line">    needLockCode(); </span><br><span class="line">    System.out.println(<span class="string">"after"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//改为：</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    System.out.println(<span class="string">"before"</span>);</span><br><span class="line">    <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123; </span><br><span class="line">        needLockCode(); </span><br><span class="line">    &#125; </span><br><span class="line">    System.out.println(<span class="string">"after"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>或：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123; </span><br><span class="line">        System.out.println(<span class="string">"before"</span>);</span><br><span class="line">        needLockCode(); </span><br><span class="line">        System.out.println(<span class="string">"after"</span>);</span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//改为：</span></span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doSomething</span><span class="params">()</span> </span>&#123; </span><br><span class="line">    System.out.println(<span class="string">"before"</span>);</span><br><span class="line">    <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123; </span><br><span class="line">        needLockCode(); </span><br><span class="line">    &#125; </span><br><span class="line">    System.out.println(<span class="string">"after"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="减小锁的粒度"><a href="#减小锁的粒度" class="headerlink" title="减小锁的粒度"></a>减小锁的粒度</h2><p>减小锁的粒度，这个偏向于减小被锁住代码涉及的影响范围的减小，降低锁竞争的几率，例如jdk5的ConcurrentHashMap，ConcurrentHashMap不会为整个hash表加锁，而是将Hash表划分为多个分段，对每个段加锁，这样减小了锁粒度，提升了并发处理效果。</p>
-<p>再如假设有对象object，如果加锁后，不允许对object操作，此时锁粒度相当于object对象，如果实际上object只有一个名为<code>needLock</code>字段可能会出现并发问题，此时将锁加在这个字段上即可。</p>
-<h2 id="读写锁替代独占锁"><a href="#读写锁替代独占锁" class="headerlink" title="读写锁替代独占锁"></a>读写锁替代独占锁</h2><p>ReentrantLock和synchronized使用的是独占锁，无论是读或写都保证同时只有一个线程执行被锁代码。但是单纯的读实际上不会引起并发问题。尤其是对于读多写少的场景，可以将读和写的锁分离开来，可以有效提升系统的并发能力。</p>
-<p>读写锁在同一时刻可以允许多个线程访问，但是在写线程访问时，所有的读线程和其他写线程都会被阻塞。读写锁维护了一对锁：读锁和写锁。一般情况下，读写锁的性能都会比排它锁好，因为大多数场景读是多于写的。</p>
-<p>当执行读操作的时候，需要获取读锁，在并发访问的时候，读锁不会被阻塞；在执行写操作时线程必须要获取写锁，当已经有线程持有写锁的情况下，所有的线程都会被阻塞。读锁和写锁关系：</p>
-<ul>
-<li>读锁与读锁可以共享</li>
-<li>读锁与写锁互斥</li>
-<li>写锁与写锁互斥</li>
-</ul>
-<p>ReentrantReadWriteLock是提供了读锁和写锁：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ReentrantReadWriteLock</span> <span class="keyword">implements</span> <span class="title">ReadWriteLock</span>, <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="comment">/** Inner class providing readlock */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReentrantReadWriteLock.ReadLock readerLock;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Inner class providing writelock */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReentrantReadWriteLock.WriteLock writerLock;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="锁分离"><a href="#锁分离" class="headerlink" title="锁分离"></a>锁分离</h2><p>在读写锁的思想上做进一步的延伸，如果对两个上下文互相不依赖、互相不影响的操作使用了同一把锁，这时候可以把锁进行拆分，根据不同的功能拆分不同的锁, 进行有效的锁分离。</p>
-<p>一个典型的示例便是<code>LinkedBlockingQueue</code>，在它内部，take()和put()分别实现了从队列中取得数据和往队列中增加数据的功能，虽然两个方法都对当前队列进行了修改操作，但由于当前队列为链表实现，两个操作分别作用于队列的前端和尾端，从理论上说，两者并不冲突。</p>
-<p>如果使用独占锁，那么同一时间两个操作不能同时进行，会因为等待锁资源而阻塞。但是两个操作实际上是不冲突的，这时候可以使take()和put()各自使用一把锁，提高并发效率。LinkedBlockingQueue中为两个操作分别准备了takeLock和putLock：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"> <span class="number">1</span>     <span class="comment">/** Lock held by take, poll, etc */</span></span><br><span class="line"> <span class="number">2</span>     <span class="keyword">private</span> <span class="keyword">final</span> ReentrantLock takeLock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line"> <span class="number">3</span> </span><br><span class="line"> <span class="number">4</span>     <span class="comment">/** Wait queue for waiting takes */</span></span><br><span class="line"> <span class="number">5</span>     <span class="keyword">private</span> <span class="keyword">final</span> Condition notEmpty = takeLock.newCondition();</span><br><span class="line"> <span class="number">6</span> </span><br><span class="line"> <span class="number">7</span>     <span class="comment">/** Lock held by put, offer, etc */</span></span><br><span class="line"> <span class="number">8</span>     <span class="keyword">private</span> <span class="keyword">final</span> ReentrantLock putLock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line"> <span class="number">9</span> </span><br><span class="line"><span class="number">10</span>     <span class="comment">/** Wait queue for waiting puts */</span></span><br><span class="line"><span class="number">11</span>     <span class="keyword">private</span> <span class="keyword">final</span> Condition notFull = putLock.newCondition();</span><br></pre></td></tr></table></figure>
-
-<h2 id="锁粗化"><a href="#锁粗化" class="headerlink" title="锁粗化"></a>锁粗化</h2><p>必要的时候，将被锁住的代码量变多、锁持有时间更长也是锁优化的方式，但优化结果一定要使整体的执行效率变的更好，例如：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(lock) &#123;</span><br><span class="line">        needLockCode();             </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//改为：</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">synchronized</span>(lock) &#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">        needLockCode();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>改造后，尽管每个线程每次持有锁的时间变长了，但减少了每个线程请求和释放锁的次数，而请求和释放锁也是要消耗资源的。</p>
-<h1 id="虚拟机的锁优化"><a href="#虚拟机的锁优化" class="headerlink" title="虚拟机的锁优化"></a>虚拟机的锁优化</h1><h2 id="自旋锁与自适应自旋"><a href="#自旋锁与自适应自旋" class="headerlink" title="自旋锁与自适应自旋"></a>自旋锁与自适应自旋</h2><p>由于挂起线程和恢复线程都需要转入内核态完成，给系统带来很大压力，同时，共享数据的锁定状态只会持续很短的一段时间，因此去挂起和恢复线程很不值得。因此，可以使线程执行一个自我循环，因为对于执行时间短的代码这一会可能就会释放锁，而线程就不需要进行一次阻塞与唤醒。</p>
-<p>自旋等待不能代替阻塞，自旋本身虽然避免了线程切换的开销，但是会占用处理器时间，如果锁被占用时间短，自旋等待效果好；反之，自旋的线程只会白白浪费处理器资源；因此，要限制自旋等待时间，自旋次数默认值是10次，超过次数仍然没有成功获取锁，就挂起线程，进入同步阻塞状态。</p>
-<p>自适应自旋更智能一些，它根据前一次在同一个锁上的自旋时间以及锁的拥有者的状态来决定自旋次数，如果对于某个锁的自旋很少有成功获得过锁，就不自旋了，避免浪费CPU资源。如果自旋等待刚刚成功获得过锁，并且持有锁的线程在运行，则认为此次自旋很有可能成功，就允许自旋更多的次数。</p>
-<h2 id="锁消除"><a href="#锁消除" class="headerlink" title="锁消除"></a>锁消除</h2><p>锁消除是指虚拟机<strong>即时编译器</strong>在运行时，对一些代码上要求同步，但是被检测到不可能存在共享数据竞争的锁进行消除。锁消除的目的主要是判定依据来源于逃逸分析的数据支持，如果判断在一段代码中，堆上的所有数据都不会逃逸出去从而被其他线程访问到，那就可以把他们当作栈数据对待，认为它们是线程私有的，同步加锁自然就无需进行。</p>
-<p>有时候锁是开发者无意中涉及到的，例如对于下面代码：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public static String getStr(String s1, String s2) &#123;</span><br><span class="line">    return s1 + s2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>只进行了字符串的拼接，但其中的<code>s1 + s2</code>可能被虚拟机优化为：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">StringBuffer sb = <span class="keyword">new</span> StringBuffer();</span><br><span class="line">sb.append(s1);</span><br><span class="line">sb.append(s2);</span><br><span class="line"><span class="keyword">return</span> sb.toString();</span><br></pre></td></tr></table></figure>
-
-<p>而append()涉及了synchronized:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> StringBuffer <span class="title">append</span><span class="params">(String str)</span> </span>&#123;</span><br><span class="line">    toStringCache = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">super</span>.append(str);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>append()中的锁就是sb对象，如果该对象在方法中new的话，sb对象就不会逃逸到方法以外，jvm认为此时不必要加锁，此处的锁就被安全的消除了。</p>
-<h2 id="锁粗化-1"><a href="#锁粗化-1" class="headerlink" title="锁粗化"></a>锁粗化</h2><p>原则上，我们在编写代码的时候，总是推荐将同步块的作用范围限制得尽量小——只在共享数据的实际作用域中才进行同步，这样是为了使需要同步的操作数量尽可能变小，如果存在锁竞争，那等待锁的线程也能尽快拿到锁。</p>
-<p>但如果一系列操作频繁对同一个对象加锁解锁，或者加锁操作再循环体内，会耗费性能，这时虚拟机会扩大加锁范围来减少获取锁、释放锁的操作。具体可以看上文示例。</p>
-<h2 id="轻量级锁"><a href="#轻量级锁" class="headerlink" title="轻量级锁"></a>轻量级锁</h2><p>轻量级锁是JDK6之中加入的新型锁机制，它名字中的“轻量级”是<strong>相对于使用操作系统互斥量来实现的传统锁而言的</strong>，因此传统的锁机制就称为“重量级”锁。首先需要强调一点的是，轻量级锁并不是用来代替重量级锁的，它的本意是<strong>在没有多线程竞争的前提下减少传统的重量级锁使用操作系统互斥量产生的性能消耗</strong>。</p>
-<p>在代码进入同步块的时候，如果同步对象没有被锁定，虚拟机首先将在当前线程的栈帧中建立一个名为锁记录( Lock Record)的空间，用于存储锁对象目前的Mark Word的拷贝，虚拟机将使用CAS操作尝试将对象的Mark Word更新为指向Lock Record的指针。如果这个更新动作成功了，那么这个线程就拥有了该对象的锁，并且对象 Mark Word的锁标志位(Mark Word的最后2bit)将转变为“00”，即表示此又对象处于轻量级锁定状态。</p>
-<p>如果这个更新操作失败了，虚拟机首先会检查对象的Mark Word是否指向当前线程的栈帧，如果是说明当前线程已经拥有了这个对象的锁，那就可以直接进入同步块继续执行，否则说明这个锁对象已经被其他线程抢占了，如果有两条以上的线程争用同一个锁，那轻量级锁就不再有效，自旋失败后要膨胀为重量级锁，Mark Word中存储的就是指向重量级锁的指针，后面等待锁的线程也要进入阻塞状态。</p>
-<p>轻量级锁能提升程序同步性能的依据是“对于绝大部分的锁，在整个同步周期内都是不存在竞争”，这是一个经验数据。如果没有竞争，轻量级锁使用CAS操作避免了使用互斥量的开销，但如果存在锁竞争，除了互斥量的开销外，还额外发生了CAS操作，因此在有竞争的情况下，轻量级锁会比传统的重量级锁更慢。</p>
-<h2 id="偏向锁"><a href="#偏向锁" class="headerlink" title="偏向锁"></a>偏向锁</h2><p>大多数情况下，锁不仅不存在多线程竞争，而且总是由同一线程多次获得，为了让线程获得锁的代价更低而引入了偏向锁。如果说轻量级锁是在无竞争的情况下使用CAS操作去消除同步使用的互斥量，那偏向锁就是在无竞争的情况下把整个同步都消除掉，连CAS操作都不做了。</p>
-<p>当锁对象第一次被线程获取的时候，虚拟机将会把对象头中的标志位设为“01”，即偏向模式。同时使用CAS操作把获取到这个锁的线程的ID记录在对象的Mark Word之中，如果CAS操作成功，持有偏向锁的线程以后每次进入这个锁相关的同步块时，虚拟机都可以不再进行任何同步操作（例如Locking、Unlocking及对Mark Word的Update等）。当有另外一个线程去尝试获取这个锁时，偏向模式就宣告结束。</p>
-<p>也就是说，偏向锁会偏向第一个获得它的线程，只有当其它线程尝试竞争偏向锁时，偏向模式才会失效。偏向锁是为了避免某个线程反复执行获取、释放同一把锁时的性能消耗，即如果仍是同个线程去获得这个锁，偏向锁模式会直接进入同步块，不需要再次获得锁。</p>
-<h1 id="锁的作用效果"><a href="#锁的作用效果" class="headerlink" title="锁的作用效果"></a>锁的作用效果</h1><p>偏向锁是为了避免某个线程反复执行获取、释放同一把锁时的性能消耗，而轻量级锁和自旋锁是为了避免重量级锁，因为重量级锁属于操作系统层面的互斥操作，挂起和唤醒线程涉及到上下文切换,是非常消耗资源的操作。</p>
-<h1 id="锁获取过程"><a href="#锁获取过程" class="headerlink" title="锁获取过程"></a>锁获取过程</h1><p>最终，锁的获取过程会是，首先会尝试轻量级锁，轻量级锁会使用CAS操作来获得锁，如果轻量级锁获得失败，说明存在多线程对锁资源的竞争。此时会会尝试自旋锁，如果自旋失败，最终只能膨胀为重量级锁。</p>
-<p>除重量级锁外，以上锁均为乐观锁。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://yq.aliyun.com/articles/715740" target="_blank" rel="noopener">JAVA锁优化</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/16/Java%20%E4%B8%AD%E7%9A%84%20hashCode/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/16/Java%20%E4%B8%AD%E7%9A%84%20hashCode/" class="post-title-link" itemprop="url">Java 中的 hashCode</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-16 08:42:06 / 修改时间：17:15:57" itemprop="dateCreated datePublished" datetime="2020-06-16T08:42:06+08:00">2020-06-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="hashCode简介"><a href="#hashCode简介" class="headerlink" title="hashCode简介"></a>hashCode简介</h2><p><code>hashCode</code>是 jdk 根据对象的值和状态算出来的一个 <strong>int</strong> 型数字，即对象的哈希码值，代表了该对象在内存中的存储位置。</p>
-<p>顶级父类 <code>Object</code> 提供获取 hashcode 的方法，调用的是本地的方法；</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public native int hashCode();</span><br></pre></td></tr></table></figure>
-
-<p>Java 中的 hash 值主要用来干什么的？</p>
-<p>hash 值主要是用来在散列存储结构（HashMap、HashTable、HashSet 等等）中确定对象的存储地址的，提高对象的查询效率，</p>
-<h2 id="常见类的hashcode"><a href="#常见类的hashcode" class="headerlink" title="常见类的hashcode"></a>常见类的hashcode</h2><h3 id="string"><a href="#string" class="headerlink" title="string"></a>string</h3><p>阅读 <code>String</code> 源码来分析：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> h = hash;<span class="comment">// 主要是 String 对象是不可变的，可以使用一个变量存储起来，方便以后使用。</span></span><br><span class="line">        <span class="keyword">if</span> (h == <span class="number">0</span> &amp;&amp; value.length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">char</span> val[] = value;</span><br><span class="line"><span class="comment">// 计算每个字符的 ascii 参与到 hashcode 计算中，将前面计算的结果乘以 31 。</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; value.length; i++) &#123;</span><br><span class="line">                h = <span class="number">31</span> * h + val[i];</span><br><span class="line">            &#125;</span><br><span class="line">            hash = h;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> h;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
-<p>为什么要以 <em>31</em> 为权来计算 hashCode？</p>
-<ol>
-<li><p>因为 31 是素数，素数跟其他数相乘，更容易产生唯一性，所以 hash 冲突会小；</p>
-</li>
-<li><p>相乘的时候，数字越大，结果也越大，很容易超出 int 值上限，31是一个大小适中的素数.</p>
-</li>
-<li><p>为什么不是 17 ,23等等，参考StackOverflow上最高票的答案<a href="https://stackoverflow.com/questions/299304/why-does-javas-hashcode-in-string-use-31-as-a-multiplier" target="_blank" rel="noopener">参考答案</a></p>
-<blockquote>
-<p>The value 31 was chosen because it is an odd prime. If it were even and the multiplication overflowed, information would be lost, as multiplication by 2 is equivalent to shifting. The advantage of using a prime is less clear, but it is traditional. A nice property of 31 is that the multiplication can be replaced by a shift and a subtraction for better performance: <code>31 * i == (i &lt;&lt; 5) - i</code>. Modern VMs do this sort of optimization automatically.</p>
-</blockquote>
-<p>解释说，因为乘31可以方便地优化为<strong>移位和减法</strong>，实际计算的是<code>(i &lt;&lt; 5) - i</code>。</p>
-</li>
-</ol>
-<h3 id="Long"><a href="#Long" class="headerlink" title="Long"></a>Long</h3><p>查看 <code>Long.java</code> 的 <code>hashCode()</code> 方法，</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public static int hashCode(long value) &#123;</span><br><span class="line">    return (int)(value ^ (value &gt;&gt;&gt; 32));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>因为 Long 类型有 64 位，比 hash 的长度多了一倍，利用前 32 位 和后 32 位异或，尽可能的让更多的位置参与计算 hash 来保证唯一性。</p>
-<h2 id="重写-hashcode-和-equals"><a href="#重写-hashcode-和-equals" class="headerlink" title="重写 hashcode 和 equals"></a>重写 hashcode 和 equals</h2><h3 id="为什么要同时重写"><a href="#为什么要同时重写" class="headerlink" title="为什么要同时重写"></a>为什么要同时重写</h3><p>首先了解默认情况下的 hashcode 和 equals 方法是什么样：</p>
-<ul>
-<li>hashcode 根据内存地址换算出来一个值(jdk5以前)；</li>
-<li>equals 判断对象的内存地址是否一样；</li>
-</ul>
-<p>但是大多数情况下，我们是需要判断它们的值是否是相等的情况。</p>
-<p><code>Object.hashCode</code>的通用约定（<em>摘自《Effective Java》第45页</em>）</p>
-<blockquote>
-<ol>
-<li>在一个应用程序执行期间，如果一个对象的equals方法做比较所用到的信息没有被修改的话，那么，对该对象调用hashCode方法多次，它必须始终如一地返回 同一个整数。在同一个应用程序的多次执行过程中，这个整数可以不同，即这个应用程序这次执行返回的整数与下一次执行返回的整数可以不一致。</li>
-<li>如果两个对象根据equals(Object)方法是相等的，那么调用这两个对象中任一个对象的hashCode方法必须产生同样的整数结果。</li>
-<li>如果两个对象根据equals(Object)方法是不相等的，那么调用这两个对象中任一个对象的hashCode方法，不要求必须产生不同的整数结果。然而，程序员应该意识到这样的事实，对于不相等的对象产生截然不同的整数结果，有可能提高散列表（hash table）的性能。</li>
-</ol>
-</blockquote>
-<p><strong>如果只重写了equals方法而没有重写hashCode方法的话，则可能会违反第二条：相等的对象必须具有相等的散列码（hashCode）</strong>。</p>
-<p>比如我们用一个可变的对象作为 hashMap 的键，并且重写了 hashcode 和 equals 方法，当我把一对键值（可变对象为键）装进 hashMap 后，又去改变了键对象的某个属性（这个属性参与了 hashcode 的计算），然后就不能再用这个可变对象去操作已经插入到 hashMap 中的键值对了。</p>
-<h3 id="自定义hashCode"><a href="#自定义hashCode" class="headerlink" title="自定义hashCode"></a>自定义hashCode</h3><p>参考 <code>IDEA</code> 根据字段自动生成的 hashCode 和 equals 方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ObjectDemo</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String value1;</span><br><span class="line">    <span class="keyword">private</span> String value2;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">equals</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span> == o) <span class="keyword">return</span> <span class="keyword">true</span>; </span><br><span class="line">        <span class="keyword">if</span> (o == <span class="keyword">null</span> || getClass() != o.getClass()) <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        ObjectDemo that = (ObjectDemo) o;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (value1 != <span class="keyword">null</span> ? !value1.equals(that.value1) : that.value1 != <span class="keyword">null</span>) <span class="keyword">return</span> <span class="keyword">false</span>; </span><br><span class="line">        <span class="keyword">return</span> value2 != <span class="keyword">null</span> ? value2.equals(that.value2) : that.value2 == <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">hashCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> result = value1 != <span class="keyword">null</span> ? value1.hashCode() : <span class="number">0</span>;</span><br><span class="line">        result = <span class="number">31</span> * result + (value2 != <span class="keyword">null</span> ? value2.hashCode() : <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id=""><a href="#" class="headerlink" title=""></a></h4><hr>
-<p>本文整理自</p>
-<ul>
-<li><a href="https://stackoverflow.com/questions/299304/why-does-javas-hashcode-in-string-use-31-as-a-multiplier" target="_blank" rel="noopener">Why does Java’s hashCode() in String use 31 as a multiplier?</a></li>
-<li><a href="https://blog.csdn.net/zknxx/article/details/53862572" target="_blank" rel="noopener">java为什么要重写hashCode和equals方法</a></li>
-</ul>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/%E5%A6%82%E4%BD%95%E7%94%A8LinkedHashMap%E5%AE%9E%E7%8E%B0LRU/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/15/%E5%A6%82%E4%BD%95%E7%94%A8LinkedHashMap%E5%AE%9E%E7%8E%B0LRU/" class="post-title-link" itemprop="url">如何用LinkedHashMap实现LRU</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-16 02:58:41 / 修改时间：11:05:33" itemprop="dateCreated datePublished" datetime="2020-06-16T02:58:41+08:00">2020-06-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇文章分析了HashMap的原理,有网友留言想看LinkedHashMap分析，今天它来了。</p>
-<p>LinkedHashMap是HashMap的子类,在原有HashMap数据结构的基础上,它还维护着一个双向链表链接所有entry,这个链表定义了迭代顺序，通常是数据插入的顺序。</p>
-<div align=center><img src="/images/linkedhashmap.png"/></div>
-
-<p>上图我只画了链表，其实红黑树节点也是一样的，只是节点类型不一样而已</p>
-<p>也就是说我们遍历LinkedHashMap的时候,是从head指针指向的节点开始遍历,一直到tail指向的节点。</p>
-<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LinkedHashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">HashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">implements</span> <span class="title">Map</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entry</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">HashMap</span>.<span class="title">Node</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">    Entry&lt;K,V&gt; before, after;</span><br><span class="line">    Entry(<span class="keyword">int</span> hash, K key, V value, Node&lt;K,V&gt; next) &#123;</span><br><span class="line">        <span class="keyword">super</span>(hash, key, value, next);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 双向链表头节点</span></span><br><span class="line">    <span class="keyword">transient</span> LinkedHashMap.Entry&lt;K,V&gt; head;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 双向链表尾节点</span></span><br><span class="line">    <span class="keyword">transient</span> LinkedHashMap.Entry&lt;K,V&gt; tail;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 指定遍历LinkedHashMap的顺序,true表示按照访问顺序,false表示按照插入顺序，默认为false</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> accessOrder;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>从LinkedHashMap的定义里面可以看到它单独维护了一个双向链表，用于记录元素插入的顺序。这也是为什么我们打印LinkedHashMap的时候可以按照插入顺序打印的支撑。而accessOrder属性则指明了进行遍历时是按照什么顺序进行访问,我们可以通过它的构造方法自己指定顺序。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">LinkedHashMap</span><span class="params">(<span class="keyword">int</span> initialCapacity,<span class="keyword">float</span> loadFactor,</span></span></span><br><span class="line"><span class="function"><span class="params">                   <span class="keyword">boolean</span> accessOrder)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">super</span>(initialCapacity, loadFactor);</span><br><span class="line">  <span class="keyword">this</span>.accessOrder = accessOrder;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当accessOrder=true,访问顺序的输出是什么意思呢？来看下下面的一段代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">LinkedHashMap&lt;Integer,Integer&gt; map = <span class="keyword">new</span> LinkedHashMap&lt;&gt;(<span class="number">8</span>, <span class="number">0.75f</span>, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">map.put(<span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">map.put(<span class="number">2</span>, <span class="number">2</span>);</span><br><span class="line">map.put(<span class="number">3</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">map.get(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">System.out.println(map);</span><br></pre></td></tr></table></figure>
-
-<p>输出结果是</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;1&#x3D;1, 3&#x3D;3, 2&#x3D;2&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到get了的数据被放到了双向链表尾部，也就是按照了访问时间进行排序,这就是访问顺序的含义。</p>
-<p>在插入的时候LinkedHashMap复写了HashMap的newNode以及newTreeNode方法,并且在方法内部更新了双向链表的指向关系。</p>
-<p>同时插入的时候调用了afterNodeAccess()方法以及afterNodeInsertion()方法,在HashMap中这两个方法是空实现,而在LinkedHashMap中则有具体实现,这两个方法也是专门给LinkedHashMap进行回调处理的。</p>
-<p>afterNodeAccess()方法中如果accessOrder=true时会移动节点到双向链表尾部。当我们在调用map.get()方法的时候如果accessOrder=true也会调用这个方法,这就是为什么访问顺序输出时访问到的元素移动到链表尾部的原因。</p>
-<p>接下来来看看afterNodeInsertion()的实现</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// evict如果为false，则表处于创建模式,当我们new HashMap(Map map)的时候就处于创建模式</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">afterNodeInsertion</span><span class="params">(<span class="keyword">boolean</span> evict)</span> </span>&#123; <span class="comment">// possibly remove eldest</span></span><br><span class="line">  LinkedHashMap.Entry&lt;K,V&gt; first;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// removeEldestEntry 总是返回false,所以下面的代码不会执行。</span></span><br><span class="line">  <span class="keyword">if</span> (evict &amp;&amp; (first = head) != <span class="keyword">null</span> &amp;&amp; removeEldestEntry(first)) &#123;</span><br><span class="line">      K key = first.key;</span><br><span class="line">      removeNode(hash(key), key, <span class="keyword">null</span>, <span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>看到这里我有一个想法,可以通过LinkedHashMap来实现LRU(Least Recently Used,即近期最少使用),只要满足条件,就删除head节点。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LRUCache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">LinkedHashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">    </span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> cacheSize;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">LRUCache</span><span class="params">(<span class="keyword">int</span> cacheSize)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">super</span>(<span class="number">16</span>,<span class="number">0.75f</span>,<span class="keyword">true</span>);</span><br><span class="line">      <span class="keyword">this</span>.cacheSize = cacheSize;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 判断元素个数是否超过缓存容量</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">removeEldestEntry</span><span class="params">(Map.Entry&lt;K, V&gt; eldest)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> size() &gt; cacheSize;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>就这样一个简单的LRU Cache就实现了,以后面试官如果喊你给它实现一个LRU,你就这样写给他,如果他让你换一种方式,你就用链表使用同样的思维给他实现一个,然后你就可以收割offer了。</p>
-<p>对于删除,LinkedHashMap也同样是在HashMap的删除逻辑完成后，调用了afterNodeRemoval这个回调方法来更正链表指向关系。</p>
-<p>其实你只要看了上一篇文章再也不怕面试官问我JDK8 HashMap,再记得LinkedHashMap只是多维护了一个双向链表之后,再看LinkedHashMap中关于链表操作的代码就非常简单了。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5d567642e51d4561f40add67" target="_blank" rel="noopener">如何用LinkedHashMap实现LRU</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/19/">19</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -2262,7 +2533,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">188</span>
+          <span class="site-state-item-count">191</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2318,7 +2589,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">686k</span>
+    <span title="站点总字数">700k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
