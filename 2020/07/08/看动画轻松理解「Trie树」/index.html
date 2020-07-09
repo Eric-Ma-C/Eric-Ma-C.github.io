@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Trie树 Trie这个名字取自“retrieval”，检索，因为Trie可以只用一个前缀便可以在一部字典中找到想要的单词。 虽然发音与「Tree」一致，但为了将这种 字典树 与 普通二叉树 以示区别，程序员小吴一般读「Trie」尾部会重读一声，可以理解为读「TreeE」。  Trie 树，也叫“字典树”。顾名思义，它是一个树形结构。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="看动画轻松理解「Trie树」">
+<meta property="og:url" content="http://yoursite.com/2020/07/08/%E7%9C%8B%E5%8A%A8%E7%94%BB%E8%BD%BB%E6%9D%BE%E7%90%86%E8%A7%A3%E3%80%8CTrie%E6%A0%91%E3%80%8D/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="Trie树 Trie这个名字取自“retrieval”，检索，因为Trie可以只用一个前缀便可以在一部字典中找到想要的单词。 虽然发音与「Tree」一致，但为了将这种 字典树 与 普通二叉树 以示区别，程序员小吴一般读「Trie」尾部会重读一声，可以理解为读「TreeE」。  Trie 树，也叫“字典树”。顾名思义，它是一个树形结构。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b54e82cd?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b5365880?imageslim">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b51f4db2?imageslim">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b57767ae?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b7443080?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b68802a6?imageslim">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a41644ab1?imageslim">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a415421ef?imageslim">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a4167a729?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="article:published_time" content="2020-07-08T00:36:42.000Z">
+<meta property="article:modified_time" content="2020-07-08T08:39:19.958Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b54e82cd?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/08/%E7%9C%8B%E5%8A%A8%E7%94%BB%E8%BD%BB%E6%9D%BE%E7%90%86%E8%A7%A3%E3%80%8CTrie%E6%A0%91%E3%80%8D/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>看动画轻松理解「Trie树」 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/08/%E7%9C%8B%E5%8A%A8%E7%94%BB%E8%BD%BB%E6%9D%BE%E7%90%86%E8%A7%A3%E3%80%8CTrie%E6%A0%91%E3%80%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          看动画轻松理解「Trie树」
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-08 08:36:42 / 修改时间：16:39:19" itemprop="dateCreated datePublished" datetime="2020-07-08T08:36:42+08:00">2020-07-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="Trie树"><a href="#Trie树" class="headerlink" title="Trie树"></a>Trie树</h3><blockquote>
+<p>Trie这个名字取自“retrieval”，检索，因为Trie可以只用一个前缀便可以在一部字典中找到想要的单词。<br> 虽然发音与「Tree」一致，但为了将这种 字典树 与 普通二叉树 以示区别，程序员小吴一般读「Trie」尾部会重读一声，可以理解为读「TreeE」。</p>
+</blockquote>
+<p>Trie 树，也叫“字典树”。顾名思义，它是一个<strong>树形结构</strong>。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。</p>
+<p>此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如pan是panda的前缀）。</p>
+<p>它的key都为字符串，能做到高效查询和插入，时间复杂度为O(k)，k为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。</p>
+<p><strong>它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。</strong></p>
+<h3 id="Trie树的特点"><a href="#Trie树的特点" class="headerlink" title="Trie树的特点"></a>Trie树的特点</h3><p>假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，那效率就比较低，有没有更高效的方法呢？</p>
+<p>如果将这 5 个字符串组织成下图的结构，从肉眼上扫描过去感官上是不是比查找起来会更加迅速。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b54e82cd?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Trie树样子"></p>
+<p>通过上图，可以发现 Trie树 的三个特点：</p>
+<ul>
+<li>根节点不包含字符，除根节点外每一个节点都只包含一个字符</li>
+<li>从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串</li>
+<li>每个节点的所有子节点包含的字符都不相同</li>
+</ul>
+<p>通过动画理解 Trie 树构造的过程。在构造过程中的每一步，都相当于往 Trie 树中插入一个字符串。当所有字符串都插入完成之后，Trie 树就构造好了。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b5365880?imageslim" alt="Trie 树构造"></p>
+<h3 id="Trie树的插入操作"><a href="#Trie树的插入操作" class="headerlink" title="Trie树的插入操作"></a>Trie树的插入操作</h3><p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b51f4db2?imageslim" alt="Trie树的插入操作"></p>
+<p>Trie树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词<code>cook</code>，就有下面几步：</p>
+<ul>
+<li>插入第一个字母 <code>c</code>，发现 <code>root</code> 节点下方存在子节点 <code>c</code>，则共享节点 <code>c</code></li>
+<li>插入第二个字母 <code>o</code>，发现 <code>c</code> 节点下方存在子节点 <code>o</code>，则共享节点 <code>o</code></li>
+<li>插入第三个字母 <code>o</code>，发现 <code>o</code> 节点下方不存在子节点 <code>o</code>，则创建子节点 <code>o</code></li>
+<li>插入第三个字母 <code>k</code>，发现 <code>o</code> 节点下方不存在子节点 <code>k</code>，则创建子节点 <code>k</code></li>
+<li>至此，单词 <code>cook</code> 中所有字母已被插入 Trie树 中，然后设置节点 <code>k</code> 中的标志位，标记路径 <code>root-&gt;c-&gt;o-&gt;o-&gt;k</code>这条路径上所有节点的字符可以组成一个单词<code>cook</code></li>
+</ul>
+<h3 id="Trie树的查询操作"><a href="#Trie树的查询操作" class="headerlink" title="Trie树的查询操作"></a>Trie树的查询操作</h3><p>在 Trie 树中查找一个字符串的时候，比如查找字符串 <code>code</code>，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b57767ae?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="code的匹配路径"></p>
+<p>如果要查找的是字符串<code>cod</code>(鳕鱼)呢？还是可以用上面同样的方法，从根节点开始，沿着某条路径来匹配，如图所示，绿色的路径，是字符串<code>cod</code>匹配的路径。但是，路径的最后一个节点「d」并不是橙色的，并不是单词标志位，所以<code>cod</code>字符串不存在。也就是说，<code>cod</code>是某个字符串的前缀子串，但并不能完全匹配任何字符串。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b7443080?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="cod的匹配路径"></p>
+<blockquote>
+<p>程序员不要当一条咸鱼，要向 <code>cook</code> 靠拢：）</p>
+</blockquote>
+<h3 id="Trie树的删除操作"><a href="#Trie树的删除操作" class="headerlink" title="Trie树的删除操作"></a>Trie树的删除操作</h3><p>Trie树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：</p>
+<h4 id="删除整个单词（比如hi）"><a href="#删除整个单词（比如hi）" class="headerlink" title="删除整个单词（比如hi）"></a>删除整个单词（比如<code>hi</code>）</h4><p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c049b68802a6?imageslim" alt="删除整个单词"></p>
+<ul>
+<li>从根节点开始查找第一个字符<code>h</code></li>
+<li>找到<code>h</code>子节点后，继续查找<code>h</code>的下一个子节点<code>i</code></li>
+<li><code>i</code>是单词<code>hi</code>的标志位，将该标志位去掉</li>
+<li><code>i</code>节点是<code>hi</code>的叶子节点，将其删除</li>
+<li>删除后发现<code>h</code>节点为叶子节点，并且不是单词标志位，也将其删除</li>
+<li>这样就完成了<code>hi</code>单词的删除操作</li>
+</ul>
+<h4 id="删除前缀单词（比如cod）"><a href="#删除前缀单词（比如cod）" class="headerlink" title="删除前缀单词（比如cod）"></a>删除前缀单词（比如<code>cod</code>）</h4><p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a41644ab1?imageslim" alt="删除前缀单词"></p>
+<p>这种方式删除比较简单。 只需要将<code>cod</code>单词整个字符串查找完后，<code>d</code>节点因为不是叶子节点，只需将其单词标志去掉即可。</p>
+<h4 id="删除分支单词（比如cook）"><a href="#删除分支单词（比如cook）" class="headerlink" title="删除分支单词（比如cook）"></a>删除分支单词（比如<code>cook</code>）</h4><p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a415421ef?imageslim" alt="删除分支单词"></p>
+<p>与 <strong>删除整个单词</strong> 情况类似，区别点在于删除到 <code>cook</code> 的第一个 <code>o</code> 时，该节点为非叶子节点，停止删除，这样就完成<code>cook</code>字符串的删除操作。</p>
+<h3 id="Trie树的应用"><a href="#Trie树的应用" class="headerlink" title="Trie树的应用"></a>Trie树的应用</h3><p>事实上 Trie树 在日常生活中的使用随处可见，比如这个：</p>
+<p>具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。</p>
+<h4 id="1-前缀匹配"><a href="#1-前缀匹配" class="headerlink" title="1. 前缀匹配"></a>1. 前缀匹配</h4><p>例如：找出一个字符串集合中所有以 <code>五分钟</code> 开头的字符串。我们只需要用所有字符串构造一个 trie树，然后输出以 五−&gt;分−&gt;钟 开头的路径上的关键字即可。</p>
+<p>trie树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/1/2/1680c04a4167a729?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="google搜索"></p>
+<h4 id="2-字符串检索"><a href="#2-字符串检索" class="headerlink" title="2. 字符串检索"></a>2. 字符串检索</h4><p>给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。</p>
+<p>检索/查询功能是Trie树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：</p>
+<ul>
+<li>如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。</li>
+<li>如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。</li>
+</ul>
+<h3 id="Trie树的局限性"><a href="#Trie树的局限性" class="headerlink" title="Trie树的局限性"></a>Trie树的局限性</h3><p>如前文所讲，Trie的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。</p>
+<p>假设字符的种数有<code>m</code>个，有若干个长度为n的字符串构成了一个 Trie树 ，则每个节点的出度为 <code>m</code>（即每个节点的可能子节点数量为<code>m</code>），Trie树 的高度为<code>n</code>。很明显我们浪费了大量的空间来存储字符，此时Trie树的最坏空间复杂度为<code>O(m^n)</code>。也正由于每个节点的出度为<code>m</code>，所以我们能够沿着树的一个个分支高效的向下逐个字符的查询，而不是遍历所有的字符串来查询，此时Trie树的最坏时间复杂度为<code>O(n)</code>。</p>
+<p>这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5c2c096251882579717db3d2" target="_blank" rel="noopener">看动画轻松理解「Trie树」</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/05/union%E5%92%8Cunion%20all%20%E7%9A%84%E5%8C%BA%E5%88%AB/" rel="prev" title="union和union all 的区别">
+      <i class="fa fa-chevron-left"></i> union和union all 的区别
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F-%E5%8F%8C%E9%87%8D%E6%A0%A1%E9%AA%8C%E9%94%81%E7%BC%98%E7%94%B1/" rel="next" title="单例模式-双重校验锁缘由">
+      单例模式-双重校验锁缘由 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树"><span class="nav-number">1.</span> <span class="nav-text">Trie树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的特点"><span class="nav-number">2.</span> <span class="nav-text">Trie树的特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的插入操作"><span class="nav-number">3.</span> <span class="nav-text">Trie树的插入操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的查询操作"><span class="nav-number">4.</span> <span class="nav-text">Trie树的查询操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的删除操作"><span class="nav-number">5.</span> <span class="nav-text">Trie树的删除操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#删除整个单词（比如hi）"><span class="nav-number">5.1.</span> <span class="nav-text">删除整个单词（比如hi）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除前缀单词（比如cod）"><span class="nav-number">5.2.</span> <span class="nav-text">删除前缀单词（比如cod）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#删除分支单词（比如cook）"><span class="nav-number">5.3.</span> <span class="nav-text">删除分支单词（比如cook）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的应用"><span class="nav-number">6.</span> <span class="nav-text">Trie树的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-前缀匹配"><span class="nav-number">6.1.</span> <span class="nav-text">1. 前缀匹配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-字符串检索"><span class="nav-number">6.2.</span> <span class="nav-text">2. 字符串检索</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trie树的局限性"><span class="nav-number">7.</span> <span class="nav-text">Trie树的局限性</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">197</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">712k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
