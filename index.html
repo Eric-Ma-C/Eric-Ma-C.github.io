@@ -186,6 +186,715 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/10/MySQL%20%E7%B4%A2%E5%BC%95%E7%9A%84%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8%EF%BC%9A%E7%B4%A2%E5%BC%95%E7%B1%BB%E5%9E%8B%EF%BC%8C%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84%E4%B8%8E%E9%94%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/10/MySQL%20%E7%B4%A2%E5%BC%95%E7%9A%84%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8%EF%BC%9A%E7%B4%A2%E5%BC%95%E7%B1%BB%E5%9E%8B%EF%BC%8C%E5%AD%98%E5%82%A8%E7%BB%93%E6%9E%84%E4%B8%8E%E9%94%81/" class="post-title-link" itemprop="url">MySQL 索引的原理与应用：索引类型，存储结构与锁</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-11 06:03:43 / 修改时间：14:32:32" itemprop="dateCreated datePublished" datetime="2020-07-11T06:03:43+08:00">2020-07-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>12k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>11 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在<a href="https://url.wx-coder.cn/O07eI" target="_blank" rel="noopener">数据结构与算法–索引 https://url.wx-coder.cn/O07eI</a> 一节中，我们讨论了 B+Tree, LSM-Tree 这样的文件索引以及全文索引的基础算法，本文则会针对文件索引在关系型数据库中的实际应用进行探讨。</p>
+<p>索引（Index）是帮助数据库系统高效获取数据的数据结构，而<strong>数据库索引本质上是以增加额外的写操作，与用于维护索引数据结构的存储空间为代价的</strong>，用于提升数据库中数据检索效率的数据结构。索引可以帮助我们快速地定位到数据而不需要每次搜索的时候都遍历数据库中的每一行。当然，索引不是建立的越多、越长越好，因为<strong>索引除了占用空间之外，对后续数据库的增加、删除、修改都有额外的操作来更新索引。</strong></p>
+<p>一般来说，小表使用全表扫描更快，中大表才使用索引，而超级大表索引基本无效，我们可能需要借助独立的全文索引系统；MySQL 自带的全文索引只能用于 InnoDB、MyISAM ，并且只能对英文进行全文检索，所以一般会使用 Elasticsearch，Solr 这样的全文索引(搜索)引擎。</p>
+<h1 id="索引类型"><a href="#索引类型" class="headerlink" title="索引类型"></a>索引类型</h1><p>从索引的实现上，我们可以将其分为聚集索引与<strong>非聚集索引</strong>(或称<strong>辅助索引</strong>或<strong>二级索引Secondary key</strong>)，这两大类；从索引的实际应用中，又可以细分为普通索引、唯一索引、主键索引、联合索引、外键索引、全文索引这几种。</p>
+<p>InnoDB 使用的是<strong>聚集索引</strong>，因为它的 B+ 树的叶结点包含了<strong>完整的数据记录</strong>。InnoDB 的数据文件本身就是索引文件，表数据文件本身就是按 B+Tree 组织的一个索引结构，这棵树的叶节点 data 域保存了完整的数据记录。这个索引的 key 是数据表的主键，因此 InnoDB 表数据文件本身就是主索引。InnoDB 的辅助索引 data 域存储相应记录主键的值而不是地址。换句话说，<strong>InnoDB 的所有辅助索引都引用主键作为 data 域。</strong></p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18785bb7e09c8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>而 MyISAM 方式 B+ 树的叶结点只是存储了<strong>数据的地址</strong>，故称为<strong>非聚集索引</strong>。MyISAM 引擎使用 B+Tree 作为索引结构，叶节点的 data 域存放的是数据记录的地址；<em>在 MyISAM 中，主索引和辅助索引（Secondary key）在结构上没有任何区别，只是主索引要求 key 是唯一的，而辅助索引的 key 可以重复。</em></p>
+<p>在 InnoDB 中，又有聚簇索引和普通索引之分，聚簇索引根据主键来构建，叶子节点存放的是该主键对应的这一行记录，根据主键查询可以直接利用聚簇索引定位到所在记录。而普通索引根据申明这个索引时候的列来构建，叶子节点存放的是这一行记录对应的主键的值，根据普通索引查询需要先在普通索引上找到对应的主键的值，然后根据主键值去聚簇索引上查找记录，俗称回表。如果我们查询一整行记录的话，一定要去聚簇索引上查找，而如果我们只需要根据普通索引查询主键的值，由于这些值在普通索引上已经存在，所以并不需要回表，这个称为索引覆盖，在一定程度上可以提高查询效率。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18785bd5cf898?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>普通索引中还有唯一索引和联合索引两个特例，唯一索引在插入和修改的时候会校验该索引对应的列的值是否已经存在，联合索引将两个列的值按照申明时候的顺序进行拼接后在构建索引。</p>
+<p>数据行并不是存储引擎管理的最小存储单位，索引只能够帮助我们定位到某个数据页，每一次磁盘读写的最小单位为也是数据页，而一个数据页内存储了多个数据行，我们需要了解数据页的内部结构才能知道存储引擎怎么定位到某一个数据行，可以参考 <a href="https://url.wx-coder.cn/IF5HH" target="_blank" rel="noopener">MySQL 存储管理 https://url.wx-coder.cn/IF5HH</a> 系列。</p>
+<h2 id="索引选择性"><a href="#索引选择性" class="headerlink" title="索引选择性"></a>索引选择性</h2><p>对索引列和字符串前缀长度，都参考选择性（Selectivity）这个指标来确定：选择性定义为不重复的索引值和数据总记录条数的比值，其选择性越高，那么索引的查询效率也越高，譬如对于性别这种参数，建立索引根本没有意义。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Index Selectivity &#x3D; Cardinality &#x2F; #T</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>显然选择性的取值范围为 <code>(0, 1]</code>，选择性越高的索引价值越大，这是由 B+Tree 的性质决定的。在实际的数据库中，我们可以通过以下语句来计算某列的选择性：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT count(DISTINCT(title))&#x2F;count(*) AS Selectivity FROM titles;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<h1 id="主键"><a href="#主键" class="headerlink" title="主键"></a>主键</h1><p>在 InnoDB 内部，表数据是优化主键快速查询而排列分布的，其查找速度是最快的，该索引中键值的逻辑顺序决定了表中相应行的物理顺序。即使表中没有适合做主键的列，也推荐采用一个自动增长的整数主键(代理键)，那么这个表在增加数据的时候是顺序存放的，而且后续在别的表参考该外键查询的时候也会得到优化。</p>
+<p>如果在创建表时没有显式地定义主键（Primary Key），则 InnoDB 存储引擎会按如下方式选择或创建主键：</p>
+<ul>
+<li>首先表中是否有非空的唯一索引（Unique NOT NULL），如果有，则该列即为主键。</li>
+<li>不符合上述条件，InnoDB 存储引擎自动创建一个 6 个字节大小的指针，用户不能查看或访问。</li>
+</ul>
+<h2 id="主键的选择"><a href="#主键的选择" class="headerlink" title="主键的选择"></a>主键的选择</h2><p>在<a href="https://url.wx-coder.cn/tQ5eH" target="_blank" rel="noopener">分布式 ID https://url.wx-coder.cn/tQ5eH</a> 一文中我们讨论过分布式场景下的分布式 ID 的选择策略，而在数据库中，我们同样会有这样的考量。首先，MySQL 官方有明确的建议主键要尽量越短越好，36 个字符长度的 UUID 不符合要求；如果主键是一个很长的字符串并且建了很多普通索引，将造成普通索引占有很大的物理空间。并且主键最好是顺序递增的，否则在 InnoDB 引擎下，UUID 的无序性可能会引起数据位置频繁变动，严重影响性能。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18785bf3bf1eb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>自增 ID 在插入的时候可以保证相邻的两条记录可能在同一个数据块，而订单号这样的业务相关的连续性设计上可能没有自增 ID 好，导致连续插入可能在多个数据块，增加了磁盘读写次数。</p>
+<ul>
+<li>唯一性：自增 ID 很容易会被暴力破解，数据迁移的时候，特别是发生表格合并这种操作的时候，会不可避免地存在冲突。UUID 则能够保证唯一性，彻底避免冲突。</li>
+<li>键长度：自增字段的长度较 UUID 小很多，这会对检索的性能有较大影响。Innodb 引擎进行数据检索时，也是先根据索引找到主键，然后根据主键找到记录；这样在主键长度短的情况下，会有较好的读性能。</li>
+<li>并发性：自增 ID 并且高并发的情况下，竞争自增锁会降低数据库的吞吐能力。UUID 则能够在应用层生成 UUID，提高数据库的吞吐能力。</li>
+<li>数据库索引：InnoDB 中表数据是按照主键顺序存放的，在写入数据时候如果发生了随机 IO，那么就会频繁地移动磁盘块。当数据量大的时候，写的短板将非常明显。自增 ID 中新增的数据可以默认按序排列，对于性能有很大的提升；UUID 则主键之间没有顺序规律。</li>
+</ul>
+<h2 id="主键与唯一索引"><a href="#主键与唯一索引" class="headerlink" title="主键与唯一索引"></a>主键与唯一索引</h2><p>主键就是唯一索引，但是唯一索引不一定是主键，唯一索引可以为空，但是空值只能有一个，主键不能为空。对于单列索引，要求该列所有数据都不相同，但允许有 NULL 值；对于多列的联合索引，要求这些列的组合是唯一的。唯一索引其本身既可以作为索引，实际中也可以用以产生数据约束，防止增加或者修改后产生相同数据，从而保证数据的完整性。</p>
+<p>对于字符串类型，可以指定索引前缀长度(且对于 BLOB/TEXT 前缀长度参数是必须的)，在 InnoDB 表中其前缀长度最长是 767 bytes，且参数 M 是用 bytes 计量的。所以太长的字符串，建立 B+Tree 索引浪费比较大，这时候用手动模拟 HASH 索引是个方法，不过这种方式对字符串无法灵活的使用前缀方式查询(例如 LIKE 这类的操作)。</p>
+<h1 id="联合索引"><a href="#联合索引" class="headerlink" title="联合索引"></a>联合索引</h1><p>单列索引指的是在表上为某一个字段建立的索引，一般索引的创建选择整型或者较小的定长字符串将更有利于效率的提升。联合索引指的是多个字段按照一定顺序组织的索引。以索引 <code>(name, city, gender)</code> 为例，其首先是按照 name 字段顺序组织的，当 name 字段的值相同时（如 Bush），其按照 city 字段顺序组织，当 city 字段值相同时，其按照 gender 字段组织。由于联合索引上通过多个列构建索引，有时候我们可以将需要频繁查询的字段加到联合索引里面，譬如经常需要根据 name 查找 age 我们可以建一个 name 和 age 的联合索引。</p>
+<p>常见的条件联合包括了 WHERE 条件联合与 ORDER BY 条件联合；所谓 WHERE 条件联合指的是，对于 WHERE 条件中的等值条件，其字段使用与联合索引的字段一致（顺序可以不一致）。</p>
+<p>ORDER BY 联合指的是如果 ORDER BY 后面的字段是联合索引覆盖 where 条件之后的一个字段，由于索引已经处于有序状态，MySQL 就会直接从索引上读取有序的数据，然后在磁盘上读取数据之后按照该顺序组织数据，从而减少了对磁盘数据进行排序的操作。即对于未覆盖 ORDER BY 的查询，其有一项 Creating sort index，即为磁盘数据进行排序的耗时最高；对于覆盖 ORDER BY 的查询，其就不需要进行排序，而其耗时主要体现在从磁盘上拉取数据的过程。</p>
+<h1 id="前缀索引"><a href="#前缀索引" class="headerlink" title="前缀索引"></a>前缀索引</h1><p>MySQL 的前缀索引可以分为三类：联合索引前缀，like 前缀和字符串前缀。</p>
+<h2 id="联合索引前缀与最左匹配（Leftmost-Prefix）"><a href="#联合索引前缀与最左匹配（Leftmost-Prefix）" class="headerlink" title="联合索引前缀与最左匹配（Leftmost Prefix）"></a>联合索引前缀与最左匹配（Leftmost Prefix）</h2><p>联合索引前缀指的是在建立多列索引的时候，必须按照从左到右的顺序使用全部或部分的索引列，才能充分的使用联合索引，比如：<code>(col1, col2, col3)</code> 使用 <code>(col1)、(col1, col2)、(col1, col2, col3)</code> 有效。在查询语句中会一直向右匹配直到遇到范围查询 <code>(&gt;,&lt;,BETWEEN,LIKE)</code> 就停止匹配，其后的索引列将不会使用索引来优化查找了。</p>
+<p>以 <code>(name, city, interest)</code> 三个字段联合的索引为例，如果查询条件为 <code>where name=&#39;Bush&#39;;</code> 那么就只需要根据 B+树定位到 name 字段第一个 Bush 所在的值，然后顺序扫描后续数据，直到找到第一个不为 Bush 的数据即可，扫描过程中将该索引片的数据 id 记录下来，最后根据 id 查询聚簇索引获取结果集。同理对于查询条件为 <code>where name=&#39;Bush&#39; and city=&#39;Chicago&#39;;</code> 的查询，MySQL 可以根据联合索引直接定位到中间灰色部分的索引片，然后获取该索引片的数据 id，最后根据 id 查询聚簇索引获取结果集。</p>
+<p>由此我们可以得出联合索引前缀的注意点：</p>
+<ul>
+<li>无法跨越字段使用联合索引，如 <code>where name=&#39;Bush&#39; and interest=&#39;baseball&#39;;</code>，对于该查询，name 字段是可以使用联合索引的第一个字段过滤大部分数据的，但是对于 interest 字段，其无法通过 B+ 树的特性直接定位第三个字段的索引片数据，比如这里的 baseball 可能分散在了第二条和第七条数据之中。最终，interest 字段其实进行的是覆盖索引扫描。</li>
+<li>对于非等值条件，如 &gt;、&lt;、!= 等，联合索引前缀对于索引片的过滤只能到第一个使用非等值条件的字段为止，后续字段虽然在联合索引上也无法参与索引片的过滤。这里比如 <code>where name=&#39;Bush&#39; and city&gt;&#39;Chicago&#39; and interest=&#39;baseball&#39;;</code>，对于该查询条件，首先可以根据 name 字段过滤索引片中第一个字段的非 Bush 的数据，然后根据联合索引的第二个字段定位到索引片的 Chicago 位置，由于其是非等值条件，这里 MySQL 就会从定位的 Chicago 往下顺序扫描，由于 interest 字段是可能分散在索引第三个字段的任何位置的，因而第三个字段无法参与索引片的过滤。</li>
+</ul>
+<p>因此 B-Tree 的列顺序非常重要，上述使用规则都和列顺序有关。对于实际的应用，一般要根据具体的需求，创建不同列和不同列顺序的索引。假设有索引 <code>Index(A,B,C)</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># 使用索引</span><br><span class="line">A&gt;5 AND A&lt;10 - 最左前缀匹配</span><br><span class="line">A&#x3D;5 AND B&gt;6 - 最左前缀匹配</span><br><span class="line">A&#x3D;5 AND B&#x3D;6 AND C&#x3D;7 - 全列匹配</span><br><span class="line">A&#x3D;5 AND B IN (2,3) AND C&gt;5 - 最左前缀匹配，填坑</span><br><span class="line"></span><br><span class="line"># 不能使用索引</span><br><span class="line">B&gt;5 - 没有包含最左前缀</span><br><span class="line">B&#x3D;6 AND C&#x3D;7 - 没有包含最左前缀</span><br><span class="line"></span><br><span class="line"># 使用部分索引</span><br><span class="line">A&gt;5 AND B&#x3D;2 - 使用索引 A 列</span><br><span class="line">A&#x3D;5 AND B&gt;6 AND C&#x3D;2 - 使用索引的 A 和 B 列</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>使用索引对结果进行排序，需要索引的顺序和 ORDER BY 子句中的顺序一致，并且所有列的升降序一致(ASC/DESC)。如果查询连接了多个表，只有在 ORDER BY 的列引用的是第一个表才可以(需要按序 JOIN)。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># 使用索引排序</span><br><span class="line">ORDER BY A - 最左前缀匹配</span><br><span class="line">WHERE A&#x3D;5 ORDER BY B,C - 最左前缀匹配</span><br><span class="line">WHERE A&#x3D;5 ORDER BY B DESC - 最左前缀匹配</span><br><span class="line">WHERE A&gt;5 ORDER BY A,B - 最左前缀匹配</span><br><span class="line"></span><br><span class="line"># 不能使用索引排序</span><br><span class="line">WHERE A&#x3D;5 ORDER BY B DESC,C ASC - 升降序不一致</span><br><span class="line">WHERE A&#x3D;5 ORDER BY B,D - D 不在索引中</span><br><span class="line">WHERE A&#x3D;5 ORDER BY C - 没有包含最左前缀</span><br><span class="line">WHERE A&gt;5 ORDER BY B,C - 第一列是范围条件，无法使用 BC 排序</span><br><span class="line">WHERE A&#x3D;5 AND B IN(1, 2) ORDER BY C - B 也是范围条件，无法用 C 排序</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<h2 id="like-前缀"><a href="#like-前缀" class="headerlink" title="like 前缀"></a>like 前缀</h2><p>对于 like 前缀，其是指在使用 like 查询时，如果使用的表达式为 <code>first_name like &#39;rMq%&#39;;</code>那么其是可以用到 first_name 字段的索引的。但是对于 <code>first_name like &#39;%Chu%&#39;;</code>，其就无法使用 first_name 的索引。对于 like 前缀，MySQL 底层实际上是使用了一个补全策略来使用索引的，比如这里 <code>first_name like &#39;rMq%&#39;;</code>，MySQL 会将其补全为两条数据：rMqAAAAA 和 rMqzzzzz，后面补全部分的长度为当前字段的最大长度。在使用索引查询时，MySQL 就使用这两条数据进行索引定位，最后需要的结果集就是这两个定位点的中间部分的数据。如下是使用 like 前缀的一个示意图：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18785bf52ee00?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h2 id="字符串前缀"><a href="#字符串前缀" class="headerlink" title="字符串前缀"></a>字符串前缀</h2><p>字符串前缀索引指的是只取字符串前几个字符建立的索引。在进行查询时，如果一个字段值较长，那么为其建立索引的成本将非常高，并且查询效率也比较低，字符串前缀索引就是为了解决这一问题而存在的。字符串前缀索引主要应用在两个方面：</p>
+<ul>
+<li>字段前缀部分的选择性比较高；</li>
+<li>字段整体的选择性不太大（如果字段整体选择性比较大则可以使用哈希索引）。</li>
+</ul>
+<p>譬如为 first_name 字段建立了长度为 4 的前缀索引，可以看到，如果查询使用的是 <code>where first_name=&#39;qWhNIZqxcbD&#39;;</code>，那么 MySQL 首先会截取等值条件的前四个字符，然后将其与字符串前缀索引进行比较，从而定位到前缀为”qWhN”的索引片，然后获取该索引片对应的磁盘数据，最后将获取的磁盘数据的 first_name 字段与查询的等值条件的值进行比较，从而得到结果集。</p>
+<p>字符串前缀索引最需要注意的一个问题是如何选择前缀的长度，长度选择合适时，前缀索引的过滤性将和对整个字段建立索引的选择性几乎相等。这里我们就需要用到前面讲解的关于字段选择性的概念，即字段选择性为对该字段分组之后，数据量最大的组的数据量占总数据量的比例。这里选择前缀长度时，可以理解为，前缀的选择性为按照前缀分组之后，数据量最大的组占总数据量的比例。如下表所示为计算前缀长度的 SQL 公式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">select count(*) as cnt, first_name as perf from actor group by perf ORDER BY cnt desc limit 10;	-- 0</span><br><span class="line">select count(*) as cnt, left(first_name, 2) as perf from actor group by perf ORDER BY cnt desc limit 10;	-- 2</span><br><span class="line">select count(*) as cnt, left(first_name, 3) as perf from actor group by perf ORDER BY cnt desc limit 10;	-- 3</span><br><span class="line">select count(*) as cnt, left(first_name, 4) as perf from actor group by perf ORDER BY cnt desc limit 10;	-- 4</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<h1 id="其他索引"><a href="#其他索引" class="headerlink" title="其他索引"></a>其他索引</h1><h2 id="覆盖索引"><a href="#覆盖索引" class="headerlink" title="覆盖索引"></a>覆盖索引</h2><p>覆盖索引指的是对于查询中使用的除去参与索引过滤扫描的所有字段将其加入到该查询所使用的索引尾部的索引。覆盖索引扫描的优点在于由于查询中所使用的所有字段都在同一索引的字段，因而在进行查询时只需要在索引中获取相关数据即可，而不需要回磁盘扫描相应的数据，从而避免了查询中最耗时的磁盘 I/O 读取。对于如下查询：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">select a, b, c from t where a&#x3D;&#39;a&#39; and b&#x3D;&#39;b&#39;;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>该查询中如果建立联合索引(a, b, c)，那么这就是使用了覆盖扫描的索引，因为对于该查询，可以使用索引的前两个字段 a 和 b 根据 where 条件进行索引片的过滤，对过滤后的索引片直接在索引中读取 a, b, c 三个字段的值即可，而无需回表扫描。</p>
+<h2 id="三星索引"><a href="#三星索引" class="headerlink" title="三星索引"></a>三星索引</h2><p>三星索引指的是对于一个查询，设立了三个通用的索引条件满足的条件，建立的索引对于特定的查询每满足一个条件就表示该索引得到一颗星，当该索引得到三颗星时就表示该索引对于该查询是一个三星索引。三星索引是对于特定查询的最优索引，建立三星索引的条件如下：</p>
+<ul>
+<li>取出所有的等值谓词的列 <code>（WHERE COL=…）</code> 作为索引开头的列；</li>
+<li>将 ORDER BY 中的列加入到索引中；</li>
+<li>将查询语句中剩余的列加入到索引中，将易变得列放到最后以降低更新成本。</li>
+</ul>
+<p>譬如对于如下的查询，索引 <code>(first_name, last_name, email)</code> 就是一个三星索引：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT first_name, last_name, email FROM user WHERE first_name &#x3D; &#39;aa&#39; ORDER BY last_name;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>三星索引的创建过程可以发现如下规律：</p>
+<ul>
+<li>覆盖等值谓词条件，如 first_name，可以过滤大部分的索引片数据；</li>
+<li>覆盖 order by 字段可以避免对结果集的排序，如 last_name;</li>
+<li>覆盖其余字段可以避免回磁盘读取数据，即使用了覆盖索引扫描，如 email。</li>
+</ul>
+<h1 id="索引存储结构"><a href="#索引存储结构" class="headerlink" title="索引存储结构"></a>索引存储结构</h1><p>MySQL 查询的时候会先通过索引定位到对应的数据页，然后检测数据页是否在缓冲池内，如果在就直接返回，如果不在就去聚簇索引中通过磁盘 IO 读取对应的数据页并放入缓冲池。一个数据页会包含多个数据行。缓存池通过 LRU 算法对数据页进行管理，也就是最频繁使用的数据页排在列表前面，不经常使用的排在队尾，当缓冲池满了的时候会淘汰掉队尾的数据页。从磁盘新读取到的数据页并不会放在队列头部而是放在中间位置，这个中间位置可以通过参数进行修。缓冲池也可以设置多个实例，数据页根据哈希算法决定放在哪个缓冲池。</p>
+<p>在 <a href="https://url.wx-coder.cn/IF5HH" target="_blank" rel="noopener">MySQL 存储结构</a>一文中，我们讨论过 MySQL 数据页的存储结构。</p>
+<h2 id="Memory-Architecture-内存架构"><a href="#Memory-Architecture-内存架构" class="headerlink" title="Memory Architecture | 内存架构"></a>Memory Architecture | 内存架构</h2><p>InnoDB 的内存主要有以下几个部分组成：缓冲池 (buffer pool)、重做日志缓冲池(redo log buffer）以及额外的内存池（additional memory pool），如下图所示：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18785c12cb4c1?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>其中缓冲池占最大块内存，用来缓存各自数据，数据文件按页（每页 16K）读取到缓冲池，按最近最少使用算法（LRU）保留缓存数据。缓冲池缓冲的数据类型有：数据页、索引页、插入缓冲、自适应哈希索引、锁信息、数据字典信息等，其中数据页和索引页占了绝大部分内存。日志缓冲将重做日志信息先放入这个缓冲区，然后按一定频率（默认为 1s）将其刷新至重做日志文件。</p>
+<p>InnoDB 通过一些列后台线程将相关操作进行异步处理，同时借助缓冲池来减小 CPU 和磁盘速度上的差异。当查询的时候会先通过索引定位到对应的数据页，然后检测数据页是否在缓冲池内，如果在就直接返回，如果不在就去聚簇索引中通过磁盘 IO 读取对应的数据页并放入缓冲池。一个数据页会包含多个数据行。缓存池通过 LRU 算法对数据页进行管理，也就是最频繁使用的数据页排在列表前面，不经常使用的排在队尾，当缓冲池满了的时候会淘汰掉队尾的数据页。从磁盘新读取到的数据页并不会放在队列头部而是放在中间位置，这个中间位置可以通过参数进行修。缓冲池也可以设置多个实例，数据页根据哈希算法决定放在哪个缓冲池。</p>
+<h2 id="Storage-Architecture-存储结构"><a href="#Storage-Architecture-存储结构" class="headerlink" title="Storage Architecture | 存储结构"></a>Storage Architecture | 存储结构</h2><p>InnoDB 存储引擎的逻辑存储结构和 Oracle 大致相同，所有数据都被逻辑地存放在一个空间中，我们称之为表空间（tablespace）。表空间又由段（segment）、区（extent）、页（page）组成。页在一些文档中有时也称为块（block），1 extent = 64 pages，InnoDB 存储引擎的逻辑存储结构大致如图所示：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b18787a4df6776?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>表空间作为存储结构的最高层，所有数据都存放在表空间中，默认情况下用一个共享表空间 ibdata1 ，如果开启了 innodb_file_per_table 则每张表的数据将存储在单独的表空间中，也就是每张表都会有一个文件，</p>
+<p>表空间由各个段构成，InnoDB 存储引擎由索引组织的，而索引中的叶子节点用来记录数据，存储在数据段，而非叶子节点用来构建索引，存储在索引段。区是由连续的页组成，任何情况下一个区都是 1MB，一个区中可以有多个页，每个页默认为 16KB ，所以默认情况下一个区中可以包含 64 个连续的页，页的大小是可以通过 innodb_page_size 设置，页中存储的是具体的行记录。一行记录最终以二进制的方式存储在文件里。</p>
+<p>从物理意义上来看，InnoDB 表由共享表空间、日志文件组（更准确地说，应该是 Redo 文件组）、表结构定义文件组成。若将 innodb_file_per_table 设置为 on，则每个表将独立地产生一个表空间文件，以 ibd 结尾，数据、索引、表的内部数据字典信息都将保存在这个单独的表空间文件中。表结构定义文件以 frm 结尾，这个是与存储引擎无关的，任何存储引擎的表结构定义文件都一样，为 .frm 文件。</p>
+<h2 id="Process-Architecture-进程架构"><a href="#Process-Architecture-进程架构" class="headerlink" title="Process Architecture | 进程架构"></a>Process Architecture | 进程架构</h2><p>默认情况下，InnoDB 的后台线程有 7 个，其中 4 个 IO thread, 1 个 Master thread, 1 个 Lock monitor thread, 一个 Error monitor thread。InnoDB 的主要工作都是在一个单独的 Master 线程里完成的。Master 线程的优先级最高，它主要分为以下几个循环：主循环（loop）、后台循环（background loop）、刷新循环（flush loop）、暂停循环（suspend loop）。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b1879bb8aeead8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>其中主循环的伪代码如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">void master_thread() (</span><br><span class="line">    loop:</span><br><span class="line">    for (int i &#x3D;0; i &lt;10; i++)&#123;</span><br><span class="line">        do thing once per second</span><br><span class="line">        sleep 1 second if necessary</span><br><span class="line">    &#125;</span><br><span class="line">    do things once per ten seconds</span><br><span class="line">    goto loop;</span><br><span class="line">&#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>其中每秒一次的操作包括：刷新日志缓冲区（总是），合并插入缓冲（可能），至多刷新 100 个脏数据页（可能），如果没有当前用户活动，切换至 background loop （可能）。</li>
+<li>其中每 10 秒一次的操作包括：合并至多 5 个插入缓冲（总是），刷新日志缓冲（总是），刷新 100 个或 10 个脏页到磁盘（总是），产生一个检查点（总是），删除无用 Undo 页 （总是）。</li>
+<li>后台循环，若当前没有用户活动或数据库关闭时，会切换至该循环执行以下操作：删除无用的 undo 页（总是），合并 20 个插入缓冲（总是），跳回到主循环（总是），不断刷新 100 个页，直到符合条件跳转到 flush loop（可能）。</li>
+<li>如果 flush loop 中也没有什么事情可做，边切换到 suspend loop，将 master 线程挂起。</li>
+</ul>
+<h1 id="索引与锁"><a href="#索引与锁" class="headerlink" title="索引与锁"></a>索引与锁</h1><p>MySQL 为我们提供了行锁、表锁、页锁三种级别的锁，其中表锁开销小，加锁快；不会出现死锁；锁定力度大，发生锁冲突概率高，并发度最低。行锁开销大，加锁慢；会出现死锁；锁定粒度小，发生锁冲突的概率低，并发度高；页锁开销和加锁速度介于表锁和行锁之间；会出现死锁；锁定粒度介于表锁和行锁之间，并发度一般。每个存储引擎都可以有自己的锁策略，例如 MyISAM 引擎仅支持表级锁，而 InnoDB 引擎除了支持表级锁外，也支持行级锁（默认）。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>行锁</th>
+<th>表锁</th>
+<th>页锁</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>MyISAM</td>
+<td></td>
+<td>√</td>
+<td></td>
+</tr>
+<tr>
+<td>BDB</td>
+<td></td>
+<td>√</td>
+<td>√</td>
+</tr>
+<tr>
+<td>InnoDB</td>
+<td>√</td>
+<td>√</td>
+<td></td>
+</tr>
+</tbody></table>
+<p>InnoDB 行锁是通过给索引上的索引项加锁来实现的，这一点 MySQL 与 Oracle 不同，后者是通过在数据块中对相应数据行加锁来实现的。InnoDB 这种行锁实现特点意味着：只有通过索引条件检索数据，InnoDB 才使用行级锁，否则，InnoDB 将使用表锁，同样地，当 <code>for update</code> 的记录不存在会导致锁住全表。当表有多个索引的时候，不同的事务可以使用不同的索引锁定不同的行，另外，不论是使用主键索引、唯一索引或普通索引，InnoDB 都会使用行锁来对数据加锁。</p>
+<p>InnoDB 的加锁过程比较复杂，将所有扫描到的记录都加锁，范围查询会加间隙锁，然后加锁过程按照两阶段锁 2PL 来实现，也就是先加锁，然后所有的锁在事物提交的时候释放。加锁的策略会和数据库的隔离级别有关，在默认的可重复读的隔离级别的情况下，加锁的流程还会和查询条件中是否包含索引，是主键索引还是普通索引，是否是唯一索引等有关。</p>
+<p>譬如对于 <code>select * from o_order where order_sn = &#39;201912102322&#39; for update;</code> 这条 SQL 语句，在不同的索引情况下其加锁策略也不一致：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/6/2/16b1879bb8b198e4?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<ul>
+<li>order_sn 是主键索引，这种情况将在主键索引上的 <code>order_sn = 201912102322</code> 这条记录上加排他锁。</li>
+<li>order_sn 是普通索引，并且是唯一索引，将会对普通索引上对应的一条记录加排他锁，对主键索引上对应的记录加排他锁。</li>
+<li>order_sn 是普通索引，并且不是唯一索引，将会对普通索引上 <code>order_sn = 201912102322</code> 一条或者多条记录加锁，并且对这些记录对应的主键索引上的记录加锁。这里除了加上行锁外，还会加上间隙锁，防止其他事务插入 <code>order_sn = 201912102322</code> 的记录，然而如果是唯一索引就不需要间隙锁，行锁就可以。</li>
+<li>order_sn 上没有索引，innoDB 将会在主键索引上全表扫描，这里并没有加表锁，而是将所有的记录都会加上行级排他锁，而实际上 innoDB 内部做了优化，当扫描到一行记录后发现不匹配就会把锁给释放，当然这个违背了 2PL 原则在事务提交的时候释放。这里除了对记录进行加锁，还会对每两个记录之间的间隙加锁，所以最终将会保存所有的间隙锁和 <code>order_sn = 201912102322</code> 的行锁。</li>
+<li><code>order_sn = 201912102322</code> 这条记录不存在的情况下，如果 order_sn 是主键索引，则会加一个间隙锁，而这个间隙是主键索引中 order_sn 小于 201912102322 的第一条记录到大于 201912102322 的第一条记录。试想一下如果不加间隙锁，如果其他事物插入了一条 <code>order_sn = 201912102322</code> 的记录，由于 select for update 是当前读，即使上面那个事物没有提交，如果在该事物中重新查询一次就会发生幻读。</li>
+<li>如果没有索引，则对扫描到的所有记录和间隙都加锁，如果不匹配行锁将会释放只剩下间隙锁。回忆一下上面讲的数据页的结果中又一个最大记录和最小记录，Infimum 和 Supremum Record，这两个记录在加间隙锁的时候就会用到。</li>
+</ul>
+<h1 id="延伸阅读"><a href="#延伸阅读" class="headerlink" title="延伸阅读"></a>延伸阅读</h1><p>此文尚未涉及 MySQL 中索引优化的相关内容，可以参考 <a href="https://url.wx-coder.cn/IF5HH" target="_blank" rel="noopener">MySQL 引擎架构与性能优化 https://url.wx-coder.cn/IF5HH</a> 系列中性能优化的相关章节。</p>
+<p>作者：王下邀月熊<br>链接：<a href="https://juejin.im/post/5cf3d550f265da1b76388a34" target="_blank" rel="noopener">https://juejin.im/post/5cf3d550f265da1b76388a34</a><br>来源：掘金<br>著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5cf3d550f265da1b76388a34#heading-12" target="_blank" rel="noopener">MySQL 索引的原理与应用：索引类型，存储结构与锁</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/10/%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/10/%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%B8%AD1%E7%9A%84%E4%B8%AA%E6%95%B0/" class="post-title-link" itemprop="url">二进制中1的个数</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-11 02:41:50 / 修改时间：10:49:46" itemprop="dateCreated datePublished" datetime="2020-07-11T02:41:50+08:00">2020-07-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>请实现一个函数，输入一个整数，输出该数二进制表示中1的个数。例如把9表示成二进制是1001，有2位是1。因此如果输入9，该函数输出2。</p>
+<p><a href="https://www.nowcoder.com/practice/8ee967e43c2c4ec193b040ea7fbb10b8?tpId=13&tqId=11164&rp=1&ru=/ta/coding-interviews&qru=/ta/coding-interviews/question-ranking" target="_blank" rel="noopener">牛客网OJ：二进制中1的个数</a></p>
+<h2 id="普通法"><a href="#普通法" class="headerlink" title="普通法"></a>普通法</h2><p>位运算无外乎 与、或、异或、左移和右移 5 种类型的运算。</p>
+<p>使用位运算符进行运算时，整数会自动转为二进制形式，再进行位运算。所有位运算的题型基本都是各种类型位运算的组合。</p>
+<p>注意点：整数包含正、负数。</p>
+<p>负数右移需要在真空位补上1，如-1，二进制原码为 1000 0001，第一个位为符号位，负数为1，非负数为0开头。在计算机中，负数采用补码来表示，-1的最终二进制表现形式为： 绝对值取反加1，附带上符号位。即 111 1111 加上符号位为 1111 1111。</p>
+<p>-1 &gt;&gt; 1 的结果是 1111 1111。</p>
+<h4 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">判断二进制数中1的位数，可以通过和整数 1 进行 与 运算，1&amp;1 &#x3D; 1，1&amp;0 &#x3D; 0。</span><br><span class="line"></span><br><span class="line">1 的二进制形式为：0000 0001</span><br><span class="line"></span><br><span class="line">9 的二进制形式为：0000 1001</span><br><span class="line"></span><br><span class="line">9&amp;1 &#x3D; 0000 0001 !&#x3D; 0，可以确定最后一位是 1。</span><br><span class="line">那么此时要如何继续往前判断另一个1呢？</span><br><span class="line"></span><br><span class="line">解决方案：</span><br><span class="line"></span><br><span class="line">将 1 左移一位，即 0000 0001 变为 0000 0010，再判断 9（0000 1001）的第 2 位</span><br><span class="line">0000 0010 &amp; 0000 1001 &#x3D; 0000 0000 &#x3D;&#x3D; 0，可以确定第 2 位为 0。</span><br><span class="line"></span><br><span class="line">这个过程中，使用一个中间计数器变量 count 每次确定与运算结果为非 0， 则加 1 即可统计 1 的个数。</span><br><span class="line"></span><br><span class="line">再将 1 左移一位，即 0000 0010 变为 0000 0100，再判断 9（0000 1001）的第 3 位</span><br><span class="line">0000 0100 &amp; 0000 1001 &#x3D; 0000 0100 !&#x3D; 0，可以确定第 3 位为 1。</span><br><span class="line"></span><br><span class="line">后面同上，1 挨个左移，直到移动到最左边，变成 0000 0000，宣告位遍历结束：</span><br><span class="line"></span><br><span class="line">0000 0001</span><br><span class="line">0000 0010</span><br><span class="line">0000 0100</span><br><span class="line">0000 1000</span><br><span class="line">0001 0000</span><br><span class="line">0010 0000</span><br><span class="line">0100 0000</span><br><span class="line">1000 0000</span><br><span class="line"></span><br><span class="line">0000 0000 结束</span><br></pre></td></tr></table></figure>
+
+<h4 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">NumberOf1</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> flag = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span>(flag != <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">if</span>((n&amp;flag) != <span class="number">0</span>)&#123;</span><br><span class="line">                count++;</span><br><span class="line">            &#125;</span><br><span class="line">            flag = flag &lt;&lt; <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> count;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://user-gold-cdn.xitu.io/2019/7/17/16bfdb3cabf7faf0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h2 id="快速法"><a href="#快速法" class="headerlink" title="快速法"></a>快速法</h2><h4 id="解题思路-1"><a href="#解题思路-1" class="headerlink" title="解题思路"></a>解题思路</h4><p><strong>把一个整数减去1之后再和原来的整数做位与运算，得到的结果相当于是把整数的二进制表示中的最右边一个1变成0。</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">5 - 1 &#x3D; 0101 - 0001 &#x3D; 0100</span><br><span class="line"></span><br><span class="line">0101 &amp; 0100 &#x3D; 0100 (最右边的 1 变成0：0101 --&gt; 0100)</span><br><span class="line"></span><br><span class="line">4 - 1 &#x3D; 0100 - 0001 &#x3D; 0011</span><br><span class="line"></span><br><span class="line">0100 &amp; 0011 &#x3D; 0000 (最右边的 1 变成0：0100 --&gt; 0000)</span><br><span class="line"></span><br><span class="line">10 - 1 &#x3D; 1010 - 0001 &#x3D; 1001</span><br><span class="line"></span><br><span class="line">1010 &amp; 1001 &#x3D; 1000 (最右边的 1 变成0：1010 --&gt; 1000)</span><br></pre></td></tr></table></figure>
+
+<p>很多二进制的问题都可以用这个思路解决。</p>
+<h4 id="代码实现-1"><a href="#代码实现-1" class="headerlink" title="代码实现"></a>代码实现</h4><p>这种方法速度比较快，其<strong>运算次数与输入n的大小无关，只与n中1的个数有关</strong>。如果n的二进制表示中有k个1，那么这个方法只需要循环k次即可。其原理是不断清除n的二进制表示中最右边的1，同时累加计数器，直至n为0，代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">BitCount2</span><span class="params">(unsigned <span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    unsigned <span class="keyword">int</span> c =<span class="number">0</span> ;</span><br><span class="line">    <span class="keyword">for</span> (c =<span class="number">0</span>; n; ++c)</span><br><span class="line">    &#123;</span><br><span class="line">        n &amp;= (n -<span class="number">1</span>) ; <span class="comment">// 清除最低位的1</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> c ;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>位运算的题首先要想到位移运算和 与或 运算的结合。</p>
+<h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><h3 id="用一条语句判断一个整数是不是2的整数次方。"><a href="#用一条语句判断一个整数是不是2的整数次方。" class="headerlink" title="用一条语句判断一个整数是不是2的整数次方。"></a>用一条语句判断一个整数是不是2的整数次方。</h3><h4 id="Basic"><a href="#Basic" class="headerlink" title="Basic"></a>Basic</h4><p>一个整数如果是2的整数次方，那么它的二进制表示中有且只有一位是1，而其他所有位都是0。</p>
+<h4 id="思路分析"><a href="#思路分析" class="headerlink" title="思路分析"></a>思路分析</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">方案：把这个整数减去1之后再和它自己做与运算，这个整数中唯一的1就会变成0。</span><br><span class="line"></span><br><span class="line">比如 8 的二进制位 0000 1000，0000 1000 - 1 &#x3D; 0000 1000 - 0000 0001 &#x3D; 0000 0111</span><br><span class="line"></span><br><span class="line">然后再将计算结果和 8 自身进行与运算：0000 1000 &amp; 0000 0111 &#x3D; 0000 0000 结果刚好是 0 。</span><br></pre></td></tr></table></figure>
+
+<h4 id="代码实现-2"><a href="#代码实现-2" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if((n - 1) &amp; n &#x3D;&#x3D; 0)&#123;</span><br><span class="line">    &#x2F;&#x2F;是2的整数次方</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="输入两个整数-m-和-n，计算需要改变-m-的二进制表示中的多少位才能得到-n。"><a href="#输入两个整数-m-和-n，计算需要改变-m-的二进制表示中的多少位才能得到-n。" class="headerlink" title="输入两个整数 m 和 n，计算需要改变 m 的二进制表示中的多少位才能得到 n。"></a>输入两个整数 m 和 n，计算需要改变 m 的二进制表示中的多少位才能得到 n。</h3><p>比如 10 的二进制表示为 1010，13 的二进制表示为 1101，需要改变 1010 中的 3 位才能得到 1101。</p>
+<h4 id="思路分析-1"><a href="#思路分析-1" class="headerlink" title="思路分析"></a>思路分析</h4><p>我们可以分为两步解决这个问题：第一步求这两个数的异或，第二步统计异或结果中1的位数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1010 ^ 1101 &#x3D; 0111</span><br><span class="line"></span><br><span class="line">再运用移位运算 + 与运算判断 1 的个数。</span><br></pre></td></tr></table></figure>
+
+<h4 id="代码实现-3"><a href="#代码实现-3" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">numOfBitToChange</span><span class="params">(<span class="keyword">int</span> m, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> result = m ^ n;</span><br><span class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> flag = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span>(flag != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span>((result &amp; flag) != <span class="number">0</span>) &#123;</span><br><span class="line">            count ++;</span><br><span class="line">        &#125;</span><br><span class="line">        flag &lt;&lt; <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://user-gold-cdn.xitu.io/2019/7/17/16bfdee515c22b9a?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5d2bdeaef265da1bd2611c8a" target="_blank" rel="noopener">二进制中1的个数</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/" class="post-title-link" itemprop="url">数据库逻辑设计之三大范式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-10 06:43:29 / 修改时间：14:58:28" itemprop="dateCreated datePublished" datetime="2020-07-10T06:43:29+08:00">2020-07-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、第一范式"><a href="#一、第一范式" class="headerlink" title="一、第一范式"></a>一、第一范式</h2><p><strong>列不可再分</strong></p>
+<p>1NF是对属性的<strong><code>原子性</code></strong>，要求属性具有原子性，不可再分解；</p>
+<blockquote>
+<p>表：字段1、 字段2(字段2.1、字段2.2)、字段3 ……</p>
+</blockquote>
+<p>如学生（学号，姓名，性别，出生年月日），如果认为最后一列还可以再分成（出生年，出生月，出生日），它就不是一范式了，否则就是；</p>
+<h2 id="二、第二范式"><a href="#二、第二范式" class="headerlink" title="二、第二范式"></a>二、第二范式</h2><p><strong>主键(可为多列)可以将每一行完全区分开来,且主键不冗余</strong></p>
+<p>2NF是对记录的<strong><code>惟一性</code></strong>，要求记录有惟一标识，即实体的惟一性，即<strong>不存在部分依赖</strong>；</p>
+<blockquote>
+<p>表：学号、课程号、姓名、学分;</p>
+</blockquote>
+<p>这个表明显说明了两个事务:学生信息, 课程信息;由于非主键字段必须依赖主键，这里<strong>学分依赖课程号</strong>，<strong>姓名依赖与学号</strong>，所以不符合二范式。</p>
+<p><strong>可能会存在问题：</strong></p>
+<ul>
+<li><code>数据冗余:</code>，每条记录都含有相同信息；</li>
+<li><code>删除异常：</code>删除所有学生成绩，就把课程信息全删除了；</li>
+<li><code>插入异常：</code>学生未选课，无法记录进数据库；</li>
+<li><code>更新异常：</code>调整课程学分，所有行都调整。</li>
+</ul>
+<p><strong>正确做法:</strong><br>学生：<code>Student</code>(学号, 姓名)；<br>课程：<code>Course</code>(课程号, 学分)；<br>选课关系：<code>StudentCourse</code>(学号, 课程号, 成绩)。</p>
+<h2 id="三、第三范式"><a href="#三、第三范式" class="headerlink" title="三、第三范式"></a>三、第三范式</h2><p>满足一二范式条件下,<strong>不存在对主键的传递依赖</strong></p>
+<p>3NF是对字段的<strong><code>冗余性</code></strong>，要求任何字段不能由其他字段派生出来，它要求字段没有冗余，即不存在传递依赖；</p>
+<blockquote>
+<p>表: 学号, 姓名, 年龄, 学院名称, 学院电话</p>
+</blockquote>
+<p>因为存在<strong>依赖传递</strong>: (学号) → (学生)→(所在学院) → (学院电话) 。</p>
+<p><strong>可能会存在问题：</strong></p>
+<ul>
+<li><code>数据冗余:</code>有重复值；</li>
+<li><code>更新异常：</code>有重复的冗余信息，修改时需要同时修改多条记录，否则会出现<strong>数据不一致的情况</strong> 。</li>
+</ul>
+<p><strong>正确做法：</strong></p>
+<p>学生：(学号, 姓名, 年龄, 所在学院)； </p>
+<p>学院：(学院, 电话)。</p>
+<h2 id="四、反范式化"><a href="#四、反范式化" class="headerlink" title="四、反范式化"></a>四、反范式化</h2><p><strong>一般说来，数据库只需满足第三范式（<code>3NF</code>）就行了。</strong></p>
+<p>没有冗余的数据库设计可以做到。但是，没有冗余的数据库未必是最好的数据库，有时为了提高运行效率，就必须降低范式标准，适当保留冗余数据。具体做法是：在概念数据模型设计时遵守第三范式，降低范式标准的工作放到物理数据模型设计时考虑。降低范式就是增加字段，允许冗余，<strong><code>达到以空间换时间的目的</code></strong>。</p>
+<p>〖例〗：有一张存放商品的基本表，“金额”这个字段的存在，表明该表的设计不满足第三范式，因为“金额”可以由“单价”乘以“数量”得到，说明“金额”是冗余字段。但是，增加“金额”这个冗余字段，可以提高查询统计的速度，这就是以空间换时间的作法。</p>
+<p>在<code>Rose 2002</code>中，规定列有两种类型：<strong>数据列</strong>和<strong>计算列</strong>。“金额”这样的列被称为“计算列”，而“单价”和“数量”这样的列被称为“数据列”。</p>
+<h2 id="五、范式化设计和反范式化设计的优缺点"><a href="#五、范式化设计和反范式化设计的优缺点" class="headerlink" title="五、范式化设计和反范式化设计的优缺点"></a>五、范式化设计和反范式化设计的优缺点</h2><h3 id="5-1-范式化"><a href="#5-1-范式化" class="headerlink" title="5.1 范式化"></a>5.1 范式化</h3><p><strong>优点：</strong></p>
+<ul>
+<li>减少数据冗余,数据表体积小更新快</li>
+<li>更新操作更快</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>查询操作需要多表关联,降低了性能</li>
+<li>更难进行索引优化</li>
+</ul>
+<h3 id="5-2-反范式化"><a href="#5-2-反范式化" class="headerlink" title="5.2 反范式化"></a>5.2 反范式化</h3><p><strong>优点：</strong></p>
+<ul>
+<li>可以减少查询时表的关联</li>
+<li>更好地进行索引优化</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>数据冗余,维护不方便</li>
+<li>修改数据不方便</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000013695030" target="_blank" rel="noopener">数据库逻辑设计之三大范式</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/" class="post-title-link" itemprop="url">RESTful API 最佳实践</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-09 11:23:58 / 修改时间：19:35:41" itemprop="dateCreated datePublished" datetime="2020-07-09T11:23:58+08:00">2020-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="http://www.ruanyifeng.com/blog/2011/09/restful.html" target="_blank" rel="noopener">RESTful</a> 是目前最流行的 API 设计规范，用于 Web 数据接口的设计。</p>
+<p>它的大原则容易把握，但是细节不容易做对。本文总结 RESTful 的设计细节，介绍如何设计出易于理解和使用的 API。</p>
+<p><img src="https://www.wangbase.com/blogimg/asset/201810/bg2018100301.jpg" alt="img"></p>
+<h2 id="一、URL-设计"><a href="#一、URL-设计" class="headerlink" title="一、URL 设计"></a>一、URL 设计</h2><h3 id="1-1-动词-宾语"><a href="#1-1-动词-宾语" class="headerlink" title="1.1 动词 + 宾语"></a>1.1 动词 + 宾语</h3><p>RESTful 的核心思想就是，客户端发出的数据操作指令都是”动词 + 宾语”的结构。比如，<code>GET /articles</code>这个命令，<code>GET</code>是动词，<code>/articles</code>是宾语。</p>
+<p>动词通常就是五种 HTTP 方法，对应 CRUD 操作。</p>
+<blockquote>
+<ul>
+<li>GET：读取（Read）</li>
+<li>POST：新建（Create）</li>
+<li>PUT：更新（Update）</li>
+<li>PATCH：更新（Update），通常是部分更新</li>
+<li>DELETE：删除（Delete）</li>
+</ul>
+</blockquote>
+<p>根据 HTTP 规范，动词一律大写。</p>
+<h3 id="1-2-动词的覆盖"><a href="#1-2-动词的覆盖" class="headerlink" title="1.2 动词的覆盖"></a>1.2 动词的覆盖</h3><p>有些客户端只能使用<code>GET</code>和<code>POST</code>这两种方法。服务器必须接受<code>POST</code>模拟其他三个方法（<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>）。</p>
+<p>这时，客户端发出的 HTTP 请求，要加上<code>X-HTTP-Method-Override</code>属性，告诉服务器应该使用哪一个动词，覆盖<code>POST</code>方法。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">POST /api/Person/4 HTTP/1.1  </span><br><span class="line"><span class="attribute">X-HTTP-Method-Override</span>: PUT</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，<code>X-HTTP-Method-Override</code>指定本次请求的方法是<code>PUT</code>，而不是<code>POST</code>。</p>
+<h3 id="1-3-宾语必须是名词"><a href="#1-3-宾语必须是名词" class="headerlink" title="1.3 宾语必须是名词"></a>1.3 宾语必须是名词</h3><p>宾语就是 API 的 URL，是 HTTP 动词作用的对象。它应该是名词，不能是动词。比如，<code>/articles</code>这个 URL 就是正确的，而下面的 URL 不是名词，所以都是错误的。</p>
+<blockquote>
+<ul>
+<li>/getAllCars</li>
+<li>/createNewCar</li>
+<li>/deleteAllRedCars</li>
+</ul>
+</blockquote>
+<h3 id="1-4-复数-URL"><a href="#1-4-复数-URL" class="headerlink" title="1.4 复数 URL"></a>1.4 复数 URL</h3><p>既然 URL 是名词，那么应该使用复数，还是单数？</p>
+<p>这没有统一的规定，但是常见的操作是读取一个集合，比如<code>GET /articles</code>（读取所有文章），这里明显应该是复数。</p>
+<p>为了统一起见，建议都使用复数 URL，比如<code>GET /articles/2</code>要好于<code>GET /article/2</code>。</p>
+<h3 id="1-5-避免多级-URL"><a href="#1-5-避免多级-URL" class="headerlink" title="1.5 避免多级 URL"></a>1.5 避免多级 URL</h3><p>常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个作者的某一类文章。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12/categories/2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>这种 URL 不利于扩展，语义也不明确，往往要想一会，才能明白含义。</p>
+<p>更好的做法是，除了第一级，其他级别都用查询字符串表达。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12?categories=2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>下面是另一个例子，查询已发布的文章。你可能会设计成下面的 URL。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles/published</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>查询字符串的写法明显更好。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles?published=true</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h2 id="二、状态码"><a href="#二、状态码" class="headerlink" title="二、状态码"></a>二、状态码</h2><h3 id="2-1-状态码必须精确"><a href="#2-1-状态码必须精确" class="headerlink" title="2.1 状态码必须精确"></a>2.1 状态码必须精确</h3><p>客户端的每一次请求，服务器都必须给出回应。回应包括 HTTP 状态码和数据两部分。</p>
+<p>HTTP 状态码就是一个三位数，分成五个类别。</p>
+<blockquote>
+<ul>
+<li><code>1xx</code>：相关信息</li>
+<li><code>2xx</code>：操作成功</li>
+<li><code>3xx</code>：重定向</li>
+<li><code>4xx</code>：客户端错误</li>
+<li><code>5xx</code>：服务器错误</li>
+</ul>
+</blockquote>
+<p>这五大类总共包含<a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes" target="_blank" rel="noopener">100多种</a>状态码，覆盖了绝大部分可能遇到的情况。每一种状态码都有标准的（或者约定的）解释，客户端只需查看状态码，就可以判断出发生了什么情况，所以服务器应该返回尽可能精确的状态码。</p>
+<p>API 不需要<code>1xx</code>状态码，下面介绍其他四类状态码的精确含义。</p>
+<h3 id="2-2-2xx-状态码"><a href="#2-2-2xx-状态码" class="headerlink" title="2.2 2xx 状态码"></a>2.2 2xx 状态码</h3><p><code>200</code>状态码表示操作成功，但是不同的方法可以返回更精确的状态码。</p>
+<blockquote>
+<ul>
+<li>GET: 200 OK</li>
+<li>POST: 201 Created</li>
+<li>PUT: 200 OK</li>
+<li>PATCH: 200 OK</li>
+<li>DELETE: 204 No Content</li>
+</ul>
+</blockquote>
+<p>上面代码中，<code>POST</code>返回<code>201</code>状态码，表示生成了新的资源；<code>DELETE</code>返回<code>204</code>状态码，表示资源已经不存在。</p>
+<p>此外，<code>202 Accepted</code>状态码表示服务器已经收到请求，但还未进行处理，会在未来再处理，通常用于异步操作。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">202</span> Accepted</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "task": &#123;</span><br><span class="line">    "href": "/api/company/job-management/jobs/2130040",</span><br><span class="line">    "id": "2130040"</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="2-3-3xx-状态码"><a href="#2-3-3xx-状态码" class="headerlink" title="2.3 3xx 状态码"></a>2.3 3xx 状态码</h3><p>API 用不到<code>301</code>状态码（永久重定向）和<code>302</code>状态码（暂时重定向，<code>307</code>也是这个含义），因为它们可以由应用级别返回，浏览器会直接跳转，API 级别可以不考虑这两种情况。</p>
+<p>API 用到的<code>3xx</code>状态码，主要是<code>303 See Other</code>，表示参考另一个 URL。它与<code>302</code>和<code>307</code>的含义一样，也是”暂时重定向”，区别在于<code>302</code>和<code>307</code>用于<code>GET</code>请求，而<code>303</code>用于<code>POST</code>、<code>PUT</code>和<code>DELETE</code>请求。收到<code>303</code>以后，浏览器不会自动跳转，而会让用户自己决定下一步怎么办。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">303</span> See Other</span><br><span class="line"><span class="attribute">Location</span>: /api/orders/12345</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="2-4-4xx-状态码"><a href="#2-4-4xx-状态码" class="headerlink" title="2.4 4xx 状态码"></a>2.4 4xx 状态码</h3><p><code>4xx</code>状态码表示客户端错误，主要有下面几种。</p>
+<p><code>400 Bad Request</code>：服务器不理解客户端的请求，未做任何处理。</p>
+<p><code>401 Unauthorized</code>：用户未提供身份验证凭据，或者没有通过身份验证。</p>
+<p><code>403 Forbidden</code>：用户通过了身份验证，但是不具有访问资源所需的权限。</p>
+<p><code>404 Not Found</code>：所请求的资源不存在，或不可用。</p>
+<p><code>405 Method Not Allowed</code>：用户已经通过身份验证，但是所用的 HTTP 方法不在他的权限之内。</p>
+<p><code>410 Gone</code>：所请求的资源已从这个地址转移，不再可用。</p>
+<p><code>415 Unsupported Media Type</code>：客户端要求的返回格式不支持。比如，API 只能返回 JSON 格式，但是客户端要求返回 XML 格式。</p>
+<p><code>422 Unprocessable Entity</code> ：客户端上传的附件无法处理，导致请求失败。</p>
+<p><code>429 Too Many Requests</code>：客户端的请求次数超过限额。</p>
+<h3 id="2-5-5xx-状态码"><a href="#2-5-5xx-状态码" class="headerlink" title="2.5 5xx 状态码"></a>2.5 5xx 状态码</h3><p><code>5xx</code>状态码表示服务端错误。一般来说，API 不会向用户透露服务器的详细信息，所以只要两个状态码就够了。</p>
+<p><code>500 Internal Server Error</code>：客户端请求有效，服务器处理时发生了意外。</p>
+<p><code>503 Service Unavailable</code>：服务器无法处理请求，一般用于网站维护状态。</p>
+<h2 id="三、服务器回应"><a href="#三、服务器回应" class="headerlink" title="三、服务器回应"></a>三、服务器回应</h2><h3 id="3-1-不要返回纯本文"><a href="#3-1-不要返回纯本文" class="headerlink" title="3.1 不要返回纯本文"></a>3.1 不要返回纯本文</h3><p>API 返回的数据格式，不应该是纯文本，而应该是一个 JSON 对象，因为这样才能返回标准的结构化数据。所以，服务器回应的 HTTP 头的<code>Content-Type</code>属性要设为<code>application/json</code>。</p>
+<p>客户端请求时，也要明确告诉服务器，可以接受 JSON 格式，即请求的 HTTP 头的<code>ACCEPT</code>属性也要设成<code>application/json</code>。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET /orders/2 HTTP/1.1 </span><br><span class="line"><span class="attribute">Accept</span>: application/json</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="3-2-发生错误时，不要返回-200-状态码"><a href="#3-2-发生错误时，不要返回-200-状态码" class="headerlink" title="3.2 发生错误时，不要返回 200 状态码"></a>3.2 发生错误时，不要返回 200 状态码</h3><p>有一种不恰当的做法是，即使发生错误，也返回<code>200</code>状态码，把错误信息放在数据体里面，就像下面这样。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "failure",</span><br><span class="line">  "data": &#123;</span><br><span class="line">    "error": "Expected at least two items in list."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，解析数据体以后，才能得知操作失败。</p>
+<p>这张做法实际上取消了状态码，这是完全不可取的。正确的做法是，状态码反映发生的错误，具体的错误信息放在数据体里面返回。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">400</span> Bad Request</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "error": "Invalid payoad.",</span><br><span class="line">  "detail": &#123;</span><br><span class="line">     "surname": "This field is required."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="3-3-提供链接"><a href="#3-3-提供链接" class="headerlink" title="3.3 提供链接"></a>3.3 提供链接</h3><p>API 的使用者未必知道，URL 是怎么设计的。一个解决方法就是，在回应中，给出相关链接，便于下一步操作。这样的话，用户只要记住一个 URL，就可以发现其他的 URL。这种方法叫做 HATEOAS。</p>
+<p>举例来说，GitHub 的 API 都在 <a href="https://api.github.com/" target="_blank" rel="noopener">api.github.com</a> 这个域名。访问它，就可以得到其他 URL。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  ...</span><br><span class="line">  "feeds_url": "https://api.github.com/feeds",</span><br><span class="line">  "followers_url": "https://api.github.com/user/followers",</span><br><span class="line">  "following_url": "https://api.github.com/user/following&#123;/target&#125;",</span><br><span class="line">  "gists_url": "https://api.github.com/gists&#123;/gist_id&#125;",</span><br><span class="line">  "hub_url": "https://api.github.com/hub",</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面的回应中，挑一个 URL 访问，又可以得到别的 URL。对于用户来说，不需要记住 URL 设计，只要从 api.github.com 一步步查找就可以了。</p>
+<p>HATEOAS 的格式没有统一规定，上面例子中，GitHub 将它们与其他属性放在一起。更好的做法应该是，将相关链接与其他属性分开。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "In progress",</span><br><span class="line">   "links": &#123;[</span><br><span class="line">    &#123; "rel":"cancel", "method": "delete", "href":"/api/status/12345" &#125; ,</span><br><span class="line">    &#123; "rel":"edit", "method": "put", "href":"/api/status/12345" &#125;</span><br><span class="line">  ]&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h2 id="四、参考链接"><a href="#四、参考链接" class="headerlink" title="四、参考链接"></a>四、参考链接</h2><ul>
+<li><a href="https://blog.florimondmanca.com/restful-api-design-13-best-practices-to-make-your-users-happy" target="_blank" rel="noopener">RESTful API Design: 13 Best Practices to Make Your Users Happy</a>, by Florimond Manca</li>
+<li><a href="https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank" rel="noopener">API design</a>, by MicroSoft Azure</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.ruanyifeng.com/blog/2018/10/restful-api-best-practices.html" target="_blank" rel="noopener">RESTful API 最佳实践</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -891,625 +1600,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/05/%E5%85%B3%E4%BA%8EIO%E5%90%8C%E6%AD%A5%E3%80%81%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E%E3%80%81%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/05/%E5%85%B3%E4%BA%8EIO%E5%90%8C%E6%AD%A5%E3%80%81%E5%BC%82%E6%AD%A5%E3%80%81%E9%98%BB%E5%A1%9E%E3%80%81%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">关于IO同步、异步、阻塞、非阻塞的区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-05 08:37:42 / 修改时间：16:39:47" itemprop="dateCreated datePublished" datetime="2020-07-05T08:37:42+08:00">2020-07-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>同步（synchronous） IO和异步（asynchronous） IO，阻塞（blocking） IO和非阻塞（non-blocking）IO分别是什么，到底有什么区别？</p>
-<p>这个问题其实不同的人给出的答案都可能不同，比如wiki，就认为asynchronous IO和non-blocking IO是一个东西。这其实是因为不同的人的知识背景不同，并且在讨论这个问题的时候上下文(context)也不相同。所以，为了更好的回答这个问题，我先限定一下本文的上下文。</p>
-<p>本文讨论的背景是Linux环境下的network IO。</p>
-<p>本文最重要的参考文献是Richard Stevens的“UNIX® Network Programming Volume 1, Third Edition: The Sockets Networking ”，6.2节“I/O Models ”，Stevens在这节中详细说明了各种IO的特点和区别，如果英文够好的话，推荐直接阅读。</p>
-<p>Stevens的文风是有名的深入浅出，所以不用担心看不懂。本文中的流程图也是截取自参考文献。</p>
-<p>Stevens在文章中一共比较了五种IO Model：</p>
-<blockquote>
-<ul>
-<li>blocking IO</li>
-<li>nonblocking IO</li>
-<li>IO multiplexing</li>
-<li>signal driven IO</li>
-<li>asynchronous IO</li>
-</ul>
-</blockquote>
-<p>由于signal driven IO在实际中并不常用，所以我这只提及剩下的四种IO Model。</p>
-<p><strong>再说一下IO发生时涉及的对象和步骤。</strong></p>
-<p>对于一个network IO (这里我们以read举例)，它会涉及到两个系统对象，一个是调用这个IO的process (or thread)，另一个就是系统内核(kernel)。当一个read操作发生时，它会经历两个阶段：</p>
-<blockquote>
-<ul>
-<li>等待数据准备 (Waiting for the data to be ready)</li>
-<li>将数据从内核拷贝到进程中 (Copying the data from the kernel to the process)</li>
-</ul>
-</blockquote>
-<p>记住这两点很重要，因为这些IO Model的区别就是在两个阶段上各有不同的情况。</p>
-<h2 id="blocking-IO"><a href="#blocking-IO" class="headerlink" title="blocking IO"></a>blocking IO</h2><p>在linux中，默认情况下所有的socket都是blocking，一个典型的读操作流程大概是这样：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XBKOdzI9WssR7hX6DTiashnARqO8kcuMVrGARg7RZAwiagqQPgr45PZjtp5icVHmtiblgf5dDoEdwN1vw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>当用户进程调用了recvfrom这个系统调用，kernel就开始了IO的第一个阶段：准备数据。</p>
-<p>对于network io来说，很多时候数据在一开始还没有到达（比如，还没有收到一个完整的UDP包），这个时候kernel就要等待足够的数据到来。而在用户进程这边，整个进程会被阻塞。</p>
-<p>当kernel一直等到数据准备好了，它就会将数据从kernel中拷贝到用户内存，然后kernel返回结果，用户进程才解除block的状态，重新运行起来。</p>
-<p>所以，blocking IO的特点就是在IO执行的两个阶段都被block了。</p>
-<h2 id="non-blocking-IO"><a href="#non-blocking-IO" class="headerlink" title="non-blocking IO"></a>non-blocking IO</h2><p>linux下，可以通过设置socket使其变为non-blocking。当对一个non-blocking socket执行读操作时，流程是这个样子：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XBKOdzI9WssR7hX6DTiashnAd4GaaIZNgtKC5aQUlMPjlCdIt9fEicS15gNue99SSe3ybgYy4MsicwSw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>从图中可以看出，当用户进程发出read操作时，如果kernel中的数据还没有准备好，那么它并不会block用户进程，而是立刻返回一个error。从用户进程角度讲 ，它发起一个read操作后，并不需要等待，而是马上就得到了一个结果。</p>
-<p>用户进程判断结果是一个error时，它就知道数据还没有准备好，于是它可以再次发送read操作。一旦kernel中的数据准备好了，并且又再次收到了用户进程的system call，那么它马上就将数据拷贝到了用户内存，然后返回。</p>
-<p>所以，用户进程其实是需要不断的主动询问kernel数据好了没有。</p>
-<h2 id="IO-multiplexing"><a href="#IO-multiplexing" class="headerlink" title="IO multiplexing"></a>IO multiplexing</h2><p>IO multiplexing这个词可能有点陌生，但是如果我说select，epoll，大概就都能明白了。有些地方也称这种IO方式为event driven IO。我们都知道，select/epoll的好处就在于单个process就可以同时处理多个网络连接的IO。</p>
-<p>它的基本原理就是select/epoll这个function会不断的轮询所负责的所有socket，当某个socket有数据到达了，就通知用户进程。它的流程如图：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XBKOdzI9WssR7hX6DTiashnAXXGhvfZ5auCcL592ZCjRL89DrPVqLRttiakZ5cRG6nmgVFx4eSyjJ9Q/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>当用户进程调用了select，那么整个进程会被block，而同时，kernel会“监视”所有select负责的socket，当任何一个socket中的数据准备好了，select就会返回。这个时候用户进程再调用read操作，将数据从kernel拷贝到用户进程。</p>
-<p>这个图和blocking IO的图其实并没有太大的不同，事实上，还更差一些。因为这里需要使用两个system call (select 和 recvfrom)，而blocking IO只调用了一个system call (recvfrom)。但是，用select的优势在于它可以同时处理多个connection。</p>
-<blockquote>
-<p>多说一句。所以，如果处理的连接数不是很高的话，使用select/epoll的web server不一定比使用multi-threading + blocking IO的web server性能更好，可能延迟还更大。select/epoll的优势并不是对于单个连接能处理得更快，而是在于能处理更多的连接。</p>
-</blockquote>
-<p>在IO multiplexing Model中，实际中，对于每一个socket，一般都设置成为non-blocking，但是，如上图所示，整个用户的process其实是一直被block的。只不过process是被select这个函数block，而不是被socket IO给block。</p>
-<h2 id="Asynchronous-I-O"><a href="#Asynchronous-I-O" class="headerlink" title="Asynchronous I/O"></a>Asynchronous I/O</h2><p>linux下的asynchronous IO其实用得很少。先看一下它的流程：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XBKOdzI9WssR7hX6DTiashnA8fyghzPKVR0kpjOh9bABLVrTTtVSqaJYicELvibqTwPH4WHLhFUic0sPQ/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>用户进程发起read操作之后，立刻就可以开始去做其它的事。而另一方面，从kernel的角度，当它受到一个asynchronous read之后，首先它会立刻返回，所以不会对用户进程产生任何block。</p>
-<p>然后，kernel会等待数据准备完成，然后将数据拷贝到用户内存，当这一切都完成之后，kernel会给用户进程发送一个signal，告诉它read操作完成了。</p>
-<p>到目前为止，已经将四个IO Model都介绍完了。现在回过头来回答最初的那几个问题：<strong>blocking和non-blocking的区别在哪，synchronous IO和asynchronous IO的区别在哪。</strong></p>
-<p>先回答最简单的这个：blocking vs non-blocking。前面的介绍中其实已经很明确的说明了这两者的区别。调用blocking IO会一直block住对应的进程直到操作完成，而non-blocking IO在kernel还准备数据的情况下会立刻返回。</p>
-<p>在说明synchronous IO和asynchronous IO的区别之前，需要先给出两者的定义。Stevens给出的定义（其实是POSIX的定义）是这样子的：</p>
-<blockquote>
-<p>A synchronous I/O operation causes the requesting process to be blocked until that I/O operation completes;<br>An asynchronous I/O operation does not cause the requesting process to be blocked;</p>
-</blockquote>
-<p>两者的区别就在于synchronous IO做”IO operation”的时候会将process阻塞。按照这个定义，之前所述的blocking IO，non-blocking IO，IO multiplexing都属于synchronous IO。</p>
-<p>有人可能会说，non-blocking IO并没有被block啊。这里有个非常“狡猾”的地方，定义中所指的”IO operation”是指真实的IO操作，就是例子中的recvfrom这个system call。non-blocking IO在执行recvfrom这个system call的时候，如果kernel的数据没有准备好，这时候不会block进程。</p>
-<p>但是，当kernel中数据准备好的时候，recvfrom会将数据从kernel拷贝到用户内存中，这个时候进程是被block了，在这段时间内，进程是被block的。而asynchronous IO则不一样，当进程发起IO 操作之后，就直接返回再也不理睬了，直到kernel发送一个信号，告诉进程说IO完成。在这整个过程中，进程完全没有被block。</p>
-<p>各个IO Model的比较如图所示：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/8KKrHK5ic6XBKOdzI9WssR7hX6DTiashnAJibkyGib155NLzsNCricwqncn0TfskibxaoU1sJnwah6PYibZ8faduKHeUw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
-<p>经过上面的介绍，会发现non-blocking IO和asynchronous IO的区别还是很明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但是它仍然要求进程去主动的check，并且当数据准备完成以后，也需要进程主动的再次调用recvfrom来将数据拷贝到用户内存。</p>
-<p>而asynchronous IO则完全不同。它就像是用户进程将整个IO操作交给了他人（kernel）完成，然后他人做完后发信号通知。在此期间，用户进程不需要去检查IO操作的状态，也不需要主动的去拷贝数据。</p>
-<p><strong>最后，再举几个不是很恰当的例子来说明这四个IO Model:</strong></p>
-<p>有A，B，C，D四个人在钓鱼：</p>
-<blockquote>
-<ul>
-<li>A用的是最老式的鱼竿，所以呢，得一直守着，等到鱼上钩了再拉杆；</li>
-<li>B的鱼竿有个功能，能够显示是否有鱼上钩，所以呢，B就和旁边的MM聊天，隔会再看看有没有鱼上钩，有的话就迅速拉杆；</li>
-<li>C用的鱼竿和B差不多，但他想了一个好办法，就是同时放好几根鱼竿，然后守在旁边，一旦有显示说鱼上钩了，它就将对应的鱼竿拉起来；</li>
-<li>D是个有钱人，干脆雇了一个人帮他钓鱼，一旦那个人把鱼钓上来了，就给D发个短信。</li>
-</ul>
-</blockquote>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://mp.weixin.qq.com/s?__biz=MzIyNDU2ODA4OQ==&mid=2247484027&idx=1&sn=ecc59c3c5cd4d0926b57db653b615157&chksm=e80db40ddf7a3d1bcb82ee1a83f63d25a8667287c2675f2b8a9a27bae1d7a80088a466ab77c1&scene=21#wechat_redirect" target="_blank" rel="noopener">关于IO同步、异步、阻塞、非阻塞的区别</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/04/%E4%B8%BA%E4%BB%80%E4%B9%88Java%E4%B8%ADString%E6%98%AF%E4%B8%8D%E5%8F%AF%E5%8F%98%E7%9A%84/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/04/%E4%B8%BA%E4%BB%80%E4%B9%88Java%E4%B8%ADString%E6%98%AF%E4%B8%8D%E5%8F%AF%E5%8F%98%E7%9A%84/" class="post-title-link" itemprop="url">为什么Java中String是不可变的</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-05 07:19:54 / 修改时间：15:27:03" itemprop="dateCreated datePublished" datetime="2020-07-05T07:19:54+08:00">2020-07-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="解答："><a href="#解答：" class="headerlink" title="解答："></a><strong>解答</strong>：</h3><p>有三点：</p>
-<p>1）String 在底层是用一个 private final 修饰的字符数组 value 来存储字符串的。final 修饰符保证了 value 这个引用变量是不可变的，private 修饰符则保证了 value 是类私有的，不能通过对象实例去访问和更改 value 数组里存放的字符。</p>
-<blockquote>
-<p>注：有很多地方说 String 不可变是 final 起的作用，其实不严谨。因为即使我不用 final 修改 value ，但初始化完成后我能保证以后都不更改 value 这个引用变量和 value[] 数组里存放的值，它也是从没变化过的。final 只是保证了 value 这个引用变量是不能更改的，但不能保证 value[] 数组里存放的字符是不能更改的。如果把 private 改为 public 修饰，String类的对象是可以通过访问 value 去更改 value[] 数组里存放的字符的，这时 String 就不再是不可变的了。所以不如说 private 起的作用更大一些。后面我们会通过 <code>代码1处</code> 去验证。</p>
-</blockquote>
-<p>2）String 类并没有对外暴露可以修改 value[] 数组内容的方法，并且 String 类内部对字符串的操作和改变都是通过新建一个 String 对象去完成的，操作完返回的是新的 String 对象，并没有改变原来对象的 value[] 数组。</p>
-<blockquote>
-<p>注：String 类如果对外暴露可以更改 value[] 数组的方法，如 setter 方法，也是不能保证 String 是不可变的。后面我们会通过 <code>代码2处</code> 去验证。</p>
-</blockquote>
-<p>3）String 类是用 final 修饰的，保证了 String 类是不能通过子类继承去破坏或更改它的不可变性的。</p>
-<blockquote>
-<p>注：如果 String 类不是用 final 修饰的，也就是 String 类是可以被子类继承的，那子类就可以改变父类原有的方法或属性。后面我们会通过 <code>代码3处</code> 去验证。</p>
-</blockquote>
-<p>以上三个条件同时满足，才让 String 类成了不可变类，才让 String 类具有了一旦实例化就不能改变它的内容的属性。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">String</span> <span class="keyword">implements</span> <span class="title">Serializable</span>, <span class="title">Comparable</span>&lt;<span class="title">String</span>&gt;, <span class="title">CharSequence</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">char</span>[] value; <span class="comment">// 用 private final 修饰的字符数组存储字符串</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> hash;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">6849794470754667710L</span>;</span><br><span class="line">	</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">String</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = <span class="string">""</span>.value; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">String</span><span class="params">(String var1)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = var1.value;</span><br><span class="line">        <span class="keyword">this</span>.hash = var1.hash;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">String</span><span class="params">(<span class="keyword">char</span>[] var1)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = Arrays.copyOf(var1, var1.length);</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><strong>面试问题</strong>：String 类是用什么数据结构来存储字符串的？</p>
-<p>由上面 String 的源码可见，<strong>String 类是用数组的数据结构来存储字符串的</strong>。</p>
-<h4 id="代码1-把-private-修饰符换成-public"><a href="#代码1-把-private-修饰符换成-public" class="headerlink" title="代码1:把 private 修饰符换成 public"></a>代码1:把 private 修饰符换成 public</h4><p>我们来看看如果把 private 修饰符换成 public，看看会发生什么？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 先来模拟一个String类，初始化的时候将 String 转成 value 数组存储</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutable</span> </span>&#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">char</span>[] value;  <span class="comment">// 修饰符改成了 public </span></span><br><span class="line">   </span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       <span class="keyword">this</span>.value = <span class="string">""</span>.toCharArray();</span><br><span class="line">   &#125;</span><br><span class="line">   </span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">(String str)</span></span>&#123;</span><br><span class="line">       <span class="keyword">this</span>.value = str.toCharArray(); <span class="comment">// 初始化时转为字符数组</span></span><br><span class="line">   &#125;</span><br><span class="line">   </span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">char</span>[] getValue()&#123;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">this</span>.value;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        WhyStringImutable str = <span class="keyword">new</span> WhyStringImutable(<span class="string">"abcd"</span>);</span><br><span class="line">        System.out.println(<span class="string">"原str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue()); <span class="comment">// 打印str对象中存放的字符数组</span></span><br><span class="line">        System.out.println(<span class="string">"----------"</span>);</span><br><span class="line">        str.value[<span class="number">1</span>] = <span class="string">'e'</span>; <span class="comment">// 通过对象实例访问value数组并修改其内容</span></span><br><span class="line">        System.out.println(<span class="string">"修改后str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue()); <span class="comment">// 打印str对象中存放的字符数组</span></span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">原str中value数组的内容为：</span><br><span class="line">abcd</span><br><span class="line">----------</span><br><span class="line">修改后str中value数组的内容为：</span><br><span class="line">aecd</span><br></pre></td></tr></table></figure>
-
-<p>由此可见，private 修改为 public 后，String 是可以通过对象实例访问并修改所保存的value 数组的，并不能保证 String 的不可变性。</p>
-<h4 id="代码2-对外暴露可以更改-value-数组的方法"><a href="#代码2-对外暴露可以更改-value-数组的方法" class="headerlink" title="代码2:对外暴露可以更改 value[] 数组的方法"></a>代码2:对外暴露可以更改 value[] 数组的方法</h4><p>我们如果对外暴露可以更改 value[] 数组的方法，如 setter 方法，看看又会发生什么？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">char</span>[] value;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = <span class="string">""</span>.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">(String str)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = str.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 对外暴露可以修改 value 数组的方法</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setValue</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">char</span> ch)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value[i] = ch;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">char</span>[] getValue()&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        WhyStringImutable str = <span class="keyword">new</span> WhyStringImutable(<span class="string">"abcd"</span>);</span><br><span class="line">        System.out.println(<span class="string">"原str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue()); <span class="comment">// 打印str对象中存放的字符数组</span></span><br><span class="line">        System.out.println(<span class="string">"----------"</span>);</span><br><span class="line">        str.setValue(<span class="number">1</span>,<span class="string">'e'</span>); <span class="comment">// 通过set方法改变指定位置的value数组元素</span></span><br><span class="line">        System.out.println(<span class="string">"修改后str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue()); <span class="comment">// 打印str对象中存放的字符数组</span></span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">原str中value数组的内容为：</span><br><span class="line">abcd</span><br><span class="line">----------</span><br><span class="line">修改后str中value数组的内容为：</span><br><span class="line">aecd</span><br></pre></td></tr></table></figure>
-
-<p>由此可见，如果对外暴露了可以更改 value[] 数组内容的方法，也是不能保证 String 的不可变性的。</p>
-<h4 id="代码3-去掉-final-修饰"><a href="#代码3-去掉-final-修饰" class="headerlink" title="代码3:去掉 final 修饰"></a>代码3:去掉 final 修饰</h4><p>如果 WhyStringImutable 类去掉 final 修饰，其他的保持不变，又会怎样呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">char</span>[] value;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = <span class="string">""</span>.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutable</span><span class="params">(String str)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = str.toCharArray(); <span class="comment">// 初始化时转为字符数组</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">char</span>[] getValue()&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>写一个子类继承自WhyStringImutable 并修改原来父类的属性，实现子类自己的逻辑：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableChild</span> <span class="keyword">extends</span> <span class="title">WhyStringImutable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">char</span>[] value; <span class="comment">// 修改字符数组为 public 修饰，不要 final </span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutableChild</span><span class="params">(String str)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = str.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">WhyStringImutableChild</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.value = <span class="string">""</span>.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">char</span>[] getValue() &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        WhyStringImutableChild str = <span class="keyword">new</span> WhyStringImutableChild(<span class="string">"abcd"</span>);</span><br><span class="line">        System.out.println(<span class="string">"原str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue());</span><br><span class="line">        System.out.println(<span class="string">"----------"</span>);</span><br><span class="line">        str.value[<span class="number">1</span>] = <span class="string">'s'</span>;</span><br><span class="line">        System.out.println(<span class="string">"修改后str中value数组的内容为："</span>);</span><br><span class="line">        System.out.println(str.getValue());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">原str中value数组的内容为：</span><br><span class="line">abcd</span><br><span class="line">----------</span><br><span class="line">修改后str中value数组的内容为：</span><br><span class="line">ascd</span><br></pre></td></tr></table></figure>
-
-<p>由此可见，如果 String 类不是用 final 修饰的，是可以通过子类继承来修改它原来的属性的，所以也是不能保证它的不可变性的。</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>综上所分析，String 不可变的原因是 JDK 设计者巧妙的设计了如上三点，保证了String 类是个不可变类，让 String 具有了不可变的属性。考验的是工程师构造数据类型，封装数据的功力，而不是简单的用 final 来修饰，背后的设计思想值得我们理解和学习。</p>
-<h3 id="拓展"><a href="#拓展" class="headerlink" title="拓展"></a>拓展</h3><p>从上面的分析，我们知道，String 确实是个不可变的类，但我们就真的没办法改变 String 对象的值了吗？不是的，<strong>通过反射可以改变 String 对象的值</strong>。</p>
-<p>但是请谨慎那么做，<strong>因为一旦通过反射改变对应的 String 对象的值，后面再创建相同内容的 String 对象时都会是反射改变后的值</strong>，这时候在后面的代码逻辑执行时就会出现让你 “摸不着头脑” 的现象，具有迷惑性，出了奇葩的问题你也很难排除到原因。后面在 <code>代码4处</code> 我们会验证这个问题。</p>
-<p>先来看看如何通过反射改变 String 对象的内容：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		String str = <span class="keyword">new</span> String(<span class="string">"123"</span>);</span><br><span class="line">        System.out.println(<span class="string">"反射前 str:"</span>+str);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Field field = String.class.getDeclaredField("value");</span><br><span class="line">            field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            <span class="keyword">char</span>[] aa = (<span class="keyword">char</span>[]) field.get(str);</span><br><span class="line">            aa[<span class="number">1</span>] = <span class="string">'1'</span>;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NoSuchFieldException | IllegalAccessException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"反射后 str："</span>+str);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>打印结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">反射前 str:123</span><br><span class="line">反射后 str：113 &#x2F;&#x2F; 可见，反射后，str 的值确实改变了</span><br></pre></td></tr></table></figure>
-
-<h4 id="代码4-通过反射改变String-对象的值造成的后果"><a href="#代码4-通过反射改变String-对象的值造成的后果" class="headerlink" title="代码4:通过反射改变String 对象的值造成的后果"></a>代码4:通过反射改变String 对象的值造成的后果</h4><p>下面我们来验证<strong>因为一旦通过反射改变对应的 String 对象的值，后面再创建相同内容的 String 对象时都会是反射改变后的值</strong>的问题：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">WhyStringImutableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		String str = <span class="keyword">new</span> String(<span class="string">"123"</span>);</span><br><span class="line">        System.out.println(<span class="string">"反射前 str:"</span>+str);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Field field = String.class.getDeclaredField("value");</span><br><span class="line">            field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            <span class="keyword">char</span>[] aa = (<span class="keyword">char</span>[]) field.get(str);</span><br><span class="line">            aa[<span class="number">1</span>] = <span class="string">'1'</span>;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (NoSuchFieldException | IllegalAccessException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"反射后 str："</span>+str);</span><br><span class="line">        </span><br><span class="line">        String str2 = <span class="keyword">new</span> String(<span class="string">"123"</span>);</span><br><span class="line">      	System.out.println(<span class="string">"str2:"</span>+str2); <span class="comment">// 我们来看 str2 会输出什么，会输出 113？</span></span><br><span class="line">        System.out.println(<span class="string">"判断是否是同一对象："</span>+str == str2); <span class="comment">// 判断 str 和 str2 的内存地址值是否相等</span></span><br><span class="line">        System.out.println(<span class="string">"判断内容是否相同："</span>+str.equals(str2)); <span class="comment">// 判断 str 和 str2 的内容是否相等</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>执行结果如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">反射前 str:123</span><br><span class="line">反射后 str：113</span><br><span class="line">str2:113 &#x2F;&#x2F; 竟然不是123？？而是输出113，说明 str2 也是反射修改后的值。</span><br><span class="line">判断是否是同一对象：false &#x2F;&#x2F; 输出 false，说明在内存中确实创建了两个不同的对象</span><br><span class="line">判断内容是否相同：true   &#x2F;&#x2F; 输出true，说明依然判断为两个对象内容是相等的</span><br></pre></td></tr></table></figure>
-
-<p>由上面的输出结果，我们可知，反射后再新建相同内容的字符串对象时会是反射修改后的值，这就造成了很大迷惑性，在实际开发中要谨慎这么做。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5c71448ae51d45553c7029dc" target="_blank" rel="noopener">为什么Java中String是不可变的</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">抽象类和接口的区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-03 05:44:15 / 修改时间：13:59:13" itemprop="dateCreated datePublished" datetime="2020-07-03T05:44:15+08:00">2020-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="抽象类"><a href="#抽象类" class="headerlink" title="抽象类"></a>抽象类</h2><p>抽象类在我们实际开发当中扮演了一个什么样的角色？当我们在开发或者设计一些功能和属性大部分差不多的<code>Activity</code>或者是<code>class</code>的时候，为了避免大量重复的工作，最好的做法就是抽取一个公共的基类，这样做的目的即可以减少重复的代码，又让代码变得简洁，简单。</p>
-<p><strong>因此抽象类就是用于抽取，捕捉子类通用共性的一种类</strong>。<strong>只能用于作为父类</strong>，提供给子类继承并且不能被实例化，作为被用来创建继承层级的一种模板。也是多态特性的一种重要表现形式。</p>
-<p>下面举个简单的例子帮助理解</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo3Abstract</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Zi z = <span class="keyword">new</span> Zi();</span><br><span class="line">        z.print();                  <span class="comment">//直接调用子类中的print方法</span></span><br><span class="line">        z.method();                 <span class="comment">//也可以拿到从父类继承的method方法</span></span><br><span class="line">      </span><br><span class="line">      Fu f= <span class="keyword">new</span> Zi();               <span class="comment">//父类指向子类对象。</span></span><br><span class="line">      f.print();                    <span class="comment">//编译看左边，运行看右边。</span></span><br><span class="line">     System.out.println(f.i);       <span class="comment">//out i0</span></span><br><span class="line">    </span><br><span class="line">      </span><br><span class="line">      Zi zx=(Zi)f;                  <span class="comment">//向下转型</span></span><br><span class="line">      zx.print1111();               <span class="comment">//才能拿到子类特有的方法。</span></span><br><span class="line">     System.out.println(zx.i);      <span class="comment">// out 20</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">10</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;   <span class="comment">//抽象方法必须有子类重写后使用</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span> </span>&#123;          <span class="comment">//非抽象方法子类可以直接继承用</span></span><br><span class="line">        System.out.println(<span class="string">"Hello World!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zi</span> <span class="keyword">extends</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">20</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Zi"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print1111</span><span class="params">()</span></span>&#123;</span><br><span class="line">       System.out.println(<span class="string">"Zi111"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上述例子说明了，抽象类最重要的特点之一，就是可以Zi类拿到Fu提供的method方法，又拥有了自己的特性（print方法）。这样就大大减少了代码的冗余。但是有有一点需要注意的是当我们面向接口编程的时候，当重写了父类中的抽象方法的时候，编译时，找的父类的方法体，倒是<strong>实际上在运行过程中，使用的是子类的实现方法</strong>。这是一种<strong>动态绑定</strong>实现机制，也是Java语言的重要基石。</p>
-<p>多态的弊端在于，当采用面向接口编程的过程中，当需要到子类的特性的时候，就必须向下转型，这样才能拿到子类的特性（特有的方法）。这其实也很好理解，因为在内存的存储中，Zi类继承Fu，在Zi类的内存中，有一部分是保存有Fu类的相关数据的地址值的，所以我们在才能对代码实现复用，但是面向接口编程的时候，是从Fu类的内存中去找值的，所以<code>f.i</code>和<code>zx.i</code>值完全是不一样，当我们想要拿到子类值的时候，只能向下转型才能拿到20，否则就只能拿到父类的成员变量里面的10。换句话说，只有父类和子类二者重写方法之间，存在动态绑定的过程，当时其他方面（比如说成员变量），是不存在动态绑定的，他们是有各自存有的区域。这点需要特别注意。</p>
-<h3 id="抽象类的一些特性"><a href="#抽象类的一些特性" class="headerlink" title="抽象类的一些特性"></a>抽象类的一些特性</h3><ul>
-<li>抽象类不能被实例化，但<strong>可以有构造函数</strong></li>
-<li>抽象方法<strong>必须由子类进行重写</strong></li>
-<li>只要包含一个抽象方法的类，就必须定义为抽象类，不管是否还包含其他方法</li>
-<li>抽象类中可以包含具体的方法，也<strong>可以不包含抽象方法</strong></li>
-<li>抽象类可以包含普通成员变量，其访问类型可以任意</li>
-<li>抽象类也可以包含静态成员变量，其访问类型可以任意</li>
-<li>子类中的抽象方法不能与父类的抽象方法同名</li>
-<li><strong>abstract不能与private、static、final或native并列修饰同一个方法</strong></li>
-</ul>
-<h2 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h2><p>接口是抽象方法的集合。如果一个类实现了某个接口，那么它就继承了这个接口的抽象方法。这就像契约模式，如果实现了这个接口，那么就必须确保使用这些方法。接口只是一种形式，接口自身不能做任何事情</p>
-<p>下面同样是用一个例子来说明</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo1Interface</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Inter i = <span class="keyword">new</span> Demo();</span><br><span class="line">        i.print();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> num = <span class="number">10</span>;              <span class="comment">//接口中所有的变量都是常量</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print11</span><span class="params">()</span></span>;                <span class="comment">//接口中所有的方法都是抽象的</span></span><br><span class="line">    <span class="comment">/*public void method() &#123;                //错误: 接口方法不能带有主体</span></span><br><span class="line"><span class="comment">        System.out.println("aaa");          //接口中所有的方法都是抽象的</span></span><br><span class="line"><span class="comment">    &#125;*/</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo</span> <span class="keyword">implements</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"print"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>正如上面提到的一样，接口之中的方法，所有都是抽象方法并且<strong>修饰符只能是public</strong>，因为接口本身就是提供的一种规范和约束。当你实现一个接口的时候就必须实现里面所有的方法。这里需要注意的仍然是上述的多态的弊端，再次就不再赘述了。并且不能定义变量，只能定义常量。</p>
-<h3 id="接口的多继承"><a href="#接口的多继承" class="headerlink" title="接口的多继承"></a>接口的多继承</h3><p>在Java中，类的多继承是不合法，但接口允许多继承。</p>
-<p>在接口的多继承中extends关键字只需要使用一次，在其后跟着继承接口。 如下所示：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Hockey</span> <span class="keyword">extends</span> <span class="title">Sports</span>, <span class="title">Event</span></span></span><br></pre></td></tr></table></figure>
-
-<p>以上的程序片段是合法定义的子接口，与类不同的是，接口允许多继承，而 Sports及 Event 可能定义或是继承相同的方法.</p>
-<blockquote>
-<p>注意:接口不能再实现(implements)接口.</p>
-</blockquote>
-<h3 id="接口的一些特性"><a href="#接口的一些特性" class="headerlink" title="接口的一些特性"></a>接口的一些特性</h3><ul>
-<li>接口中<strong>不能有构造方法</strong>。</li>
-<li>接口的所有方法自动被声明为public，而且只能为<code>public</code>，如果使用<code>protected</code>、<code>private</code>，会导致编译错误。</li>
-<li>接口可以定义”成员变量”，而且会自动转为<code>public final static</code>，即<strong>常量</strong>，而且必须被显式初始化。</li>
-<li>接口中的所有方法都是抽象方法，不能包含实现的方法，也不能包含静态方法</li>
-<li>实现接口的<strong>非抽象类</strong>必须实现接口的所有方法，而<strong>抽象类</strong>不需要</li>
-<li>不能使用<code>new</code>来实现化接口，但可以声明一个接口变量，它必须引用一个实现该接口的类的对象，可以使用instanceOf来判断一个类是否实现了某个接口，如<code>if (object instanceOf ClassName){doSth()}</code>;</li>
-<li>在实现多接口的时候一定要注意方法名的重复</li>
-</ul>
-<h2 id="抽象类和接口的区别"><a href="#抽象类和接口的区别" class="headerlink" title="抽象类和接口的区别"></a>抽象类和接口的区别</h2><p>有了上述的知识储备，我想我们终于可以来回答一下这二者之间的区别了。</p>
-<table>
-<thead>
-<tr>
-<th><strong>参数</strong></th>
-<th><strong>抽象类</strong></th>
-<th><strong>接口</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>默认的方法实现</td>
-<td>它可以有默认的方法实现</td>
-<td>接口完全是抽象的。它根本不存在方法的实现</td>
-</tr>
-<tr>
-<td>关键字</td>
-<td>子类使用<strong>extends</strong>关键字来继承抽象类。如果子类不是抽象类的话，它需要提供抽象类中所有声明的方法的实现。</td>
-<td>子类使用关键字<strong>implements</strong>来实现接口。它需要提供接口中所有声明的方法的实现</td>
-</tr>
-<tr>
-<td>构造器</td>
-<td>抽象类可以有构造器</td>
-<td>接口不能有构造器</td>
-</tr>
-<tr>
-<td>与正常Java类的区别</td>
-<td>除了你不能实例化抽象类之外，它和普通Java类没有任何区别</td>
-<td>接口是完全不同的类型</td>
-</tr>
-<tr>
-<td>访问修饰符</td>
-<td>抽象方法可以有<strong>public</strong>、<strong>protected</strong>和<strong>default</strong>这些修饰符</td>
-<td>接口方法默认修饰符是<strong>public</strong>。你不可以使用其它修饰符。</td>
-</tr>
-<tr>
-<td>main方法</td>
-<td>抽象方法可以有main方法并且我们可以运行它</td>
-<td>接口没有main方法，因此我们不能运行它。</td>
-</tr>
-<tr>
-<td>多继承</td>
-<td>抽象类只可以继承一个类和实现多个接口</td>
-<td>接口和接口之间是可以多继承或者单继承多实现的。</td>
-</tr>
-<tr>
-<td>速度</td>
-<td>它比接口速度要快</td>
-<td>接口是稍微有点慢的，因为它需要时间去寻找在类中实现的方法。</td>
-</tr>
-<tr>
-<td>添加新方法</td>
-<td>如果你往抽象类中添加新的方法，你可以给它提供默认的实现。因此你不需要改变你现在的代码。</td>
-<td>如果你往接口中添加方法，那么你必须改变实现该接口的类。</td>
-</tr>
-<tr>
-<td>设计理念</td>
-<td>is-a的关系，体现的是一种关系的延续</td>
-<td>like-a体现的是一种功能的扩展关系</td>
-</tr>
-</tbody></table>
-<h3 id="具体使用的场景"><a href="#具体使用的场景" class="headerlink" title="具体使用的场景"></a>具体使用的场景</h3><ul>
-<li>如果你拥有一些方法并且想让它们中的一些有默认实现，那么使用抽象类吧。</li>
-<li>如果你想实现多重继承，那么你必须使用接口。由于<strong>Java不支持多继承</strong>，子类不能够继承多个类，但可以实现多个接口。因此你就可以使用接口来解决它。</li>
-<li>如果基本功能在不断改变，那么就需要使用抽象类。如果不断改变基本功能并且使用接口，那么就需要改变所有实现了该接口的类。</li>
-<li>多用组合，少用继承。((合成/聚合)关联复用原则)</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/entry/59b0a3556fb9a0248a4023d0" target="_blank" rel="noopener">抽象类和接口的区别</a><br><a href="http://www.jianshu.com/p/2b5a9bdcd25f" target="_blank" rel="noopener">Java基础篇(一)：接口与抽象类</a><br><a href="http://www.importnew.com/12399.html" target="_blank" rel="noopener">Java抽象类与接口的区别</a><br><a href="http://yanhui.site/2017/07/19/Java学习笔记整理（9）/" target="_blank" rel="noopener">Java学习笔记整理(9)</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/" class="post-title-link" itemprop="url">磁盘调度算法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-03 03:19:07 / 修改时间：11:20:24" itemprop="dateCreated datePublished" datetime="2020-07-03T03:19:07+08:00">2020-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p> 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。<br>  <strong>本文内容</strong></p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp" alt="img"></p>
-<h2 id="1-一次磁盘读-写操作需要的时间"><a href="#1-一次磁盘读-写操作需要的时间" class="headerlink" title="1 一次磁盘读/写操作需要的时间"></a>1 一次磁盘读/写操作需要的时间</h2><p> <strong>寻找时间（寻道时间）</strong>Ts：在读/写数据前，需要将磁头移动到指定磁道所花费的时间。<br>  寻道时间分两步：</p>
-<blockquote>
-<p>(1) 启动磁头臂消耗的时间：s。<br> (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。</p>
-</blockquote>
-<p> 则寻道时间  <strong>Ts = s + m * n。</strong></p>
-<p> 磁头移动到指定的磁道，但是不一定正好在所需要读/写的扇区，所以需要通过磁盘旋转使磁头定位到目标扇区。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c31119740df4673d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/397/format/webp" alt="img"></p>
-<p> <strong>延迟时间TR</strong>：通过旋转磁盘，使磁头定位到目标扇区所需要的时间。设磁盘转速为r（单位：转/秒，或转/分），则<strong>平均所需延迟时间TR</strong> = (1/2)*(1/r) = 1/2r。</p>
-<blockquote>
-<p>1/r就是转一圈所需的时间。找到目标扇区平均需要转半圈，因此再乘以1/2。</p>
-</blockquote>
-<p> <strong>传输时间TR</strong>：从磁盘读出或向磁盘中写入数据所经历的时间，假设磁盘转速为r，此次读/写的字节数为b，每个磁道上的字节数为N，则传输时间<strong>TR</strong> = (b/N) * (1/r) = b/(rN)。</p>
-<blockquote>
-<p>每个磁道可存N字节数据，因此b字节数据需要b/N个磁道才能存储。而读/写一个磁道所需的时间刚好是转一圈的时间1/r。</p>
-</blockquote>
-<p> 总的平均时间<strong>Ta = Ts + 1/2r + b/(rN)</strong>，由于延迟时间和传输时间都是与磁盘转速有关的，且是线性相关。而转速又是磁盘的固有属性，因此无法通过操作系统优化延迟时间和传输时间。所以只能优化寻找时间。</p>
-<h2 id="2-磁盘调度算法"><a href="#2-磁盘调度算法" class="headerlink" title="2 磁盘调度算法"></a>2 磁盘调度算法</h2><h4 id="2-1-先来先服务算法（FCFS）"><a href="#2-1-先来先服务算法（FCFS）" class="headerlink" title="2.1 先来先服务算法（FCFS）"></a>2.1 先来先服务算法（FCFS）</h4><p> 算法思想：<strong>根据进程请求访问磁盘的先后顺序进行调度。</strong><br>  假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。<br>  按照先来先服务算法规则，按照请求到达的顺序，磁头需要一次移动到55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-b03c89ed3cc6cdbd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/618/format/webp" alt="img"></p>
-<p> 磁头共移动了 45 + 3 + 19 + 21 + 72 + 70 + 10 + 112 + 146 = 498个磁道。响应一个请求平均需要移动498 / 9 = 55.3个磁道（平均寻找长度）。<br>  优点：<strong>公平；如果请求访问的磁道比较集中的话，算法性能还算可以</strong>。<br>  缺点：<strong>如果大量进程竞争使用磁盘，请求访问的磁道很分散，FCFS在性能上很差，寻道时间长</strong>。</p>
-<h4 id="2-2-最短寻找时间优先（SSTF）"><a href="#2-2-最短寻找时间优先（SSTF）" class="headerlink" title="2.2 最短寻找时间优先（SSTF）"></a>2.2 最短寻找时间优先（SSTF）</h4><p> 算法思想：<strong>优先处理的磁道是与当前磁头最近的磁道。可以保证每次寻道时间最短，但是不能保证总的寻道时间最短</strong>。（其实是贪心算法的思想，只是选择眼前最优，但是总体未必最优）。</p>
-<p> 假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-592a5a7f84d61fba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/586/format/webp" alt="img"></p>
-<p> 磁头总共移动了（100 -18）+ （184 -18） = 248个磁道。响应一个请求平均需要移动248 / 9 = 27.5个磁道（平均寻找长度）。<br>  缺点：<strong>可能产生饥饿现象</strong>。<br>  本例中，如果在处理18号磁道的访问请求时又来了一个38号磁道的访问请求，处理38号磁道的访问请求又来了一个18号磁道访问请求。如果有源源不断的18号、38号磁道访问请求，那么150、160、184号磁道请求的访问就永远得不到满足，从而产生饥饿现象。这里产生饥饿的原因是<strong>磁头在一小块区域来回移动。</strong></p>
-<h4 id="2-3-扫描算法（SCAN）"><a href="#2-3-扫描算法（SCAN）" class="headerlink" title="2.3 扫描算法（SCAN）"></a>2.3 扫描算法（SCAN）</h4><p> SSTF算法会产生饥饿的原因在于：磁头有可能再一个小区域内来回得移动。为了防止这个问题，可以规定：<strong>磁头只有移动到请求最外侧磁道或最内侧磁道才可以反向移动，如果在磁头移动的方向上已经没有请求，就可以立即改变磁头移动，不必移动到最内/外侧的磁道。</strong>这就是扫描算法的思想。由于磁头移动的方式很像电梯，因此也叫<strong>电梯算法</strong>。</p>
-<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c340b6ad722b5403.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp" alt="img"></p>
-<p> 磁头共移动了（184 - 100）+ （184 -18） = 250个磁道。响应一个请求平均需要移动 250 / 9 = 27.5个磁道（平均寻找长度）。</p>
-<p> 优点：<strong>性能较好，寻道时间较短，不会产生饥饿现象。</strong><br>  缺点：<strong>SCAN算法对于各个位置磁道的响应频率不平均</strong>。（假设此时磁头正在往右移动，且刚处理过90号磁道，那么下次处理90号磁道的请求就需要等待低头移动很长一段距离；而响应了184号磁道的请求之后，很快又可以再次响应184号磁道请求了。）</p>
-<h4 id="2-4-循环扫描算法（C-SCAN）"><a href="#2-4-循环扫描算法（C-SCAN）" class="headerlink" title="2.4 循环扫描算法（C-SCAN）"></a>2.4 循环扫描算法（C-SCAN）</h4><p> SCAN算法对各个位置磁道的响应频率不平均，而C-SCAN算法就是为了解决这个问题。规定只有磁头朝某个特定方向移动时才处理磁道访问请求，而<strong>返回时直接快速移动至最靠边缘的并且需要访问的磁道上而不处理任何请求。</strong><br>  通俗理解就是SCAN算在改变磁头方向时不处理磁盘访问请求而是直接移动到另一端最靠边的磁盘访问请求的磁道上。</p>
-<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-53c43dcf70a1f1fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/793/format/webp" alt="img"></p>
-<p> 磁头共移动了（184 -100）+ （184 - 18）+（90 - 18）=322个磁道。响应一个请求平均需要移动322 / 9 = 35.8个磁道（平均寻找长度）。</p>
-<p> 优点：<strong>相比于SCAN算法，对于各个位置磁道响应频率很平均。</strong><br>  缺点：<strong>相比于SCAN算法，平均寻道时间更长。</strong></p>
-<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3 小结"></a>3 小结</h2><p><img src="https:////upload-images.jianshu.io/upload_images/18464438-51a047178ff21028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1017/format/webp" alt="img"></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.jianshu.com/p/3c2b79af130b" target="_blank" rel="noopener">磁盘调度算法</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/21/">21</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1577,7 +1671,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">197</span>
+          <span class="site-state-item-count">201</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1633,7 +1727,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">712k</span>
+    <span title="站点总字数">731k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
