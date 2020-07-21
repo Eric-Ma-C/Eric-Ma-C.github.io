@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="维基百科中对 Zero-copy 的解释是  零拷贝技术是指计算机执行操作时，CPU不需要先将数据从某处内存复制到另一个特定区域。这种技术通常用于通过网络传输文件时节省CPU周期和内存带宽。  维基百科里提到的零拷贝是在硬件和操作系统层面的，而本文主要介绍的是Netty在应用层面的优化。不过需要注意的是，零拷贝并非字面意义上的没有内存拷贝，而是避免多余的拷贝操作，即使是系统层的零拷贝也有从设备到内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty 的零拷贝">
+<meta property="og:url" content="http://yoursite.com/2020/07/21/Netty%20%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="维基百科中对 Zero-copy 的解释是  零拷贝技术是指计算机执行操作时，CPU不需要先将数据从某处内存复制到另一个特定区域。这种技术通常用于通过网络传输文件时节省CPU周期和内存带宽。  维基百科里提到的零拷贝是在硬件和操作系统层面的，而本文主要介绍的是Netty在应用层面的优化。不过需要注意的是，零拷贝并非字面意义上的没有内存拷贝，而是避免多余的拷贝操作，即使是系统层的零拷贝也有从设备到内">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-07-21T03:29:03.000Z">
+<meta property="article:modified_time" content="2020-07-21T11:33:00.926Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/21/Netty%20%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Netty 的零拷贝 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/Netty%20%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Netty 的零拷贝
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 11:29:03 / 修改时间：19:33:00" itemprop="dateCreated datePublished" datetime="2020-07-21T11:29:03+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>维基百科中对 <code>Zero-copy</code> 的解释是</p>
+<blockquote>
+<p>零拷贝技术是指计算机执行操作时，CPU不需要先将数据从某处内存复制到另一个特定区域。这种技术通常用于通过网络传输文件时节省CPU周期和内存带宽。</p>
+</blockquote>
+<p>维基百科里提到的零拷贝是在硬件和操作系统层面的，而本文主要介绍的是Netty在应用层面的优化。不过需要注意的是，零拷贝并非字面意义上的没有内存拷贝，而是避免多余的拷贝操作，即使是系统层的零拷贝也有从设备到内存，内存到设备的数据拷贝过程。</p>
+<p>Netty 的零拷贝体现在以下几个方面</p>
+<ul>
+<li><code>ByteBuf</code> 的 <code>slice</code> 操作并不会拷贝一份新的 <code>ByteBuf</code> 内存空间，而是直接借用原来的 <code>ByteBuf</code> ，只是独立地保存读写索引。</li>
+<li>Netty 提供了 <code>CompositeByteBuf</code> 类，可以将多个 <code>ByteBuf</code> 组合成一个逻辑上的 <code>ByteBuf</code> 。</li>
+<li>Netty 的 <code>FileRegion</code> 中包装了 <code>NIO</code> 的 <code>FileChannel.transferTo()</code>方法，该方法在底层系统支持的情况下会调用 <code>sendfile</code> 方法，从而在传输文件时避免了用户态的内存拷贝。</li>
+<li>Netty 的 <code>PooledDirectByteBuf</code> 等类中封装了 <code>NIO</code> 的 <code>DirectByteBuffer</code> ，而 <code>DirectByteBuffer</code> 是直接在 jvm 堆外分配的内存，省去了堆外内存向堆内存拷贝的开销。</li>
+</ul>
+<p>下面来简单介绍下这几种方式。</p>
+<h2 id="slice-分片"><a href="#slice-分片" class="headerlink" title="slice 分片"></a>slice 分片</h2><p>以下以 <code>AbstractUnpooledSlicedByteBuf</code> 为例讲解 <code>slice</code> 的零拷贝原理，至于内存池化的实现 <code>PooledSlicedByteBuf</code> ，因为内存池要通过引用计数来控制内存的释放，所以代码里会出现很多与本文主题无关的逻辑，这里就不拿来举栗子了。</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 切片ByteBuf的构造函数，其中字段adjustment为切片ByteBuf相对于被切片ByteBuf的偏移</span></span><br><span class="line"><span class="comment">// 量，两个ByteBuf共用一块内存空间,字段buffer为实际存储数据的ByteBuf</span></span><br><span class="line">AbstractUnpooledSlicedByteBuf(ByteBuf buffer, <span class="keyword">int</span> index, <span class="keyword">int</span> length) &#123;</span><br><span class="line">    <span class="keyword">super</span>(length);</span><br><span class="line">    checkSliceOutOfBounds(index, length, buffer);<span class="comment">//检查slice是否越界</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (buffer <span class="keyword">instanceof</span> AbstractUnpooledSlicedByteBuf) &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf也是AbstractUnpooledSlicedByteBuf对象</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = ((AbstractUnpooledSlicedByteBuf) buffer).buffer;</span><br><span class="line">        adjustment = ((AbstractUnpooledSlicedByteBuf) buffer).adjustment + index;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (buffer <span class="keyword">instanceof</span> DuplicatedByteBuf) &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf为DuplicatedByteBuf对象，则</span></span><br><span class="line">        <span class="comment">// 用unwrap得到实际存储数据的ByteBuf赋值buffer</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = buffer.unwrap();</span><br><span class="line">        adjustment = index;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf为一般ByteBuf对象，则直接赋值buffer</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = buffer;</span><br><span class="line">        adjustment = index;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    initLength(length);</span><br><span class="line">    writerIndex(length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上为 <code>AbstractUnpooledSlicedByteBuf</code> 类的构造函数，比较简单，就不详细介绍了。</p>
+<p>下面来看看 <code>AbstractUnpooledSlicedByteBuf</code> 对 <code>ByteBuf</code> 接口的实现代码，以 <code>getBytes</code> 方法为例：</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">getBytes</span><span class="params">(<span class="keyword">int</span> index, ByteBuffer dst)</span> </span>&#123;</span><br><span class="line">    checkIndex0(index, dst.remaining());<span class="comment">//检查是否越界</span></span><br><span class="line">    unwrap().getBytes(idx(index), dst);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">unwrap</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> buffer;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">idx</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> index + adjustment;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是 <code>AbstractUnpooledSlicedByteBuf</code> 重载的 <code>getBytes</code> 方法，可以看到 <code>AbstractUnpooledSlicedByteBuf</code> 是直接在封装的 <code>ByteBuf</code> 上取的字节，但是重新计算了索引，加上了相对偏移量。</p>
+<h2 id="CompositeByteBuf"><a href="#CompositeByteBuf" class="headerlink" title="CompositeByteBuf"></a>CompositeByteBuf</h2><p>在有些场景里，我们的数据会分散在多个 <code>ByteBuf</code> 上，但是我们又希望将这些 <code>ByteBuf</code> 聚合在一个 <code>ByteBuf</code> 里处理。这里最直观的想法是将所有 <code>ByteBuf</code> 的数据拷贝到一个 <code>ByteBuf</code> 上，但是这样会有大量的内存拷贝操作，产生很大的CPU开销。</p>
+<p>而 <code>CompositeByteBuf</code> 可以很好地解决这个问题，正如名字一样，这是一个复合 <code>ByteBuf</code> ，内部由很多的 <code>ByteBuf</code> 组成，但 <code>CompositeByteBuf</code> 给它们做了一层封装，可以直接以 <code>ByteBuf</code> 的接口操作它们。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Precondition is that &#123;<span class="doctag">@code</span> buffer != null&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">addComponent0</span><span class="params">(<span class="keyword">boolean</span> increaseWriterIndex, <span class="keyword">int</span> cIndex, ByteBuf buffer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> buffer != <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">boolean</span> wasAdded = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 检查新增的component的索引是否合法</span></span><br><span class="line">        checkComponentIndex(cIndex);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// buffer的长度</span></span><br><span class="line">        <span class="keyword">int</span> readableBytes = buffer.readableBytes();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// No need to consolidate - just add a component to the list.</span></span><br><span class="line">        <span class="meta">@SuppressWarnings</span>(<span class="string">"deprecation"</span>)</span><br><span class="line">        <span class="comment">// 统一为大端ByteBuf</span></span><br><span class="line">        Component c = <span class="keyword">new</span> Component(buffer.order(ByteOrder.BIG_ENDIAN).slice());</span><br><span class="line">        <span class="keyword">if</span> (cIndex == components.size()) &#123;</span><br><span class="line">            <span class="comment">// 如果索引等于components的大小，则加在components尾部</span></span><br><span class="line">            wasAdded = components.add(c);</span><br><span class="line">            <span class="keyword">if</span> (cIndex == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果components中只有一个元素</span></span><br><span class="line">                c.endOffset = readableBytes;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果components中有多个元素</span></span><br><span class="line">                Component prev = components.get(cIndex - <span class="number">1</span>);</span><br><span class="line">                c.offset = prev.endOffset;</span><br><span class="line">                c.endOffset = c.offset + readableBytes;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 如果新的ByteBuf是插在components中间</span></span><br><span class="line">            components.add(cIndex, c);</span><br><span class="line">            wasAdded = <span class="keyword">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (readableBytes != <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果components的大小不为0,则依次更新cIndex之后的</span></span><br><span class="line">                <span class="comment">// 所有components的offset和endOffset</span></span><br><span class="line">                updateComponentOffsets(cIndex);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (increaseWriterIndex) &#123;</span><br><span class="line">            <span class="comment">// 如果要更新writerIndex</span></span><br><span class="line">            writerIndex(writerIndex() + buffer.readableBytes());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> cIndex;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!wasAdded) &#123;</span><br><span class="line">            <span class="comment">// 如果没添加成功，则释放ByteBuf</span></span><br><span class="line">            buffer.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是添加一个新的 <code>ByteBuf</code> 的逻辑，核心是 <code>offset</code> 和 <code>endOffset</code> ，分别指代一个   <code>ByteBuf</code> 在 <code>CompositeByteBuf</code> 中开始和结束的索引，它们唯一标记了这个 <code>ByteBuf</code> 在 <code>CompositeByteBuf</code> 中的位置。</p>
+<p>弄清楚了这个，我们会发现上面的代码无外乎做了两件事：</p>
+<ol>
+<li>把 <code>ByteBuf</code> 封装成 <code>Component</code> 加到 <code>components</code> 合适的位置上</li>
+<li>使 <code>components</code> 里的每个 <code>Component</code> 的 <code>offset</code> 和 <code>endOffset</code> 值都正确</li>
+</ol>
+<p>下面来看看 <code>CompositeByteBuf</code> 对 <code>ByteBuf</code> 接口的实现代码，同样以 <code>getBytes</code> 方法为例：</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> CompositeByteBuf <span class="title">getBytes</span><span class="params">(<span class="keyword">int</span> index, ByteBuf dst, <span class="keyword">int</span> dstIndex, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 查索引是否越界</span></span><br><span class="line">    checkDstIndex(index, length, dstIndex, dst.capacity());</span><br><span class="line">    <span class="keyword">if</span> (length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 用二分搜索查找index对应的Component在components中的索引</span></span><br><span class="line">    <span class="keyword">int</span> i = toComponentIndex(index);</span><br><span class="line">    <span class="comment">// 循环读直至length为0</span></span><br><span class="line">    <span class="keyword">while</span> (length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        Component c = components.get(i);</span><br><span class="line">        ByteBuf s = c.buf;</span><br><span class="line">        <span class="keyword">int</span> adjustment = c.offset;</span><br><span class="line">        <span class="comment">// 取length和ByteBuf剩余字节数中的较小值</span></span><br><span class="line">        <span class="keyword">int</span> localLength = Math.min(length, s.capacity() - (index - adjustment));</span><br><span class="line">        <span class="comment">// 开始索引为index - c.offset，而不是0</span></span><br><span class="line">        s.getBytes(index - adjustment, dst, dstIndex, localLength);</span><br><span class="line">        index += localLength;</span><br><span class="line">        dstIndex += localLength;</span><br><span class="line">        length -= localLength;</span><br><span class="line">        i ++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Return the index for the given offset</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">toComponentIndex</span><span class="params">(<span class="keyword">int</span> offset)</span> </span>&#123;</span><br><span class="line">    checkIndex(offset);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> low = <span class="number">0</span>, high = components.size(); low &lt;= high;) &#123;</span><br><span class="line">        <span class="keyword">int</span> mid = low + high &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">        Component c = components.get(mid);</span><br><span class="line">        <span class="keyword">if</span> (offset &gt;= c.endOffset) &#123;</span><br><span class="line">            low = mid + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (offset &lt; c.offset) &#123;</span><br><span class="line">            high = mid - <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> mid;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"should not reach here"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 <code>CompositeByteBuf</code> 在处理 <code>index</code> 时是先将其转换成对应 <code>Component</code> 在 <code>components</code> 中的索引，以及在 <code>Component</code> 中的偏移，然后从这个 <code>Component</code> 的这个偏移开始，往后循环取字节，直到读完。</p>
+<p>NOTE：这里有个小trick，因为 <code>components</code> 是有序排列的，所以 <code>toComponentIndex</code> 做索引转换时没有直接遍历，而是用的二分查找。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000011769315" target="_blank" rel="noopener">Netty 之 Zero-copy 的实现（上）</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/18/%E4%B8%BA%E5%95%A5HashMap%E7%9A%84%E9%95%BF%E5%BA%A6%E4%B8%80%E5%AE%9A%E6%98%AF2%E7%9A%84n%E6%AC%A1%E6%96%B9/" rel="prev" title="为啥HashMap的长度一定是2的n次方">
+      <i class="fa fa-chevron-left"></i> 为啥HashMap的长度一定是2的n次方
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/21/http%E6%8A%A5%E6%96%87%E7%BB%93%E6%9E%84/" rel="next" title="http报文结构">
+      http报文结构 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#slice-分片"><span class="nav-number">1.</span> <span class="nav-text">slice 分片</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CompositeByteBuf"><span class="nav-number">2.</span> <span class="nav-text">CompositeByteBuf</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">807k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

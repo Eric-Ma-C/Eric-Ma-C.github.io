@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="JVM 的一些知识在说明finalize()的用法之前要树立有关于java垃圾回收器几个观点:  对象可以不被垃圾回收  java的垃圾回收遵循一个特点, 就是能不回收就不会回收.只要程序的内存没有达到即将用完的地步, 对象占用的空间就不会被释放。 因为如果程序正常结束了,而且垃圾回收器没有释放申请的内存, 那么随着程序的正常退出, 申请的内存会自动交还给操作系统; 而且垃圾回收本身就需要付出代价">
+<meta property="og:type" content="article">
+<meta property="og:title" content="finalize 方法详解">
+<meta property="og:url" content="http://yoursite.com/2020/07/21/finalize%20%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="JVM 的一些知识在说明finalize()的用法之前要树立有关于java垃圾回收器几个观点:  对象可以不被垃圾回收  java的垃圾回收遵循一个特点, 就是能不回收就不会回收.只要程序的内存没有达到即将用完的地步, 对象占用的空间就不会被释放。 因为如果程序正常结束了,而且垃圾回收器没有释放申请的内存, 那么随着程序的正常退出, 申请的内存会自动交还给操作系统; 而且垃圾回收本身就需要付出代价">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://images0.cnblogs.com/blog/705813/201502/071653276729233.gif">
+<meta property="article:published_time" content="2020-07-21T03:52:20.000Z">
+<meta property="article:modified_time" content="2020-07-21T11:54:13.483Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://images0.cnblogs.com/blog/705813/201502/071653276729233.gif">
+
+<link rel="canonical" href="http://yoursite.com/2020/07/21/finalize%20%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>finalize 方法详解 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/finalize%20%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          finalize 方法详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 11:52:20 / 修改时间：19:54:13" itemprop="dateCreated datePublished" datetime="2020-07-21T11:52:20+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="JVM-的一些知识"><a href="#JVM-的一些知识" class="headerlink" title="JVM 的一些知识"></a>JVM 的一些知识</h1><p>在说明finalize()的用法之前要树立有关于java垃圾回收器几个观点:</p>
+<ul>
+<li>对象可以不被垃圾回收</li>
+</ul>
+<p>java的垃圾回收遵循一个特点, 就是能不回收就不会回收.只要程序的内存没有达到即将用完的地步, 对象占用的空间就不会被释放。</p>
+<p>因为如果程序正常结束了,而且垃圾回收器没有释放申请的内存, 那么随着程序的正常退出, 申请的内存会自动交还给操作系统;</p>
+<p>而且垃圾回收本身就需要付出代价, 是有一定开销的, 如果不使用,就不会存在这一部分的开销。</p>
+<ul>
+<li>垃圾回收只能回收内存</li>
+</ul>
+<p>而且只能回收内存中由java创建对象方式(堆)创建的对象所占用的那一部分内存, 无法回收其他资源, 比如文件操作的句柄, 数据库的连接等等。</p>
+<ul>
+<li>垃圾回收不是C++中的析构</li>
+</ul>
+<p>两者不是对应关系, 因为第一点就指出了垃圾回收的发生是不确定的, 而C++中析构函数是由程序员控制(delete) 或者离开器作用域时自动调用发生, 是在确定的时间对对象进行销毁并释放其所占用的内存。</p>
+<ul>
+<li>调用垃圾回收器(GC)不一定保证垃圾回收器的运行</li>
+</ul>
+<h1 id="finalize的作用"><a href="#finalize的作用" class="headerlink" title="finalize的作用"></a>finalize的作用</h1><p>finalize()是Object的protected方法，子类可以覆盖该方法以实现资源清理工作，GC在回收对象之前调用该方法。</p>
+<p>finalize()与C++中的析构函数不是对应的。</p>
+<p>C++中的析构函数调用的时机是确定的（对象离开作用域或delete掉），但Java中的finalize的调用具有不确定性。</p>
+<p>finalize() 的功能: 一旦垃圾回收器准备释放对象所占的内存空间, 如果对象覆盖了finalize()并且函数体内不能是空的, 就会首先调用对象的finalize(), 然后在下一次垃圾回收动作发生的时候真正收回对象所占的空间。</p>
+<p>finalize() 有一个特点就是: JVM始终只调用一次. 无论这个对象被垃圾回收器标记为什么状态, finalize()始终只调用一次. 但是程序员在代码中主动调用的不记录在这之内。</p>
+<h1 id="finalize函数的调用机制"><a href="#finalize函数的调用机制" class="headerlink" title="finalize函数的调用机制"></a>finalize函数的调用机制</h1><p>java虚拟机规范并没有硬性规定垃圾回收该不该搞，以及该如何搞。所以这里提到的调用机制不能保证适合所有jvm。</p>
+<h2 id="何时被调用？"><a href="#何时被调用？" class="headerlink" title="何时被调用？"></a>何时被调用？</h2><p>finalize啥时候才会被调用捏？</p>
+<p>一般来说，要等到JVM开始进行垃圾回收的时候，它才有可能被调用。</p>
+<p>而JVM进行垃圾回收的时间点是非常不确定的，依赖于各种运行时的环境因素。</p>
+<p>正是由于finalize函数调用时间点的不确定，导致了后面提到的某些缺点。</p>
+<h2 id="谁来调用？"><a href="#谁来调用？" class="headerlink" title="谁来调用？"></a>谁来调用？</h2><p>常见的JVM会通过GC的垃圾回收线程来进行finalize函数的调用。</p>
+<p>由于垃圾回收线程比较重要（人家好歹也是JVM的一个组成部分嘛），为了防止finalize函数抛出的异常影响到垃圾回收线程的运作，垃圾回收线程会在调用每一个finalize函数时进行try catch，如果捕获到异常，就直接丢弃，然后接着处理下一个失效对象的finalize函数。</p>
+<h1 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h1><p>不建议用finalize方法完成“非内存资源”的清理工作</p>
+<h2 id="不建议使用的原因"><a href="#不建议使用的原因" class="headerlink" title="不建议使用的原因"></a>不建议使用的原因</h2><h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>一些与finalize相关的方法，由于一些致命的缺陷，已经被废弃了，如System.runFinalizersOnExit()方法、Runtime.runFinalizersOnExit()方法</p>
+<p>System.gc()与System.runFinalization()方法增加了finalize方法执行的机会，但不可盲目依赖它们</p>
+<p>Java语言规范并不保证finalize方法会被及时地执行、而且根本不会保证它们会被执行</p>
+<p>finalize方法可能会带来性能问题。因为JVM通常在单独的低优先级线程中完成finalize的执行</p>
+<p>对象再生问题：finalize方法中，可将待回收对象赋值给GC Roots可达的对象引用，从而达到对象再生的目的</p>
+<p>finalize方法至多由GC执行一次(用户当然可以手动调用对象的finalize方法，但并不影响GC对finalize的行为)</p>
+<h2 id="适合的场景"><a href="#适合的场景" class="headerlink" title="适合的场景"></a>适合的场景</h2><p>finalize()主要使用的方面:</p>
+<p>根据垃圾回收器的第2点可知, java垃圾回收器只能回收创建在堆中的java对象, 而对于不是这种方式创建的对象则没有方法处理, 这就需要使用finalize()对这部分对象所占的资源进行释放. 使用到这一点的就是JNI本地对象, 通过JNI来调用本地方法创建的对象只能通过finalize()保证使用之后进行销毁,释放内存</p>
+<p>充当保证使用之后释放资源的最后一道屏障, 比如使用数据库连接之后未断开,并且由于程序员的个人原因忘记了释放连接, 这时就只能依靠finalize()函数来释放资源.</p>
+<p>《thinking in java》中所讲到的“终结条件”验证, 通过finalize()方法来试图找出程序的漏洞</p>
+<p>尽管finalize()可以主动调用, 但是最好不要主动调用, 因为在代码中主动调用之后, 如果JVM再次调用, 由于之前的调用已经释放过资源了,所以二次释放资源就有可能出现导致出现空指针等异常, 而恰好这些异常是没有被捕获的, 那么就造成对象处于被破坏的状态, 导致该对象所占用的某一部分资源无法被回收而浪费.</p>
+<h2 id="尽量避免使用finalize"><a href="#尽量避免使用finalize" class="headerlink" title="尽量避免使用finalize():"></a>尽量避免使用finalize():</h2><p>finalize()不一定会被调用, 因为java的垃圾回收器的特性就决定了它不一定会被调用</p>
+<p>就算finalize()函数被调用, 它被调用的时间充满了不确定性, 因为程序中其他线程的优先级远远高于执行 finalize() 函数线程的优先级。</p>
+<p>也许等到finalize()被调用, 数据库的连接池或者文件句柄早就耗尽了。</p>
+<p>如果一种未被捕获的异常在使用finalize方法时被抛出，这个异常不会被捕获，finalize方法的终结过程也会终止，造成对象出于破坏的状态。被破坏的对象又很可能导致部分资源无法被回收, 造成浪费。</p>
+<p>finalize()和垃圾回收器的运行本身就要耗费资源, 也许会导致程序的暂时停止。</p>
+<h2 id="禁止使用的原因"><a href="#禁止使用的原因" class="headerlink" title="禁止使用的原因"></a>禁止使用的原因</h2><h3 id="1-调用时间不确定—有资源浪费的风险"><a href="#1-调用时间不确定—有资源浪费的风险" class="headerlink" title="1.调用时间不确定—有资源浪费的风险"></a>1.调用时间不确定—有资源浪费的风险</h3><p>前面已经介绍了调用机制。</p>
+<p>同学们应该认清“finalize的调用时机是很不确定的”这样一个事实。</p>
+<p>所以，假如你把某些稀缺资源放到finalize()中释放，可能会导致该稀缺资源等上很久很久很久以后才被释放。</p>
+<p>这可是资源的浪费啊！另外，某些类对象所携带的资源（比如某些JDBC的类）可能本身就很耗费内存，这些资源的延迟释放会造成很大的性能问题。</p>
+<h3 id="2-可能不被调用—-有资源泄露的风险"><a href="#2-可能不被调用—-有资源泄露的风险" class="headerlink" title="2. 可能不被调用—-有资源泄露的风险"></a>2. 可能不被调用—-有资源泄露的风险</h3><p>很多同学以为finalize()总是会被调用，其实不然。</p>
+<p>在某些情况下，finalize()压根儿不被调用。</p>
+<p>比如在JVM退出的当口，内存中那些对象的finalize函数可能就不会被调用了。</p>
+<p>估计有同学在打“runFinalizersOnExit”的主意，来确保所有的finalize在JVM退出前被调用。</p>
+<p>很可惜也很遗憾，该方法从JDK 1.2开始，就已经被废弃了。即使该方法不被废弃，也是有很大的线程安全隐患滴！ 　　</p>
+<p>从上述可以看出，一旦你依赖finalize()来帮你释放资源，那可是很不妙啊（有资源泄漏的危险）！</p>
+<p>很多时候，资源泄露导致的性能问题更加严重，万万不可小看。</p>
+<h3 id="3-对象可能在finalize函数调用时复活"><a href="#3-对象可能在finalize函数调用时复活" class="headerlink" title="3. 对象可能在finalize函数调用时复活"></a>3. 对象可能在finalize函数调用时复活</h3><p>本来，只有当某个对象已经失效（没有引用），垃圾回收器才会调用该对象的finalize函数。但是，万一碰上某个变态的程序员，在finalize()函数内部再把对象自身的引用（也就是this）重新保存在某处，也就相当于把自己复活了（因为这个对象重新有了引用，不再处于失效状态）。 为了防止发生这种诡异的事情，垃圾回收器只能在每次调用完finalize()之后再次去检查该对象是否还处于失效状态。这无形中又增加了JVM的开销。随便提一下。由于JDK的文档中规定了，JVM对于每一个类对象实例最多只会调用一次finalize()。所以，对于那些诈尸的实例，当它们真正死亡时，finalize()反而不会被调用了。这看起来是不是很奇怪？</p>
+<h3 id="4-要记得自己做异常捕获"><a href="#4-要记得自己做异常捕获" class="headerlink" title="4. 要记得自己做异常捕获"></a>4. 要记得自己做异常捕获</h3><p>刚才在介绍finalize()调用机制时提到，一旦有异常抛出到finalize函数外面，会被垃圾回收线程捕获并丢弃。</p>
+<p>也就是说，异常被忽略掉了（异常被忽略的危害，“这里”有提到）。</p>
+<p>为了防止这种事儿，凡是finalize()中有可能抛出异常的代码，你都得写上try catch语句，自己进行捕获。</p>
+<h3 id="5-小心线程安全"><a href="#5-小心线程安全" class="headerlink" title="5. 小心线程安全"></a>5. 小心线程安全</h3><p>由于调用finalize()的是垃圾回收线程，和你自己代码的线程不是同一个线程；</p>
+<p>甚至不同对象的finalize()可能会被不同的垃圾回收线程调用（比如使用“并行收集器”的时候）。</p>
+<p>所以，当你在finalize()里面访问某些数据的时候，还得时刻留心线程安全的问题。</p>
+<h1 id="finalize-的执行过程-生命周期"><a href="#finalize-的执行过程-生命周期" class="headerlink" title="finalize 的执行过程(生命周期)"></a>finalize 的执行过程(生命周期)</h1><h2 id="大致流程"><a href="#大致流程" class="headerlink" title="大致流程"></a>大致流程</h2><p>首先，大致描述一下finalize流程：当对象变成(GC Roots)不可达时，GC会判断该对象是否覆盖了finalize方法，若未覆盖，则直接将其回收。</p>
+<p>否则，若对象未执行过finalize方法，将其放入F-Queue队列，由一低优先级线程执行该队列中对象的finalize方法。</p>
+<p>执行finalize方法完毕后，GC会再次判断该对象是否可达，若不可达，则进行回收，否则，对象“复活”。</p>
+<h2 id="具体的finalize流程："><a href="#具体的finalize流程：" class="headerlink" title="具体的finalize流程："></a>具体的finalize流程：</h2><p>对象可由两种状态，涉及到两类状态空间。</p>
+<p>一是终结状态空间 <code>F = {unfinalized, finalizable, finalized}</code>；</p>
+<p>二是可达状态空间 <code>R = {reachable, finalizer-reachable, unreachable}</code>。</p>
+<p>各状态含义如下：</p>
+<p>unfinalized: 新建对象会先进入此状态，GC并未准备执行其finalize方法，因为该对象是可达的</p>
+<p>finalizable: 表示GC可对该对象执行finalize方法，GC已检测到该对象不可达。</p>
+<p>正如前面所述，GC通过F-Queue队列和一专用线程完成finalize的执行</p>
+<p>finalized: 表示GC已经对该对象执行过finalize方法</p>
+<p>reachable: 表示GC Roots引用可达</p>
+<p>finalizer-reachable(f-reachable)：表示不是reachable，但可通过某个finalizable对象可达</p>
+<p>unreachable：对象不可通过上面两种途径可达</p>
+<ul>
+<li>状态变迁图</li>
+</ul>
+<p><img src="https://images0.cnblogs.com/blog/705813/201502/071653276729233.gif" alt="状态变迁图"></p>
+<h2 id="变迁说明"><a href="#变迁说明" class="headerlink" title="变迁说明"></a>变迁说明</h2><p>新建对象首先处于[reachable, unfinalized]状态(A)</p>
+<p>随着程序的运行，一些引用关系会消失，导致状态变迁，从reachable状态变迁到f-reachable(B, C, D)或unreachable(E, F)状态</p>
+<p>若JVM检测到处于unfinalized状态的对象变成f-reachable或unreachable，JVM会将其标记为finalizable状态(G,H)。若对象原处于[unreachable, unfinalized]状态，则同时将其标记为f-reachable(H)。</p>
+<p>在某个时刻，JVM取出某个finalizable对象，将其标记为finalized并在某个线程中执行其finalize方法。由于是在活动线程中引用了该对象，该对象将变迁到(reachable, finalized)状态(K或J)。该动作将影响某些其他对象从f-reachable状态重新回到reachable状态(L, M, N)</p>
+<p>处于finalizable状态的对象不能同时是unreahable的，由第4点可知，将对象finalizable对象标记为finalized时会由某个线程执行该对象的finalize方法，致使其变成reachable。这也是图中只有八个状态点的原因</p>
+<p>程序员手动调用finalize方法并不会影响到上述内部标记的变化，因此JVM只会至多调用finalize一次，即使该对象“复活”也是如此。</p>
+<p>程序员手动调用多少次不影响JVM的行为</p>
+<p>若JVM检测到finalized状态的对象变成unreachable，回收其内存(I)</p>
+<p>若对象并未覆盖finalize方法，JVM会进行优化，直接回收对象（O）</p>
+<p>注：System.runFinalizersOnExit()等方法可以使对象即使处于reachable状态，JVM仍对其执行finalize方法</p>
+<h1 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h1><h2 id="对象复活"><a href="#对象复活" class="headerlink" title="对象复活"></a>对象复活</h2><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GC</span> </span>&#123;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> GC SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">new</span> GC();  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">        System.gc();  </span><br><span class="line">        Thread.sleep(<span class="number">500</span>);  </span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK) &#123; <span class="comment">//此时对象应该处于(reachable, finalized)状态  </span></span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);  </span><br><span class="line">        &#125;  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">        System.gc();  </span><br><span class="line">        Thread.sleep(<span class="number">500</span>);  </span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK) &#123;  </span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Override</span>  </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> <span class="keyword">throws</span> Throwable </span>&#123;  </span><br><span class="line">        <span class="keyword">super</span>.finalize();  </span><br><span class="line">        System.out.println(<span class="string">"execute method finalize()"</span>);  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">this</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试案例2"><a href="#测试案例2" class="headerlink" title="测试案例2"></a>测试案例2</h2><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123; </span><br><span class="line">    <span class="keyword">static</span> A a; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123; </span><br><span class="line">    B b; </span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">A</span><span class="params">(B b)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.b = b; </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"A finalize"</span>); </span><br><span class="line">        C.a = <span class="keyword">this</span>; </span><br><span class="line">    &#125; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123; </span><br><span class="line">    String name; </span><br><span class="line">    <span class="keyword">int</span> age; </span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">B</span><span class="params">(String name, <span class="keyword">int</span> age)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.name = name; </span><br><span class="line">        <span class="keyword">this</span>.age = age; </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"B finalize"</span>); </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        <span class="keyword">return</span> name + <span class="string">" is "</span> + age; </span><br><span class="line">    &#125; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123; </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123; </span><br><span class="line">        A a = <span class="keyword">new</span> A(<span class="keyword">new</span> B(<span class="string">"allen"</span>, <span class="number">20</span>)); </span><br><span class="line">        a = <span class="keyword">null</span>; </span><br><span class="line">   </span><br><span class="line">        System.gc(); </span><br><span class="line">        Thread.sleep(<span class="number">5000</span>); </span><br><span class="line">        System.out.println(C.a.b); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我的理解:为方便起见, 把a,b两个变量所指的内存空间就叫做a和b</p>
+<p> [java]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">A a &#x3D; new A(new B(&quot;allen&quot; , 20)); &#x2F;&#x2F;此时a和b都是reachable, unfinalized状态</span><br><span class="line">a &#x3D; null;</span><br></pre></td></tr></table></figure>
+
+<p>这之后, a和b的状态会在某一个时刻变成unreachable, unfinalized(但是b变成了unreachable还是f-reachable我不是很确定, 如果大家知道,欢迎补充^_^) 或者a和b直接变成f-reachable, unfianlized。</p>
+<p>然后在某个时刻,GC检测到a和b处于unfinalized状态, 就将他们添加到F-queue,并将状态改为f-reachable finalizable.</p>
+<p>之后分两种情况: 第一: GC从F-queue中首先取出a, 并被某个线程执行了finalize(), 也就相当于被某个活动的线程持有, a状态变成了reachable, finalized. 此时由于a被c对象所引用,所以之后不会变成unreachable finalized而被销毁(重生) 与此同时, b由于一直被a所引用, 所以b的状态变成了reachable, finalizable. 然后在某个时刻被从F-queue取出, 变成reachable, finalized状态</p>
+<p>第二: GC从F-queue中首先取出b,并被某个线程执行了finalize(), 状态变成reachable finalized. 然后a也类似, 变成reachable finalized状态, 并被c引用, 重生</p>
+<h3 id="对象重生的代码2"><a href="#对象重生的代码2" class="headerlink" title="对象重生的代码2"></a>对象重生的代码2</h3><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GC</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> GC SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException, Throwable</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        SAVE_HOOK = <span class="keyword">new</span> GC();</span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        Thread.sleep(<span class="number">500</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK)   <span class="comment">//此时对象应该处于(reachable, finalized)状态</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        Thread.sleep(<span class="number">500</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK)</span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> <span class="keyword">throws</span> Throwable</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.finalize();</span><br><span class="line">        System.out.println(<span class="string">"execute method finalize()"</span>);</span><br><span class="line">        SAVE_HOOK = <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://houbb.github.io/2019/04/16/java-base-03-finalize-03" target="_blank" rel="noopener">finalize 方法详解</a></p>
+<p><a href="https://stackoverflow.com/questions/2506488/when-is-the-finalize-method-called-in-java" target="_blank" rel="noopener">when-is-the-finalize-method-called-in-java</a></p>
+<p><a href="https://www.cnblogs.com/Smina/p/7189427.html" target="_blank" rel="noopener">java finalize方法总结、GC执行finalize的过程</a></p>
+<p><a href="https://www.jb51.net/article/125728.htm" target="_blank" rel="noopener">Java禁止使用finalize方法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/21/http%E6%8A%A5%E6%96%87%E7%BB%93%E6%9E%84/" rel="prev" title="http报文结构">
+      <i class="fa fa-chevron-left"></i> http报文结构
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/21/%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E7%9A%84%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6%E5%88%86%E6%9E%90/" rel="next" title="堆外内存的回收机制分析">
+      堆外内存的回收机制分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#JVM-的一些知识"><span class="nav-number">1.</span> <span class="nav-text">JVM 的一些知识</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#finalize的作用"><span class="nav-number">2.</span> <span class="nav-text">finalize的作用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#finalize函数的调用机制"><span class="nav-number">3.</span> <span class="nav-text">finalize函数的调用机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#何时被调用？"><span class="nav-number">3.1.</span> <span class="nav-text">何时被调用？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#谁来调用？"><span class="nav-number">3.2.</span> <span class="nav-text">谁来调用？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#使用场景"><span class="nav-number">4.</span> <span class="nav-text">使用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#不建议使用的原因"><span class="nav-number">4.1.</span> <span class="nav-text">不建议使用的原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#一些问题"><span class="nav-number">4.1.1.</span> <span class="nav-text">一些问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#适合的场景"><span class="nav-number">4.2.</span> <span class="nav-text">适合的场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#尽量避免使用finalize"><span class="nav-number">4.3.</span> <span class="nav-text">尽量避免使用finalize():</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#禁止使用的原因"><span class="nav-number">4.4.</span> <span class="nav-text">禁止使用的原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-调用时间不确定—有资源浪费的风险"><span class="nav-number">4.4.1.</span> <span class="nav-text">1.调用时间不确定—有资源浪费的风险</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-可能不被调用—-有资源泄露的风险"><span class="nav-number">4.4.2.</span> <span class="nav-text">2. 可能不被调用—-有资源泄露的风险</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-对象可能在finalize函数调用时复活"><span class="nav-number">4.4.3.</span> <span class="nav-text">3. 对象可能在finalize函数调用时复活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-要记得自己做异常捕获"><span class="nav-number">4.4.4.</span> <span class="nav-text">4. 要记得自己做异常捕获</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-小心线程安全"><span class="nav-number">4.4.5.</span> <span class="nav-text">5. 小心线程安全</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#finalize-的执行过程-生命周期"><span class="nav-number">5.</span> <span class="nav-text">finalize 的执行过程(生命周期)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#大致流程"><span class="nav-number">5.1.</span> <span class="nav-text">大致流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#具体的finalize流程："><span class="nav-number">5.2.</span> <span class="nav-text">具体的finalize流程：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#变迁说明"><span class="nav-number">5.3.</span> <span class="nav-text">变迁说明</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#测试代码"><span class="nav-number">6.</span> <span class="nav-text">测试代码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#对象复活"><span class="nav-number">6.1.</span> <span class="nav-text">对象复活</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#测试案例2"><span class="nav-number">6.2.</span> <span class="nav-text">测试案例2</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#对象重生的代码2"><span class="nav-number">6.2.1.</span> <span class="nav-text">对象重生的代码2</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">21</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">807k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

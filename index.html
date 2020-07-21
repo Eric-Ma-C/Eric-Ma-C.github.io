@@ -186,6 +186,755 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8C%B9%E9%85%8D%E7%9A%84KMP%E7%AE%97%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/21/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8C%B9%E9%85%8D%E7%9A%84KMP%E7%AE%97%E6%B3%95/" class="post-title-link" itemprop="url">字符串匹配的KMP算法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 13:39:55 / 修改时间：21:43:31" itemprop="dateCreated datePublished" datetime="2020-07-21T13:39:55+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="http://en.wikipedia.org/wiki/String_searching_algorithm" target="_blank" rel="noopener">字符串匹配</a>是计算机的基本任务之一。</p>
+<p>举例来说，有一个字符串”BBC ABCDAB ABCDABCDABDE”，我想知道，里面是否包含另一个字符串”ABCDABD”？</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050101.jpg" alt="img"></p>
+<p>许多算法可以完成这个任务，<a href="http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm" target="_blank" rel="noopener">Knuth-Morris-Pratt算法</a>（简称KMP）是最常用的之一。它以三个发明者命名，起头的那个K就是著名科学家Donald Knuth。</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050102.jpg" alt="img"></p>
+<p>这种算法不太容易理解，网上有很多<a href="http://www.google.com/search?q=Knuth-Morris-Pratt+algorithm" target="_blank" rel="noopener">解释</a>，但读起来都很费劲。直到读到<a href="http://jakeboxer.com/blog/2009/12/13/the-knuth-morris-pratt-algorithm-in-my-own-words/" target="_blank" rel="noopener">Jake Boxer</a>的文章，我才真正理解这种算法。下面，我用自己的语言，试图写一篇比较好懂的KMP算法解释。</p>
+<p>1.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050103.png" alt="img"></p>
+<p>首先，字符串”BBC ABCDAB ABCDABCDABDE”的第一个字符与搜索词”ABCDABD”的第一个字符，进行比较。因为B与A不匹配，所以搜索词后移一位。</p>
+<p>2.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050104.png" alt="img"></p>
+<p>因为B与A不匹配，搜索词再往后移。</p>
+<p>3.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050105.png" alt="img"></p>
+<p>就这样，直到字符串有一个字符，与搜索词的第一个字符相同为止。</p>
+<p>4.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050106.png" alt="img"></p>
+<p>接着比较字符串和搜索词的下一个字符，还是相同。</p>
+<p>5.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
+<p>直到字符串有一个字符，与搜索词对应的字符不相同为止。</p>
+<p>6.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050108.png" alt="img"></p>
+<p>这时，最自然的反应是，将搜索词整个后移一位，再从头逐个比较。这样做虽然可行，但是效率很差，因为你要把”搜索位置”移到已经比较过的位置，重比一遍。</p>
+<p>7.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
+<p>一个基本事实是，当空格与D不匹配时，你其实知道前面六个字符是”ABCDAB”。KMP算法的想法是，设法利用这个已知信息，不要把”搜索位置”移回已经比较过的位置，继续把它向后移，这样就提高了效率。</p>
+<p>8.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050109.png" alt="img"></p>
+<p>怎么做到这一点呢？可以针对搜索词，算出一张《部分匹配表》（Partial Match Table）。这张表是如何产生的，后面再介绍，这里只要会用就可以了。</p>
+<p>9.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
+<p>已知空格与D不匹配时，前面六个字符”ABCDAB”是匹配的。查表可知，最后一个匹配字符B对应的”部分匹配值”为2，因此按照下面的公式算出向后移动的位数：</p>
+<blockquote>
+<p>　　移动位数 = 已匹配的字符数 - 对应的部分匹配值</p>
+</blockquote>
+<p>因为 6 - 2 等于4，所以将搜索词向后移动4位。</p>
+<p>10.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050110.png" alt="img"></p>
+<p>因为空格与Ｃ不匹配，搜索词还要继续往后移。这时，已匹配的字符数为2（”AB”），对应的”部分匹配值”为0。所以，移动位数 = 2 - 0，结果为 2，于是将搜索词向后移2位。</p>
+<p>11.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050111.png" alt="img"></p>
+<p>因为空格与A不匹配，继续后移一位。</p>
+<p>12.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050112.png" alt="img"></p>
+<p>逐位比较，直到发现C与D不匹配。于是，移动位数 = 6 - 2，继续将搜索词向后移动4位。</p>
+<p>13.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050113.png" alt="img"></p>
+<p>逐位比较，直到搜索词的最后一位，发现完全匹配，于是搜索完成。如果还要继续搜索（即找出全部匹配），移动位数 = 7 - 0，再将搜索词向后移动7位，这里就不再重复了。</p>
+<p>14.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050114.png" alt="img"></p>
+<p>下面介绍《部分匹配表》是如何产生的。</p>
+<p>首先，要了解两个概念：”前缀”和”后缀”。 “前缀”指除了最后一个字符以外，一个字符串的全部头部组合；”后缀”指除了第一个字符以外，一个字符串的全部尾部组合。</p>
+<p>15.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050109.png" alt="img"></p>
+<p>“部分匹配值”就是”前缀”和”后缀”的最长的共有元素的长度。以”ABCDABD”为例，</p>
+<blockquote>
+<p>　　－　“A”的前缀和后缀都为空集，共有元素的长度为0；</p>
+<p>　　－　“AB”的前缀为[A]，后缀为[B]，共有元素的长度为0；</p>
+<p>　　－　“ABC”的前缀为[A, AB]，后缀为[BC, C]，共有元素的长度0；</p>
+<p>　　－　“ABCD”的前缀为[A, AB, ABC]，后缀为[BCD, CD, D]，共有元素的长度为0；</p>
+<p>　　－　“ABCDA”的前缀为[A, AB, ABC, ABCD]，后缀为[BCDA, CDA, DA, A]，共有元素为”A”，长度为1；</p>
+<p>　　－　“ABCDAB”的前缀为[A, AB, ABC, ABCD, ABCDA]，后缀为[BCDAB, CDAB, DAB, AB, B]，共有元素为”AB”，长度为2；</p>
+<p>　　－　“ABCDABD”的前缀为[A, AB, ABC, ABCD, ABCDA, ABCDAB]，后缀为[BCDABD, CDABD, DABD, ABD, BD, D]，共有元素的长度为0。</p>
+</blockquote>
+<p>16.</p>
+<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050112.png" alt="img"></p>
+<p>“部分匹配”的实质是，有时候，字符串头部和尾部会有重复。比如，”ABCDAB”之中有两个”AB”，那么它的”部分匹配值”就是2（”AB”的长度）。搜索词移动的时候，第一个”AB”向后移动4位（字符串长度-部分匹配值），就可以来到第二个”AB”的位置。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="[http://www.ruanyifeng.com/blog/2013/05/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm.html](http://www.ruanyifeng.com/blog/2013/05/Knuth–Morris–Pratt_algorithm.html)">字符串匹配的KMP算法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E7%9A%84%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/21/%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E7%9A%84%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6%E5%88%86%E6%9E%90/" class="post-title-link" itemprop="url">堆外内存的回收机制分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 12:46:02 / 修改时间：20:48:47" itemprop="dateCreated datePublished" datetime="2020-07-21T12:46:02+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="堆外内存"><a href="#堆外内存" class="headerlink" title="堆外内存"></a>堆外内存</h3><p>JVM启动时分配的内存，称为堆内存，与之相对的，在代码中还可以使用堆外内存，比如Netty，广泛使用了堆外内存，但是这部分的内存并不归JVM管理，GC算法并不会对它们进行回收，所以在使用堆外内存时，要格外小心，防止内存一直得不到释放，造成线上故障。</p>
+<h3 id="堆外内存的申请和释放"><a href="#堆外内存的申请和释放" class="headerlink" title="堆外内存的申请和释放"></a>堆外内存的申请和释放</h3><p>JDK的<code>ByteBuffer</code>类提供了一个接口<code>allocateDirect(int capacity)</code>进行堆外内存的申请，底层通过<code>unsafe.allocateMemory(size)</code>实现，接下去看看在JVM层面是如何实现的。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2184951-13c6c6ebf2cecc82.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
+<p>可以发现，最底层是通过<code>malloc</code>方法申请的，但是这块内存需要进行手动释放，JVM并不会进行回收，幸好<code>Unsafe</code>提供了另一个接口<code>freeMemory</code>可以对申请的堆外内存进行释放。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2184951-abe6aff129c546fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1180/format/webp" alt="img"></p>
+<h3 id="堆外内存的回收机制"><a href="#堆外内存的回收机制" class="headerlink" title="堆外内存的回收机制"></a>堆外内存的回收机制</h3><p>如果每次申请堆外内存，都需要在代码中显示的释放，对于Java这门语言的设计来说，显然不够合理，既然JVM不会管理这些堆外内存，它们是如何回收的呢？</p>
+<h4 id="DirectByteBuffer"><a href="#DirectByteBuffer" class="headerlink" title="DirectByteBuffer"></a>DirectByteBuffer</h4><p>JDK中使用<code>DirectByteBuffer</code>对象来表示堆外内存，每个<code>DirectByteBuffer</code>对象在初始化时，都会创建一个对用的<code>Cleaner</code>对象，这个<code>Cleaner</code>对象会在合适的时候执行<code>unsafe.freeMemory(address)</code>，从而回收这块堆外内存。</p>
+<p>当初始化一块堆外内存时，对象的引用关系如下：</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2184951-4f810a6be523de33.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
+<p>其中<code>first</code>是<code>Cleaner</code>类的静态变量，<code>Cleaner</code>对象在初始化时会被添加到<code>Clener</code>链表中，和<code>first</code>形成引用关系，<code>ReferenceQueue</code>是用来保存需要回收的<code>Cleaner</code>对象。</p>
+<p>如果该<code>DirectByteBuffer</code>对象在一次GC中被回收了</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2184951-510161812431ac12.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
+<p>此时，只有<code>Cleaner</code>对象唯一保存了堆外内存的数据（开始地址、大小和容量），在下一次FGC时，把该<code>Cleaner</code>对象放入到<code>ReferenceQueue</code>中，并触发<code>clean</code>方法。</p>
+<p><code>Cleaner</code>对象的<code>clean</code>方法主要有两个作用：<br> 1、把自身从<code>Clener</code>链表删除，从而在下次GC时能够被回收<br> 2、释放堆外内存</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span>(<span class="params"></span>)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (address == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// Paranoia</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">unsafe</span>.freeMemory(address);</span><br><span class="line">    address = <span class="number">0</span>;</span><br><span class="line">    Bits.unreserveMemory(size, capacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果JVM一直没有执行FGC的话，无效的<code>Cleaner</code>对象就无法放入到ReferenceQueue中，从而堆外内存也一直得不到释放，内存岂不是会爆？</p>
+<p>其实在初始化<code>DirectByteBuffer</code>对象时，如果当前堆外内存的条件很苛刻时，会主动调用<code>System.gc()</code>强制执行FGC。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/2184951-39f8c22847e7c11f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1086/format/webp" alt="img"></p>
+<p>不过很多线上环境的JVM参数有<code>-XX:+DisableExplicitGC</code>，导致了<code>System.gc()</code>等于一个空函数，根本不会触发FGC，这一点在使用Netty框架时需要注意是否会出问题。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/35cf0f348275" target="_blank" rel="noopener">堆外内存的回收机制分析</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/finalize%20%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/21/finalize%20%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">finalize 方法详解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 11:52:20 / 修改时间：19:54:13" itemprop="dateCreated datePublished" datetime="2020-07-21T11:52:20+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="JVM-的一些知识"><a href="#JVM-的一些知识" class="headerlink" title="JVM 的一些知识"></a>JVM 的一些知识</h1><p>在说明finalize()的用法之前要树立有关于java垃圾回收器几个观点:</p>
+<ul>
+<li>对象可以不被垃圾回收</li>
+</ul>
+<p>java的垃圾回收遵循一个特点, 就是能不回收就不会回收.只要程序的内存没有达到即将用完的地步, 对象占用的空间就不会被释放。</p>
+<p>因为如果程序正常结束了,而且垃圾回收器没有释放申请的内存, 那么随着程序的正常退出, 申请的内存会自动交还给操作系统;</p>
+<p>而且垃圾回收本身就需要付出代价, 是有一定开销的, 如果不使用,就不会存在这一部分的开销。</p>
+<ul>
+<li>垃圾回收只能回收内存</li>
+</ul>
+<p>而且只能回收内存中由java创建对象方式(堆)创建的对象所占用的那一部分内存, 无法回收其他资源, 比如文件操作的句柄, 数据库的连接等等。</p>
+<ul>
+<li>垃圾回收不是C++中的析构</li>
+</ul>
+<p>两者不是对应关系, 因为第一点就指出了垃圾回收的发生是不确定的, 而C++中析构函数是由程序员控制(delete) 或者离开器作用域时自动调用发生, 是在确定的时间对对象进行销毁并释放其所占用的内存。</p>
+<ul>
+<li>调用垃圾回收器(GC)不一定保证垃圾回收器的运行</li>
+</ul>
+<h1 id="finalize的作用"><a href="#finalize的作用" class="headerlink" title="finalize的作用"></a>finalize的作用</h1><p>finalize()是Object的protected方法，子类可以覆盖该方法以实现资源清理工作，GC在回收对象之前调用该方法。</p>
+<p>finalize()与C++中的析构函数不是对应的。</p>
+<p>C++中的析构函数调用的时机是确定的（对象离开作用域或delete掉），但Java中的finalize的调用具有不确定性。</p>
+<p>finalize() 的功能: 一旦垃圾回收器准备释放对象所占的内存空间, 如果对象覆盖了finalize()并且函数体内不能是空的, 就会首先调用对象的finalize(), 然后在下一次垃圾回收动作发生的时候真正收回对象所占的空间。</p>
+<p>finalize() 有一个特点就是: JVM始终只调用一次. 无论这个对象被垃圾回收器标记为什么状态, finalize()始终只调用一次. 但是程序员在代码中主动调用的不记录在这之内。</p>
+<h1 id="finalize函数的调用机制"><a href="#finalize函数的调用机制" class="headerlink" title="finalize函数的调用机制"></a>finalize函数的调用机制</h1><p>java虚拟机规范并没有硬性规定垃圾回收该不该搞，以及该如何搞。所以这里提到的调用机制不能保证适合所有jvm。</p>
+<h2 id="何时被调用？"><a href="#何时被调用？" class="headerlink" title="何时被调用？"></a>何时被调用？</h2><p>finalize啥时候才会被调用捏？</p>
+<p>一般来说，要等到JVM开始进行垃圾回收的时候，它才有可能被调用。</p>
+<p>而JVM进行垃圾回收的时间点是非常不确定的，依赖于各种运行时的环境因素。</p>
+<p>正是由于finalize函数调用时间点的不确定，导致了后面提到的某些缺点。</p>
+<h2 id="谁来调用？"><a href="#谁来调用？" class="headerlink" title="谁来调用？"></a>谁来调用？</h2><p>常见的JVM会通过GC的垃圾回收线程来进行finalize函数的调用。</p>
+<p>由于垃圾回收线程比较重要（人家好歹也是JVM的一个组成部分嘛），为了防止finalize函数抛出的异常影响到垃圾回收线程的运作，垃圾回收线程会在调用每一个finalize函数时进行try catch，如果捕获到异常，就直接丢弃，然后接着处理下一个失效对象的finalize函数。</p>
+<h1 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h1><p>不建议用finalize方法完成“非内存资源”的清理工作</p>
+<h2 id="不建议使用的原因"><a href="#不建议使用的原因" class="headerlink" title="不建议使用的原因"></a>不建议使用的原因</h2><h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>一些与finalize相关的方法，由于一些致命的缺陷，已经被废弃了，如System.runFinalizersOnExit()方法、Runtime.runFinalizersOnExit()方法</p>
+<p>System.gc()与System.runFinalization()方法增加了finalize方法执行的机会，但不可盲目依赖它们</p>
+<p>Java语言规范并不保证finalize方法会被及时地执行、而且根本不会保证它们会被执行</p>
+<p>finalize方法可能会带来性能问题。因为JVM通常在单独的低优先级线程中完成finalize的执行</p>
+<p>对象再生问题：finalize方法中，可将待回收对象赋值给GC Roots可达的对象引用，从而达到对象再生的目的</p>
+<p>finalize方法至多由GC执行一次(用户当然可以手动调用对象的finalize方法，但并不影响GC对finalize的行为)</p>
+<h2 id="适合的场景"><a href="#适合的场景" class="headerlink" title="适合的场景"></a>适合的场景</h2><p>finalize()主要使用的方面:</p>
+<p>根据垃圾回收器的第2点可知, java垃圾回收器只能回收创建在堆中的java对象, 而对于不是这种方式创建的对象则没有方法处理, 这就需要使用finalize()对这部分对象所占的资源进行释放. 使用到这一点的就是JNI本地对象, 通过JNI来调用本地方法创建的对象只能通过finalize()保证使用之后进行销毁,释放内存</p>
+<p>充当保证使用之后释放资源的最后一道屏障, 比如使用数据库连接之后未断开,并且由于程序员的个人原因忘记了释放连接, 这时就只能依靠finalize()函数来释放资源.</p>
+<p>《thinking in java》中所讲到的“终结条件”验证, 通过finalize()方法来试图找出程序的漏洞</p>
+<p>尽管finalize()可以主动调用, 但是最好不要主动调用, 因为在代码中主动调用之后, 如果JVM再次调用, 由于之前的调用已经释放过资源了,所以二次释放资源就有可能出现导致出现空指针等异常, 而恰好这些异常是没有被捕获的, 那么就造成对象处于被破坏的状态, 导致该对象所占用的某一部分资源无法被回收而浪费.</p>
+<h2 id="尽量避免使用finalize"><a href="#尽量避免使用finalize" class="headerlink" title="尽量避免使用finalize():"></a>尽量避免使用finalize():</h2><p>finalize()不一定会被调用, 因为java的垃圾回收器的特性就决定了它不一定会被调用</p>
+<p>就算finalize()函数被调用, 它被调用的时间充满了不确定性, 因为程序中其他线程的优先级远远高于执行 finalize() 函数线程的优先级。</p>
+<p>也许等到finalize()被调用, 数据库的连接池或者文件句柄早就耗尽了。</p>
+<p>如果一种未被捕获的异常在使用finalize方法时被抛出，这个异常不会被捕获，finalize方法的终结过程也会终止，造成对象出于破坏的状态。被破坏的对象又很可能导致部分资源无法被回收, 造成浪费。</p>
+<p>finalize()和垃圾回收器的运行本身就要耗费资源, 也许会导致程序的暂时停止。</p>
+<h2 id="禁止使用的原因"><a href="#禁止使用的原因" class="headerlink" title="禁止使用的原因"></a>禁止使用的原因</h2><h3 id="1-调用时间不确定—有资源浪费的风险"><a href="#1-调用时间不确定—有资源浪费的风险" class="headerlink" title="1.调用时间不确定—有资源浪费的风险"></a>1.调用时间不确定—有资源浪费的风险</h3><p>前面已经介绍了调用机制。</p>
+<p>同学们应该认清“finalize的调用时机是很不确定的”这样一个事实。</p>
+<p>所以，假如你把某些稀缺资源放到finalize()中释放，可能会导致该稀缺资源等上很久很久很久以后才被释放。</p>
+<p>这可是资源的浪费啊！另外，某些类对象所携带的资源（比如某些JDBC的类）可能本身就很耗费内存，这些资源的延迟释放会造成很大的性能问题。</p>
+<h3 id="2-可能不被调用—-有资源泄露的风险"><a href="#2-可能不被调用—-有资源泄露的风险" class="headerlink" title="2. 可能不被调用—-有资源泄露的风险"></a>2. 可能不被调用—-有资源泄露的风险</h3><p>很多同学以为finalize()总是会被调用，其实不然。</p>
+<p>在某些情况下，finalize()压根儿不被调用。</p>
+<p>比如在JVM退出的当口，内存中那些对象的finalize函数可能就不会被调用了。</p>
+<p>估计有同学在打“runFinalizersOnExit”的主意，来确保所有的finalize在JVM退出前被调用。</p>
+<p>很可惜也很遗憾，该方法从JDK 1.2开始，就已经被废弃了。即使该方法不被废弃，也是有很大的线程安全隐患滴！ 　　</p>
+<p>从上述可以看出，一旦你依赖finalize()来帮你释放资源，那可是很不妙啊（有资源泄漏的危险）！</p>
+<p>很多时候，资源泄露导致的性能问题更加严重，万万不可小看。</p>
+<h3 id="3-对象可能在finalize函数调用时复活"><a href="#3-对象可能在finalize函数调用时复活" class="headerlink" title="3. 对象可能在finalize函数调用时复活"></a>3. 对象可能在finalize函数调用时复活</h3><p>本来，只有当某个对象已经失效（没有引用），垃圾回收器才会调用该对象的finalize函数。但是，万一碰上某个变态的程序员，在finalize()函数内部再把对象自身的引用（也就是this）重新保存在某处，也就相当于把自己复活了（因为这个对象重新有了引用，不再处于失效状态）。 为了防止发生这种诡异的事情，垃圾回收器只能在每次调用完finalize()之后再次去检查该对象是否还处于失效状态。这无形中又增加了JVM的开销。随便提一下。由于JDK的文档中规定了，JVM对于每一个类对象实例最多只会调用一次finalize()。所以，对于那些诈尸的实例，当它们真正死亡时，finalize()反而不会被调用了。这看起来是不是很奇怪？</p>
+<h3 id="4-要记得自己做异常捕获"><a href="#4-要记得自己做异常捕获" class="headerlink" title="4. 要记得自己做异常捕获"></a>4. 要记得自己做异常捕获</h3><p>刚才在介绍finalize()调用机制时提到，一旦有异常抛出到finalize函数外面，会被垃圾回收线程捕获并丢弃。</p>
+<p>也就是说，异常被忽略掉了（异常被忽略的危害，“这里”有提到）。</p>
+<p>为了防止这种事儿，凡是finalize()中有可能抛出异常的代码，你都得写上try catch语句，自己进行捕获。</p>
+<h3 id="5-小心线程安全"><a href="#5-小心线程安全" class="headerlink" title="5. 小心线程安全"></a>5. 小心线程安全</h3><p>由于调用finalize()的是垃圾回收线程，和你自己代码的线程不是同一个线程；</p>
+<p>甚至不同对象的finalize()可能会被不同的垃圾回收线程调用（比如使用“并行收集器”的时候）。</p>
+<p>所以，当你在finalize()里面访问某些数据的时候，还得时刻留心线程安全的问题。</p>
+<h1 id="finalize-的执行过程-生命周期"><a href="#finalize-的执行过程-生命周期" class="headerlink" title="finalize 的执行过程(生命周期)"></a>finalize 的执行过程(生命周期)</h1><h2 id="大致流程"><a href="#大致流程" class="headerlink" title="大致流程"></a>大致流程</h2><p>首先，大致描述一下finalize流程：当对象变成(GC Roots)不可达时，GC会判断该对象是否覆盖了finalize方法，若未覆盖，则直接将其回收。</p>
+<p>否则，若对象未执行过finalize方法，将其放入F-Queue队列，由一低优先级线程执行该队列中对象的finalize方法。</p>
+<p>执行finalize方法完毕后，GC会再次判断该对象是否可达，若不可达，则进行回收，否则，对象“复活”。</p>
+<h2 id="具体的finalize流程："><a href="#具体的finalize流程：" class="headerlink" title="具体的finalize流程："></a>具体的finalize流程：</h2><p>对象可由两种状态，涉及到两类状态空间。</p>
+<p>一是终结状态空间 <code>F = {unfinalized, finalizable, finalized}</code>；</p>
+<p>二是可达状态空间 <code>R = {reachable, finalizer-reachable, unreachable}</code>。</p>
+<p>各状态含义如下：</p>
+<p>unfinalized: 新建对象会先进入此状态，GC并未准备执行其finalize方法，因为该对象是可达的</p>
+<p>finalizable: 表示GC可对该对象执行finalize方法，GC已检测到该对象不可达。</p>
+<p>正如前面所述，GC通过F-Queue队列和一专用线程完成finalize的执行</p>
+<p>finalized: 表示GC已经对该对象执行过finalize方法</p>
+<p>reachable: 表示GC Roots引用可达</p>
+<p>finalizer-reachable(f-reachable)：表示不是reachable，但可通过某个finalizable对象可达</p>
+<p>unreachable：对象不可通过上面两种途径可达</p>
+<ul>
+<li>状态变迁图</li>
+</ul>
+<p><img src="https://images0.cnblogs.com/blog/705813/201502/071653276729233.gif" alt="状态变迁图"></p>
+<h2 id="变迁说明"><a href="#变迁说明" class="headerlink" title="变迁说明"></a>变迁说明</h2><p>新建对象首先处于[reachable, unfinalized]状态(A)</p>
+<p>随着程序的运行，一些引用关系会消失，导致状态变迁，从reachable状态变迁到f-reachable(B, C, D)或unreachable(E, F)状态</p>
+<p>若JVM检测到处于unfinalized状态的对象变成f-reachable或unreachable，JVM会将其标记为finalizable状态(G,H)。若对象原处于[unreachable, unfinalized]状态，则同时将其标记为f-reachable(H)。</p>
+<p>在某个时刻，JVM取出某个finalizable对象，将其标记为finalized并在某个线程中执行其finalize方法。由于是在活动线程中引用了该对象，该对象将变迁到(reachable, finalized)状态(K或J)。该动作将影响某些其他对象从f-reachable状态重新回到reachable状态(L, M, N)</p>
+<p>处于finalizable状态的对象不能同时是unreahable的，由第4点可知，将对象finalizable对象标记为finalized时会由某个线程执行该对象的finalize方法，致使其变成reachable。这也是图中只有八个状态点的原因</p>
+<p>程序员手动调用finalize方法并不会影响到上述内部标记的变化，因此JVM只会至多调用finalize一次，即使该对象“复活”也是如此。</p>
+<p>程序员手动调用多少次不影响JVM的行为</p>
+<p>若JVM检测到finalized状态的对象变成unreachable，回收其内存(I)</p>
+<p>若对象并未覆盖finalize方法，JVM会进行优化，直接回收对象（O）</p>
+<p>注：System.runFinalizersOnExit()等方法可以使对象即使处于reachable状态，JVM仍对其执行finalize方法</p>
+<h1 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h1><h2 id="对象复活"><a href="#对象复活" class="headerlink" title="对象复活"></a>对象复活</h2><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GC</span> </span>&#123;  </span><br><span class="line">  </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> GC SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">  </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">new</span> GC();  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">        System.gc();  </span><br><span class="line">        Thread.sleep(<span class="number">500</span>);  </span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK) &#123; <span class="comment">//此时对象应该处于(reachable, finalized)状态  </span></span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);  </span><br><span class="line">        &#125;  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;  </span><br><span class="line">        System.gc();  </span><br><span class="line">        Thread.sleep(<span class="number">500</span>);  </span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK) &#123;  </span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);  </span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;  </span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);  </span><br><span class="line">        &#125;  </span><br><span class="line">    &#125;  </span><br><span class="line">  </span><br><span class="line">    <span class="meta">@Override</span>  </span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> <span class="keyword">throws</span> Throwable </span>&#123;  </span><br><span class="line">        <span class="keyword">super</span>.finalize();  </span><br><span class="line">        System.out.println(<span class="string">"execute method finalize()"</span>);  </span><br><span class="line">        SAVE_HOOK = <span class="keyword">this</span>;  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="测试案例2"><a href="#测试案例2" class="headerlink" title="测试案例2"></a>测试案例2</h2><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123; </span><br><span class="line">    <span class="keyword">static</span> A a; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123; </span><br><span class="line">    B b; </span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">A</span><span class="params">(B b)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.b = b; </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"A finalize"</span>); </span><br><span class="line">        C.a = <span class="keyword">this</span>; </span><br><span class="line">    &#125; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123; </span><br><span class="line">    String name; </span><br><span class="line">    <span class="keyword">int</span> age; </span><br><span class="line">   </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">B</span><span class="params">(String name, <span class="keyword">int</span> age)</span> </span>&#123; </span><br><span class="line">        <span class="keyword">this</span>.name = name; </span><br><span class="line">        <span class="keyword">this</span>.age = age; </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">"B finalize"</span>); </span><br><span class="line">    &#125; </span><br><span class="line">   </span><br><span class="line">    <span class="meta">@Override</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        <span class="keyword">return</span> name + <span class="string">" is "</span> + age; </span><br><span class="line">    &#125; </span><br><span class="line">&#125; </span><br><span class="line">   </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123; </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123; </span><br><span class="line">        A a = <span class="keyword">new</span> A(<span class="keyword">new</span> B(<span class="string">"allen"</span>, <span class="number">20</span>)); </span><br><span class="line">        a = <span class="keyword">null</span>; </span><br><span class="line">   </span><br><span class="line">        System.gc(); </span><br><span class="line">        Thread.sleep(<span class="number">5000</span>); </span><br><span class="line">        System.out.println(C.a.b); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我的理解:为方便起见, 把a,b两个变量所指的内存空间就叫做a和b</p>
+<p> [java]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">A a &#x3D; new A(new B(&quot;allen&quot; , 20)); &#x2F;&#x2F;此时a和b都是reachable, unfinalized状态</span><br><span class="line">a &#x3D; null;</span><br></pre></td></tr></table></figure>
+
+<p>这之后, a和b的状态会在某一个时刻变成unreachable, unfinalized(但是b变成了unreachable还是f-reachable我不是很确定, 如果大家知道,欢迎补充^_^) 或者a和b直接变成f-reachable, unfianlized。</p>
+<p>然后在某个时刻,GC检测到a和b处于unfinalized状态, 就将他们添加到F-queue,并将状态改为f-reachable finalizable.</p>
+<p>之后分两种情况: 第一: GC从F-queue中首先取出a, 并被某个线程执行了finalize(), 也就相当于被某个活动的线程持有, a状态变成了reachable, finalized. 此时由于a被c对象所引用,所以之后不会变成unreachable finalized而被销毁(重生) 与此同时, b由于一直被a所引用, 所以b的状态变成了reachable, finalizable. 然后在某个时刻被从F-queue取出, 变成reachable, finalized状态</p>
+<p>第二: GC从F-queue中首先取出b,并被某个线程执行了finalize(), 状态变成reachable finalized. 然后a也类似, 变成reachable finalized状态, 并被c引用, 重生</p>
+<h3 id="对象重生的代码2"><a href="#对象重生的代码2" class="headerlink" title="对象重生的代码2"></a>对象重生的代码2</h3><p> [java]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">GC</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> GC SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException, Throwable</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        SAVE_HOOK = <span class="keyword">new</span> GC();</span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        Thread.sleep(<span class="number">500</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK)   <span class="comment">//此时对象应该处于(reachable, finalized)状态</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        SAVE_HOOK = <span class="keyword">null</span>;</span><br><span class="line">        System.gc();</span><br><span class="line">        Thread.sleep(<span class="number">500</span>);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != SAVE_HOOK)</span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"Yes , I am still alive"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            System.out.println(<span class="string">"No , I am dead"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finalize</span><span class="params">()</span> <span class="keyword">throws</span> Throwable</span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.finalize();</span><br><span class="line">        System.out.println(<span class="string">"execute method finalize()"</span>);</span><br><span class="line">        SAVE_HOOK = <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://houbb.github.io/2019/04/16/java-base-03-finalize-03" target="_blank" rel="noopener">finalize 方法详解</a></p>
+<p><a href="https://stackoverflow.com/questions/2506488/when-is-the-finalize-method-called-in-java" target="_blank" rel="noopener">when-is-the-finalize-method-called-in-java</a></p>
+<p><a href="https://www.cnblogs.com/Smina/p/7189427.html" target="_blank" rel="noopener">java finalize方法总结、GC执行finalize的过程</a></p>
+<p><a href="https://www.jb51.net/article/125728.htm" target="_blank" rel="noopener">Java禁止使用finalize方法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/http%E6%8A%A5%E6%96%87%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/21/http%E6%8A%A5%E6%96%87%E7%BB%93%E6%9E%84/" class="post-title-link" itemprop="url">http报文结构</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 11:38:22 / 修改时间：19:39:39" itemprop="dateCreated datePublished" datetime="2020-07-21T11:38:22+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h4 id="01-输入网址按下回车发生了什么？"><a href="#01-输入网址按下回车发生了什么？" class="headerlink" title="01-输入网址按下回车发生了什么？"></a>01-输入网址按下回车发生了什么？</h4><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244fa70cc56814?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>1、浏览器从地址栏的输入中获得服务器的IP地址和端口号；（如果使用的是域名，会先使用域名解析功能解析出对呀的IP地址）</p>
+<p>2、浏览器用TCP的三次握手与服务器建立连接；</p>
+<p>3、浏览器向服务器发送拼好的报文；</p>
+<p>4、服务器收到报文后处理请求，同样拼好报文再发给浏览器；</p>
+<p>5、浏览器解析报文，渲染输出页面。</p>
+<h4 id="02-HTTP报文结构"><a href="#02-HTTP报文结构" class="headerlink" title="02-HTTP报文结构"></a>02-HTTP报文结构</h4><p>HTTP协议的请求报文和响应报文的结构基本相同，由三大部分组成：</p>
+<ol>
+<li>起始行（start line）：描述请求或响应的基本信息；</li>
+<li>头部字段集合（header）：使用key-value形式更详细的说明报文；</li>
+<li>消息正文（entity）：实际传输的数据，它不一定是文本，可以是图片、视频等二进制数据。</li>
+</ol>
+<p>这其中前两部分起始行和头部字段经常又合称为“请求头”或“响应头”，消息正文又称为“实体”，但与“header”对应，很多时候就直接称为“body”。</p>
+<p>HTTP 协议规定报文必须有 header，但可以没有 body，而且在 header 之后必须要有一个“空行”，也就是“CRLF”，十六进制的“0D0A”。</p>
+<p>所以，一个完整的 HTTP 报文就像是下图的这个样子，注意在 header 和 body 之间有一个“空行”。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244f92f62076d8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h5 id="请求行"><a href="#请求行" class="headerlink" title="请求行"></a>请求行</h5><p>请求报文里的起始行也就是请求行，它简要的描述了客户端想要如何操作服务器端的资源：</p>
+<p>请求行由三部分构成：</p>
+<ol>
+<li>请求方法：是一个动词，如GET/POST，表示对资源的操作；</li>
+<li>请求目标：通常是一个URI，标记了请求方法要操作的资源；</li>
+<li>版本号：表示报文使用的HTTP协议版本。</li>
+</ol>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244fb1a5ddfb97?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h5 id="状态行"><a href="#状态行" class="headerlink" title="状态行"></a>状态行</h5><p>响应报文里的起始行也就是状态行，意思是服务器响应的状态：</p>
+<p>状态行也是由三部分构成：</p>
+<ol>
+<li>版本号：表示报文使用的HTTP协议版本；</li>
+<li>状态码：一个三位数，用代码的形式表示处理的结果；</li>
+<li>原因：作为数字状态码补充，是更详细的解释文字，帮助人理解原因。</li>
+</ol>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244fb6158fa757?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h5 id="头部字段"><a href="#头部字段" class="headerlink" title="头部字段"></a>头部字段</h5><p>请求行或状态行再加上头部字段集合就构成了HTTP报文里完整的请求头或响应头。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244fbdc7c900ed?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17244fc08e313dcd?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>头部字段是key-value的形式，key和value之间用”：“分隔，最后用CRLF换行表示字段结束。HTTP头字段非常灵活，不仅可以使用标准里Host、Connection等已有头，也可以任意添加自定义头，这就是HTTP协议带来了无限的扩展可能。</p>
+<p>不过使用头字段需要注意下面几点：</p>
+<p>1、字段名不区分大小写，例如“Host”也可以写成“host”，但首字母大写的可读性更好；</p>
+<p>2、字段名里不允许出现空格，可以使用连字符“-”，但不能使用下划线“_”。例如，“test-name”是合法的字段名，而“test name”“test_name”是不正确的字段名；</p>
+<p>3、字段名后面必须紧接着“:”，不能有空格，而“:”后的字段值前可以有多个空格；</p>
+<p>4、字段的顺序是没有意义的，可以任意排列不影响语义；</p>
+<p>5、字段原则上不能重复，除非这个字段本身的语义允许，例如 Set-Cookie。</p>
+<h5 id="常用头字段"><a href="#常用头字段" class="headerlink" title="常用头字段"></a>常用头字段</h5><p>HTTP 协议规定了非常多的头部字段，实现各种各样的功能，但基本上可以分为四大类：</p>
+<p>1、通用字段：在请求头和响应头里都可以出现；</p>
+<p>2、请求字段：仅能出现在请求头里，进一步说明请求信息或者额外的附加条件；</p>
+<p>3、响应字段：仅能出现在响应头里，补充说明响应报文的信息；</p>
+<p>4、实体字段：它实际上属于通用字段，但专门描述 body 的额外信息</p>
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>字段说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Host</td>
+<td>请求字段，只能出现在请求头里，且是唯一一个HTTP1.1规范里要求必须出现的字段。</td>
+</tr>
+<tr>
+<td>User-Agent</td>
+<td>请求字段，只出现请求头里。它使用一个字符串来描述发起 HTTP 请求的客户端，服务器可以依据它来返回最合适此浏览器显示的页面。</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>通用字段，但通常出现在响应头里，表示HTTP报文创建的时间，客户端可以使用这个时间再搭配其他字段决定缓存策略。</td>
+</tr>
+<tr>
+<td>Server</td>
+<td>响应字段，只能出现在响应头里，她告诉客户端当前正在提供Web服务的软件名称和版本号。</td>
+</tr>
+<tr>
+<td>Content-Length</td>
+<td>实体字段，表示报文里body的长度，也就是请求头或响应头空行后面数据的长度。</td>
+</tr>
+</tbody></table>
+<h4 id="Q-amp-A"><a href="#Q-amp-A" class="headerlink" title="Q&amp;A"></a>Q&amp;A</h4><p>Q：试着解释下浏览器在点击页面链接后发生了哪些事情？</p>
+<p>Q：如果是一个不存在的域名，那么浏览器的工作流程会是怎么样的呢？</p>
+<p>Q：如果拼HTTP报文的时候，在头字段后多加了一个CRLF，导致出现了一个空行，会发生什么？</p>
+<p>Q：讲头字段时说”：“后的空格可以有多个，那为什么绝大多数情况下都只使用一个空格呢？</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5ec9fa02e51d4578a67968cc" target="_blank" rel="noopener">http报文结构</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/Netty%20%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/21/Netty%20%E7%9A%84%E9%9B%B6%E6%8B%B7%E8%B4%9D/" class="post-title-link" itemprop="url">Netty 的零拷贝</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-21 11:29:03 / 修改时间：19:33:00" itemprop="dateCreated datePublished" datetime="2020-07-21T11:29:03+08:00">2020-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty/" itemprop="url" rel="index"><span itemprop="name">Netty</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>维基百科中对 <code>Zero-copy</code> 的解释是</p>
+<blockquote>
+<p>零拷贝技术是指计算机执行操作时，CPU不需要先将数据从某处内存复制到另一个特定区域。这种技术通常用于通过网络传输文件时节省CPU周期和内存带宽。</p>
+</blockquote>
+<p>维基百科里提到的零拷贝是在硬件和操作系统层面的，而本文主要介绍的是Netty在应用层面的优化。不过需要注意的是，零拷贝并非字面意义上的没有内存拷贝，而是避免多余的拷贝操作，即使是系统层的零拷贝也有从设备到内存，内存到设备的数据拷贝过程。</p>
+<p>Netty 的零拷贝体现在以下几个方面</p>
+<ul>
+<li><code>ByteBuf</code> 的 <code>slice</code> 操作并不会拷贝一份新的 <code>ByteBuf</code> 内存空间，而是直接借用原来的 <code>ByteBuf</code> ，只是独立地保存读写索引。</li>
+<li>Netty 提供了 <code>CompositeByteBuf</code> 类，可以将多个 <code>ByteBuf</code> 组合成一个逻辑上的 <code>ByteBuf</code> 。</li>
+<li>Netty 的 <code>FileRegion</code> 中包装了 <code>NIO</code> 的 <code>FileChannel.transferTo()</code>方法，该方法在底层系统支持的情况下会调用 <code>sendfile</code> 方法，从而在传输文件时避免了用户态的内存拷贝。</li>
+<li>Netty 的 <code>PooledDirectByteBuf</code> 等类中封装了 <code>NIO</code> 的 <code>DirectByteBuffer</code> ，而 <code>DirectByteBuffer</code> 是直接在 jvm 堆外分配的内存，省去了堆外内存向堆内存拷贝的开销。</li>
+</ul>
+<p>下面来简单介绍下这几种方式。</p>
+<h2 id="slice-分片"><a href="#slice-分片" class="headerlink" title="slice 分片"></a>slice 分片</h2><p>以下以 <code>AbstractUnpooledSlicedByteBuf</code> 为例讲解 <code>slice</code> 的零拷贝原理，至于内存池化的实现 <code>PooledSlicedByteBuf</code> ，因为内存池要通过引用计数来控制内存的释放，所以代码里会出现很多与本文主题无关的逻辑，这里就不拿来举栗子了。</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 切片ByteBuf的构造函数，其中字段adjustment为切片ByteBuf相对于被切片ByteBuf的偏移</span></span><br><span class="line"><span class="comment">// 量，两个ByteBuf共用一块内存空间,字段buffer为实际存储数据的ByteBuf</span></span><br><span class="line">AbstractUnpooledSlicedByteBuf(ByteBuf buffer, <span class="keyword">int</span> index, <span class="keyword">int</span> length) &#123;</span><br><span class="line">    <span class="keyword">super</span>(length);</span><br><span class="line">    checkSliceOutOfBounds(index, length, buffer);<span class="comment">//检查slice是否越界</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (buffer <span class="keyword">instanceof</span> AbstractUnpooledSlicedByteBuf) &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf也是AbstractUnpooledSlicedByteBuf对象</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = ((AbstractUnpooledSlicedByteBuf) buffer).buffer;</span><br><span class="line">        adjustment = ((AbstractUnpooledSlicedByteBuf) buffer).adjustment + index;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (buffer <span class="keyword">instanceof</span> DuplicatedByteBuf) &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf为DuplicatedByteBuf对象，则</span></span><br><span class="line">        <span class="comment">// 用unwrap得到实际存储数据的ByteBuf赋值buffer</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = buffer.unwrap();</span><br><span class="line">        adjustment = index;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// 如果被切片ByteBuf为一般ByteBuf对象，则直接赋值buffer</span></span><br><span class="line">        <span class="keyword">this</span>.buffer = buffer;</span><br><span class="line">        adjustment = index;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    initLength(length);</span><br><span class="line">    writerIndex(length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>以上为 <code>AbstractUnpooledSlicedByteBuf</code> 类的构造函数，比较简单，就不详细介绍了。</p>
+<p>下面来看看 <code>AbstractUnpooledSlicedByteBuf</code> 对 <code>ByteBuf</code> 接口的实现代码，以 <code>getBytes</code> 方法为例：</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">getBytes</span><span class="params">(<span class="keyword">int</span> index, ByteBuffer dst)</span> </span>&#123;</span><br><span class="line">    checkIndex0(index, dst.remaining());<span class="comment">//检查是否越界</span></span><br><span class="line">    unwrap().getBytes(idx(index), dst);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ByteBuf <span class="title">unwrap</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> buffer;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">idx</span><span class="params">(<span class="keyword">int</span> index)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> index + adjustment;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是 <code>AbstractUnpooledSlicedByteBuf</code> 重载的 <code>getBytes</code> 方法，可以看到 <code>AbstractUnpooledSlicedByteBuf</code> 是直接在封装的 <code>ByteBuf</code> 上取的字节，但是重新计算了索引，加上了相对偏移量。</p>
+<h2 id="CompositeByteBuf"><a href="#CompositeByteBuf" class="headerlink" title="CompositeByteBuf"></a>CompositeByteBuf</h2><p>在有些场景里，我们的数据会分散在多个 <code>ByteBuf</code> 上，但是我们又希望将这些 <code>ByteBuf</code> 聚合在一个 <code>ByteBuf</code> 里处理。这里最直观的想法是将所有 <code>ByteBuf</code> 的数据拷贝到一个 <code>ByteBuf</code> 上，但是这样会有大量的内存拷贝操作，产生很大的CPU开销。</p>
+<p>而 <code>CompositeByteBuf</code> 可以很好地解决这个问题，正如名字一样，这是一个复合 <code>ByteBuf</code> ，内部由很多的 <code>ByteBuf</code> 组成，但 <code>CompositeByteBuf</code> 给它们做了一层封装，可以直接以 <code>ByteBuf</code> 的接口操作它们。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Precondition is that &#123;<span class="doctag">@code</span> buffer != null&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">addComponent0</span><span class="params">(<span class="keyword">boolean</span> increaseWriterIndex, <span class="keyword">int</span> cIndex, ByteBuf buffer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> buffer != <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">boolean</span> wasAdded = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 检查新增的component的索引是否合法</span></span><br><span class="line">        checkComponentIndex(cIndex);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// buffer的长度</span></span><br><span class="line">        <span class="keyword">int</span> readableBytes = buffer.readableBytes();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// No need to consolidate - just add a component to the list.</span></span><br><span class="line">        <span class="meta">@SuppressWarnings</span>(<span class="string">"deprecation"</span>)</span><br><span class="line">        <span class="comment">// 统一为大端ByteBuf</span></span><br><span class="line">        Component c = <span class="keyword">new</span> Component(buffer.order(ByteOrder.BIG_ENDIAN).slice());</span><br><span class="line">        <span class="keyword">if</span> (cIndex == components.size()) &#123;</span><br><span class="line">            <span class="comment">// 如果索引等于components的大小，则加在components尾部</span></span><br><span class="line">            wasAdded = components.add(c);</span><br><span class="line">            <span class="keyword">if</span> (cIndex == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果components中只有一个元素</span></span><br><span class="line">                c.endOffset = readableBytes;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 如果components中有多个元素</span></span><br><span class="line">                Component prev = components.get(cIndex - <span class="number">1</span>);</span><br><span class="line">                c.offset = prev.endOffset;</span><br><span class="line">                c.endOffset = c.offset + readableBytes;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 如果新的ByteBuf是插在components中间</span></span><br><span class="line">            components.add(cIndex, c);</span><br><span class="line">            wasAdded = <span class="keyword">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (readableBytes != <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果components的大小不为0,则依次更新cIndex之后的</span></span><br><span class="line">                <span class="comment">// 所有components的offset和endOffset</span></span><br><span class="line">                updateComponentOffsets(cIndex);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (increaseWriterIndex) &#123;</span><br><span class="line">            <span class="comment">// 如果要更新writerIndex</span></span><br><span class="line">            writerIndex(writerIndex() + buffer.readableBytes());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> cIndex;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!wasAdded) &#123;</span><br><span class="line">            <span class="comment">// 如果没添加成功，则释放ByteBuf</span></span><br><span class="line">            buffer.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是添加一个新的 <code>ByteBuf</code> 的逻辑，核心是 <code>offset</code> 和 <code>endOffset</code> ，分别指代一个   <code>ByteBuf</code> 在 <code>CompositeByteBuf</code> 中开始和结束的索引，它们唯一标记了这个 <code>ByteBuf</code> 在 <code>CompositeByteBuf</code> 中的位置。</p>
+<p>弄清楚了这个，我们会发现上面的代码无外乎做了两件事：</p>
+<ol>
+<li>把 <code>ByteBuf</code> 封装成 <code>Component</code> 加到 <code>components</code> 合适的位置上</li>
+<li>使 <code>components</code> 里的每个 <code>Component</code> 的 <code>offset</code> 和 <code>endOffset</code> 值都正确</li>
+</ol>
+<p>下面来看看 <code>CompositeByteBuf</code> 对 <code>ByteBuf</code> 接口的实现代码，同样以 <code>getBytes</code> 方法为例：</p>
+<p>​                        </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> CompositeByteBuf <span class="title">getBytes</span><span class="params">(<span class="keyword">int</span> index, ByteBuf dst, <span class="keyword">int</span> dstIndex, <span class="keyword">int</span> length)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 查索引是否越界</span></span><br><span class="line">    checkDstIndex(index, length, dstIndex, dst.capacity());</span><br><span class="line">    <span class="keyword">if</span> (length == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 用二分搜索查找index对应的Component在components中的索引</span></span><br><span class="line">    <span class="keyword">int</span> i = toComponentIndex(index);</span><br><span class="line">    <span class="comment">// 循环读直至length为0</span></span><br><span class="line">    <span class="keyword">while</span> (length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        Component c = components.get(i);</span><br><span class="line">        ByteBuf s = c.buf;</span><br><span class="line">        <span class="keyword">int</span> adjustment = c.offset;</span><br><span class="line">        <span class="comment">// 取length和ByteBuf剩余字节数中的较小值</span></span><br><span class="line">        <span class="keyword">int</span> localLength = Math.min(length, s.capacity() - (index - adjustment));</span><br><span class="line">        <span class="comment">// 开始索引为index - c.offset，而不是0</span></span><br><span class="line">        s.getBytes(index - adjustment, dst, dstIndex, localLength);</span><br><span class="line">        index += localLength;</span><br><span class="line">        dstIndex += localLength;</span><br><span class="line">        length -= localLength;</span><br><span class="line">        i ++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Return the index for the given offset</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">toComponentIndex</span><span class="params">(<span class="keyword">int</span> offset)</span> </span>&#123;</span><br><span class="line">    checkIndex(offset);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> low = <span class="number">0</span>, high = components.size(); low &lt;= high;) &#123;</span><br><span class="line">        <span class="keyword">int</span> mid = low + high &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">        Component c = components.get(mid);</span><br><span class="line">        <span class="keyword">if</span> (offset &gt;= c.endOffset) &#123;</span><br><span class="line">            low = mid + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (offset &lt; c.offset) &#123;</span><br><span class="line">            high = mid - <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> mid;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"should not reach here"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到 <code>CompositeByteBuf</code> 在处理 <code>index</code> 时是先将其转换成对应 <code>Component</code> 在 <code>components</code> 中的索引，以及在 <code>Component</code> 中的偏移，然后从这个 <code>Component</code> 的这个偏移开始，往后循环取字节，直到读完。</p>
+<p>NOTE：这里有个小trick，因为 <code>components</code> 是有序排列的，所以 <code>toComponentIndex</code> 做索引转换时没有直接遍历，而是用的二分查找。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000011769315" target="_blank" rel="noopener">Netty 之 Zero-copy 的实现（上）</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/18/%E4%B8%BA%E5%95%A5HashMap%E7%9A%84%E9%95%BF%E5%BA%A6%E4%B8%80%E5%AE%9A%E6%98%AF2%E7%9A%84n%E6%AC%A1%E6%96%B9/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1050,859 +1799,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/%20kafka%E4%B8%AD%E7%9A%84topic%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%9B%E8%A1%8C%E5%88%86%E5%8C%BA/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/16/%20kafka%E4%B8%AD%E7%9A%84topic%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%9B%E8%A1%8C%E5%88%86%E5%8C%BA/" class="post-title-link" itemprop="url">kafka中的topic为什么要进行分区</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-17 06:24:39 / 修改时间：14:33:38" itemprop="dateCreated datePublished" datetime="2020-07-17T06:24:39+08:00">2020-07-17</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.5k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Kafka可以将主题划分为多个分区（Partition），会根据分区规则选择把消息存储到哪个分区中，只要如果分区规则设置的合理，那么所有的消息将会被均匀的分布到不同的分区中，这样就实现了负载均衡和水平扩展。另外，多个订阅者可以从一个或者多个分区中同时消费数据，以支撑海量数据处理能力：</p>
-<p><img src="https://pic3.zhimg.com/50/v2-b30dec8282913a27d1978aae5a6e6431_hd.jpg?source=1940ef5c" alt="img">)<img src="https://pic3.zhimg.com/80/v2-b30dec8282913a27d1978aae5a6e6431_720w.jpg?source=1940ef5c" alt="img"></p>
-<p>Kafka的设计也是源自生活，好比是为公路运输，不同的起始点和目的地需要修不同高速公路（主题），高速公路上可以提供多条车道（分区），流量大的公路多修几条车道保证畅通，流量小的公路少修几条车道避免浪费。收费站好比消费者，车多的时候多开几个一起收费避免堵在路上，车少的时候开几个让汽车并道就好了，嗯……</p>
-<p>顺便说一句，由于消息是以追加到分区中的，多个分区顺序写磁盘的总效率要比随机写内存还要高（引用Apache Kafka – A High Throughput Distributed Messaging System的观点），是Kafka高吞吐率的重要保证之一。</p>
-<p>为了保证数据的可靠性，Kafka会给每个分区找一个节点当带头大哥（Leader），以及若干个节点当随从（Follower）。消息写入分区时，带头大哥除了自己复制一份外还会复制到多个随从。如果随从挂了，Kafka会再找一个随从从带头大哥那里同步历史消息；如果带头大哥挂了，随从中会选举出新一任的带头大哥，继续笑傲江湖。</p>
-<p><img src="https://pic3.zhimg.com/50/v2-59a85614d80d122c935bc03a065aba43_hd.jpg?source=1940ef5c" alt="img">)<img src="https://pic3.zhimg.com/80/v2-59a85614d80d122c935bc03a065aba43_720w.jpg?source=1940ef5c" alt="img"></p>
-<h3 id="1-kafka为什么要在topic里加入分区的概念？"><a href="#1-kafka为什么要在topic里加入分区的概念？" class="headerlink" title="1.kafka为什么要在topic里加入分区的概念？"></a>1.kafka为什么要在topic里加入分区的概念？</h3><p>topic是逻辑的概念，partition是物理的概念，对用户来说是透明的。producer只需要关心消息发往哪个topic，而consumer只关心自己订阅哪个topic，并不关心每条消息存于整个集群的哪个broker。</p>
-<p>为了性能考虑，如果topic内的消息只存于一个broker，那这个broker会成为瓶颈，无法做到水平扩展。所以把topic内的数据分布到整个集群就是一个自然而然的设计方式。Partition的引入就是解决水平扩展问题的一个方案。</p>
-<p>每个partition可以被认为是一个无限长度的数组，新数据顺序追加进这个数组。物理上，每个partition对应于一个文件夹。一个broker上可以存放多个partition。这样，producer可以将数据发送给多个broker上的多个partition，consumer也可以并行从多个broker上的不同paritition上读数据，实现了水平扩展.</p>
-<h3 id="2-如果没有分区-topic中的segment消息写满后-直接给订阅者不是也可以吗"><a href="#2-如果没有分区-topic中的segment消息写满后-直接给订阅者不是也可以吗" class="headerlink" title="2.如果没有分区,topic中的segment消息写满后,直接给订阅者不是也可以吗?"></a>2.如果没有分区,topic中的segment消息写满后,直接给订阅者不是也可以吗?</h3><p>“segment消息写满后”，consume消费数据并不需要等到segment写满，只要有一条数据被commit，就可以立马被消费.</p>
-<p>segment对应一个文件（实现上对应2个文件，一个数据文件，一个索引文件），一个partition对应一个文件夹，一个partition里理论上可以包含任意多个segment。所以partition可以认为是在segment上做了一层包装。</p>
-<p>这个问题换个角度问可能更好，“为什么有了partition还需要segment”。</p>
-<p>如果不引入segment，一个partition直接对应一个文件（应该说两个文件，一个数据文件，一个索引文件），那这个文件会一直增大。同时，在做data purge时，需要把文件的前面部分给删除，不符合kafka对文件的顺序写优化设计方案。引入segment后，每次做data purge，只需要把旧的segment整个文件删除即可，保证了每个segment的顺序写，</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.zhihu.com/question/28925721/answer/139861200" target="_blank" rel="noopener">kafka中的topic为什么要进行分区</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/%20Kafka%20%E7%AE%80%E4%BB%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/16/%20Kafka%20%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">Kafka 简介</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-17 06:13:29 / 修改时间：15:01:56" itemprop="dateCreated datePublished" datetime="2020-07-17T06:13:29+08:00">2020-07-17</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、简介"><a href="#一、简介" class="headerlink" title="一、简介"></a>一、简介</h2><p>ApacheKafka 是一个<strong>分布式的流处理平台</strong>。它具有以下特点：</p>
-<ul>
-<li>支持消息的发布和订阅，类似于 RabbtMQ、ActiveMQ 等消息队列；</li>
-<li>支持数据实时处理；</li>
-<li>能保证消息的可靠性投递；</li>
-<li>支持消息的持久化存储，并通过多副本分布式的存储方案来保证消息的容错；</li>
-<li>高吞吐率，单 Broker 可以轻松处理数千个分区以及每秒百万级的消息量。</li>
-</ul>
-<h2 id="二、基本概念"><a href="#二、基本概念" class="headerlink" title="二、基本概念"></a>二、基本概念</h2><h3 id="2-1-Messages-And-Batches"><a href="#2-1-Messages-And-Batches" class="headerlink" title="2.1 Messages And Batches"></a>2.1 Messages And Batches</h3><p>Kafka 的基本数据单元被称为 message(消息)，为减少网络开销，提高效率，多个消息会被放入同一批次 (Batch) 中后再写入(批量发送)。</p>
-<h3 id="2-2-Topics-And-Partitions"><a href="#2-2-Topics-And-Partitions" class="headerlink" title="2.2 Topics And Partitions"></a>2.2 Topics And Partitions</h3><p>Kafka 的消息通过 Topics(主题) 进行分类,一个Topics相当于一个逻辑上的消息队列，一个主题可以被分为若干个 Partitions(分区)，一个分区就是一个提交日志 (commit log)。消息以追加的方式写入分区，然后以先入先出的顺序读取。<strong>Kafka 通过分区来实现数据的冗余和伸缩性(删除旧数据和扩展broker)</strong>，分区可以分布在不同的服务器上，这意味着一个 Topic 可以横跨多个服务器，以提供比单个服务器更强大的性能。</p>
-<p>由于一个 Topic 包含多个分区，因此<strong>无法在整个 Topic 范围内保证消息的顺序性，但可以保证消息在单个分区内的顺序性。</strong></p>
-<p><img src="https://user-gold-cdn.xitu.io/2019/9/21/16d52d48a0dede6d?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="https://github.com/heibaiying"></p>
-<h3 id="2-3-Producers-And-Consumers"><a href="#2-3-Producers-And-Consumers" class="headerlink" title="2.3 Producers And Consumers"></a>2.3 Producers And Consumers</h3><h4 id="1-生产者"><a href="#1-生产者" class="headerlink" title="1. 生产者"></a>1. 生产者</h4><p>生产者负责创建消息。一般情况下，生产者在把消息均衡地分布到在主题Topics的所有分区Partition上，而并不关心消息会被写到哪个分区。如果我们想要把消息写到指定的分区，可以通过自定义分区器(基于哈希等)来实现。</p>
-<h4 id="2-消费者"><a href="#2-消费者" class="headerlink" title="2. 消费者"></a>2. 消费者</h4><p>消费者是消费者群组的一部分，消费者负责消费消息。消费者可以订阅一个或者多个主题，并按照消息生成的顺序来读取它们。消费者通过检查消息的<strong>偏移量 (offset)</strong> 来区分读取过的消息。偏移量是一个不断递增的数值，在创建消息时，Kafka 会把它添加到其中，在给定的分区里，每个消息的偏移量都是唯一的。消费者把每个分区最后读取的偏移量保存在 Zookeeper 或 Kafka 上，如果消费者关闭或者重启，它还可以重新获取该偏移量，以保证读取状态不会丢失。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2019/9/21/16d52d6843d55165?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="https://github.com/heibaiying"></p>
-<p>一个分区只能被同一个消费者群组里面的一个消费者读取，但可以被不同消费者群组中所组成的多个消费者共同读取。多个消费者群组中消费者共同读取同一个主题时，彼此之间互不影响。</p>
-<p><img src="https://raw.githubusercontent.com/heibaiying/BigData-Notes/master/pictures/kafka%E6%B6%88%E8%B4%B9%E8%80%85.png" alt="https://github.com/heibaiying"></p>
-<h3 id="2-4-Brokers-And-Clusters"><a href="#2-4-Brokers-And-Clusters" class="headerlink" title="2.4 Brokers And Clusters"></a>2.4 Brokers And Clusters</h3><p>一个独立的 Kafka 服务器被称为 Broker。Broker 接收来自生产者的消息，为消息设置偏移量，并提交消息到磁盘保存。Broker 为消费者提供服务，对读取分区的请求做出响应，返回已经提交到磁盘的消息。</p>
-<p>Broker 是集群 (Cluster) 的组成部分。<strong>每一个集群都会选举出一个 Broker 作为集群控制器 (Controller)</strong>，集群控制器负责管理工作，包括将分区分配给 Broker 和监控 Broker。</p>
-<p>在集群中，一个分区 (Partition) 从属一个 Broker，该 Broker 被称为分区的首领 (Leader)。<strong>一个分区可以分配给多个 Brokers，这个时候会发生分区复制。</strong>这种复制机制为分区提供了消息冗余，如果有一个 Broker 失效，其他 Broker 可以接管领导权。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2019/9/21/16d52d5d1fd597fb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="https://github.com/heibaiying"></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5d8593935188252501779e0a" target="_blank" rel="noopener">Kafka 简介</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/Kafka%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%9F%E5%BA%A6%E9%82%A3%E4%B9%88%E5%BF%AB%EF%BC%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/16/Kafka%E4%B8%BA%E4%BB%80%E4%B9%88%E9%80%9F%E5%BA%A6%E9%82%A3%E4%B9%88%E5%BF%AB%EF%BC%9F/" class="post-title-link" itemprop="url">Kafka为什么速度那么快？</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-17 02:41:08 / 修改时间：15:02:32" itemprop="dateCreated datePublished" datetime="2020-07-17T02:41:08+08:00">2020-07-17</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Kafka的消息是保存或缓存在磁盘上的，一般认为在磁盘上读写数据是会降低性能的，因为寻址会比较消耗时间，但是实际上，Kafka的特性之一就是高吞吐率。</p>
-<p>即使是普通的服务器，Kafka也可以轻松支持每秒百万级的写入请求，超过了大部分的消息中间件，这种特性也使得Kafka在日志处理等海量数据场景广泛应用。</p>
-<p>针对Kafka的基准测试可以参考，Apache Kafka基准测试：每秒写入2百万（在三台廉价机器上）</p>
-<p>下面从数据写入和读取两方面分析，为什么Kafka速度这么快。</p>
-<h2 id="写入数据"><a href="#写入数据" class="headerlink" title="写入数据"></a>写入数据</h2><p>Kafka会把收到的消息都写入到硬盘中，它绝对不会丢失数据。为了优化写入速度Kafka采用了两个技术，<strong>顺序写入和MMFile 。</strong></p>
-<h3 id="顺序写入"><a href="#顺序写入" class="headerlink" title="顺序写入"></a><strong>顺序写入</strong></h3><p>磁盘读写的快慢取决于你怎么使用它，也就是顺序读写或者随机读写。在顺序读写的情况下，磁盘的顺序读写速度和内存持平。</p>
-<p>因为硬盘是机械结构，每次读写都会寻址-&gt;写入，其中寻址是一个“机械动作”，它是最耗时的。所以硬盘最讨厌随机I/O，最喜欢顺序I/O。为了提高读写硬盘的速度，Kafka就是使用顺序I/O。</p>
-<p>而且Linux对于磁盘的读写优化也比较多，包括read-ahead和write-behind，磁盘缓存等。如果在内存做这些操作的时候，一个是JAVA对象的内存开销很大，另一个是随着堆内存数据的增多，JAVA的GC时间会变得很长，使用磁盘操作有以下几个好处：</p>
-<ul>
-<li>磁盘顺序读写速度超过内存随机读写(<strong>比如在虚拟内存经常缺页的情况下,会增加很多磁盘IO操作</strong>)</li>
-<li>JVM的GC效率低，内存占用大。使用磁盘可以避免这一问题</li>
-<li>系统冷启动后，磁盘缓存依然可用</li>
-</ul>
-<p>下图就展示了Kafka是如何写入数据的， <strong>每一个Partition其实都是一个文件</strong> ，收到消息后Kafka会把数据插入到文件末尾（虚框部分）：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2019/5/8/16a97ac0bd0e9ee4?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p><em>这种方法有一个缺陷——没有办法删除数据 ，所以Kafka是不会删除数据的</em>，它会把所有的数据都保留下来，每个消费者（Consumer）对每个Topic都有一个offset用来表示读取到了第几条数据 。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2019/5/8/16a97ac58a4389a7?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p><strong>两个消费者：</strong></p>
-<ul>
-<li>Consumer1有两个offset分别对应Partition0、Partition1（假设每一个Topic一个Partition）；</li>
-<li>Consumer2有一个offset对应Partition2。</li>
-</ul>
-<p>这个offset是由客户端SDK负责保存的，Kafka的Broker完全无视这个东西的存在；一般情况下SDK会把它保存到Zookeeper里面，所以需要给Consumer提供zookeeper的地址。</p>
-<p><strong>如果不删除硬盘肯定会被撑满，所以Kakfa提供了两种策略来删除数据：</strong></p>
-<ul>
-<li>一是基于时间；</li>
-<li>二是基于partition文件大小。</li>
-</ul>
-<p>具体配置可以参看它的配置文档。</p>
-<h3 id="Memory-Mapped-Files-内存映射文件"><a href="#Memory-Mapped-Files-内存映射文件" class="headerlink" title="Memory Mapped Files 内存映射文件"></a><strong>Memory Mapped Files</strong> 内存映射文件</h3><p>即便是顺序写入硬盘，硬盘的访问速度还是不可能追上内存。所以Kafka的数据并不是实时的写入硬盘 ，它充分利用了现代操作系统分页存储来利用内存提高I/O效率。</p>
-<p>Memory Mapped Files(后面简称mmap)也被翻译成<strong>内存映射文件</strong> ，在64位操作系统中一般可以表示20G的数据文件，它的工作原理是<strong>直接利用操作系统的Page来实现文件到物理内存的直接映射</strong>。</p>
-<p>完成映射之后你对物理内存的操作会被同步到硬盘上（操作系统在适当的时候）。</p>
-<p>通过mmap，<strong>进程像读写硬盘一样读写内存</strong>（当然是虚拟机内存），也不必关心内存的大小有虚拟内存为我们兜底。</p>
-<p>使用这种方式可以获取很大的I/O提升，省去了用户空间到内核空间复制的开销（调用文件的read会把数据先放到内核空间的内存中，然后再复制到用户空间的内存中。）</p>
-<p><strong>但也有一个很明显的缺陷——不可靠，写到mmap中的数据并没有被真正的写到硬盘</strong>，操作系统会在程序主动调用flush的时候才把数据真正的写到硬盘。</p>
-<p>Kafka提供了一个参数——producer.type来控制是不是主动flush，如果Kafka写入到mmap之后就立即flush然后再返回Producer叫 同步 (sync)；写入mmap之后立即返回Producer不调用flush叫异步 (async)。</p>
-<h2 id="读取数据"><a href="#读取数据" class="headerlink" title="读取数据"></a>读取数据</h2><p><strong>Kafka在读取磁盘时做了哪些优化？</strong></p>
-<h3 id="基于sendfile-实现Zero-Copy"><a href="#基于sendfile-实现Zero-Copy" class="headerlink" title="基于sendfile()实现Zero Copy"></a><strong>基于<code>sendfile()</code>实现Zero Copy</strong></h3><p>传统模式下，当需要对一个文件进行网络传输的时候，其具体流程细节如下：</p>
-<ul>
-<li>调用read函数，文件数据被copy到内核缓冲区</li>
-<li>read函数返回，文件数据从内核缓冲区copy到用户缓冲区</li>
-<li>write函数调用，将文件数据从用户缓冲区copy到内核与socket相关的缓冲区。</li>
-<li>数据从socket缓冲区copy到相关协议引擎(网卡发送缓冲区)。</li>
-</ul>
-<p>以上细节是传统read/write方式进行网络文件传输的方式，我们可以看到，在这个过程当中，文件数据实际上是经过了四次copy操作：</p>
-<p><strong>硬盘—&gt;内核buf—&gt;用户buf—&gt;socket相关缓冲区—&gt;协议引擎</strong>(网卡缓冲区)</p>
-<p>而<code>sendfile()</code>系统调用则提供了一种减少以上多次copy，提升文件传输性能的方法。</p>
-<p>在内核版本2.1中，引入了sendfile系统调用，以简化网络上和两个本地文件之间的数据传输。sendfile的引入不仅减少了数据复制，还减少了上下文切换。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sendfile(socket, file, len);</span><br></pre></td></tr></table></figure>
-
-<p>运行流程如下：</p>
-<ul>
-<li>sendfile系统调用，文件数据被copy至内核缓冲区</li>
-<li>再从内核缓冲区copy至内核中socket相关的缓冲区</li>
-<li>最后再socket相关的缓冲区copy到协议引擎</li>
-</ul>
-<p>相较传统read/write方式，2.1版本内核引进的sendfile已经减少了内核缓冲区到user缓冲区，再由user缓冲区到socket相关缓冲区的文件copy，<strong>而在内核版本2.4之后，文件描述符结果被改变，sendfile实现了更简单的方式，再次减少了一次copy操作</strong>。</p>
-<p>在Apache、Nginx、lighttpd等web服务器当中，都有一项<code>sendfile()</code>相关的配置，使用<code>sendfile()</code>可以大幅提升文件传输性能。</p>
-<p><strong>Kafka把所有的消息都存放在一个一个的文件(Partition)中</strong>，当消费者需要数据的时候Kafka直接把文件发送给消费者，配合mmap作为文件读写方式，直接把它传给<code>sendfile()</code>。</p>
-<h3 id="批量压缩"><a href="#批量压缩" class="headerlink" title="批量压缩"></a><strong>批量压缩</strong></h3><p>在很多情况下，系统的瓶颈不是CPU或磁盘，而是网络IO，对于需要在广域网上的数据中心之间发送消息的数据流水线尤其如此。进行数据压缩会消耗一定的CPU资源,不过对于kafka而言,网络IO更应该需要考虑。</p>
-<ul>
-<li>如果每个消息都压缩，但是压缩率相对很低，所以Kafka使用了批量压缩，即将多个消息一起压缩而不是单个消息压缩</li>
-<li>Kafka允许使用递归的消息集合，批量的消息可以通过压缩的形式传输并且在日志中也可以保持压缩格式，直到被消费者解压</li>
-<li>Kafka支持多种压缩协议，包括Gzip和Snappy压缩协议</li>
-</ul>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Kafka速度的秘诀在于，它把所有的消息都变成一个批量的文件(Partition)，并且进行合理的批量压缩，减少网络IO消耗，通过mmap提高I/O速度，写入数据的时候由于单个Partion是末尾添加所以速度最优；读取数据的时候配合<code>sendfile()</code>直接零拷贝输出。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5cd2db8951882530b11ee976" target="_blank" rel="noopener">Kafka为什么速度那么快？</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/13/%E5%A6%82%E4%BD%95%E5%81%9C%E6%AD%A2%E4%B8%80%E4%B8%AA%E6%AD%A3%E5%9C%A8%E8%BF%90%E8%A1%8C%E7%9A%84%E7%BA%BF%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/13/%E5%A6%82%E4%BD%95%E5%81%9C%E6%AD%A2%E4%B8%80%E4%B8%AA%E6%AD%A3%E5%9C%A8%E8%BF%90%E8%A1%8C%E7%9A%84%E7%BA%BF%E7%A8%8B/" class="post-title-link" itemprop="url">如何停止一个正在运行的线程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-14 02:06:49 / 修改时间：10:13:35" itemprop="dateCreated datePublished" datetime="2020-07-14T02:06:49+08:00">2020-07-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>停止一个线程意味着在任务处理完任务之前停掉正在做的操作，也就是放弃当前的操作。停止一个线程可以用Thread.stop()方法，但最好不要用它。虽然它确实可以停止一个正在运行的线程，但是这个方法是不安全的，而且是已被废弃的方法。</p>
-<p>在java中有以下3种方法可以终止正在运行的线程：</p>
-<ul>
-<li>使用退出标志，使线程正常退出，也就是当run方法完成后线程终止。</li>
-<li>使用interrupt方法中断线程。</li>
-<li>使用stop方法强行终止，但是不推荐这个方法，因为stop和suspend及resume一样都是过期作废的方法。</li>
-</ul>
-<h2 id="1-停止不了的线程"><a href="#1-停止不了的线程" class="headerlink" title="1. 停止不了的线程"></a>1. 停止不了的线程</h2><p>interrupt()方法的使用效果并不像for+break语句那样，马上就停止循环。调用interrupt方法是在当前线程中打了一个停止标志，并不是真的停止线程。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">500000</span>; i++)&#123;</span><br><span class="line">            System.out.println(<span class="string">"i="</span>+(i+<span class="number">1</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">            thread.interrupt();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">i&#x3D;499994</span><br><span class="line">i&#x3D;499995</span><br><span class="line">i&#x3D;499996</span><br><span class="line">i&#x3D;499997</span><br><span class="line">i&#x3D;499998</span><br><span class="line">i&#x3D;499999</span><br><span class="line">i&#x3D;500000</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-判断线程是否停止状态"><a href="#2-判断线程是否停止状态" class="headerlink" title="2. 判断线程是否停止状态"></a>2. 判断线程是否停止状态</h2><p>Thread.java类中提供了两种方法：</p>
-<ul>
-<li>this.interrupted(): 测试当前线程是否已经中断,若返回true会清除本次中断标志；</li>
-<li>this.isInterrupted(): 测试线程是否已经中断；</li>
-</ul>
-<p>那么这两个方法有什么图区别呢？</p>
-<h3 id="interrupted-方法"><a href="#interrupted-方法" class="headerlink" title="interrupted()方法"></a>interrupted()方法</h3><p>我们先来看看this.interrupted()方法的解释：测试当前线程是否已经中断，当前线程是指运行this.interrupted()方法的线程。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">500000</span>; i++)&#123;</span><br><span class="line">            i++;</span><br><span class="line"><span class="comment">//            System.out.println("i="+(i+1));</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">            thread.interrupt();</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"stop 1??"</span> + thread.interrupted());</span><br><span class="line">            System.out.println(<span class="string">"stop 2??"</span> + thread.interrupted());</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">stop 1??false</span><br><span class="line">stop 2??false</span><br></pre></td></tr></table></figure>
-
-<p>类Run.java中虽然是在thread对象上调用以下代码：thread.interrupt(), 后面又使用</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(<span class="string">"stop 1??"</span> + thread.interrupted());</span><br><span class="line">System.out.println(<span class="string">"stop 2??"</span> + thread.interrupted());</span><br></pre></td></tr></table></figure>
-
-<p>来判断thread对象所代表的线程是否停止，但从控制台打印的结果来看，线程并未停止，这也证明了interrupted()方法的解释，测试当前线程是否已经中断。这个当前线程是main，它从未中断过，所以打印的结果是两个false.</p>
-<p>如何使main线程产生中断效果呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread.currentThread().interrupt();</span><br><span class="line">        System.out.println(<span class="string">"stop 1??"</span> + Thread.interrupted());</span><br><span class="line">        System.out.println(<span class="string">"stop 2??"</span> + Thread.interrupted());</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"End"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行效果为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">stop 1??true</span><br><span class="line">stop 2??false</span><br><span class="line">End</span><br></pre></td></tr></table></figure>
-
-<p>方法interrupted()的确判断出当前线程是否是停止状态。但为什么第2个布尔值是false呢？官方帮助文档中对interrupted方法的解释：</p>
-<p>测试当前线程是否已经中断。<strong>线程的中断状态由该方法清除。</strong>换句话说，如果连续两次调用该方法，则第二次调用返回false。</p>
-<h3 id="isInterrupted-方法"><a href="#isInterrupted-方法" class="headerlink" title="isInterrupted()方法"></a>isInterrupted()方法</h3><p>下面来看一下isInterrupted()方法。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run3</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        thread.interrupt();</span><br><span class="line">        System.out.println(<span class="string">"stop 1??"</span> + thread.isInterrupted());</span><br><span class="line">        System.out.println(<span class="string">"stop 2??"</span> + thread.isInterrupted());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">stop 1??true</span><br><span class="line">stop 2??true</span><br></pre></td></tr></table></figure>
-
-<p>isInterrupted()并未清除状态，所以打印了两个true。</p>
-<h2 id="3-能停止的线程–异常法"><a href="#3-能停止的线程–异常法" class="headerlink" title="3. 能停止的线程–异常法"></a>3. 能停止的线程–异常法</h2><p>有了前面学习过的知识点，就可以在线程中用for语句来判断一下线程是否是停止状态，如果是停止状态，则后面的代码不再运行即可：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">500000</span>; i++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(<span class="keyword">this</span>.interrupted()) &#123;</span><br><span class="line">                System.out.println(<span class="string">"线程已经终止， for循环不再执行"</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(<span class="string">"i="</span>+(i+<span class="number">1</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">            thread.interrupt();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">i&#x3D;202053</span><br><span class="line">i&#x3D;202054</span><br><span class="line">i&#x3D;202055</span><br><span class="line">i&#x3D;202056</span><br><span class="line">线程已经终止， for循环不再执行</span><br></pre></td></tr></table></figure>
-
-<p>上面的示例虽然停止了线程，但如果for语句下面还有语句，还是会继续运行的。看下面的例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">500000</span>; i++)&#123;</span><br><span class="line">            <span class="keyword">if</span>(<span class="keyword">this</span>.interrupted()) &#123;</span><br><span class="line">                System.out.println(<span class="string">"线程已经终止， for循环不再执行"</span>);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(<span class="string">"i="</span>+(i+<span class="number">1</span>));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">"这是for循环外面的语句，也会被执行"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用Run.java执行的结果是：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">i&#x3D;180136</span><br><span class="line">i&#x3D;180137</span><br><span class="line">i&#x3D;180138</span><br><span class="line">i&#x3D;180139</span><br><span class="line">线程已经终止， for循环不再执行</span><br></pre></td></tr></table></figure>
-<p>这是for循环外面的语句，也会被执行</p>
-<p>如何解决语句继续运行的问题呢？看一下更新后的代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">500000</span>; i++)&#123;</span><br><span class="line">                <span class="keyword">if</span>(<span class="keyword">this</span>.interrupted()) &#123;</span><br><span class="line">                    System.out.println(<span class="string">"线程已经终止， for循环不再执行"</span>);</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">"i="</span>+(i+<span class="number">1</span>));</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"这是for循环外面的语句，也会被执行"</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            System.out.println(<span class="string">"进入MyThread.java类中的catch了。。。"</span>);</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用Run.java运行的结果如下：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">i&#x3D;203798</span><br><span class="line">i&#x3D;203799</span><br><span class="line">i&#x3D;203800</span><br><span class="line">线程已经终止， for循环不再执行</span><br><span class="line">进入MyThread.java类中的catch了。。。</span><br><span class="line">java.lang.InterruptedException</span><br><span class="line">    at thread.MyThread.run(MyThread.java:13)</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-在沉睡中停止"><a href="#4-在沉睡中停止" class="headerlink" title="4. 在沉睡中停止"></a>4. 在沉睡中停止</h2><p>如果线程在sleep()状态下停止线程，会是什么效果呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"线程开始。。。"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">200000</span>);</span><br><span class="line">            System.out.println(<span class="string">"线程结束。"</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            System.out.println(<span class="string">"在沉睡中被停止, 进入catch， 调用isInterrupted()方法的结果是："</span> + <span class="keyword">this</span>.isInterrupted());</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>使用Run.java运行的结果是：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">线程开始。。。</span><br><span class="line">在沉睡中被停止, 进入<span class="keyword">catch</span>， 调用isInterrupted()方法的结果是：<span class="keyword">false</span></span><br><span class="line">java.lang.InterruptedException: sleep interrupted</span><br><span class="line">    at java.lang.Thread.sleep(Native Method)</span><br><span class="line">    at thread.MyThread.run(MyThread.java:<span class="number">12</span>)</span><br></pre></td></tr></table></figure>
-
-<p>从打印的结果来看， 如果在sleep状态下停止某一线程，会进入catch语句，并且清除停止状态值，使之变为false。</p>
-<p>前一个实验是先sleep然后再用interrupt()停止，与之相反的操作在学习过程中也要注意：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"线程开始。。。"</span>);</span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;<span class="number">10000</span>; i++)&#123;</span><br><span class="line">                System.out.println(<span class="string">"i="</span> + i);</span><br><span class="line">            &#125;</span><br><span class="line">            Thread.sleep(<span class="number">200000</span>);</span><br><span class="line">            System.out.println(<span class="string">"线程结束。"</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">             System.out.println(<span class="string">"先停止，再遇到sleep，进入catch异常"</span>);</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        thread.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">i&#x3D;9998</span><br><span class="line">i&#x3D;9999</span><br><span class="line">先停止，再遇到sleep，进入catch异常</span><br><span class="line">java.lang.InterruptedException: sleep interrupted</span><br><span class="line">    at java.lang.Thread.sleep(Native Method)</span><br><span class="line">    at thread.MyThread.run(MyThread.java:15)</span><br></pre></td></tr></table></figure>
-
-<h2 id="5-能停止的线程—暴力停止"><a href="#5-能停止的线程—暴力停止" class="headerlink" title="5. 能停止的线程—暴力停止"></a>5. 能停止的线程—暴力停止</h2><p>使用stop()方法停止线程则是非常暴力的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>)&#123;</span><br><span class="line">                System.out.println(<span class="string">"i="</span> + i);</span><br><span class="line">                i++;</span><br><span class="line">                Thread.sleep(<span class="number">200</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">        thread.stop();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>运行结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">i&#x3D;0</span><br><span class="line">i&#x3D;1</span><br><span class="line">i&#x3D;2</span><br><span class="line">i&#x3D;3</span><br><span class="line">i&#x3D;4</span><br><span class="line">i&#x3D;5</span><br><span class="line">i&#x3D;6</span><br><span class="line">i&#x3D;7</span><br><span class="line">i&#x3D;8</span><br><span class="line">i&#x3D;9</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
-
-<h2 id="6-方法stop-与java-lang-ThreadDeath异常"><a href="#6-方法stop-与java-lang-ThreadDeath异常" class="headerlink" title="6.方法stop()与java.lang.ThreadDeath异常"></a>6.方法stop()与java.lang.ThreadDeath异常</h2><p>调用stop()方法时会抛出java.lang.ThreadDeath异常，但是通常情况下，此异常不需要显示地捕捉。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.run();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.stop();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ThreadDeath e) &#123;</span><br><span class="line">            System.out.println(<span class="string">"进入异常catch"</span>);</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>stop()方法以及作废，因为如果强制让线程停止有可能使一些清理性的工作得不到完成。另外一个情况就是对锁定的对象进行了解锁，导致数据得不到同步的处理，出现数据不一致的问题。</p>
-<h2 id="7-释放锁的不良后果"><a href="#7-释放锁的不良后果" class="headerlink" title="7. 释放锁的不良后果"></a>7. 释放锁的不良后果</h2><p>使用stop()释放锁将会给数据造成不一致性的结果。如果出现这样的情况，程序处理的数据就有可能遭到破坏，最终导致程序执行的流程错误，一定要特别注意：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SynchronizedObject</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name = <span class="string">"a"</span>;</span><br><span class="line">    <span class="keyword">private</span> String password = <span class="string">"aa"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">printString</span><span class="params">(String name, String password)</span></span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.name = name;</span><br><span class="line">            Thread.sleep(<span class="number">100000</span>);</span><br><span class="line">            <span class="keyword">this</span>.password = password;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getPassword</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setPassword</span><span class="params">(String password)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.password = password;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> SynchronizedObject synchronizedObject;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyThread</span><span class="params">(SynchronizedObject synchronizedObject)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.synchronizedObject = synchronizedObject;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        synchronizedObject.printString(<span class="string">"b"</span>, <span class="string">"bb"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        SynchronizedObject synchronizedObject = <span class="keyword">new</span> SynchronizedObject();</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread(synchronizedObject);</span><br><span class="line">        thread.start();</span><br><span class="line">        Thread.sleep(<span class="number">500</span>);</span><br><span class="line">        thread.stop();</span><br><span class="line">        System.out.println(synchronizedObject.getName() + <span class="string">"  "</span> + synchronizedObject.getPassword());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">b  aa</span><br></pre></td></tr></table></figure>
-
-<p>由于stop()方法以及在JDK中被标明为“过期/作废”的方法，显然它在功能上具有缺陷，所以不建议在程序张使用stop()方法。</p>
-<h2 id="8-使用return停止线程"><a href="#8-使用return停止线程" class="headerlink" title="8. 使用return停止线程"></a>8. 使用return停止线程</h2><p>将方法interrupt()与return结合使用也能实现停止线程的效果：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>)&#123;</span><br><span class="line">            <span class="keyword">if</span>(<span class="keyword">this</span>.isInterrupted())&#123;</span><br><span class="line">                System.out.println(<span class="string">"线程被停止了！"</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(<span class="string">"Time: "</span> + System.currentTimeMillis());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Run</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> MyThread();</span><br><span class="line">        thread.start();</span><br><span class="line">        Thread.sleep(<span class="number">2000</span>);</span><br><span class="line">        thread.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>输出结果：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">Time: 1467072288503</span><br><span class="line">Time: 1467072288503</span><br><span class="line">Time: 1467072288503</span><br><span class="line">线程被停止了！</span><br></pre></td></tr></table></figure>
-
-<p>不过还是建议使用“抛异常”的方法来实现线程的停止，因为在catch块中还可以将异常向上抛，使线程停止事件得以传播。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://mp.weixin.qq.com/s?__biz=MzIyNDU2ODA4OQ==&mid=2247484092&idx=1&sn=78706a5357dfd5f59fc6f43a3d882bc7&chksm=e80db4cadf7a3ddcef87cd46d6cabe4da44e0c143c136e34074924225ec98eb8dd27329c613f&scene=21#wechat_redirect" target="_blank" rel="noopener">如何停止一个正在运行的线程</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/13/%E9%AB%98%E6%80%A7%E8%83%BDServer---Reactor%E6%A8%A1%E5%9E%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/13/%E9%AB%98%E6%80%A7%E8%83%BDServer---Reactor%E6%A8%A1%E5%9E%8B/" class="post-title-link" itemprop="url">高性能Server---Reactor模型</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-13 09:24:11 / 修改时间：20:44:41" itemprop="dateCreated datePublished" datetime="2020-07-13T09:24:11+08:00">2020-07-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>9.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>9 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="无处不在的C-S架构"><a href="#无处不在的C-S架构" class="headerlink" title="无处不在的C/S架构"></a>无处不在的C/S架构</h2><p>在这个充斥着云的时代,我们使用的软件可以说99%都是C/S架构的！</p>
-<ul>
-<li>你发邮件用的Outlook,Foxmail等</li>
-<li>你看视频用的优酷，土豆等</li>
-<li>你写文档用的Office365,googleDoc，Evernote等</li>
-<li>你浏览网页用的IE,Chrome等(B/S是特殊的C/S)</li>
-<li>……</li>
-</ul>
-<p>C/S架构的软件带来的一个明显的好处就是：只要有网络，你可以在任何地方干同一件事。</p>
-<p>例如：你在家里使用Office365编写了文档。到了公司，只要打开编辑地址就可以看到在家里编写的文档，进行展示或者继续编辑。甚至在手机上进行阅读与编辑。不再需要U盘拷来拷去了。</p>
-<p>C/S架构可以抽象为如下模型：</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-f47270f24b6b413f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/989/format/webp" alt="img"></p>
-<ul>
-<li>C就是Client(客户端),上面的B是Browser(浏览器)</li>
-<li>S就是Server(服务器)：<strong>服务器管理某种资源，并且通过操作这种资源来为它的客户端提供某种服务</strong></li>
-</ul>
-<p>C/S架构之所以能够流行的一个主要原因就是网速的提高以及费用的降低，特别是无线网络速度的提高。试想在2G时代，大家最多就是看看文字网页，小说什么的。看图片，那简直就是奢侈！更别说看视频了！</p>
-<p>网速的提高，使得越来越多的人使用网络，例如：优酷，微信都是上亿用户量，更别说天猫双11的瞬间访问量了！这就对服务器有很高的要求！能够快速处理海量的用户请求！那服务器如何能快速的处理用户的请求呢？</p>
-<h2 id="高性能服务器"><a href="#高性能服务器" class="headerlink" title="高性能服务器"></a>高性能服务器</h2><p>高性能服务器至少要满足如下几个需求：</p>
-<ul>
-<li>效率高：既然是高性能，那处理客户端请求的效率当然要很高了</li>
-<li>高可用：不能随便就挂掉了</li>
-<li>编程简单：基于此服务器进行业务开发需要足够简单</li>
-<li>可扩展：可方便的扩展功能</li>
-<li>可伸缩：可简单的通过部署的方式进行容量的伸缩，也就是服务需要无状态</li>
-</ul>
-<p>而满足如上需求的一个基础就是高性能的IO!</p>
-<h2 id="Socket"><a href="#Socket" class="headerlink" title="Socket"></a>Socket</h2><p>无论你是发邮件，浏览网页，还是看视频～实际底层都是使用的TCP/IP，而TCP/IP的编程抽象就是Socket!</p>
-<p>我一直对Socket的中文翻译很困惑，个人觉得是我所接触的技术名词翻译里最莫名其妙的，没有之一！</p>
-<p>Socket中文翻译为”套接字”！什么鬼？在很长的时间里我都无法将其和网络编程关联上！后来专门找了一些资料，最后在知乎上找到了一个还算满意的答案(具体链接，请见文末的参考资料链接)！</p>
-<p>Socket的原意是插口，想表达的意思是插口与插槽的关系！”send socket”插到”receive socket”里，建立了链接，然后就可以通信了！</p>
-<p>套接字的翻译，应该是参考了套接管(如下图)！从这个层面上来看，是有那么点意思！</p>
-<p><img src="http://www.ivaneye.com/assets/iomodel/%E5%A5%97%E6%8E%A5%E7%AE%A1.jpg" alt="img"></p>
-<p>套接字这个翻译已经是标准了，不纠结这个了！</p>
-<p>我们看一下Socket之间建立链接及通信的过程！实际上就是对TCP/IP连接与通信过程的抽象:</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-aa99912a534386a1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/411/format/webp" alt="img"></p>
-<ul>
-<li>服务端Socket会bind到指定的端口上，Listen客户端的”插入”</li>
-<li>客户端Socket会Connect到服务端</li>
-<li>当服务端Accept到客户端连接后</li>
-<li>就可以进行发送与接收消息了</li>
-<li>通信完成后即可Close</li>
-</ul>
-<p>对于IO来说，我们听得比较多的是:</p>
-<ul>
-<li>BIO:阻塞IO</li>
-<li>NIO:非阻塞IO</li>
-<li>同步IO</li>
-<li>异步IO</li>
-</ul>
-<p>以及其组合:</p>
-<ul>
-<li>同步阻塞IO</li>
-<li>同步非阻塞IO</li>
-<li>异步阻塞IO</li>
-<li>异步非阻塞IO</li>
-</ul>
-<p><strong>那么什么是阻塞IO、非阻塞IO、同步IO、异步IO呢？</strong></p>
-<ul>
-<li>一个IO操作其实分成了两个步骤：发起IO请求和实际的IO操作</li>
-<li>阻塞IO和非阻塞IO的区别在于第一步：发起IO请求是否会被阻塞，如果阻塞直到完成那么就是传统的阻塞IO;如果不阻塞，那么就是非阻塞IO</li>
-<li>同步IO和异步IO的区别就在于第二个步骤是否阻塞，如果实际的IO读写阻塞请求进程，那么就是同步IO，因此阻塞IO、非阻塞IO、IO复用、信号驱动IO都是同步IO;如果不阻塞，而是操作系统帮你做完IO操作再将结果返回给你，那么就是异步IO</li>
-</ul>
-<p>举个不太恰当的例子 ：比如你家网络断了，你打电话去中国电信报修！</p>
-<ul>
-<li>你拨号—客户端连接服务器</li>
-<li>电话通了—连接建立</li>
-<li>你说：“我家网断了,帮我修下”—发送消息</li>
-<li>说完你就在那里等，那么就是阻塞IO</li>
-<li>如果正好你有事，你放下带电话，然后处理其他事情了，过一会你来问下，修好了没—那就是非阻塞IO</li>
-<li>如果客服说：“马上帮你处理，你稍等”—同步IO</li>
-<li>如果客服说：“马上帮你处理，好了通知你”，然后挂了电话—异步IO</li>
-</ul>
-<p>本文只讨论BIO和NIO,AIO使用度没有前两者普及，暂不讨论！</p>
-<p>下面从代码层面看看BIO与NIO的流程!</p>
-<h2 id="BIO"><a href="#BIO" class="headerlink" title="BIO"></a>BIO</h2><ul>
-<li>客户端代码</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Bind,Connect</span></span><br><span class="line">Socket client = <span class="keyword">new</span> Socket(<span class="string">"127.0.0.1"</span>,<span class="number">7777</span>);    </span><br><span class="line"><span class="comment">//读写</span></span><br><span class="line">PrintWriter pw = <span class="keyword">new</span> PrintWriter(client.getOutputStream());</span><br><span class="line">BufferedReader br=</span><br><span class="line">        <span class="keyword">new</span> BufferedReader(<span class="keyword">new</span> InputStreamReader(System.in));  </span><br><span class="line">pw.write(br.readLine());  </span><br><span class="line"><span class="comment">//Close</span></span><br><span class="line">pw.close();  </span><br><span class="line">br.close();</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>服务端代码</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Socket socket;  </span><br><span class="line"><span class="comment">//Bind,Listen</span></span><br><span class="line">ServerSocket ss = <span class="keyword">new</span> ServerSocket(<span class="number">7777</span>);  </span><br><span class="line"><span class="keyword">while</span> (<span class="keyword">true</span>) &#123;  </span><br><span class="line">    <span class="comment">//Accept</span></span><br><span class="line">    socket = ss.accept();  </span><br><span class="line">    <span class="comment">//一般新建一个线程执行读写</span></span><br><span class="line">    BufferedReader br = <span class="keyword">new</span> BufferedReader(</span><br><span class="line">            <span class="keyword">new</span> InputStreamReader(socket  .getInputStream()));  </span><br><span class="line">    System.out.println(<span class="string">"you input is : "</span> + br.readLine());  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>上面的代码可以说是学习Java的Socket的入门级代码了</li>
-<li>代码流程和前面的图可以一一对上</li>
-</ul>
-<p>模型图如下所示：</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-66c781ba3d47fa40.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1129/format/webp" alt="img"></p>
-<h2 id="BIO优缺点"><a href="#BIO优缺点" class="headerlink" title="BIO优缺点"></a>BIO优缺点</h2><ul>
-<li>优点<ul>
-<li>模型简单</li>
-<li>编码简单</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>性能瓶颈低</li>
-</ul>
-</li>
-</ul>
-<p>优缺点很明显。这里主要说下缺点：主要瓶颈在线程上。每个连接都会建立一个线程。虽然线程消耗比进程小，但是一台机器实际上能建立的有效线程有限，以Java来说，1.5以后，一个线程大致消耗1M内存！且随着线程数量的增加，CPU切换线程上下文的消耗也随之增加，在高过某个阀值后，继续增加线程，性能不增反降！而同样因为一个连接就新建一个线程，所以编码模型很简单！</p>
-<p>就性能瓶颈这一点，就确定了BIO并不适合进行高性能服务器的开发！像Tomcat这样的Web服务器，从7开始就从BIO改成了NIO，来提高服务器性能！</p>
-<h2 id="NIO"><a href="#NIO" class="headerlink" title="NIO"></a>NIO</h2><ul>
-<li>NIO客户端代码(连接)</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取socket通道</span></span><br><span class="line">SocketChannel channel = SocketChannel.open();        </span><br><span class="line">channel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line"><span class="comment">//获得通道管理器</span></span><br><span class="line">selector=Selector.open();        </span><br><span class="line">channel.connect(<span class="keyword">new</span> InetSocketAddress(serverIp, port));</span><br><span class="line"><span class="comment">//为该通道注册SelectionKey.OP_CONNECT事件</span></span><br><span class="line">channel.register(selector, SelectionKey.OP_CONNECT);</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>NIO客户端代码(监听)</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">    <span class="comment">//选择注册过的io操作的事件(第一次为SelectionKey.OP_CONNECT)</span></span><br><span class="line">   selector.select();</span><br><span class="line">   <span class="keyword">while</span>(SelectionKey key : selector.selectedKeys())&#123;</span><br><span class="line">       <span class="keyword">if</span>(key.isConnectable())&#123;</span><br><span class="line">           SocketChannel channel=(SocketChannel)key.channel();</span><br><span class="line">           <span class="keyword">if</span>(channel.isConnectionPending())&#123;</span><br><span class="line">               channel.finishConnect();<span class="comment">//如果正在连接，则完成连接</span></span><br><span class="line">           &#125;</span><br><span class="line">           channel.register(selector, SelectionKey.OP_READ);</span><br><span class="line">       &#125;<span class="keyword">else</span> <span class="keyword">if</span>(key.isReadable())&#123; <span class="comment">//有可读数据事件。</span></span><br><span class="line">           SocketChannel channel = (SocketChannel)key.channel();</span><br><span class="line">           ByteBuffer buffer = ByteBuffer.allocate(<span class="number">10</span>);</span><br><span class="line">           channel.read(buffer);</span><br><span class="line">           <span class="keyword">byte</span>[] data = buffer.array();</span><br><span class="line">           String message = <span class="keyword">new</span> String(data);</span><br><span class="line">           System.out.println(<span class="string">"recevie message from server:, size:"</span></span><br><span class="line">               + buffer.position() + <span class="string">" msg: "</span> + message);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>NIO服务端代码(连接)</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//获取一个ServerSocket通道</span></span><br><span class="line">ServerSocketChannel serverChannel = ServerSocketChannel.open();</span><br><span class="line">serverChannel.configureBlocking(<span class="keyword">false</span>);</span><br><span class="line">serverChannel.socket().bind(<span class="keyword">new</span> InetSocketAddress(port));</span><br><span class="line"><span class="comment">//获取通道管理器</span></span><br><span class="line">selector = Selector.open();</span><br><span class="line"><span class="comment">//将通道管理器与通道绑定，并为该通道注册SelectionKey.OP_ACCEPT事件，</span></span><br><span class="line">serverChannel.register(selector, SelectionKey.OP_ACCEPT);</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>NIO服务端代码(监听)</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">    <span class="comment">//当有注册的事件到达时，方法返回，否则阻塞。</span></span><br><span class="line">   selector.select();</span><br><span class="line">   <span class="keyword">for</span>(SelectionKey key : selector.selectedKeys())&#123;</span><br><span class="line">       <span class="keyword">if</span>(key.isAcceptable())&#123;</span><br><span class="line">           ServerSocketChannel server =</span><br><span class="line">                (ServerSocketChannel)key.channel();</span><br><span class="line">           SocketChannel channel = server.accept();</span><br><span class="line">           channel.write(ByteBuffer.wrap(</span><br><span class="line">            <span class="keyword">new</span> String(<span class="string">"send message to client"</span>).getBytes()));</span><br><span class="line">           <span class="comment">//在与客户端连接成功后，为客户端通道注册SelectionKey.OP_READ事件。</span></span><br><span class="line">           channel.register(selector, SelectionKey.OP_READ);</span><br><span class="line">       &#125;<span class="keyword">else</span> <span class="keyword">if</span>(key.isReadable())&#123;<span class="comment">//有可读数据事件</span></span><br><span class="line">           SocketChannel channel = (SocketChannel)key.channel();</span><br><span class="line">           ByteBuffer buffer = ByteBuffer.allocate(<span class="number">10</span>);</span><br><span class="line">           <span class="keyword">int</span> read = channel.read(buffer);</span><br><span class="line">           <span class="keyword">byte</span>[] data = buffer.array();</span><br><span class="line">           String message = <span class="keyword">new</span> String(data);</span><br><span class="line">           System.out.println(<span class="string">"receive message from client, size:"</span></span><br><span class="line">               + buffer.position() + <span class="string">" msg: "</span> + message);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>NIO模型示例如下：</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-8d8ec4d8b63f6d72.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
-<ul>
-<li>Acceptor注册Selector，监听accept事件</li>
-<li>当客户端连接后，触发accept事件</li>
-<li>服务器构建对应的Channel，并在其上注册Selector，监听读写事件</li>
-<li>当发生读写事件后，进行相应的读写处理</li>
-</ul>
-<h2 id="NIO优缺点"><a href="#NIO优缺点" class="headerlink" title="NIO优缺点"></a>NIO优缺点</h2><ul>
-<li>优点<ul>
-<li>性能瓶颈高</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>模型复杂</li>
-<li>编码复杂</li>
-<li>需处理半包问题</li>
-</ul>
-</li>
-</ul>
-<p>NIO的优缺点和BIO就完全相反了!性能高，不用一个连接就建一个线程，可以一个线程处理所有的连接！相应的，编码就复杂很多，从上面的代码就可以明显体会到了。还有一个问题，由于是非阻塞的，应用无法知道什么时候消息读完了，就存在了半包问题！</p>
-<h2 id="半包问题"><a href="#半包问题" class="headerlink" title="半包问题"></a>半包问题</h2><p>简单看一下下面的图就能理解半包问题了！</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-bf61aee347d92676.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/230/format/webp" alt="img"></p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-4da274ccb55084d9.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/260/format/webp" alt="img"></p>
-<p>我们知道TCP/IP在发送消息的时候，可能会拆包(如上图1)！这就导致接收端无法知道什么时候收到的数据是一个完整的数据。例如:发送端分别发送了ABC,DEF,GHI三条信息，发送时被拆成了AB,CDRFG,H,I这四个包进行发送，接受端如何将其进行还原呢？在BIO模型中，当读不到数据后会阻塞，而NIO中不会!所以需要自行进行处理!例如，以换行符作为判断依据，或者定长消息发生，或者自定义协议！</p>
-<p>NIO虽然性能高，但是编码复杂，且需要处理半包问题！为了方便的进行NIO开发，就有了Reactor模型!</p>
-<h2 id="Reactor模型"><a href="#Reactor模型" class="headerlink" title="Reactor模型"></a>Reactor模型</h2><ul>
-<li>AWT Events</li>
-</ul>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-e108abfcd9382eef.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/827/format/webp" alt="img"></p>
-<p>Reactor模型和AWT事件模型很像，就是将消息放到了一个队列中，通过异步线程池对其进行消费！</p>
-<h3 id="Reactor中的组件"><a href="#Reactor中的组件" class="headerlink" title="Reactor中的组件"></a>Reactor中的组件</h3><ul>
-<li>Reactor:Reactor是IO事件的派发者。</li>
-<li>Acceptor:Acceptor接受client连接，建立对应client的Handler，并向Reactor注册此Handler。</li>
-<li>Handler:和一个client通讯的实体，按这样的过程实现业务的处理。一般在基本的Handler基础上还会有更进一步的层次划分， 用来抽象诸如decode，process和encoder这些过程。比如对Web Server而言，decode通常是HTTP请求的解析， process的过程会进一步涉及到Listener和Servlet的调用。业务逻辑的处理在Reactor模式里被分散的IO事件所打破， 所以Handler需要有适当的机制在所需的信息还不全（读到一半）的时候保存上下文，并在下一次IO事件到来的时候（另一半可读了）能继续中断的处理。为了简化设计，Handler通常被设计成状态机，按GoF的state pattern来实现。</li>
-</ul>
-<p>对应上面的NIO代码来看:</p>
-<ul>
-<li>Reactor：相当于有分发功能的Selector</li>
-<li>Acceptor：NIO中建立连接的那个判断分支</li>
-<li>Handler：消息读写处理等操作类</li>
-</ul>
-<p>Reactor从线程池和Reactor的选择上可以细分为如下几种：</p>
-<h3 id="Reactor单线程模型"><a href="#Reactor单线程模型" class="headerlink" title="Reactor单线程模型"></a>Reactor单线程模型</h3><p><img src="https:////upload-images.jianshu.io/upload_images/1100082-931396ffc90437ef.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
-<p>这个模型和上面的NIO流程很类似，只是将消息相关处理独立到了Handler中去了！同时我们可以看到IO操作和非IO操作混在Handler处理当中,如果非IO操作很慢,会影响接受IO请求的速度.</p>
-<p>我们看一个客户端的情况，如果这个客户端多次进行请求，如果在Handler中的处理速度较慢，那么后续的客户端请求都会被积压，导致响应变慢！所以引入了Reactor多线程模型!</p>
-<h3 id="Reactor多线程模型"><a href="#Reactor多线程模型" class="headerlink" title="Reactor多线程模型"></a>Reactor多线程模型</h3><p><img src="https:////upload-images.jianshu.io/upload_images/1100082-b21e4c2555478155.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
-<p>Reactor多线程模型就是将Handler中的IO操作和非IO操作分开，操作IO的线程称为<strong>IO线程</strong>，非IO操作的线程称为<strong>工作线程</strong>!这样的话，客户端的请求会直接被丢到线程池中，客户端发送请求就不会堵塞！</p>
-<p>但是当用户进一步增加的时候，Reactor会出现瓶颈！因为Reactor既要处理IO操作请求，又要响应连接请求！为了分担Reactor的负担，所以引入了主从Reactor模型!</p>
-<h3 id="主从Reactor模型"><a href="#主从Reactor模型" class="headerlink" title="主从Reactor模型"></a>主从Reactor模型</h3><p><img src="https:////upload-images.jianshu.io/upload_images/1100082-794d7f69b6e2409a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1200/format/webp" alt="img"></p>
-<p>主Reactor用于响应<strong>连接请求</strong>，从Reactor用于处<strong>理IO操作请求</strong>！</p>
-<h2 id="Netty"><a href="#Netty" class="headerlink" title="Netty"></a>Netty</h2><p>Netty是一个高性能NIO框架，其是对Reactor模型的一个实现！</p>
-<ul>
-<li>Netty客户端代码</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">EventLoopGroup workerGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    Bootstrap b = <span class="keyword">new</span> Bootstrap();</span><br><span class="line">    b.group(workerGroup);</span><br><span class="line">    b.channel(NioSocketChannel<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    b.option(ChannelOption.SO_KEEPALIVE, <span class="keyword">true</span>);</span><br><span class="line">    b.handler(<span class="keyword">new</span> ChannelInitializer&lt;SocketChannel&gt;() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel ch)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">            ch.pipeline().addLast(<span class="keyword">new</span> TimeClientHandler());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    ChannelFuture f = b.connect(host, port).sync();</span><br><span class="line"></span><br><span class="line">    f.channel().closeFuture().sync();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    workerGroup.shutdownGracefully();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Netty Client Handler</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TimeClientHandler</span> <span class="keyword">extends</span> <span class="title">ChannelInboundHandlerAdapter</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelRead</span><span class="params">(ChannelHandlerContext ctx, Object msg)</span> </span>&#123;</span><br><span class="line">        ByteBuf m = (ByteBuf) msg;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">long</span> currentTimeMillis =</span><br><span class="line">                (m.readUnsignedInt() - <span class="number">2208988800L</span>) * <span class="number">1000L</span>;</span><br><span class="line">            System.out.println(<span class="keyword">new</span> Date(currentTimeMillis));</span><br><span class="line">            ctx.close();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            m.release();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exceptionCaught</span><span class="params">(ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">                Throwable cause)</span> </span>&#123;</span><br><span class="line">        cause.printStackTrace();</span><br><span class="line">        ctx.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Netty服务端代码</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">EventLoopGroup bossGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line">EventLoopGroup workerGroup = <span class="keyword">new</span> NioEventLoopGroup();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    ServerBootstrap b = <span class="keyword">new</span> ServerBootstrap();</span><br><span class="line">    b.group(bossGroup, workerGroup)</span><br><span class="line">     .channel(NioServerSocketChannel<span class="class">.<span class="keyword">class</span>)</span></span><br><span class="line"><span class="class">     .<span class="title">childHandler</span>(<span class="title">new</span> <span class="title">ChannelInitializer</span>&lt;<span class="title">SocketChannel</span>&gt;() </span>&#123;</span><br><span class="line">         <span class="meta">@Override</span></span><br><span class="line">         <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initChannel</span><span class="params">(SocketChannel ch)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">             ch.pipeline().addLast(<span class="keyword">new</span> TimeServerHandler());</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;)</span><br><span class="line">     .option(ChannelOption.SO_BACKLOG, <span class="number">128</span>)  </span><br><span class="line">     .childOption(ChannelOption.SO_KEEPALIVE, <span class="keyword">true</span>);</span><br><span class="line">    <span class="comment">// Bind and start to accept incoming connections.</span></span><br><span class="line">    ChannelFuture f = b.bind(port).sync();</span><br><span class="line">    f.channel().closeFuture().sync();</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    workerGroup.shutdownGracefully();</span><br><span class="line">    bossGroup.shutdownGracefully();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>Netty Server Handler</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TimeServerHandler</span> <span class="keyword">extends</span> <span class="title">ChannelInboundHandlerAdapter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">channelActive</span><span class="params">(<span class="keyword">final</span> ChannelHandlerContext ctx)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> ByteBuf time = ctx.alloc().buffer(<span class="number">4</span>);</span><br><span class="line">        time.writeInt((<span class="keyword">int</span>)</span><br><span class="line">            (System.currentTimeMillis() / <span class="number">1000L</span> + <span class="number">2208988800L</span>));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> ChannelFuture f = ctx.writeAndFlush(time);</span><br><span class="line">        f.addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture future)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">assert</span> f == future;</span><br><span class="line">                ctx.close();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">exceptionCaught</span><span class="params">(ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">        Throwable cause)</span> </span>&#123;</span><br><span class="line">        cause.printStackTrace();</span><br><span class="line">        ctx.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>我们从Netty服务器代码来看，与Reactor模型进行对应！</p>
-<ul>
-<li>EventLoopGroup就相当于是Reactor，bossGroup对应主Reactor,workerGroup对应从Reactor</li>
-<li>TimeServerHandler就是Handler</li>
-<li>child开头的方法配置的是客户端channel，非child开头的方法配置的是服务端channel</li>
-</ul>
-<p>具体Netty内容，请访问<a href="https://link.jianshu.com?t=http://netty.io/" target="_blank" rel="noopener">Netty官网</a>！</p>
-<h2 id="Netty的问题"><a href="#Netty的问题" class="headerlink" title="Netty的问题"></a>Netty的问题</h2><p>Netty开发中一个很明显的问题就是回调，一是打破了线性编码习惯，<br> 二就是Callback Hell！</p>
-<p>看下面这个例子：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">a.doing1();  <span class="comment">//1</span></span><br><span class="line">a.doing2();  <span class="comment">//2</span></span><br><span class="line">a.doing3();  <span class="comment">//3</span></span><br></pre></td></tr></table></figure>
-
-<p>1,2,3处代码如果是同步的，那么将按顺序执行！但是如果不是同步的呢？我还是希望2在1之后执行，3在2之后执行！怎么办呢？想想AJAX!我们需要写类似如下这样的代码！</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">a.doing1(<span class="keyword">new</span> Callback()&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">callback</span><span class="params">()</span></span>&#123;</span><br><span class="line">        a.doing2(<span class="keyword">new</span> Callback()&#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">callback</span><span class="params">()</span></span>&#123;</span><br><span class="line">                a.doing3();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-
-<p>那有没有办法解决这个问题呢？其实不难，实现一个类似Future的功能！当Client获取结果时，进行阻塞，当得到结果后再继续往下走！实现方案，一个就是使用锁了，还有一个就是使用RingBuffer。经测试，使用RingBuffer比使用锁TPS有2000左右的提高！</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/1100082-19713d1fa9347ac1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/646/format/webp" alt="img"></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.jianshu.com/p/2461535c38f3" target="_blank" rel="noopener">高性能Server—Reactor模型</a></p>
-<ul>
-<li><a href="https://link.jianshu.com?t=http://www.zhihu.com/question/21383903" target="_blank" rel="noopener">Socket为什么要翻译成套接字？</a></li>
-<li><a href="https://link.jianshu.com?t=http://www.dre.vanderbilt.edu/~schmidt/PDF/reactor-siemens.pdf" target="_blank" rel="noopener">Reactor论文</a></li>
-<li><a href="https://link.jianshu.com?t=http://gee.cs.oswego.edu/dl/cpjslides/nio.pdf" target="_blank" rel="noopener">Doug Lea《Scalable IO in Java》</a></li>
-<li><a href="https://link.jianshu.com?t=https://github.com/netty/netty" target="_blank" rel="noopener">Netty源码</a></li>
-<li><a href="https://link.jianshu.com?t=http://mechanitis.blogspot.com/2011/07/dissecting-disruptor-why-its-so-fast.html" target="_blank" rel="noopener">剖析Disruptor:为什么会这么快？</a></li>
-<li><a href="https://link.jianshu.com?t=http://ifeve.com/locks-are-bad/" target="_blank" rel="noopener">剖析Disruptor:为什么会这么快？(中文)</a></li>
-<li><a href="https://link.jianshu.com?t=http://ifeve.com/java-synchronized/" target="_blank" rel="noopener">Java SE1.6中的Synchronized</a></li>
-<li><a href="https://link.jianshu.com?t=http://www.cnblogs.com/l00l/p/4115001.html" target="_blank" rel="noopener">线程安全的无锁RingBuffer实现</a></li>
-<li><a href="https://link.jianshu.com?t=http://blog.csdn.net/haoel/article/details/2224055" target="_blank" rel="noopener">Java NIO类库Selector机制解析（上）</a></li>
-<li><a href="https://link.jianshu.com?t=http://blog.csdn.net/haoel/article/details/2224069" target="_blank" rel="noopener">Java NIO类库Selector机制解析（下）</a></li>
-</ul>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1974,7 +1870,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">211</span>
+          <span class="site-state-item-count">216</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2030,7 +1926,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">789k</span>
+    <span title="站点总字数">807k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
