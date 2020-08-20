@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言Spring在TransactionDefinition接口中规定了7种类型的事务传播行为。事务传播行为是Spring框架独有的事务增强特性，他不属于的事务实际提供方数据库行为。这是Spring为我们提供的强大的工具箱，使用事务传播行可以为我们的开发工作提供许多便利。但是人们对他的误解也颇多，你一定也听过“service方法事务最好不要嵌套”的传言。要想正确的使用工具首先需要了解工具。本文对七">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring事务传播行为详解">
+<meta property="og:url" content="http://yoursite.com/2020/08/10/Spring%E4%BA%8B%E5%8A%A1%E4%BC%A0%E6%92%AD%E8%A1%8C%E4%B8%BA%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="前言Spring在TransactionDefinition接口中规定了7种类型的事务传播行为。事务传播行为是Spring框架独有的事务增强特性，他不属于的事务实际提供方数据库行为。这是Spring为我们提供的强大的工具箱，使用事务传播行可以为我们的开发工作提供许多便利。但是人们对他的误解也颇多，你一定也听过“service方法事务最好不要嵌套”的传言。要想正确的使用工具首先需要了解工具。本文对七">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-08-10T03:12:34.000Z">
+<meta property="article:modified_time" content="2020-08-10T11:14:04.661Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/08/10/Spring%E4%BA%8B%E5%8A%A1%E4%BC%A0%E6%92%AD%E8%A1%8C%E4%B8%BA%E8%AF%A6%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring事务传播行为详解 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/10/Spring%E4%BA%8B%E5%8A%A1%E4%BC%A0%E6%92%AD%E8%A1%8C%E4%B8%BA%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring事务传播行为详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-08-10 11:12:34 / 修改时间：19:14:04" itemprop="dateCreated datePublished" datetime="2020-08-10T11:12:34+08:00">2020-08-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Spring/" itemprop="url" rel="index"><span itemprop="name">Spring</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>14k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>13 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>Spring在TransactionDefinition接口中规定了7种类型的事务传播行为。事务传播行为是Spring框架独有的事务增强特性，他不属于的事务实际提供方数据库行为。这是Spring为我们提供的强大的工具箱，使用事务传播行可以为我们的开发工作提供许多便利。但是人们对他的误解也颇多，你一定也听过“service方法事务最好不要嵌套”的传言。要想正确的使用工具首先需要了解工具。本文对七种事务传播行为做详细介绍，内容主要代码示例的方式呈现。</p>
+<h1 id="基础概念"><a href="#基础概念" class="headerlink" title="基础概念"></a>基础概念</h1><h2 id="1-什么是事务传播行为？"><a href="#1-什么是事务传播行为？" class="headerlink" title="1. 什么是事务传播行为？"></a>1. 什么是事务传播行为？</h2><p>事务传播行为用来描述由某一个事务传播行为修饰的方法被嵌套进另一个方法的时事务如何传播。</p>
+<p>用伪代码说明：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public void methodA()&#123;</span><br><span class="line">   methodB();</span><br><span class="line">   &#x2F;&#x2F;doSomething</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@Transaction(Propagation&#x3D;XXX)</span><br><span class="line">public void methodB()&#123;</span><br><span class="line">   &#x2F;&#x2F;doSomething</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>代码中<code>methodA()</code>方法嵌套调用了<code>methodB()</code>方法，<code>methodB()</code>的事务传播行为由<code>@Transaction(Propagation=XXX)</code>设置决定。这里需要注意的是<code>methodA()</code>并没有开启事务，某一个事务传播行为修饰的方法并不是必须要在开启事务的外围方法中调用。</p>
+<h2 id="2-Spring中七种事务传播行为"><a href="#2-Spring中七种事务传播行为" class="headerlink" title="2. Spring中七种事务传播行为"></a>2. Spring中七种事务传播行为</h2><table>
+<thead>
+<tr>
+<th>事务传播行为类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PROPAGATION_REQUIRED</td>
+<td>如果当前没有事务，就新建一个事务，如果已经存在一个事务中，加入到这个事务中。这是最常见的选择。</td>
+</tr>
+<tr>
+<td>PROPAGATION_SUPPORTS</td>
+<td>支持当前事务，如果当前没有事务，就以非事务方式执行。</td>
+</tr>
+<tr>
+<td>PROPAGATION_MANDATORY</td>
+<td>使用当前的事务，如果当前没有事务，就抛出异常。</td>
+</tr>
+<tr>
+<td>PROPAGATION_REQUIRES_NEW</td>
+<td>新建事务，如果当前存在事务，把当前事务挂起。</td>
+</tr>
+<tr>
+<td>PROPAGATION_NOT_SUPPORTED</td>
+<td>以非事务方式执行操作，如果当前存在事务，就把当前事务挂起。</td>
+</tr>
+<tr>
+<td>PROPAGATION_NEVER</td>
+<td>以非事务方式执行，如果当前存在事务，则抛出异常。</td>
+</tr>
+<tr>
+<td>PROPAGATION_NESTED</td>
+<td>如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则执行与PROPAGATION_REQUIRED类似的操作。</td>
+</tr>
+</tbody></table>
+<p>定义非常简单，也很好理解，下面我们就进入代码测试部分，验证我们的理解是否正确。</p>
+<h1 id="代码验证"><a href="#代码验证" class="headerlink" title="代码验证"></a>代码验证</h1><p>文中代码以传统三层结构中两层呈现，即Service和Dao层，由Spring负责依赖注入和注解式事务管理，DAO层由Mybatis实现，你也可以使用任何喜欢的方式，例如，Hibernate,JPA,JDBCTemplate等。数据库使用的是MySQL数据库，你也可以使用任何支持事务的数据库，并不会影响验证结果。</p>
+<p>首先我们在数据库中创建两张表：</p>
+<p><strong>user1</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;user1&#96; (</span><br><span class="line">  &#96;id&#96; INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;name&#96; VARCHAR(45) NOT NULL DEFAULT &#39;&#39;,</span><br><span class="line">  PRIMARY KEY(&#96;id&#96;)</span><br><span class="line">)</span><br><span class="line">ENGINE &#x3D; InnoDB;</span><br></pre></td></tr></table></figure>
+
+<p><strong>user2</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE &#96;user2&#96; (</span><br><span class="line">  &#96;id&#96; INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,</span><br><span class="line">  &#96;name&#96; VARCHAR(45) NOT NULL DEFAULT &#39;&#39;,</span><br><span class="line">  PRIMARY KEY(&#96;id&#96;)</span><br><span class="line">)</span><br><span class="line">ENGINE &#x3D; InnoDB;</span><br></pre></td></tr></table></figure>
+
+<p>然后编写相应的Bean和DAO层代码：</p>
+<p><strong>User1</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public class User1 &#123;</span><br><span class="line">    private Integer id;</span><br><span class="line">    private String name;</span><br><span class="line">   &#x2F;&#x2F;get和set方法省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User2</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public class User2 &#123;</span><br><span class="line">    private Integer id;</span><br><span class="line">    private String name;</span><br><span class="line">   &#x2F;&#x2F;get和set方法省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User1Mapper</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public interface User1Mapper &#123;</span><br><span class="line">    int insert(User1 record);</span><br><span class="line">    User1 selectByPrimaryKey(Integer id);</span><br><span class="line">    &#x2F;&#x2F;其他方法省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User2Mapper</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">public interface User2Mapper &#123;</span><br><span class="line">    int insert(User2 record);</span><br><span class="line">    User2 selectByPrimaryKey(Integer id);</span><br><span class="line">    &#x2F;&#x2F;其他方法省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后也是具体验证的代码由service层实现，下面我们分情况列举。</p>
+<h2 id="1-PROPAGATION-REQUIRED"><a href="#1-PROPAGATION-REQUIRED" class="headerlink" title="1.PROPAGATION_REQUIRED"></a>1.PROPAGATION_REQUIRED</h2><p>我们为User1Service和User2Service相应方法加上<code>Propagation.REQUIRED</code>属性。</p>
+<p><strong>User1Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User1ServiceImpl implements User1Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">    public void addRequired(User1 user)&#123;</span><br><span class="line">        user1Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User2Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User2ServiceImpl implements User2Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">    public void addRequired(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">    public void addRequiredException(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">        throw new RuntimeException();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-场景一"><a href="#1-1-场景一" class="headerlink" title="1.1 场景一"></a>1.1 场景一</h3><p>此场景外围方法没有开启事务。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_exception_required_required()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequired(user2);</span><br><span class="line">    </span><br><span class="line">    throw new RuntimeException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_required_required_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiredException(user2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”、“李四”均插入。</td>
+<td>外围方法未开启事务，插入“张三”、“李四”方法在自己的事务中独立运行，外围方法异常不影响内部插入“张三”、“李四”方法独立的事务。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”插入，“李四”未插入。</td>
+<td>外围方法没有事务，插入“张三”、“李四”方法都在自己的事务中独立运行,所以插入“李四”方法抛出异常只会回滚插入“李四”方法，插入“张三”方法不受影响。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：通过这两个方法我们证明了在外围方法未开启事务的情况下<code>Propagation.REQUIRED</code>修饰的内部方法会新开启自己的事务，且开启的事务相互独立，互不干扰。</strong></p>
+<h3 id="1-2-场景二"><a href="#1-2-场景二" class="headerlink" title="1.2 场景二"></a>1.2 场景二</h3><p>外围方法开启事务，这个是使用率比较高的场景。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line"> @Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line"> public void transaction_exception_required_required()&#123;</span><br><span class="line">     User1 user1&#x3D;new User1();</span><br><span class="line">     user1.setName(&quot;张三&quot;);</span><br><span class="line">     user1Service.addRequired(user1);</span><br><span class="line">     </span><br><span class="line">     User2 user2&#x3D;new User2();</span><br><span class="line">     user2.setName(&quot;李四&quot;);</span><br><span class="line">     user2Service.addRequired(user2);</span><br><span class="line">     </span><br><span class="line">     throw new RuntimeException();</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">@Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">public void transaction_required_required_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiredException(user2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法3：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Transactional</span><br><span class="line">@Override</span><br><span class="line">public void transaction_required_required_exception_try()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    try &#123;</span><br><span class="line">        user2Service.addRequiredException(user2);</span><br><span class="line">    &#125; catch (Exception e) &#123;</span><br><span class="line">        System.out.println(&quot;方法回滚&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”、“李四”均未插入。</td>
+<td>外围方法开启事务，内部方法加入外围方法事务，外围方法回滚，内部方法也要回滚。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”、“李四”均未插入。</td>
+<td>外围方法开启事务，内部方法加入外围方法事务，内部方法抛出异常回滚，外围方法感知异常致使整体事务回滚。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>“张三”、“李四”均未插入。</td>
+<td>外围方法开启事务，内部方法加入外围方法事务，内部方法抛出异常回滚，即使方法被catch不被外围方法感知，整个事务依然回滚。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：以上试验结果我们证明在外围方法开启事务的情况下<code>Propagation.REQUIRED</code>修饰的内部方法会加入到外围方法的事务中，所有<code>Propagation.REQUIRED</code>修饰的内部方法和外围方法均属于同一事务，只要一个方法回滚，整个事务均回滚。</strong></p>
+<h2 id="2-PROPAGATION-REQUIRES-NEW"><a href="#2-PROPAGATION-REQUIRES-NEW" class="headerlink" title="2.PROPAGATION_REQUIRES_NEW"></a>2.PROPAGATION_REQUIRES_NEW</h2><p>我们为User1Service和User2Service相应方法加上<code>Propagation.REQUIRES_NEW</code>属性。<br><strong>User1Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User1ServiceImpl implements User1Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRES_NEW)</span><br><span class="line">    public void addRequiresNew(User1 user)&#123;</span><br><span class="line">        user1Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">    public void addRequired(User1 user)&#123;</span><br><span class="line">        user1Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User2Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User2ServiceImpl implements User2Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRES_NEW)</span><br><span class="line">    public void addRequiresNew(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.REQUIRES_NEW)</span><br><span class="line">    public void addRequiresNewException(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">        throw new RuntimeException();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-场景一"><a href="#2-1-场景一" class="headerlink" title="2.1 场景一"></a>2.1 场景一</h3><p>外围方法没有开启事务。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_exception_requiresNew_requiresNew()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequiresNew(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiresNew(user2);</span><br><span class="line">    throw new RuntimeException();</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_requiresNew_requiresNew_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequiresNew(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiresNewException(user2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”插入，“李四”插入。</td>
+<td>外围方法没有事务，插入“张三”、“李四”方法都在自己的事务中独立运行,外围方法抛出异常回滚不会影响内部方法。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”插入，“李四”未插入</td>
+<td>外围方法没有开启事务，插入“张三”方法和插入“李四”方法分别开启自己的事务，插入“李四”方法抛出异常回滚，其他事务不受影响。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：通过这两个方法我们证明了在外围方法未开启事务的情况下<code>Propagation.REQUIRES_NEW</code>修饰的内部方法会新开启自己的事务，且开启的事务相互独立，互不干扰。</strong></p>
+<h3 id="2-2-场景二"><a href="#2-2-场景二" class="headerlink" title="2.2 场景二"></a>2.2 场景二</h3><p>外围方法开启事务。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">@Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">public void transaction_exception_required_requiresNew_requiresNew()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiresNew(user2);</span><br><span class="line">    </span><br><span class="line">    User2 user3&#x3D;new User2();</span><br><span class="line">    user3.setName(&quot;王五&quot;);</span><br><span class="line">    user2Service.addRequiresNew(user3);</span><br><span class="line">    throw new RuntimeException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">@Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">public void transaction_required_requiresNew_requiresNew_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiresNew(user2);</span><br><span class="line">    </span><br><span class="line">    User2 user3&#x3D;new User2();</span><br><span class="line">    user3.setName(&quot;王五&quot;);</span><br><span class="line">    user2Service.addRequiresNewException(user3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法3：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">@Transactional(propagation &#x3D; Propagation.REQUIRED)</span><br><span class="line">public void transaction_required_requiresNew_requiresNew_exception_try()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addRequired(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addRequiresNew(user2);</span><br><span class="line">    User2 user3&#x3D;new User2();</span><br><span class="line">    user3.setName(&quot;王五&quot;);</span><br><span class="line">    try &#123;</span><br><span class="line">        user2Service.addRequiresNewException(user3);</span><br><span class="line">    &#125; catch (Exception e) &#123;</span><br><span class="line">        System.out.println(&quot;回滚&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”未插入，“李四”插入，“王五”插入。</td>
+<td>外围方法开启事务，插入“张三”方法和外围方法一个事务，插入“李四”方法、插入“王五”方法分别在独立的新建事务中，外围方法抛出异常只回滚和外围方法同一事务的方法，故插入“张三”的方法回滚。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”未插入，“李四”插入，“王五”未插入。</td>
+<td>外围方法开启事务，插入“张三”方法和外围方法一个事务，插入“李四”方法、插入“王五”方法分别在独立的新建事务中。插入“王五”方法抛出异常，首先插入 “王五”方法的事务被回滚，异常继续抛出被外围方法感知，外围方法事务亦被回滚，故插入“张三”方法也被回滚。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>“张三”插入，“李四”插入，“王五”未插入。</td>
+<td>外围方法开启事务，插入“张三”方法和外围方法一个事务，插入“李四”方法、插入“王五”方法分别在独立的新建事务中。插入“王五”方法抛出异常，首先插入“王五”方法的事务被回滚，异常被catch不会被外围方法感知，外围方法事务不回滚，故插入“张三”方法插入成功。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：在外围方法开启事务的情况下<code>Propagation.REQUIRES_NEW</code>修饰的内部方法依然会单独开启独立事务，且与外部方法事务也独立，内部方法之间、内部方法和外部方法事务均相互独立，互不干扰。</strong></p>
+<h2 id="3-PROPAGATION-NESTED"><a href="#3-PROPAGATION-NESTED" class="headerlink" title="3.PROPAGATION_NESTED"></a>3.PROPAGATION_NESTED</h2><p>我们为User1Service和User2Service相应方法加上<code>Propagation.NESTED</code>属性。<br><strong>User1Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User1ServiceImpl implements User1Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.NESTED)</span><br><span class="line">    public void addNested(User1 user)&#123;</span><br><span class="line">        user1Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>User2Service方法：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class User2ServiceImpl implements User2Service &#123;</span><br><span class="line">    &#x2F;&#x2F;省略其他...</span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.NESTED)</span><br><span class="line">    public void addNested(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    @Override</span><br><span class="line">    @Transactional(propagation &#x3D; Propagation.NESTED)</span><br><span class="line">    public void addNestedException(User2 user)&#123;</span><br><span class="line">        user2Mapper.insert(user);</span><br><span class="line">        throw new RuntimeException();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-场景一"><a href="#3-1-场景一" class="headerlink" title="3.1 场景一"></a>3.1 场景一</h3><p>此场景外围方法没有开启事务。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_exception_nested_nested()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addNested(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addNested(user2);</span><br><span class="line">    throw new RuntimeException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public void notransaction_nested_nested_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addNested(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addNestedException(user2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”、“李四”均插入。</td>
+<td>外围方法未开启事务，插入“张三”、“李四”方法在自己的事务中独立运行，外围方法异常不影响内部插入“张三”、“李四”方法独立的事务。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”插入，“李四”未插入。</td>
+<td>外围方法没有事务，插入“张三”、“李四”方法都在自己的事务中独立运行,所以插入“李四”方法抛出异常只会回滚插入“李四”方法，插入“张三”方法不受影响。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：通过这两个方法我们证明了在外围方法未开启事务的情况下<code>Propagation.NESTED</code>和<code>Propagation.REQUIRED</code>作用相同，修饰的内部方法都会新开启自己的事务，且开启的事务相互独立，互不干扰。</strong></p>
+<h3 id="3-2-场景二"><a href="#3-2-场景二" class="headerlink" title="3.2 场景二"></a>3.2 场景二</h3><p>外围方法开启事务。</p>
+<p><strong>验证方法1：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@Transactional</span><br><span class="line">@Override</span><br><span class="line">public void transaction_exception_nested_nested()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addNested(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addNested(user2);</span><br><span class="line">    throw new RuntimeException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法2：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">@Transactional</span><br><span class="line">@Override</span><br><span class="line">public void transaction_nested_nested_exception()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addNested(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    user2Service.addNestedException(user2);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证方法3：</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Transactional</span><br><span class="line">@Override</span><br><span class="line">public void transaction_nested_nested_exception_try()&#123;</span><br><span class="line">    User1 user1&#x3D;new User1();</span><br><span class="line">    user1.setName(&quot;张三&quot;);</span><br><span class="line">    user1Service.addNested(user1);</span><br><span class="line">    </span><br><span class="line">    User2 user2&#x3D;new User2();</span><br><span class="line">    user2.setName(&quot;李四&quot;);</span><br><span class="line">    try &#123;</span><br><span class="line">        user2Service.addNestedException(user2);</span><br><span class="line">    &#125; catch (Exception e) &#123;</span><br><span class="line">        System.out.println(&quot;方法回滚&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分别执行验证方法，结果：</p>
+<table>
+<thead>
+<tr>
+<th>验证方法序号</th>
+<th>数据库结果</th>
+<th>结果分析</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>“张三”、“李四”均未插入。</td>
+<td>外围方法开启事务，内部事务为外围事务的子事务，外围方法回滚，内部方法也要回滚。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>“张三”、“李四”均未插入。</td>
+<td>外围方法开启事务，内部事务为外围事务的子事务，内部方法抛出异常回滚，且外围方法感知异常致使整体事务回滚。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>“张三”插入、“李四”未插入。</td>
+<td>外围方法开启事务，内部事务为外围事务的子事务，插入“李四”内部方法抛出异常，可以单独对子事务回滚。</td>
+</tr>
+</tbody></table>
+<p><strong>结论：以上试验结果我们证明在外围方法开启事务的情况下<code>Propagation.NESTED</code>修饰的内部方法属于外部事务的子事务，外围主事务回滚，子事务一定回滚，而内部子事务可以单独回滚而不影响外围主事务和其他子事务</strong></p>
+<h2 id="4-REQUIRED-REQUIRES-NEW-NESTED异同"><a href="#4-REQUIRED-REQUIRES-NEW-NESTED异同" class="headerlink" title="4. REQUIRED,REQUIRES_NEW,NESTED异同"></a>4. REQUIRED,REQUIRES_NEW,NESTED异同</h2><p>由“1.2 场景二”和“3.2 场景二”对比，我们可知：<br><strong>NESTED和REQUIRED修饰的内部方法都属于外围方法事务，如果外围方法抛出异常，这两种方法的事务都会被回滚。但是REQUIRED是加入外围方法事务，所以和外围事务同属于一个事务，一旦REQUIRED事务抛出异常被回滚，外围方法事务也将被回滚。而NESTED是外围方法的子事务，有单独的保存点，所以NESTED方法抛出异常被回滚，不会影响到外围方法的事务。</strong></p>
+<p>由“2.2 场景二”和“3.2 场景二”对比，我们可知：<br><strong>NESTED和REQUIRES_NEW都可以做到内部方法事务回滚而不影响外围方法事务。但是因为NESTED是嵌套事务，所以外围方法回滚之后，作为外围方法事务的子事务也会被回滚。而REQUIRES_NEW是通过开启新的事务实现的，内部事务和外围事务是两个事务，外围事务回滚不会影响内部事务。</strong></p>
+<h2 id="5-其他事务传播行为"><a href="#5-其他事务传播行为" class="headerlink" title="5. 其他事务传播行为"></a>5. 其他事务传播行为</h2><p>鉴于文章篇幅问题，其他事务传播行为的测试就不在此一一描述了，感兴趣的读者可以去源码中自己寻找相应测试代码和结果解释。传送门：<a href="https://github.com/TmTse/transaction-test" target="_blank" rel="noopener">https://github.com/TmTse/tran…</a></p>
+<h1 id="模拟用例"><a href="#模拟用例" class="headerlink" title="模拟用例"></a>模拟用例</h1><p>介绍了这么多事务传播行为，我们在实际工作中如何应用呢？下面我来举一个示例：</p>
+<p>假设我们有一个注册的方法，方法中调用添加积分的方法，如果我们希望添加积分不会影响注册流程（即添加积分执行失败回滚不能使注册方法也回滚），我们会这样写：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class UserServiceImpl implements UserService &#123;</span><br><span class="line">     </span><br><span class="line">     @Transactional</span><br><span class="line">     public void register(User user)&#123;</span><br><span class="line">                </span><br><span class="line">         try &#123;</span><br><span class="line">             membershipPointService.addPoint(Point point);</span><br><span class="line">         &#125; catch (Exception e) &#123;</span><br><span class="line">            &#x2F;&#x2F;省略...</span><br><span class="line">         &#125;</span><br><span class="line">         &#x2F;&#x2F;省略...</span><br><span class="line">     &#125;</span><br><span class="line">     &#x2F;&#x2F;省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们还规定注册失败要影响<code>addPoint()</code>方法（注册方法回滚添加积分方法也需要回滚），那么<code>addPoint()</code>方法就需要这样实现：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class MembershipPointServiceImpl implements MembershipPointService&#123;</span><br><span class="line">     </span><br><span class="line">     @Transactional(propagation &#x3D; Propagation.NESTED)</span><br><span class="line">     public void addPoint(Point point)&#123;</span><br><span class="line">                </span><br><span class="line">         try &#123;</span><br><span class="line">             recordService.addRecord(Record record);</span><br><span class="line">         &#125; catch (Exception e) &#123;</span><br><span class="line">            &#x2F;&#x2F;省略...</span><br><span class="line">         &#125;</span><br><span class="line">         &#x2F;&#x2F;省略...</span><br><span class="line">     &#125;</span><br><span class="line">     &#x2F;&#x2F;省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们注意到了在<code>addPoint()</code>中还调用了<code>addRecord()</code>方法，这个方法用来记录日志。他的实现如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">@Service</span><br><span class="line">public class RecordServiceImpl implements RecordService&#123;</span><br><span class="line">     </span><br><span class="line">     @Transactional(propagation &#x3D; Propagation.NOT_SUPPORTED)</span><br><span class="line">     public void addRecord(Record record)&#123;</span><br><span class="line">                </span><br><span class="line">        </span><br><span class="line">         &#x2F;&#x2F;省略...</span><br><span class="line">     &#125;</span><br><span class="line">     &#x2F;&#x2F;省略...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们注意到<code>addRecord()</code>方法中<code>propagation = Propagation.NOT_SUPPORTED</code>，因为对于日志无所谓精确，可以多一条也可以少一条，所以<code>addRecord()</code>方法本身和外围<code>addPoint()</code>方法抛出异常都不会使<code>addRecord()</code>方法回滚，并且<code>addRecord()</code>方法抛出异常也不会影响外围<code>addPoint()</code>方法的执行。</p>
+<p>通过这个例子相信大家对事务传播行为的使用有了更加直观的认识，通过各种属性的组合确实能让我们的业务实现更加灵活多样。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000013341344" target="_blank" rel="noopener">Spring事务传播行为详解</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/08/01/%E5%B8%B8%E7%94%A8%E7%9A%84http%E8%AF%B7%E6%B1%82%E5%A4%B4%E4%BB%A5%E5%8F%8A%E5%93%8D%E5%BA%94%E5%A4%B4/" rel="prev" title="常用的http请求头以及响应头">
+      <i class="fa fa-chevron-left"></i> 常用的http请求头以及响应头
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/08/10/kafka%E4%B8%ADpartition%E5%92%8C%E6%B6%88%E8%B4%B9%E8%80%85%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB/" rel="next" title="kafka中partition和消费者对应关系">
+      kafka中partition和消费者对应关系 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#基础概念"><span class="nav-number">2.</span> <span class="nav-text">基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-什么是事务传播行为？"><span class="nav-number">2.1.</span> <span class="nav-text">1. 什么是事务传播行为？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Spring中七种事务传播行为"><span class="nav-number">2.2.</span> <span class="nav-text">2. Spring中七种事务传播行为</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#代码验证"><span class="nav-number">3.</span> <span class="nav-text">代码验证</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-PROPAGATION-REQUIRED"><span class="nav-number">3.1.</span> <span class="nav-text">1.PROPAGATION_REQUIRED</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-场景一"><span class="nav-number">3.1.1.</span> <span class="nav-text">1.1 场景一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-场景二"><span class="nav-number">3.1.2.</span> <span class="nav-text">1.2 场景二</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-PROPAGATION-REQUIRES-NEW"><span class="nav-number">3.2.</span> <span class="nav-text">2.PROPAGATION_REQUIRES_NEW</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-场景一"><span class="nav-number">3.2.1.</span> <span class="nav-text">2.1 场景一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-场景二"><span class="nav-number">3.2.2.</span> <span class="nav-text">2.2 场景二</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-PROPAGATION-NESTED"><span class="nav-number">3.3.</span> <span class="nav-text">3.PROPAGATION_NESTED</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-场景一"><span class="nav-number">3.3.1.</span> <span class="nav-text">3.1 场景一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-场景二"><span class="nav-number">3.3.2.</span> <span class="nav-text">3.2 场景二</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-REQUIRED-REQUIRES-NEW-NESTED异同"><span class="nav-number">3.4.</span> <span class="nav-text">4. REQUIRED,REQUIRES_NEW,NESTED异同</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-其他事务传播行为"><span class="nav-number">3.5.</span> <span class="nav-text">5. 其他事务传播行为</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#模拟用例"><span class="nav-number">4.</span> <span class="nav-text">模拟用例</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">848k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

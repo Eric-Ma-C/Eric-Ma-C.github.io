@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="今天来带大家研究一下Linux内存管理。对于精通 CURD 的业务同学，内存管理好像离我们很远，但这个知识点虽然冷门（估计很多人学完根本就没机会用上）但绝对是基础中的基础，这就像武侠中的内功修炼，学完之后看不到立竿见影的效果，但对你日后的开发工作是大有裨益的，因为你站的更高了。 前提约定：本文讨论技术内容前提，操作系统环境都是 x86架构的 32 位 Linux系统。 虚拟地址即使是现代操作系统中">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理">
+<meta property="og:url" content="http://yoursite.com/2020/08/18/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="Eric&#39;s Blogs">
+<meta property="og:description" content="今天来带大家研究一下Linux内存管理。对于精通 CURD 的业务同学，内存管理好像离我们很远，但这个知识点虽然冷门（估计很多人学完根本就没机会用上）但绝对是基础中的基础，这就像武侠中的内功修炼，学完之后看不到立竿见影的效果，但对你日后的开发工作是大有裨益的，因为你站的更高了。 前提约定：本文讨论技术内容前提，操作系统环境都是 x86架构的 32 位 Linux系统。 虚拟地址即使是现代操作系统中">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6aaf6064?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6abc1636?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6d1a5191?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a71e78b4c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a958cdbeb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a95ad1545?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a94f6a870?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a9b3cf2c2?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7aae19dce8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="og:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7aae171d87?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+<meta property="article:published_time" content="2020-08-18T18:02:51.000Z">
+<meta property="article:modified_time" content="2020-08-19T02:05:32.259Z">
+<meta property="article:author" content="EricMa">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6aaf6064?imageView2/0/w/1280/h/960/format/webp/ignore-error/1">
+
+<link rel="canonical" href="http://yoursite.com/2020/08/18/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux内存管理 | Eric's Blogs</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Eric's Blogs</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Better Code, Better Life</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/18/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-08-19 02:02:51 / 修改时间：10:05:32" itemprop="dateCreated datePublished" datetime="2020-08-19T02:02:51+08:00">2020-08-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.9k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>今天来带大家研究一下<code>Linux</code>内存管理。对于精通 <code>CURD</code> 的业务同学，内存管理好像离我们很远，但这个知识点虽然冷门（估计很多人学完根本就没机会用上）但绝对是基础中的基础，这就像武侠中的内功修炼，学完之后看不到立竿见影的效果，但对你日后的开发工作是大有裨益的，因为你站的更高了。</p>
+<p>前提约定：本文讨论技术内容前提，操作系统环境都是 <code>x86</code>架构的 32 位 <code>Linux</code>系统。</p>
+<h2 id="虚拟地址"><a href="#虚拟地址" class="headerlink" title="虚拟地址"></a>虚拟地址</h2><p>即使是现代操作系统中，内存依然是计算机中很宝贵的资源，看看你电脑几个T固态硬盘，再看看内存大小就知道了。为了充分利用和管理系统内存资源，Linux采用虚拟内存管理技术，利用虚拟内存技术让每个进程都有<code>4GB</code> 互不干涉的虚拟地址空间。</p>
+<p>进程初始化分配和操作的都是基于这个「虚拟地址」，只有当进程需要实际访问内存资源的时候才会建立虚拟地址和物理地址的映射，调入物理内存页。</p>
+<p>打个不是很恰当的比方。这个原理其实和现在的某某网盘一样，假如你的网盘空间是<code>1TB</code>，真以为就一口气给了你这么大空间吗？那还是太年轻，都是在你往里面放东西的时候才给你分配空间，你放多少就分多少实际空间给你，但你和你朋友看起来就像大家都拥有<code>1TB</code>空间一样。</p>
+<h3 id="虚拟地址的好处"><a href="#虚拟地址的好处" class="headerlink" title="虚拟地址的好处"></a>虚拟地址的好处</h3><ul>
+<li>避免用户直接访问物理内存地址，防止一些破坏性操作，保护操作系统</li>
+<li>每个进程都被分配了4GB的虚拟内存，用户程序可使用比实际物理内存更大的地址空间</li>
+</ul>
+<p><code>4GB</code> 的进程虚拟地址空间被分成两部分：「用户空间」和「内核空间」</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6aaf6064?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="用户空间内核空间"></p>
+<h2 id="物理地址"><a href="#物理地址" class="headerlink" title="物理地址"></a>物理地址</h2><p>上面章节我们已经知道不管是用户空间还是内核空间，使用的地址都是虚拟地址，当需进程要实际访问内存的时候，会由内核的「请求分页机制」产生「缺页异常」调入物理内存页。</p>
+<p>把虚拟地址转换成内存的物理地址，这中间涉及利用<code>MMU</code> 内存管理单元（Memory Management Unit ) 对虚拟地址分段和分页（段页式）地址转换，关于分段和分页的具体流程，这里不再赘述，可以参考任何一本计算机组成原理教材描述。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6abc1636?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="段页式内存管理地址转换"></p>
+<p><code>Linux</code> 内核会将物理内存分为3个管理区，分别是：</p>
+<h3 id="ZONE-DMA"><a href="#ZONE-DMA" class="headerlink" title="ZONE_DMA"></a>ZONE_DMA</h3><p><code>DMA</code>内存区域。包含0MB~16MB之间的内存页框，可以由老式基于<code>ISA</code>的设备通过<code>DMA</code>使用，直接映射到内核的地址空间。</p>
+<h3 id="ZONE-NORMAL"><a href="#ZONE-NORMAL" class="headerlink" title="ZONE_NORMAL"></a>ZONE_NORMAL</h3><p>普通内存区域。包含16MB~896MB之间的内存页框，常规页框，直接映射到内核的地址空间。</p>
+<h3 id="ZONE-HIGHMEM"><a href="#ZONE-HIGHMEM" class="headerlink" title="ZONE_HIGHMEM"></a>ZONE_HIGHMEM</h3><p>高端内存区域。包含896MB以上的内存页框，不进行直接映射，可以通过永久映射和临时映射进行这部分内存页框的访问。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a6d1a5191?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="物理内存区划分"></p>
+<h2 id="用户空间"><a href="#用户空间" class="headerlink" title="用户空间"></a>用户空间</h2><p>用户进程能访问的是「用户空间」，每个进程都有自己独立的用户空间，虚拟地址范围从从 <code>0x00000000</code> 至 <code>0xBFFFFFFF</code> 总容量3G 。</p>
+<p>用户进程通常只能访问用户空间的虚拟地址，只有在执行内陷操作或系统调用时才能访问内核空间。</p>
+<h3 id="进程与内存"><a href="#进程与内存" class="headerlink" title="进程与内存"></a>进程与内存</h3><p>进程（执行的程序）占用的用户空间按照「 访问属性一致的地址空间存放在一起 」的原则，划分成 <code>5</code>个不同的内存区域。 访问属性指的是“可读、可写、可执行等 。</p>
+<ul>
+<li><p>代码段</p>
+<p>代码段是用来存放可执行文件的操作指令，可执行程序在内存中的镜像。代码段需要防止在运行时被非法修改，所以只准许读取操作，它是不可写的。</p>
+</li>
+<li><p>数据段</p>
+<p>数据段用来存放可执行文件中已初始化全局变量，换句话说就是存放程序静态分配的变量和全局变量。</p>
+</li>
+<li><p>BSS段</p>
+<p><code>BSS</code>段包含了程序中未初始化的全局变量，在内存中 <code>bss</code> 段全部置零。</p>
+</li>
+<li><p>堆 <code>heap</code></p>
+<p>堆是用于存放进程运行中被动态分配的内存段，它的大小并不固定，可动态扩张或缩减。当进程调用malloc等函数分配内存时，新分配的内存就被动态添加到堆上（堆被扩张）；当利用free等函数释放内存时，被释放的内存从堆中被剔除（堆被缩减）</p>
+</li>
+<li><p>栈 <code>stack</code></p>
+<p>栈是用户存放程序临时创建的局部变量，也就是函数中定义的变量（但不包括 <code>static</code> 声明的变量，static意味着在数据段中存放变量）。除此以外，在函数被调用时，其参数也会被压入发起调用的进程栈中，并且待到调用结束后，函数的返回值也会被存放回栈中。由于栈的先进先出特点，所以栈特别方便用来保存/恢复调用现场。从这个意义上讲，我们可以把堆栈看成一个寄存、交换临时数据的内存区。</p>
+</li>
+</ul>
+<p>上述几种内存区域中数据段、<code>BSS</code> 段、堆通常是被连续存储在内存中，在位置上是连续的，而代码段和栈往往会被独立存放。堆和栈两个区域在 <code>i386</code> 体系结构中栈向下扩展、堆向上扩展，相对而生。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a71e78b4c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="程序内存区域分段"></p>
+<p>你也可以再linux下用<code>size</code> 命令查看编译后程序的各个内存区域大小：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[lemon ~]# size &#x2F;usr&#x2F;local&#x2F;sbin&#x2F;sshd</span><br><span class="line">   text	   data	    bss	    dec	    hex	filename</span><br><span class="line">1924532	  12412	 426896	2363840	 2411c0	&#x2F;usr&#x2F;local&#x2F;sbin&#x2F;sshd</span><br></pre></td></tr></table></figure>
+
+<h2 id="内核空间"><a href="#内核空间" class="headerlink" title="内核空间"></a>内核空间</h2><p>在 <code>x86 32</code> 位系统里，Linux 内核地址空间是指虚拟地址从 <code>0xC0000000</code> 开始到 <code>0xFFFFFFFF</code> 为止的高端内存地址空间，总计 <code>1G</code> 的容量， 包括了内核镜像、物理页面表、驱动程序等运行在内核空间 。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a958cdbeb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="内核空间细分区域."></p>
+<h4 id="直接映射区"><a href="#直接映射区" class="headerlink" title="直接映射区"></a>直接映射区</h4><p>直接映射区 <code>Direct Memory Region</code>：从内核空间起始地址开始，最大<code>896M</code>的内核空间地址区间，为直接内存映射区。</p>
+<p>直接映射区的896MB的「线性地址」直接与「物理地址」的前<code>896MB</code>进行映射，也就是说线性地址和分配的物理地址都是连续的。内核地址空间的线性地址<code>0xC0000001</code>所对应的物理地址为<code>0x00000001</code>，它们之间相差一个偏移量<code>PAGE_OFFSET = 0xC0000000</code></p>
+<p>该区域的线性地址和物理地址存在线性转换关系「线性地址 = <code>PAGE_OFFSET</code> + 物理地址」也可以用 <code>virt_to_phys()</code>函数将内核虚拟空间中的线性地址转化为物理地址。</p>
+<h4 id="高端内存线性地址空间"><a href="#高端内存线性地址空间" class="headerlink" title="高端内存线性地址空间"></a>高端内存线性地址空间</h4><p>内核空间线性地址从 896M 到 1G 的区间，容量 128MB 的地址区间是高端内存线性地址空间，为什么叫高端内存线性地址空间？下面给你解释一下：</p>
+<p>前面已经说过，内核空间的总大小 1GB，从内核空间起始地址开始的 896MB 的线性地址可以直接映射到物理地址大小为 896MB 的地址区间。退一万步，即使内核空间的1GB线性地址都映射到物理地址，那也最多只能寻址 1GB 大小的物理内存地址范围。</p>
+<p>请问你现在你家的内存条多大？快醒醒都 0202 年了，一般 PC 的内存都大于 1GB 了吧！</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a95ad1545?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>所以，内核空间拿出了最后的 128M 地址区间，划分成下面三个高端内存映射区，以达到对整个物理地址范围的寻址。而在 64 位的系统上就不存在这样的问题了，因为可用的线性地址空间远大于可安装的内存。</p>
+<h5 id="动态内存映射区"><a href="#动态内存映射区" class="headerlink" title="动态内存映射区"></a>动态内存映射区</h5><p><code>vmalloc Region</code> 该区域由内核函数<code>vmalloc</code>来分配，特点是：线性空间连续，但是对应的物理地址空间不一定连续。 <code>vmalloc</code> 分配的线性地址所对应的物理页可能处于低端内存，也可能处于高端内存。</p>
+<h5 id="永久内存映射区"><a href="#永久内存映射区" class="headerlink" title="永久内存映射区"></a>永久内存映射区</h5><p><code>Persistent Kernel Mapping Region</code> 该区域可访问高端内存。访问方法是使用 <code>alloc_page (_GFP_HIGHMEM)</code> 分配高端内存页或者使用<code>kmap</code>函数将分配到的高端内存映射到该区域。</p>
+<h5 id="固定映射区"><a href="#固定映射区" class="headerlink" title="固定映射区"></a>固定映射区</h5><p><code>Fixing kernel Mapping Region</code> 该区域和 4G 的顶端只有 4k 的隔离带，其每个地址项都服务于特定的用途，如 <code>ACPI_BASE</code> 等。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a94f6a870?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="在这里插入图片描述"></p>
+<h2 id="回顾一下"><a href="#回顾一下" class="headerlink" title="回顾一下"></a>回顾一下</h2><p>上面讲的有点多，先别着急进入下一节，在这之前我们再来回顾一下上面所讲的内容。如果认真看完上面的章节，我这里再画了一张图，现在你的脑海中应该有这样一个内存管理的全局图。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7a9b3cf2c2?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="内核空间用户空间全图"></p>
+<h2 id="内存数据结构"><a href="#内存数据结构" class="headerlink" title="内存数据结构"></a>内存数据结构</h2><p>要让内核管理系统中的虚拟内存，必然要从中抽象出内存管理数据结构，内存管理操作如「分配、释放等」都基于这些数据结构操作，这里列举两个管理虚拟内存区域的数据结构。</p>
+<h3 id="用户空间内存数据结构"><a href="#用户空间内存数据结构" class="headerlink" title="用户空间内存数据结构"></a>用户空间内存数据结构</h3><p>在前面「进程与内存」章节我们提到，Linux进程可以划分为 5 个不同的内存区域，分别是：代码段、数据段、<code>BSS</code>、堆、栈，内核管理这些区域的方式是，将这些内存区域抽象成<code>vm_area_struct</code>的内存管理对象。</p>
+<p><code>vm_area_struct</code>是描述进程地址空间的基本管理单元，一个进程往往需要多个<code>vm_area_struct</code>来描述它的用户空间虚拟地址，需要使用「链表」和「红黑树」来组织各个<code>vm_area_struct</code>。</p>
+<p>链表用于需要遍历全部节点的时候用，而红黑树适用于在地址空间中定位特定内存区域。内核为了内存区域上的各种不同操作都能获得高性能，所以同时使用了这两种数据结构。</p>
+<p>用户空间进程的地址管理模型：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7aae19dce8?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="wm_arem_struct"></p>
+<h3 id="内核空间动态分配内存数据结构"><a href="#内核空间动态分配内存数据结构" class="headerlink" title="内核空间动态分配内存数据结构"></a>内核空间动态分配内存数据结构</h3><p>在内核空间章节我们提到过「动态内存映射区」，该区域由内核函数<code>vmalloc</code>来分配，特点是：线性空间连续，但是对应的物理地址空间不一定连续。 <code>vmalloc</code> 分配的线性地址所对应的物理页可能处于低端内存，也可能处于高端内存。</p>
+<p><code>vmalloc</code> 分配的地址则限于<code>vmalloc_start</code>与<code>vmalloc_end</code>之间。每一块<code>vmalloc</code>分配的内核虚拟内存都对应一个<code>vm_struct</code>结构体，不同的内核空间虚拟地址之间有<code>4k</code>大小的防越界空闲区间隔区。与用户空间的虚拟地址特性一样，这些虚拟地址与物理内存没有简单的映射关系，必须通过内核页表才可转换为物理地址或物理页，它们有可能尚未被映射，当发生缺页时才真正分配物理页面。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/4/20/17195b7aae171d87?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="动态内存映射"></p>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><p><code>Linux</code>内存管理是一个非常复杂的系统，本文所述只是冰山一角，从宏观角度给你展现内存管理的全貌，但一般来说，这些知识在你和面试官聊天的时候还是够用的，当然我也希望大家能够通过读书了解更深层次的原理。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/6844904132378116104" target="_blank" rel="noopener">面试问了解Linux内存管理吗？10张图给你安排的明明白白！</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/08/17/MySQL%E4%B8%ADnull%E5%80%BC%E5%BB%BA%E7%AB%8B%E7%B4%A2%E5%BC%95/" rel="prev" title="MySQL中null值建立索引">
+      <i class="fa fa-chevron-left"></i> MySQL中null值建立索引
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#虚拟地址"><span class="nav-number">1.</span> <span class="nav-text">虚拟地址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#虚拟地址的好处"><span class="nav-number">1.1.</span> <span class="nav-text">虚拟地址的好处</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#物理地址"><span class="nav-number">2.</span> <span class="nav-text">物理地址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ZONE-DMA"><span class="nav-number">2.1.</span> <span class="nav-text">ZONE_DMA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ZONE-NORMAL"><span class="nav-number">2.2.</span> <span class="nav-text">ZONE_NORMAL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ZONE-HIGHMEM"><span class="nav-number">2.3.</span> <span class="nav-text">ZONE_HIGHMEM</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用户空间"><span class="nav-number">3.</span> <span class="nav-text">用户空间</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#进程与内存"><span class="nav-number">3.1.</span> <span class="nav-text">进程与内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核空间"><span class="nav-number">4.</span> <span class="nav-text">内核空间</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#直接映射区"><span class="nav-number">4.0.1.</span> <span class="nav-text">直接映射区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#高端内存线性地址空间"><span class="nav-number">4.0.2.</span> <span class="nav-text">高端内存线性地址空间</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#动态内存映射区"><span class="nav-number">4.0.2.1.</span> <span class="nav-text">动态内存映射区</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#永久内存映射区"><span class="nav-number">4.0.2.2.</span> <span class="nav-text">永久内存映射区</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#固定映射区"><span class="nav-number">4.0.2.3.</span> <span class="nav-text">固定映射区</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#回顾一下"><span class="nav-number">5.</span> <span class="nav-text">回顾一下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内存数据结构"><span class="nav-number">6.</span> <span class="nav-text">内存数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用户空间内存数据结构"><span class="nav-number">6.1.</span> <span class="nav-text">用户空间内存数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核空间动态分配内存数据结构"><span class="nav-number">6.2.</span> <span class="nav-text">内核空间动态分配内存数据结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结一下"><span class="nav-number">7.</span> <span class="nav-text">总结一下</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="EricMa"
+      src="/images/eric.png">
+  <p class="site-author-name" itemprop="name">EricMa</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Eric-Ma-C" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Eric-Ma-C" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:chaoma@zju.edu.cn" title="E-Mail → mailto:chaoma@zju.edu.cn" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">EricMa</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">848k</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
