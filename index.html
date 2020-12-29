@@ -186,6 +186,673 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/12/29/%E7%90%86%E8%A7%A3virt%20res%20shr%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/12/29/%E7%90%86%E8%A7%A3virt%20res%20shr%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB/" class="post-title-link" itemprop="url">理解virt res shr之间的关系</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-12-29 12:48:42 / 修改时间：20:50:20" itemprop="dateCreated datePublished" datetime="2020-12-29T12:48:42+08:00">2020-12-29</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>想必在linux上写过程序的同学都有分析进程占用多少内存的经历，或者被问到这样的问题——<code>你的程序在运行时占用了多少内存（物理内存）</code>？通常我们可以通过top命令查看进程占用了多少内存。这里我们可以看到VIRT、RES和SHR三个重要的指标，他们分别代表什么意思呢？这是本文需要跟大家一起探讨的问题。当然如果更加深入一点，你可能会问进程所占用的那些物理内存都用在了哪些地方？这时候top命令可能不能给到你你所想要的答案了，不过我们可以分析proc文件系统提供的smaps文件，这个文件详尽地列出了当前进程所占用物理内存的使用情况。</p>
+<h4 id="本文将分为三个部分。"><a href="#本文将分为三个部分。" class="headerlink" title="本文将分为三个部分。"></a>本文将分为三个部分。</h4><p>第一部分简要阐述虚拟内存和驻留内存这两个重要的概念；</p>
+<p>第二部分解释top命令中VIRT、RES以及SHR三个参数的实际参考意义；</p>
+<p>最后一部分向大家介绍一下smaps文件的格式，通过分析smaps文件我们可以详细了解进程物理内存的使用情况，比如mmap文件占用了多少空间、动态内存开辟消耗了多少空间、函数调用栈消耗了多少空间等等。</p>
+<h2 id="关于内存的两个概念"><a href="#关于内存的两个概念" class="headerlink" title="关于内存的两个概念"></a>关于内存的两个概念</h2><p>  要理解top命令关于内存使用情况的输出，我们必须首先搞清楚虚拟内存（Virtual Memory）和驻留内存（Resident Memory）两个概念。</p>
+<h3 id="虚拟内存"><a href="#虚拟内存" class="headerlink" title="虚拟内存"></a>虚拟内存</h3><p>　　　首先需要强调的是虚拟内存不同于物理内存，虽然两者都包含内存字眼但是它们属于两个不同层面的概念。进程占用虚拟内存空间大并非意味着程序的物理内存也一定占用很大。虚拟内存是操作系统内核为了对进程地址空间进行管理（process address space management）而精心设计的一个逻辑意义上的内存空间概念。我们程序中的指针其实都是这个虚拟内存空间中的地址。比如我们在写完一段C++程序之后都需要采用g++进行编译，这时候编译器采用的地址其实就是虚拟内存空间的地址。因为这时候程序还没有运行，何谈物理内存空间地址？凡是程序运行过程中可能需要用到的指令或者数据都必须在虚拟内存空间中。既然说虚拟内存是一个逻辑意义上（假象的）的内存空间，为了能够让程序在物理机器上运行，那么必须有一套机制可以让这些假象的虚拟内存空间映射到物理内存空间（实实在在的RAM内存条上的空间）。这其实就是操作系统中页映射表（page table）所做的事情了。内核会为系统中每一个进程维护一份相互独立的页映射表。。页映射表的基本原理是将程序运行过程中需要访问的一段虚拟内存空间通过页映射表映射到一段物理内存空间上，这样CPU访问对应虚拟内存地址的时候就可以通过这种查找页映射表的机制访问物理内存上的某个对应的地址。“页（page）”是虚拟内存空间向物理内存空间映射的基本单元。</p>
+<p>  下图1演示了虚拟内存空间和物理内存空间的相互关系，它们通过Page Table关联起来。其中虚拟内存空间中着色的部分分别被映射到物理内存空间对应相同着色的部分。而虚拟内存空间中灰色的部分表示在物理内存空间中没有与之对应的部分，也就是说灰色部分没有被映射到物理内存空间中。这么做也是本着“按需映射”的指导思想，因为虚拟内存空间很大，可能其中很多部分在一次程序运行过程中根本不需要访问，所以也就没有必要将虚拟内存空间中的这些部分映射到物理内存空间上。</p>
+<p>  到这里为止已经基本阐述了什么是虚拟内存了。总结一下就是，虚拟内存是一个假象的内存空间，在程序运行过程中虚拟内存空间中需要被访问的部分会被映射到物理内存空间中。虚拟内存空间大只能表示程序运行过程中可访问的空间比较大，不代表物理内存空间占用也大。</p>
+<p><img src="https://img.orchome.com/group1/M00/00/00/KmCudld5_zmAajUHAABd80xLId0540.png" alt="图1. 虚拟内存空间到物理内存空间映射"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图1. 虚拟内存空间到物理内存空间映射</span><br></pre></td></tr></table></figure>
+
+<p>Copy</p>
+<h3 id="驻留内存"><a href="#驻留内存" class="headerlink" title="驻留内存"></a>驻留内存</h3><p>　　驻留内存，顾名思义是指那些被映射到进程虚拟内存空间的物理内存。上图1中，在系统物理内存空间中被着色的部分都是驻留内存。比如，A1、A2、A3和A4是进程A的驻留内存；B1、B2和B3是进程B的驻留内存。进程的驻留内存就是进程实实在在占用的物理内存。一般我们所讲的进程占用了多少内存，其实就是说的占用了多少驻留内存而不是多少虚拟内存。因为虚拟内存大并不意味着占用的物理内存大。</p>
+<p>　　关于虚拟内存和驻留内存这两个概念我们说到这里。下面一部分我们来看看top命令中VIRT、RES和SHR分别代表什么意思。</p>
+<p>top命令中VIRT、RES和SHR的含义</p>
+<p>   搞清楚了虚拟内存的概念之后解释VIRT的含义就很简单了。VIRT表示的是进程虚拟内存空间大小。对应到图1中的进程A来说就是A1、A2、A3、A4以及灰色部分所有空间的总和。也就是说VIRT包含了在已经映射到物理内存空间的部分和尚未映射到物理内存空间的部分总和。</p>
+<p>　　RES的含义是指进程虚拟内存空间中已经映射到物理内存空间的那部分的大小。对应到图1中的进程A来说就是A1、A2、A3以及A4几个部分空间的总和。所以说，看进程在运行过程中占用了多少内存应该看RES的值而不是VIRT的值。</p>
+<p>　　最后来看看SHR所表示的含义。SHR是share（共享）的缩写，它表示的是进程占用的共享内存大小。在上图1中我们看到进程A虚拟内存空间中的A4和进程B虚拟内存空间中的B3都映射到了物理内存空间的A4/B3部分。咋一看很奇怪。为什么会出现这样的情况呢？其实我们写的程序会依赖于很多外部的动态库（.so），比如libc.so、libld.so等等。这些动态库在内存中仅仅会保存/映射一份，如果某个进程运行时需要这个动态库，那么动态加载器会将这块内存映射到对应进程的虚拟内存空间中。多个进展之间通过共享内存的方式相互通信也会出现这样的情况。这么一来，就会出现不同进程的虚拟内存空间会映射到相同的物理内存空间。这部分物理内存空间其实是被多个进程所共享的，所以我们将他们称为共享内存，用SHR来表示。某个进程占用的内存除了和别的进程共享的内存之外就是自己的独占内存了。所以要计算进程独占内存的大小只要用RES的值减去SHR值即可。 </p>
+<p>进程的smaps文件</p>
+<p>　　通过top命令我们已经能看出进程的虚拟空间大小（VIRT）、占用的物理内存（RES）以及和其他进程共享的内存（SHR）。但是仅此而已，如果我想知道如下问题：</p>
+<p>进程的虚拟内存空间的分布情况，比如heap占用了多少空间、文件映射（mmap）占用了多少空间、stack占用了多少空间？<br>进程是否有被交换到swap空间的内存，如果有，被交换出去的大小？<br>mmap方式打开的数据文件有多少页在内存中是脏页（dirty page）没有被写回到磁盘的？<br>mmap方式打开的数据文件当前有多少页面已经在内存中，有多少页面还在磁盘中没有加载到page cahe中？<br>等等<br>　　以上这些问题都无法通过top命令给出答案，但是有时候这些问题正是我们在对程序进行性能瓶颈分析和优化时所需要回答的问题。所幸的是，世界上解决问题的方法总比问题本身要多得多。linux通过proc文件系统为每个进程都提供了一个smaps文件，通过分析该文件我们就可以一一回答以上提出的问题。</p>
+<p>　　在smaps文件中，每一条记录（如下图2所示）表示进程虚拟内存空间中一块连续的区域。其中第一行从左到右依次表示地址范围、权限标识、映射文件偏移、设备号、inode、文件路径。详细解释可以参见understanding-linux-proc-id-maps。</p>
+<p>　　接下来8个字段的含义分别如下：</p>
+<ul>
+<li>Size：表示该映射区域在虚拟内存空间中的大小。</li>
+<li>Rss：表示该映射区域当前在物理内存中占用了多少空间　　　　　　</li>
+<li>Shared_Clean：和其他进程共享的未被改写的page的大小</li>
+<li>Shared_Dirty： 和其他进程共享的被改写的page的大小</li>
+<li>Private_Clean：未被改写的私有页面的大小。</li>
+<li>Private_Dirty： 已被改写的私有页面的大小。</li>
+<li>Swap：表示非mmap内存（也叫anonymous memory，比如malloc动态分配出来的内存）由于物理内存不足被swap到交换空间的大小。</li>
+<li>Pss：该虚拟内存区域平摊计算后使用的物理内存大小(有些内存会和其他进程共享，例如mmap进来的)。比如该区域所映射的物理内存部分同时也被另一个进程映射了，且该部分物理内存的大小为1000KB，那么该进程分摊其中一半的内存，即Pss=500KB。</li>
+</ul>
+<p><img src="https://img.orchome.com/group1/M00/00/00/KmCudld5_1mACTIIAABwjJ5L35Q936.jpg" alt="screenshot"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">图2. smaps文件中的一条记录</span><br></pre></td></tr></table></figure>
+
+<p>Copy</p>
+<p>　　有了smap如此详细关于虚拟内存空间到物理内存空间的映射信息，相信大家已经能够通过分析该文件回答上面提出的4个问题。</p>
+<p>　  最后希望所有读者能够通过阅读本文对进程的虚拟内存和物理内存有一个更加清晰认识，并能更加准确理解top命令关于内存的输出，最后可以通过smaps文件更进一步分析进程使用内存的情况。</p>
+<p>作者：無名<br>链接：<a href="https://www.orchome.com/298" target="_blank" rel="noopener">https://www.orchome.com/298</a></p>
+<hr>
+<p>本文整理自</p>
+<p><a href=""></a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/12/11/Python%E7%B1%BB%E5%92%8C%E6%A8%A1%E5%9D%97(Class,%20Module)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/12/11/Python%E7%B1%BB%E5%92%8C%E6%A8%A1%E5%9D%97(Class,%20Module)/" class="post-title-link" itemprop="url">Python类和模块(Class, Module)</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-12-11 08:50:33 / 修改时间：16:54:16" itemprop="dateCreated datePublished" datetime="2020-12-11T08:50:33+08:00">2020-12-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Python是也是一个面对对象编程(Object-Oriented Programming)的语言，面对对象编程是一种设计思想，意味着我们把对象作为程序的基本单元，而每个对象包含了自己的属性和方法。面向对象编程主要有以下特点：</p>
+<ol>
+<li>封装（Encapsulation）：对外部世界隐藏对象的工作细节。</li>
+<li>继承（Inheritance）：继承使子类具有父类的各种属性和方法，而不需要编写相同的代码。</li>
+<li>多态（Polymorphism）：为不同的数据类型的实体提供统一的接口。</li>
+</ol>
+<p>使用OOP有以下的优点：</p>
+<ol>
+<li>提高软件开发的生产效率</li>
+<li>使软件的可维护性更好</li>
+<li>提高软件的质量</li>
+</ol>
+<p>在 Python 中，元组、列表和字典等数据类型是对象，函数也是对象。那么，我们能创建自己的对象吗？Of Course！跟其他 OOP 语言类似，我们使用<strong>类</strong>（class）来自定义对象。</p>
+<h2 id="类和实例（Class-Instance）"><a href="#类和实例（Class-Instance）" class="headerlink" title="类和实例（Class, Instance）"></a>类和实例（Class, Instance）</h2><p>每个类都有自己的属性（attribute）和方法（method），比如一个人的身高、体重和年龄，这些都是属性，而吃饭、说话和洗澡都是方法。（要注意：在class外部定语的可执行函数叫做function，类内部的函数叫做方法method）</p>
+<p>类的定义以class为开头，类名的首字母推荐要大写，冒号之后换行缩进紧跟着属性和方法的定义，属性无非就是一个变量的定义，而方法的定义和函数的定义是一样的，也是以def开头。请看下面的例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># class</span><br><span class="line">class Person:</span><br><span class="line">    # attribute fields</span><br><span class="line">    name &#x3D; &#39;William&#39;</span><br><span class="line">    age &#x3D; 45</span><br><span class="line">    # method</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&quot;Hi, my name is &quot; + self.name)</span><br><span class="line"># Create an Object</span><br><span class="line">p1 &#x3D; Person()</span><br><span class="line"># Call the method</span><br><span class="line">p1.greet()</span><br></pre></td></tr></table></figure>
+
+<p>类的定义是一个具体实例（instance）的设计蓝图，在创建实例的时候，我们只要调用类名，然后加括号就可以了。在greet方法中，我们使用了特殊参数self，它永远指向创建的实例本身，所以self.name就会指向当前被创建实例的name属性。p1.greet()是方法调用的示范，我们只要在实例名后加上句号（.）紧跟着方法名，即可调用实例的方法。</p>
+<p>我们也可以在创建好实例之后，对它的属性和方法进行修改：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Modify Object Properties</span><br><span class="line">p1.age &#x3D; 40</span><br><span class="line"></span><br><span class="line"># Delete Object Properties</span><br><span class="line">del p1.age</span><br><span class="line"></span><br><span class="line"># Delete Objects</span><br><span class="line">del p1</span><br></pre></td></tr></table></figure>
+
+<p><code>__init__</code> 是 Python 中的特殊方法（special method），它用于初始化对象。它是一个实例被创建时最先被调用的函数，并且每次创建实例，它的<strong>init</strong>都会被调用，而且它的第一个参数永远是 <code>self</code>，指向创建的实例本身。（init是initial的简写，顾名思义就是用来初始化的）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">class Person:</span><br><span class="line">    def __init__(self):</span><br><span class="line">        self.name &#x3D; &#39;Alice&#39;</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&quot;Hi, my name is &quot; + self.name)</span><br><span class="line">p1 &#x3D; Person()</span><br><span class="line">p1.greet()</span><br></pre></td></tr></table></figure>
+
+<p>我们也可以在<strong>init</strong>方法中添加其他参数，这样我们的的初始化能更加灵活和方便，同时在创建实例的时候，需要传入与<strong>init</strong>方法匹配的参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">class Person:</span><br><span class="line">    def __init__(self, init_name):</span><br><span class="line">        self.name &#x3D; init_name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&quot;Hi, my name is &quot; + self.name)</span><br><span class="line">p1 &#x3D; Person(&quot;David&quot;)</span><br><span class="line">p1.greet()</span><br></pre></td></tr></table></figure>
+
+<h2 id="继承和多态（Inheritance，Polymorphism）"><a href="#继承和多态（Inheritance，Polymorphism）" class="headerlink" title="继承和多态（Inheritance，Polymorphism）"></a>继承和多态（Inheritance，Polymorphism）</h2><h3 id="继承"><a href="#继承" class="headerlink" title="继承"></a>继承</h3><p>在面向对象编程中，当我们已经创建了一个类，而又想再创建一个与之相似的类，比如添加几个方法，或者修改原来的方法，这时我们不必从头开始，可以从原来的类派生出一个新的类，我们把原来的类称为父类或基类，而派生出的类称为子类，子类继承了父类的所有数据和方法。</p>
+<p>让我们看一个简单的例子，首先我们定义一个 Animal 类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">class Animal():</span><br><span class="line">    def __init__(self, name):</span><br><span class="line">        self.name &#x3D; name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&#39;Hello, I am %s.&#39; % self.name)</span><br></pre></td></tr></table></figure>
+
+<p>现在，我们想创建一个 Dog 类，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">class Dog():</span><br><span class="line">    def __init__(self, name):</span><br><span class="line">        self.name &#x3D; name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&#39;WangWang.., I am %s. &#39; % self.name)</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，Dog 类和 Animal 类几乎是一样的，只是 <code>greet</code> 方法不一样，我们完全没必要创建一个新的类，可以直接创建子类（child class）来继承父类Animal：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">class Dog(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&#39;WangWang.., I am %s. &#39; % self.name)</span><br></pre></td></tr></table></figure>
+
+<p>Dog 类是从 Animal 类继承而来的，Dog 类自动获得了 Animal 类的所有数据和方法，而且还可以对从父类继承来的方法进行修改，调用的方式是一样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">animal &#x3D; Animal(&#39;animal&#39;)</span><br><span class="line">animal.greet()</span><br><span class="line">dog &#x3D; Dog(&#39;dog&#39;)</span><br><span class="line">dog.greet()</span><br></pre></td></tr></table></figure>
+
+<p>我们也可以在Dog 类中添加新的方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">class Dog(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(&#39;WangWang.., I am %s. &#39; % self.name)</span><br><span class="line">    def run(self):</span><br><span class="line">        print(&#39;I am running!&#39;)</span><br><span class="line"></span><br><span class="line">dog &#x3D; Dog(&#39;dog&#39;)</span><br><span class="line">dog.greet()</span><br></pre></td></tr></table></figure>
+
+<h3 id="多态"><a href="#多态" class="headerlink" title="多态"></a>多态</h3><p>多态的概念其实不难理解，它是指对不同类型的参数进行相同的操作，根据对象（或类）类型的不同而表现出不同的行为。继承可以拿到父类的所有数据和方法，子类可以重写父类的方法，也可以新增自己特有的方法。有了继承，才有了多态，这样才能实现为不同的数据类型的实体提供统一的接口。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">class Animal():</span><br><span class="line">    def __init__(self, name):</span><br><span class="line">        self.name &#x3D; name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;Hello, I am &#123;self.name&#125;.&#39;)</span><br><span class="line"></span><br><span class="line">class Dog(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;WangWang.., I am &#123;self.name&#125;.&#39;)</span><br><span class="line"></span><br><span class="line">class Cat(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;MiaoMiao.., I am &#123;self.name&#125;&#39;)</span><br><span class="line"></span><br><span class="line">def hello(animal):</span><br><span class="line">    animal.greet()</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，<code>cat</code> 和 <code>dog</code> 是两个不同的对象，对它们调用 <code>greet</code> 方法，它们会自动调用实际类型的 <code>greet</code> 方法，作出不同的响应：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dog &#x3D; Dog(&#39;dog&#39;)</span><br><span class="line">hello(dog)</span><br><span class="line">cat &#x3D; Cat(&#39;cat&#39;);</span><br><span class="line">hello(cat)</span><br></pre></td></tr></table></figure>
+
+<h2 id="Iterators"><a href="#Iterators" class="headerlink" title="Iterators"></a>Iterators</h2><p>在某些情况下，我们希望实例对象可被用于<code>for...in</code>循环，这时我们需要在类中定义<code>__iter__</code>和<code>__next__</code>方法。其中，<code>__iter()__</code>方法返回迭代器对象本身<code>__next()__</code>方法返回容器的下一个元素，在没有后续元素时会抛出<code>StopIteration</code>异常。（Python 的 <code>for</code> 循环实质上是先通过内置函数 <code>iter()</code> 获得一个迭代器，然后再不断调用 <code>next()</code> 函数实现的。）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">class Fib():</span><br><span class="line">    def __init__(self):</span><br><span class="line">        self.a, self.b &#x3D; 0, 1</span><br><span class="line">    def __iter__(self):</span><br><span class="line">        return self</span><br><span class="line">    def __next__(self):</span><br><span class="line">        self.a, self.b &#x3D; self.b, self.a + self.b</span><br><span class="line">        return self.a</span><br><span class="line"></span><br><span class="line">fib &#x3D; Fib()</span><br><span class="line">for i in fib:</span><br><span class="line">    if i &gt; 10: </span><br><span class="line">         break</span><br><span class="line">    print(i)# 1, 1, 2, 3, 5, 8</span><br></pre></td></tr></table></figure>
+
+<h2 id="访问限制-underscore"><a href="#访问限制-underscore" class="headerlink" title="访问限制 underscore"></a>访问限制 underscore</h2><p>在某些情况下，我们希望限制用户访问对象的属性或方法，也就是希望它是私有的，对外隐蔽。比如，对于上面的例子，我们希望 <code>name</code> 属性在外部不能被访问，我们可以在属性或方法的名称前面加上两个下划线，即 <code>__</code>，以下是对之前例子的改动：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">class Animal():</span><br><span class="line">    def __init__(self, name):</span><br><span class="line">        self.__name &#x3D; name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;Hello, I am self.__name.&#39;)</span><br><span class="line"></span><br><span class="line">animal &#x3D; Animal(&#39;a1&#39;)</span><br><span class="line">animal.__name # error</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，在 Python 中，以双下划线开头，并且以双下划线结尾（即 <code>__xxx__</code>）的变量是特殊变量，特殊变量是可以直接访问的。所以，不要用 <code>__name__</code> 这样的变量名。另外，如果变量名前面只有一个下划线_，表示此变量不要随便访问，虽然它可以直接被访问。</p>
+<h2 id="模块调用"><a href="#模块调用" class="headerlink" title="模块调用"></a>模块调用</h2><p>有时候一个模块中放不了许多的类，那么我们就要把一些类放入其他的模块中，当我们需要那些类的时候，只需要调用对应模块即可。创建一个模块很简单，只要把代码保存在一个文件中，然后加上后缀.py即可。你可以任意命名文件名，但是必须以.py为后缀。以下我们在animal.py文件中定义了多个不同的类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># animal.py</span><br><span class="line">class Animal():</span><br><span class="line">    def __init__(self, name):</span><br><span class="line">        self.name &#x3D; name</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;Hello, I am &#123;self.name&#125;.&#39;)</span><br><span class="line"></span><br><span class="line">class Dog(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;WangWang.., I am &#123;self.name&#125;.&#39;)</span><br><span class="line"></span><br><span class="line">class Cat(Animal):</span><br><span class="line">    def greet(self):</span><br><span class="line">        print(f&#39;MiaoMiao.., I am &#123;self.name&#125;&#39;)</span><br></pre></td></tr></table></figure>
+
+<p>如果要在其他文件中调用单个类的不同方法，使用import语句即可：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">from animal import Animal</span><br><span class="line">animal &#x3D; Animal(&#39;animal&#39;)</span><br><span class="line">animal.greet()</span><br></pre></td></tr></table></figure>
+
+<p>调用多个类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from animal import Dog, Cat</span><br><span class="line">dog &#x3D; Dog(&#39;duoduo&#39;)</span><br><span class="line">dog.greet()</span><br><span class="line">cat &#x3D; Cat(&#39;Kitty&#39;)</span><br><span class="line">cat.greet()</span><br></pre></td></tr></table></figure>
+
+<p>其他调用方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># importing an entire module</span><br><span class="line">import animal</span><br><span class="line">cat &#x3D; animal.Cat(&#39;Kitty&#39;)</span><br><span class="line"></span><br><span class="line"># import all classes from a model</span><br><span class="line">from animal import *</span><br><span class="line">cat &#x3D; Cat(&#39;Kitty&#39;)</span><br><span class="line"></span><br><span class="line"># Using Aliases </span><br><span class="line">from animal import Cat as C</span><br><span class="line">cat &#x3D; C(&#39;Kitty&#39;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Python标准库（Python-Standard-Library）"><a href="#Python标准库（Python-Standard-Library）" class="headerlink" title="Python标准库（Python Standard Library）"></a>Python标准库（Python Standard Library）</h3><p>现在我们已经对函数和类有基础的认识了，我们来聊聊如何使用别人编写好的库，Python有自己的标准库，我们下载Python的时候，它们已经被默认安装了，其中有很多现成的模块供我们调用，我们试一下用random模块做做一些随机数操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">from random import randint, choice</span><br><span class="line"># Generate a random number between 1 and 6</span><br><span class="line">print(randint(1, 6))</span><br><span class="line"></span><br><span class="line">players &#x3D; [&#39;alice&#39;, &#39;david&#39;, &#39;charles&#39;, &#39;michael&#39;]</span><br><span class="line"># choose a randomly chosen element</span><br><span class="line">random_pick &#x3D; choice(players)</span><br><span class="line">print(random_pick)</span><br></pre></td></tr></table></figure>
+
+<h3 id="PIP包管理器"><a href="#PIP包管理器" class="headerlink" title="PIP包管理器"></a>PIP包管理器</h3><p>有的时候，我们想要使用别人编写好的模块，我们可以通过包管理器下载别人的包（package），包是由很多module组成的，来实现某种功能。库（library）是抽象概念，也可以是各种模块组成。而Python中最流行的包管理器就是pip。pip3的安装请大家自行搜索，网上有很多的教程，以下我会使用一个和图像处理相关的模块。</p>
+<p>PIL（Python Image Library）是Python中的标准图像处理库。PIL功能强大，而且API非常简单易用。由于PIL仅支持到Python 2.7，加上年久失修，于是一群志愿者在PIL的基础上创建了兼容的版本，名字叫<a href="https://github.com/python-pillow/Pillow" target="_blank" rel="noopener">Pillow</a>，支持最新Python 3.x，又加入了许多新特性，因此，我们可以直接安装使用Pillow。以下是安装pillow的命令行：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip3 install pillow</span><br></pre></td></tr></table></figure>
+
+<p>然后我们可以创建一个Python，使用PIL的模块，写出一段可以把照片弄模糊的代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">from PIL import Image, ImageFilter</span><br><span class="line"></span><br><span class="line"># Open an image</span><br><span class="line">im &#x3D; Image.open(&#39;test.jpg&#39;)</span><br><span class="line"># Use bluring filter</span><br><span class="line">im2 &#x3D; im.filter(ImageFilter.BLUR)</span><br><span class="line">im2.save(&#39;blur.jpg&#39;, &#39;jpeg&#39;)</span><br></pre></td></tr></table></figure>
+
+<p>包管理器让我们可以直接使用前人的轮子，简化我们的开发过程。</p>
+<h2 id="类的编写规范-Styling-Classes"><a href="#类的编写规范-Styling-Classes" class="headerlink" title="类的编写规范 Styling Classes"></a>类的编写规范 Styling Classes</h2><p>类的名字最好使用骆驼命名法（CamelCase），也就是让每个单词的第一个字母大写，不使用下划线分割单词。实例和模块的名字最好都使用Snake case，也就是所有字母都小写，然后使用下划线分割。当然这不是强制的，但这是工业界比较合理的命名规范，大家可以参照一下Google的Python代码规范：<a href="http://google.github.io/styleguide/pyguide.html" target="_blank" rel="noopener">http://google.github.io/styleguide/pyguide.html</a></p>
+<p>您可以使用空行来组织代码，但不要过度使用它们。在一个类中，您可以在方法之间使用一个空行，而在一个模块中，您可以使用两个空行来分隔类。</p>
+<p>如果需要从标准库和编写的模块中导入模块，请首先将标准库模块的调用语句写在最前面。然后添加一个空行，再调用自己编写的模块。在具有多个import语句的程序中，此约定使查看程序中使用的不同模块的来源更加容易。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://turingplanet.org/2019/09/21/%E7%B1%BB-class/" target="_blank" rel="noopener">Python类和模块(Class, Module)</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/24/SQL%E5%88%A0%E9%99%A4%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%EF%BC%8C%E5%8F%AA%E4%BF%9D%E7%95%99%E4%B8%80%E8%A1%8C/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/08/24/SQL%E5%88%A0%E9%99%A4%E9%87%8D%E5%A4%8D%E6%95%B0%E6%8D%AE%EF%BC%8C%E5%8F%AA%E4%BF%9D%E7%95%99%E4%B8%80%E8%A1%8C/" class="post-title-link" itemprop="url">SQL删除重复数据，只保留一行</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-08-24 11:51:13 / 修改时间：19:54:56" itemprop="dateCreated datePublished" datetime="2020-08-24T11:51:13+08:00">2020-08-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>在sql的使用中，我们总是碰到需要删除重复数据的情况，但是又不能全部删除完，必须要保留至少一个重复的数据。重复的记录根据两个字段<strong>a2,a3</strong>判断（实际使用中可以拓展为多个）</p>
+<h3 id="eg：表A"><a href="#eg：表A" class="headerlink" title="eg：表A"></a>eg：表A</h3><table>
+<thead>
+<tr>
+<th>a1</th>
+<th>a2</th>
+<th>a3</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr>
+<td>6</td>
+<td>2</td>
+<td>2</td>
+</tr>
+</tbody></table>
+<p>在上述的表中第三行和第四行重复，我们要选择一行删除，流程如下：</p>
+<ol>
+<li>选择重复的行：</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> *,<span class="keyword">count</span>(*) </span><br><span class="line"><span class="keyword">from</span> A <span class="keyword">group</span> <span class="keyword">by</span> a2,a3 </span><br><span class="line"><span class="keyword">having</span> <span class="keyword">count</span>(*)&gt;<span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>a1</th>
+<th>a2</th>
+<th>a3</th>
+<th>count(*)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3</td>
+<td>2</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody></table>
+<ol>
+<li>使用in来找到我们想要的ID</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> *</span><br><span class="line"><span class="keyword">FROM</span> A </span><br><span class="line"><span class="keyword">WHERE</span> (a2,a3) <span class="keyword">IN</span> </span><br><span class="line">(<span class="keyword">SELECT</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line"><span class="keyword">FROM</span> A </span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line"><span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*)&gt;<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+<p>得到的结果如下:</p>
+<p>|a1|a2|a3|<br>| — | — |<br>|3|2|2|<br>|4|2|2|<br>|6|2|2|<br> 那么后面就很好办了：</p>
+<p>3.选出要删除的值：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * </span><br><span class="line"><span class="keyword">FROM</span> A </span><br><span class="line"><span class="keyword">WHERE</span> (a2, a3) <span class="keyword">IN</span> </span><br><span class="line">  (<span class="keyword">SELECT</span> <span class="string">`a2`</span>,<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">FROM</span> A </span><br><span class="line">  <span class="keyword">GROUP</span> <span class="keyword">BY</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*) &gt; <span class="number">1</span>) </span><br><span class="line">  <span class="keyword">AND</span> a1 <span class="keyword">NOT</span> <span class="keyword">IN</span> </span><br><span class="line">  (<span class="keyword">SELECT</span> <span class="keyword">MIN</span>(a1) </span><br><span class="line">  <span class="keyword">FROM</span> A </span><br><span class="line">  <span class="keyword">GROUP</span> <span class="keyword">BY</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*) &gt; <span class="number">1</span>) ;</span><br></pre></td></tr></table></figure>
+
+<p>结果是保留a1最小的值，其他选项全部选出，<br> <strong>请注意</strong>此时并不是将Select 改为delete就可以了，如果你直接这样子改的话，会报如下错误：</p>
+<blockquote>
+<p>You can’t specify target table ‘A’ for update in FROM clause</p>
+</blockquote>
+<p>该错误提示你，不能先select出同一表中的某些值，再update这个表(在同一语句中）。所以要稍微修改一下。</p>
+<ol>
+<li>删除值<br> sql语句如下：</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">//创建中间表</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> F(a1 <span class="built_in">INTEGER</span>,a2 <span class="built_in">INTEGER</span>,a3 <span class="built_in">INTEGER</span>);</span><br><span class="line">//将要删除的数据插入中间表</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> F (</span><br><span class="line"><span class="keyword">SELECT</span> *  </span><br><span class="line"><span class="keyword">FROM</span> A </span><br><span class="line"><span class="keyword">WHERE</span> (a2, a3) <span class="keyword">IN</span> (<span class="keyword">SELECT</span> <span class="string">`a2`</span>,<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">FROM</span> A <span class="keyword">GROUP</span> <span class="keyword">BY</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*) &gt; <span class="number">1</span>) </span><br><span class="line">  <span class="keyword">AND</span> a1 <span class="keyword">NOT</span> <span class="keyword">IN</span> </span><br><span class="line">  (<span class="keyword">SELECT</span> <span class="keyword">MIN</span>(a1) <span class="keyword">FROM</span> A </span><br><span class="line">  <span class="keyword">GROUP</span> <span class="keyword">BY</span> A.<span class="string">`a2`</span>,A.<span class="string">`a3`</span> </span><br><span class="line">  <span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*) &gt; <span class="number">1</span>)) ;</span><br><span class="line">//删除中间表</span><br><span class="line"><span class="keyword">DELETE</span> <span class="keyword">FROM</span> A <span class="keyword">WHERE</span> a1 <span class="keyword">IN</span> (<span class="keyword">SELECT</span> a1 <span class="keyword">FROM</span> F);</span><br><span class="line"><span class="keyword">SELECT</span> *<span class="keyword">FROM</span> A;</span><br></pre></td></tr></table></figure>
+
+<p>结果如下：</p>
+<p>|a1|a2|a3|<br>|—|—|<br>|1|1|1|<br>|2|1|2|<br>|3|2|2|<br>|5|3|3|</p>
+<p>完毕</p>
+<p>注：如果说不用保留一行数据的话那么就简单多了，只需要一个很简单的sql语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">DELETE</span> <span class="keyword">FROM</span> A <span class="keyword">WHERE</span> (a2,a3) <span class="keyword">IN</span> (<span class="keyword">SELECT</span> a2,a3 <span class="keyword">FROM</span> A <span class="keyword">GROUP</span> <span class="keyword">BY</span> a2,a3 <span class="keyword">HAVING</span> <span class="keyword">COUNT</span>(*)&gt;<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+
+
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/4f64d63b3351" target="_blank" rel="noopener">SQL删除重复数据，只保留一行</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/24/MySQL%20%E7%99%BE%E4%B8%87%E7%BA%A7%E6%95%B0%E6%8D%AE%E9%87%8F%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2%E6%96%B9%E6%B3%95%E5%8F%8A%E5%85%B6%E4%BC%98%E5%8C%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/08/24/MySQL%20%E7%99%BE%E4%B8%87%E7%BA%A7%E6%95%B0%E6%8D%AE%E9%87%8F%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2%E6%96%B9%E6%B3%95%E5%8F%8A%E5%85%B6%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">MySQL 百万级数据量分页查询方法及其优化</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-08-24 11:40:54 / 修改时间：19:48:37" itemprop="dateCreated datePublished" datetime="2020-08-24T11:40:54+08:00">2020-08-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h4 id="方法1-直接使用数据库提供的SQL语句"><a href="#方法1-直接使用数据库提供的SQL语句" class="headerlink" title="方法1: 直接使用数据库提供的SQL语句"></a><strong>方法1: 直接使用数据库提供的SQL语句</strong></h4><ul>
+<li>语句样式: MySQL中,可用如下方法: SELECT * FROM 表名称 LIMIT M,N</li>
+<li>适应场景: 适用于数据量较少的情况(元组百/千级)</li>
+<li>原因/缺点: 全表扫描,速度会很慢 且 有的数据库结果集返回不稳定(如某次返回1,2,3,另外的一次返回2,1,3). Limit限制的是从结果集的M位置处取出N条输出,其余抛弃.</li>
+</ul>
+<h4 id="方法2-建立主键或唯一索引-利用索引-假设每页10条"><a href="#方法2-建立主键或唯一索引-利用索引-假设每页10条" class="headerlink" title="方法2: 建立主键或唯一索引, 利用索引(假设每页10条)"></a><strong>方法2: 建立主键或唯一索引, 利用索引(假设每页10条)</strong></h4><ul>
+<li>语句样式: MySQL中,可用如下方法: SELECT * FROM 表名称 WHERE id_pk &gt; (pageNum*10) LIMIT M</li>
+<li>适应场景: 适用于数据量多的情况(元组数上万)</li>
+<li>原因: 索引扫描,速度会很快. 有朋友提出: 因为数据查询出来并不是按照pk_id排序的，所以会有漏掉数据的情况，只能方法3</li>
+</ul>
+<h4 id="方法3-基于索引再排序"><a href="#方法3-基于索引再排序" class="headerlink" title="方法3: 基于索引再排序"></a><strong>方法3: 基于索引再排序</strong></h4><ul>
+<li>语句样式: MySQL中,可用如下方法: SELECT * FROM 表名称 WHERE id_pk &gt; (pageNum*10) ORDER BY id_pk ASC LIMIT M</li>
+<li>适应场景: 适用于数据量多的情况(元组数上万). 最好ORDER BY后的列对象是主键或唯一所以,使得ORDERBY操作能利用索引被消除但结果集是稳定的(稳定的含义,参见方法1)</li>
+<li>原因: 索引扫描,速度会很快. 但MySQL的排序操作,只有ASC没有DESC(DESC是假的,未来会做真正的DESC,期待…).</li>
+</ul>
+<h4 id="方法4-基于索引使用prepare"><a href="#方法4-基于索引使用prepare" class="headerlink" title="方法4: 基于索引使用prepare"></a><strong>方法4: 基于索引使用prepare</strong></h4><p>第一个问号表示pageNum，第二个？表示每页元组数</p>
+<ul>
+<li>语句样式: MySQL中,可用如下方法: PREPARE stmt_name FROM SELECT * FROM 表名称 WHERE id_pk &gt; (？* ？) ORDER BY id_pk ASC LIMIT M</li>
+<li>适应场景: 大数据量</li>
+<li>原因: 索引扫描,速度会很快. prepare语句又比一般的查询语句快一点。</li>
+</ul>
+<h4 id="方法5-利用MySQL支持ORDER操作可以利用索引快速定位部分元组-避免全表扫描"><a href="#方法5-利用MySQL支持ORDER操作可以利用索引快速定位部分元组-避免全表扫描" class="headerlink" title="方法5: 利用MySQL支持ORDER操作可以利用索引快速定位部分元组,避免全表扫描"></a><strong>方法5: 利用MySQL支持ORDER操作可以利用索引快速定位部分元组,避免全表扫描</strong></h4><p>比如: 读第1000到1019行元组(pk是主键/唯一键).</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> your_table <span class="keyword">WHERE</span> pk&gt;=<span class="number">1000</span> <span class="keyword">ORDER</span> <span class="keyword">BY</span> pk <span class="keyword">ASC</span> <span class="keyword">LIMIT</span> <span class="number">0</span>,<span class="number">20</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="方法6-利用子查询-连接-索引快速定位元组的位置-然后再读取元组"><a href="#方法6-利用子查询-连接-索引快速定位元组的位置-然后再读取元组" class="headerlink" title="方法6: 利用子查询/连接+索引快速定位元组的位置,然后再读取元组."></a><strong>方法6: 利用子查询/连接+索引快速定位元组的位置,然后再读取元组.</strong></h4><p>比如(id是主键/唯一键,蓝色字体时变量)</p>
+<p>利用子查询示例:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> your_table <span class="keyword">WHERE</span> <span class="keyword">id</span> &lt;=</span><br><span class="line">(<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">FROM</span> your_table <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">LIMIT</span> ($page<span class="number">-1</span>)*$pagesize <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">id</span> <span class="keyword">desc</span></span><br><span class="line"><span class="keyword">LIMIT</span> $pagesize</span><br></pre></td></tr></table></figure>
+
+<p>利用连接示例:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> your_table <span class="keyword">AS</span> t1</span><br><span class="line"><span class="keyword">JOIN</span> (<span class="keyword">SELECT</span> <span class="keyword">id</span> <span class="keyword">FROM</span> your_table <span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">LIMIT</span> ($page<span class="number">-1</span>)*$pagesize <span class="keyword">AS</span> t2</span><br><span class="line"><span class="keyword">WHERE</span> t1.id &lt;= t2.id <span class="keyword">ORDER</span> <span class="keyword">BY</span> t1.id <span class="keyword">desc</span> <span class="keyword">LIMIT</span> $pagesize;</span><br></pre></td></tr></table></figure>
+
+<p>mysql大数据量使用limit分页，随着页码的增大，查询效率越低下。</p>
+<h4 id="测试实验"><a href="#测试实验" class="headerlink" title="测试实验"></a><strong>测试实验</strong></h4><h5 id="1-直接用limit-start-count分页语句，-也是我程序中用的方法："><a href="#1-直接用limit-start-count分页语句，-也是我程序中用的方法：" class="headerlink" title="1.  直接用limit start, count分页语句， 也是我程序中用的方法："></a>1.  直接用limit start, count分页语句， 也是我程序中用的方法：</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="keyword">start</span>, <span class="keyword">count</span></span><br></pre></td></tr></table></figure>
+
+<p>当起始页较小时，查询没有性能问题，我们分别看下从10， 100， 1000， 10000开始分页的执行时间（每页取20条）。</p>
+<p>如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">10</span>, <span class="number">20</span>   <span class="number">0.016</span>秒</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">100</span>, <span class="number">20</span>   <span class="number">0.016</span>秒</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">1000</span>, <span class="number">20</span>   <span class="number">0.047</span>秒</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">10000</span>, <span class="number">20</span>   <span class="number">0.094</span>秒</span><br></pre></td></tr></table></figure>
+
+<p>我们已经看出随着起始记录的增加，时间也随着增大， 这说明分页语句limit跟起始页码是有很大关系的，那么我们把起始记录改为40w看下（也就是记录的一般左右）</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">400000</span>, <span class="number">20</span>   <span class="number">3.229</span>秒</span><br></pre></td></tr></table></figure>
+
+<p>再看我们取最后一页记录的时间</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">866613</span>, <span class="number">20</span>   <span class="number">37.44</span>秒</span><br></pre></td></tr></table></figure>
+
+<p>像这种分页最大的页码页显然这种时间是无法忍受的。</p>
+<p>从中我们也能总结出两件事情：</p>
+<ol>
+<li>limit语句的查询时间与起始记录的位置成正比</li>
+<li>mysql的limit语句是很方便，但是对记录很多的表并不适合直接使用。</li>
+</ol>
+<h5 id="2-对limit分页问题的性能优化方法"><a href="#2-对limit分页问题的性能优化方法" class="headerlink" title="2.  对limit分页问题的性能优化方法"></a><strong>2.  对limit分页问题的性能优化方法</strong></h5><p>利用表的覆盖索引来加速分页查询</p>
+<p>我们都知道，利用了索引查询的语句中如果只包含了那个索引列（覆盖索引），那么这种情况会查询很快。</p>
+<p>因为利用索引查找有优化算法，且数据就在查询索引上面，不用再去找相关的数据地址了，这样节省了很多时间。另外Mysql中也有相关的索引缓存，在并发高的时候利用缓存就效果更好了。</p>
+<p>在我们的例子中，我们知道id字段是主键，自然就包含了默认的主键索引。现在让我们看看利用覆盖索引的查询效果如何。</p>
+<p>这次我们之间查询最后一页的数据（利用覆盖索引，只包含id列），如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">866613</span>, <span class="number">20</span> <span class="number">0.2</span>秒</span><br></pre></td></tr></table></figure>
+
+<p>相对于查询了所有列的37.44秒，提升了大概100多倍的速度</p>
+<p>那么如果我们也要查询所有列，有两种方法，一种是id&gt;=的形式，另一种就是利用join，看下实际情况：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> product <span class="keyword">WHERE</span> <span class="keyword">ID</span> &gt; =(<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">866613</span>, <span class="number">1</span>) <span class="keyword">limit</span> <span class="number">20</span></span><br></pre></td></tr></table></figure>
+
+<p>查询时间为0.2秒！</p>
+<p>另一种写法</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> product a <span class="keyword">JOIN</span> (<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> product <span class="keyword">limit</span> <span class="number">866613</span>, <span class="number">20</span>) b <span class="keyword">ON</span> a.ID = b.id</span><br></pre></td></tr></table></figure>
+
+<p>查询时间也很短！</p>
+<h5 id="3-复合索引优化方法"><a href="#3-复合索引优化方法" class="headerlink" title="3.  复合索引优化方法"></a><strong>3.  复合索引优化方法</strong></h5><p>MySql 性能到底能有多高？MySql 这个数据库绝对是适合dba级的高手去玩的，一般做一点1万篇新闻的小型系统怎么写都可以，用xx框架可以实现快速开发。可是数据量到了10万，百万至千万，他的性能还能那么高吗？一点小小的失误，可能造成整个系统的改写，甚至更本系统无法正常运行！好了，不那么多废话了。</p>
+<p>用事实说话，看例子：</p>
+<p>数据表 collect ( id, title ,info ,vtype) 就这4个字段，其中 title 用定长，info 用text, id 是逐渐，vtype是tinyint，vtype是索引。这是一个基本的新闻系统的简单模型。现在往里面填充数据，填充10万篇新闻。最后collect 为 10万条记录，数据库表占用硬1.6G。</p>
+<p>OK ,看下面这条sql语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>,title <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">limit</span> <span class="number">1000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>很快；基本上0.01秒就OK，再看下面的</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>,title <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>从9万条开始分页，结果？</p>
+<p>8-9秒完成，my god 哪出问题了？其实要优化这条数据，网上找得到答案。看下面一条语句:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>很快，0.04秒就OK。为什么？因为用了id主键做索引当然快。网上的改法是：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>,title <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">where</span> <span class="keyword">id</span>&gt;=(<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">1</span>) <span class="keyword">limit</span> <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这就是用了id做索引的结果。可是问题复杂那么一点点，就完了。看下面的语句</p>
+<p>select id from collect where vtype=1 order by id limit 90000,10; 很慢，用了8-9秒！</p>
+<p>到了这里我相信很多人会和我一样，有崩溃感觉！vtype 做了索引了啊？怎么会慢呢？vtype做了索引是不错，你直接</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">where</span> vtype=<span class="number">1</span> <span class="keyword">limit</span> <span class="number">1000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>是很快的，基本上0.05秒，可是提高90倍，从9万开始，那就是0.05*90=4.5秒的速度了。和测试结果8-9秒到了一个数量级。</p>
+<p>从这里开始有人提出了分表的思路，这个和dis #cuz 论坛是一样的思路。思路如下：</p>
+<p>建一个索引表：t (id,title,vtype) 并设置成定长，然后做分页，分页出结果再到 collect 里面去找info 。是否可行呢？实验下就知道了。</p>
+<p>10万条记录到 t(id,title,vtype) 里，数据表大小20M左右。用</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t <span class="keyword">where</span> vtype=<span class="number">1</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>很快了。基本上0.1-0.2秒可以跑完。为什么会这样呢？我猜想是因为collect 数据太多，所以分页要跑很长的路。limit 完全和数据表的大小有关的。其实这样做还是全表扫描，只是因为数据量小，只有10万才快。OK， 来个疯狂的实验，加到100万条，测试性能。加了10倍的数据，马上t表就到了200多M，而且是定长。还是刚才的查询语句，时间是0.1-0.2秒完成！分表性能没问题？</p>
+<p>错！因为我们的limit还是9万，所以快。给个大的，90万开始</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t <span class="keyword">where</span> vtype=<span class="number">1</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">limit</span> <span class="number">900000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>看看结果，时间是1-2秒！why ?</p>
+<p>分表了时间还是这么长，非常之郁闷！有人说定长会提高limit的性能，开始我也以为，因为一条记录的长度是固定的，mysql 应该可以算出90万的位置才对啊？可是我们高估了mysql 的智能，他不是商务数据库，事实证明定长和非定长对limit影响不大？怪不得有人说discuz到了100万条记录就会很慢，我相信这是真的，这个和数据库设计有关！</p>
+<p>难道MySQL 无法突破100万的限制吗？？？到了100万的分页就真的到了极限？</p>
+<p>答案是：NO 为什么突破不了100万是因为不会设计mysql造成的。下面介绍非分表法，来个疯狂的测试！一张表搞定100万记录，并且10G 数据库，如何快速分页！</p>
+<p>好了，我们的测试又回到 collect表，开始测试结论是：</p>
+<p>30万数据，用分表法可行，超过30万他的速度会慢道你无法忍受！当然如果用分表+我这种方法，那是绝对完美的。但是用了我这种方法后，不用分表也可以完美解决！</p>
+<p>答案就是：复合索引！有一次设计mysql索引的时候，无意中发现索引名字可以任取，可以选择几个字段进来，这有什么用呢？</p>
+<p>开始的</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这么快就是因为走了索引，可是如果加了where 就不走索引了。抱着试试看的想法加了 search(vtype,id) 这样的索引。</p>
+<p>然后测试</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">where</span> vtype=<span class="number">1</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>非常快！0.04秒完成！</p>
+<p>再测试:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span> ,title <span class="keyword">from</span> <span class="keyword">collect</span> <span class="keyword">where</span> vtype=<span class="number">1</span> <span class="keyword">limit</span> <span class="number">90000</span>,<span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>非常遗憾，8-9秒，没走search索引！</p>
+<p>再测试：search(id,vtype)，还是select id 这个语句，也非常遗憾，0.5秒。</p>
+<p>综上：如果对于有where 条件，又想走索引用limit的，必须设计一个索引，将where 放第一位，limit用到的主键放第2位，而且只能select 主键！</p>
+<p>完美解决了分页问题了。可以快速返回id就有希望优化limit ， 按这样的逻辑，百万级的limit 应该在0.0x秒就可以分完。看来mysql 语句的优化和索引时非常重要的！</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="cnblogs.com/geningchao/p/6649907.html">MySQL 百万级数据量分页查询方法及其优化</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/18/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -365,17 +1032,23 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-08-17 12:14:36 / 修改时间：20:17:51" itemprop="dateCreated datePublished" datetime="2020-08-17T12:14:36+08:00">2020-08-17</time>
+              <time title="创建时间：2020-08-17 12:14:36" itemprop="dateCreated datePublished" datetime="2020-08-17T12:14:36+08:00">2020-08-17</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-08-24 19:42:43" itemprop="dateModified" datetime="2020-08-24T19:42:43+08:00">2020-08-24</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/MySql/" itemprop="url" rel="index"><span itemprop="name">MySql</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
                 </span>
             </span>
 
@@ -1285,644 +1958,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/01/%E5%B8%B8%E7%94%A8%E7%9A%84http%E8%AF%B7%E6%B1%82%E5%A4%B4%E4%BB%A5%E5%8F%8A%E5%93%8D%E5%BA%94%E5%A4%B4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/08/01/%E5%B8%B8%E7%94%A8%E7%9A%84http%E8%AF%B7%E6%B1%82%E5%A4%B4%E4%BB%A5%E5%8F%8A%E5%93%8D%E5%BA%94%E5%A4%B4/" class="post-title-link" itemprop="url">常用的http请求头以及响应头</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-08-02 05:50:52 / 修改时间：13:56:25" itemprop="dateCreated datePublished" datetime="2020-08-02T05:50:52+08:00">2020-08-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="一、常用的http请求头"><a href="#一、常用的http请求头" class="headerlink" title="一、常用的http请求头"></a>一、常用的http请求头</h3><h3 id="1-Accept"><a href="#1-Accept" class="headerlink" title="1.Accept"></a><strong>1.Accept</strong></h3><ul>
-<li><strong>Accept: text/html</strong> 浏览器可以接受服务器回发的类型为 text/html。</li>
-<li><strong>Accept: */*</strong>  代表浏览器可以处理所有类型,(一般浏览器发给服务器都是发这个)。</li>
-</ul>
-<h3 id="2-Accept-Encoding"><a href="#2-Accept-Encoding" class="headerlink" title="2.Accept-Encoding"></a>2.Accept-Encoding</h3><ul>
-<li><strong>Accept-Encoding: gzip, deflate</strong> 浏览器申明自己接收的编码方法，通常指定压缩方法，是否支持压缩，支持什么压缩方法（gzip，deflate），（注意：这不是只字符编码）。</li>
-</ul>
-<h3 id="3-Accept-Language"><a href="#3-Accept-Language" class="headerlink" title="3.Accept-Language"></a>3.Accept-Language</h3><ul>
-<li><strong>Accept-Language:zh-CN,zh;q=0.9</strong> 浏览器申明自己接收的语言。</li>
-</ul>
-<h3 id="4-Connection"><a href="#4-Connection" class="headerlink" title="4.Connection"></a>4.Connection</h3><ul>
-<li><strong>Connection: keep-alive</strong> 当一个网页打开完成后，客户端和服务器之间用于传输HTTP数据的TCP连接不会关闭，如果客户端再次访问这个服务器上的网页，会继续使用这一条已经建立的连接。</li>
-<li><strong>Connection: close</strong> 代表一个Request完成后，客户端和服务器之间用于传输HTTP数据的TCP连接会关闭， 当客户端再次发送Request，需要重新建立TCP连接。</li>
-</ul>
-<h3 id="5-Host（发送请求时，该报头域是必需的）"><a href="#5-Host（发送请求时，该报头域是必需的）" class="headerlink" title="5.Host（发送请求时，该报头域是必需的）"></a>5.Host（发送请求时，该报头域是必需的）</h3><ul>
-<li><strong>Host:<a href="http://www.baidu.com" target="_blank" rel="noopener">www.baidu.com</a></strong> 请求报头域主要用于指定被请求资源的Internet主机和端口号，它通常从HTTP URL中提取出来的。</li>
-</ul>
-<h3 id="6-Referer"><a href="#6-Referer" class="headerlink" title="6.Referer"></a>6.Referer</h3><ul>
-<li><strong>Referer:<a href="https://www.baidu.com/?tn=62095104_8_oem_dg" target="_blank" rel="noopener">https://www.baidu.com/?tn=62095104_8_oem_dg</a></strong> 当浏览器向web服务器发送请求的时候，一般会带上Referer，告诉服务器我是从哪个页面链接过来的，服务器籍此可以获得一些信息用于处理。</li>
-</ul>
-<h3 id="7-User-Agent"><a href="#7-User-Agent" class="headerlink" title="7.User-Agent"></a>7.User-Agent</h3><ul>
-<li><strong>User-Agent:Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36</strong> 告诉HTTP服务器， 客户端使用的操作系统和浏览器的名称和版本。</li>
-</ul>
-<h3 id="8-Cache-Control"><a href="#8-Cache-Control" class="headerlink" title="8.Cache-Control"></a>8.Cache-Control</h3><ul>
-<li><strong>Cache-Control:private</strong> 默认为private 响应只能够作为私有的缓存，不能再用户间共享</li>
-<li><strong>`\</strong>Cache-Control:public** `**响应会被缓存，并且在多用户间共享。正常情况, 如果要求HTTP认证,响应会自动设置为 private.</li>
-<li><strong>Cache-Control:must-revalidate</strong> 响应在特定条件下会被重用，以满足接下来的请求，但是它必须到服务器端去验证它是不是仍然是最新的。</li>
-<li><strong>Cache-Control:no-cache</strong> 响应不会被缓存,而是实时向服务器端请求资源。</li>
-<li><strong>Cache-Control:max-age=10</strong> 设置缓存最大的有效时间，但是这个参数定义的是时间大小（比如：60）而不是确定的时间点。单位是[秒 seconds]。</li>
-<li><strong><code>Cache-Control:no-store</code></strong>在任何条件下，响应都不会被缓存，并且不会被写入到客户端的磁盘里，这也是基于安全考虑的某些敏感的响应才会使用这个。</li>
-</ul>
-<h3 id="9-Cookie"><a href="#9-Cookie" class="headerlink" title="9.Cookie"></a>9.Cookie</h3><p>Cookie是用来存储一些用户信息以便让服务器辨别用户身份的（大多数需要登录的网站上面会比较常见），比如cookie会存储一些用户的用户名和密码，当用户登录后就会在客户端产生一个cookie来存储相关信息，这样浏览器通过读取cookie的信息去服务器上验证并通过后会判定你是合法用户，从而允许查看相应网页。当然cookie里面的数据不仅仅是上述范围，还有很多信息可以存储是cookie里面，比如sessionid等。</p>
-<h3 id="10-Range（用于断点续传）"><a href="#10-Range（用于断点续传）" class="headerlink" title="10.Range（用于断点续传）"></a>10.Range（用于断点续传）</h3><ul>
-<li><strong>Range:bytes=0-5</strong> 指定第一个字节的位置和最后一个字节的位置。用于告诉服务器自己想取对象的哪部分。</li>
-</ul>
-<h2 id="二、常用的http响应头"><a href="#二、常用的http响应头" class="headerlink" title="二、常用的http响应头"></a>二、常用的http响应头</h2><h3 id="1-Cache-Control（对应请求中的Cache-Control）"><a href="#1-Cache-Control（对应请求中的Cache-Control）" class="headerlink" title="1.Cache-Control（对应请求中的Cache-Control）"></a>1.Cache-Control（对应请求中的Cache-Control）</h3><ul>
-<li><strong>Cache-Control:private</strong> 默认为private  响应只能够作为私有的缓存，不能再用户间共享</li>
-<li><strong><em>\</em>Cache-Control:public**</strong> 浏览器和缓存服务器都可以缓存页面信息。</li>
-<li><strong>Cache-Control:must-revalidate</strong>  对于客户机的每次请求，代理服务器必须想服务器验证缓存是否过时。</li>
-<li><strong>Cache-Control:no-cache</strong>  浏览器和缓存服务器都不应该缓存页面信息。</li>
-<li><strong>Cache-Control:max-age=10</strong> 是通知浏览器10秒之内不要烦我，自己从缓冲区中刷新。</li>
-<li><strong>Cache-Control:no-store</strong> 请求和响应的信息都不应该被存储在对方的磁盘系统中。</li>
-</ul>
-<h3 id="2-Content-Type"><a href="#2-Content-Type" class="headerlink" title="2.Content-Type"></a>2.Content-Type</h3><ul>
-<li><strong>Content-Type：text/html;charset=UTF-8</strong> 告诉客户端，资源文件的类型，还有字符编码，客户端通过utf-8对资源进行解码，然后对资源进行html解析。通常我们会看到有些网站是乱码的，往往就是服务器端没有返回正确的编码。</li>
-</ul>
-<h3 id="3-Content-Encoding"><a href="#3-Content-Encoding" class="headerlink" title="3.Content-Encoding"></a>3.Content-Encoding</h3><ul>
-<li><strong>Content-Encoding:gzip</strong> 告诉客户端，服务端发送的资源是采用gzip编码的，客户端看到这个信息后，应该采用gzip对资源进行解码。</li>
-</ul>
-<h3 id="4-Date"><a href="#4-Date" class="headerlink" title="4.Date"></a>4.Date</h3><ul>
-<li><strong>Date: Tue, 03 Apr 2018 03:52:28 GMT</strong> 这个是服务端发送资源时的服务器时间，GMT是格林尼治所在地的标准时间。http协议中发送的时间都是GMT的，这主要是解决在互联网上，不同时区在相互请求资源的时候，时间混乱问题。</li>
-</ul>
-<h3 id="5-Server"><a href="#5-Server" class="headerlink" title="5.Server"></a>5.Server</h3><ul>
-<li><strong>Server：Tengine/1.4.6</strong> 这个是服务器和相对应的版本，只是告诉客户端服务器信息<strong>。</strong></li>
-</ul>
-<h3 id="6-Transfer-Encoding"><a href="#6-Transfer-Encoding" class="headerlink" title="6.Transfer-Encoding"></a>6.Transfer-Encoding</h3><ul>
-<li><strong>Transfer-Encoding：chunked</strong> 这个响应头告诉客户端，服务器发送的资源的方式是分块发送的。一般分块发送的资源都是服务器动态生成的，在发送时还不知道发送资源的大小，所以采用分块发送，每一块都是独立的，独立的块都能标示自己的长度，最后一块是0长度的，当客户端读到这个0长度的块时，就可以确定资源已经传输完了。</li>
-</ul>
-<h3 id="7-Expires"><a href="#7-Expires" class="headerlink" title="7.Expires"></a>7.Expires</h3><ul>
-<li><strong>Expires:Sun, 1 Jan 2000 01:00:00 GMT</strong> 这个响应头也是跟缓存有关的，告诉客户端在这个时间前，可以直接访问缓存副本，很显然这个值会存在问题，因为客户端和服务器的时间不一定会都是相同的，如果时间不同就会导致问题。所以这个响应头是没有Cache-Control：max-age=*这个响应头准确的，因为max-age=date中的date是个相对时间，不仅更好理解，也更准确。</li>
-</ul>
-<h3 id="8-Last-Modified"><a href="#8-Last-Modified" class="headerlink" title="8.Last-Modified"></a>8.Last-Modified</h3><ul>
-<li><strong>Last-Modified: Dec, 26 Dec 2015 17:30:00 GMT</strong> 所请求的对象的最后修改日期(按照 RFC 7231 中定义的“超文本传输协议日期”格式来表示)</li>
-</ul>
-<h3 id="9-Connection"><a href="#9-Connection" class="headerlink" title="9.Connection"></a>9.Connection</h3><ul>
-<li><strong>Connection：keep-alive</strong> 这个字段作为回应客户端的Connection：keep-alive，告诉客户端服务器的tcp连接也是一个长连接，客户端可以继续使用这个tcp连接发送http请求。</li>
-</ul>
-<h3 id="10-Etag"><a href="#10-Etag" class="headerlink" title="10.Etag"></a><strong>10.Etag</strong></h3><ul>
-<li><strong>ETag: “737060cd8c284d8af7ad3082f209582d”</strong> 就是一个对象（比如URL）的标志值，就一个对象而言，比如一个html文件，如果被修改了，其Etag也会别修改，所以，ETag的作用跟Last-Modified的作用差不多，主要供WEB服务器判断一个对象是否改变了。比如前一次请求某个html文件时，获得了其 ETag，当这次又请求这个文件时，浏览器就会把先前获得ETag值发送给WEB服务器，然后WEB服务器会把这个ETag跟该文件的当前ETag进行对比，然后就知道这个文件有没有改变了。</li>
-</ul>
-<h3 id="11-Refresh"><a href="#11-Refresh" class="headerlink" title="11.Refresh"></a>11.Refresh</h3><ul>
-<li><strong>Refresh: 5; url=<a href="http://baidu.com" target="_blank" rel="noopener">http://baidu.com</a></strong> 用于重定向，或者当一个新的资源被创建时。默认会在5秒后刷新重定向。</li>
-</ul>
-<h3 id="12-Access-Control-Allow-Origin"><a href="#12-Access-Control-Allow-Origin" class="headerlink" title="12.Access-Control-Allow-Origin"></a>12.Access-Control-Allow-Origin</h3><ul>
-<li><strong>Access-Control-Allow-Origin: *</strong>  <em>号代表所有网站可以跨域资源共享，如果当前字段为</em>那么Access-Control-Allow-Credentials就不能为true</li>
-<li><strong>Access-Control-Allow-Origin: <a href="http://www.baidu.com" target="_blank" rel="noopener">www.baidu.com</a></strong> 指定哪些网站可以跨域资源共享</li>
-</ul>
-<h3 id="13-Access-Control-Allow-Methods"><a href="#13-Access-Control-Allow-Methods" class="headerlink" title="13.Access-Control-Allow-Methods"></a>13.Access-Control-Allow-Methods</h3><ul>
-<li><strong>Access-Control-Allow-Methods：GET,POST,PUT,DELETE</strong> 允许哪些方法来访问</li>
-</ul>
-<h3 id="14-Access-Control-Allow-Credentials"><a href="#14-Access-Control-Allow-Credentials" class="headerlink" title="14.Access-Control-Allow-Credentials"></a>14.Access-Control-Allow-Credentials</h3><ul>
-<li><strong>Access-Control-Allow-Credentials: true</strong> 是否允许发送cookie。默认情况下，Cookie不包括在CORS请求之中。设为true，即表示服务器明确许可，Cookie可以包含在请求中，一起发给服务器。这个值也只能设为true，如果服务器不要浏览器发送Cookie，删除该字段即可。如果access-control-allow-origin为*，当前字段就不能为true</li>
-</ul>
-<h3 id="15-Content-Range"><a href="#15-Content-Range" class="headerlink" title="15.Content-Range"></a><strong>15.Content-Range</strong></h3><ul>
-<li><strong>Content-Range: bytes 0-5/7877</strong> 指定整个实体中的一部分的插入位置，他也指示了整个实体的长度。在服务器向客户返回一个部分响应，它必须描述响应覆盖的范围和整个实体长度。</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/6844903745004765198" target="_blank" rel="noopener">常用的http请求头以及响应头</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/01/Cookie%20%E5%92%8C%20Session%20%E5%85%B3%E7%B3%BB%E5%92%8C%E5%8C%BA%E5%88%AB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/08/01/Cookie%20%E5%92%8C%20Session%20%E5%85%B3%E7%B3%BB%E5%92%8C%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">Cookie 和 Session 关系和区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-08-02 02:26:29 / 修改时间：10:27:37" itemprop="dateCreated datePublished" datetime="2020-08-02T02:26:29+08:00">2020-08-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在技术面试中，经常被问到“Cookie和Session的区别”，大家都知道一些，Session比Cookie安全，Session是存储在服务器端的，Cookie是存储在客户端的，然而如果让你更详细地说明，恐怕就不怎么清楚了。</p>
-<p>本文分别对Cookie与Session做一个介绍和总结，并分别对两个知识点进行对比分析，让大家对Cookie和Session有更深入的了解。</p>
-<h2 id="什么是HTTP"><a href="#什么是HTTP" class="headerlink" title="什么是HTTP"></a>什么是HTTP</h2><p>首先要先介绍什么是HTTP</p>
-<p><strong>HTTP</strong>:超文本传输协议（英文：HyperText Transfer Protocol，缩写：HTTP）是一种用于分布式、协作式和超媒体信息系统的应用层协议。HTTP是万维网的数据通信的基础。设计HTTP最初的目的是为了提供一种发布和接收HTML页面的方法。通过HTTP或者HTTPS协议请求的资源由统一资源标识符（Uniform Resource Identifiers，URI）来标识。</p>
-<p>HTTP 是无状态协议，说明它不能以状态来区分和管理请求和响应。也就是说，服务器单从网络连接上无从知道客户身份。</p>
-<p>可是怎么办呢？就给客户端们颁发一个通行证吧，每人一个，无论谁访问都必须携带自己通行证。这样服务器就能从通行证上确认客户身份了。这就是Cookie的工作原理。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621eec70c0418a2?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<h2 id="1-Cookie"><a href="#1-Cookie" class="headerlink" title="1.Cookie"></a>1.Cookie</h2><h3 id="什么是cookie"><a href="#什么是cookie" class="headerlink" title="什么是cookie"></a>什么是cookie</h3><p>Cookie翻译过来是‘ 小甜饼’，Cookie是客户端保存用户信息的一种机制，用来记录用户的一些信息，实际上Cookie是服务器在<strong>本地机器</strong>上存储的一小段文本，并随着每次请求发送到服务器。</p>
-<p><strong>Cookie技术通过请求和响应报文中写入Cookie信息来控制客户端的状态。</strong></p>
-<p>Cookie会根据响应报文里的一个叫做Set-Cookie的首部字段信息，通知客户端保存Cookie。当下客户端再向服务端发起请求时，客户端会自动在请求报文中加入Cookie值之后发送出去.</p>
-<p>之后服务端发现客户端发送过来的Cookie后，会检查是那个客户端发送过来的请求，然后对服务器上的记录，最后得到了之前的状态信息。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621f0b5f29d7f7c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>客户端保存了Cookie之后的发起请求</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621f13fade59484?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621f407b4b82236?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>上图很清晰地展示了发生Cookie 交互的情景，HTTP 请求报文和响应报文的内容如图所示。</p>
-<p>第一可以很明显的可出首部字段内没有Cookie的相关信息，其次也能看到set-Cookie里的信息，这就是服务器端生撑的Cookei信息。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621f4051a540bbb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>看之后请求，请求报文里都自动发送Cookie信息了。</p>
-<h3 id="set-Cookie的字段的属性"><a href="#set-Cookie的字段的属性" class="headerlink" title="set-Cookie的字段的属性"></a>set-Cookie的字段的属性</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Set-Cookie: logcookie&#x3D;3qjj; expires&#x3D;Wed, 13-Mar-2019 12:08:53 GMT; Max-Age&#x3D;31536000; path&#x3D;&#x2F;;</span><br><span class="line"> domain&#x3D;fafa.com;secure; HttpOnly;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
-
-
-
-<p>以上面的set-cookie的例子，说一下set-cookie的属性</p>
-<p>1.<code>logcookie=3qjj</code> 赋予Cookie的名称和值，logcookie是名字 ，3qjj是值</p>
-<p>2.expires 是设置cookie有效期。当省略expires属性时，Cookie仅在关闭浏览器之前有效。可以通过覆盖已过期的Cookie，设置这个Cookie的过期时间是过去的时间，实现对客户端Cookie 的实质性删除操作。</p>
-<p>3.path 是限制指定Cookie 的发送范围的文件目录。不过另有办法可避开这项限制，看来对其作为安全机制的效果不能抱有期待。</p>
-<p>4.domain 通过domain属性指定的域名可以做到与结尾匹配一致。比如，指定domain是fafa.com，除了fafa.com那么<a href="http://www.fafa.com等都可以发送Cookie。" target="_blank" rel="noopener">www.fafa.com等都可以发送Cookie。</a></p>
-<p>5.secure 设置web页面只有在HTTPS安全连接时，才可以发送Cookie。HHTP则不可以进行回收。</p>
-<p>6.HttpOnly 它使JavaScript 脚本无法获得Cookie，通过上述设置，通常从Web 页面内还可以对Cookie 进行读取操作。但使用JavaScript 的document.cookie 就无法读取附加HttpOnly 属性后的Cookie 的内容了</p>
-<h2 id="2-Session管理和Cookie应用"><a href="#2-Session管理和Cookie应用" class="headerlink" title="2.Session管理和Cookie应用"></a>2.Session管理和Cookie应用</h2><h3 id="什么是Session"><a href="#什么是Session" class="headerlink" title="什么是Session"></a>什么是Session</h3><p>上面我讲到服务端执行session机制时候会生成session的id值，这个id值会发送给客户端，客户端每次请求都会把这个id值放到http请求的头部发送给服务端，而这个id值在客户端会保存下来，保存的容器就是cookie，因此当我们完全禁掉浏览器的cookie的时候，服务端的session也会不能正常使用。</p>
-<p> PHP中的Session在默认情况下是使用客户端的Cookie来保存Session ID的，所以当客户端的cookie出现问题的时候就会影响Session了。必须注意的是：Session不一定必须依赖Cookie，这也是Session相比Cookie的高明之处。当客户端的Cookie被禁用或出现问题时，PHP会自动把Session ID附着在URL中，这样再通过Session ID就能跨页使用Session变量了。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/3/13/1621f6d2880ac3ab?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img">1.客户端把信息放入报文的实体部分，通常是以POST 方法把请求发送给服务器。</p>
-<p>2.服务器会发放用以识别用户的Session ID。通过验证从客户端发送过来的信息进行验证，然后把用户的认证状态与Session ID 绑定后记录在服务器端。向客户端返回响应时，会在首部字段Set-Cookie 内写入Session ID（如PHPSESSID=l128ogl…）。你可以把Session ID 想象成一种用以区分不同用户的唯一Id。</p>
-<p>步骤三：客户端接收到从服务器端发来的Session ID 后，会将其作为Cookie 保存在本地。下次向服务器发送请求时，浏览器会自动发送Cookie，所以Session ID 也随之发送到服务器。服务器端可通过验证接收到的Session ID 验证状态。</p>
-<h2 id="3-Cookie与Session的区别"><a href="#3-Cookie与Session的区别" class="headerlink" title="3.Cookie与Session的区别"></a>3.Cookie与Session的区别</h2><ol>
-<li>cookie数据存放在客户的浏览器（客户端）上，session数据放在服务器上，但是服务端的session的实现对客户端的cookie有依赖关系的；</li>
-<li>cookie不是很安全，别人可以分析存放在本地的COOKIE并进行COOKIE欺骗，考虑到安全应当使用session；</li>
-<li>session会在一定时间内保存在服务器上。当访问增多，会比较占用你服务器的性能。考虑到减轻服务器性能方面，应当使用COOKIE；</li>
-<li>单个cookie在客户端的限制是3K，就是说一个站点在客户端存放的COOKIE不能超过3K；</li>
-</ol>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/6844903575684907016" target="_blank" rel="noopener">Cookie 和 Session 关系和区别</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/01/%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%20RESTful%20%E7%9A%84%E5%B9%82%E7%AD%89%E6%80%A7/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/08/01/%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%20RESTful%20%E7%9A%84%E5%B9%82%E7%AD%89%E6%80%A7/" class="post-title-link" itemprop="url">如何理解 RESTful 的幂等性</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-08-02 02:16:03 / 修改时间：10:23:45" itemprop="dateCreated datePublished" datetime="2020-08-02T02:16:03+08:00">2020-08-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.3k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>一个HTTP方法是<strong>幂等</strong>的，指的是同样的请求被执行一次与连续执行多次的效果是一样的，服务器的状态也是一样的。换句话说就是，幂等方法不应该具有副作用（统计用途除外）。在正确实现的条件下，<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/GET" target="_blank" rel="noopener"><code>GET</code></a>，<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/HEAD" target="_blank" rel="noopener"><code>HEAD</code></a>，<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/PUT" target="_blank" rel="noopener"><code>PUT</code></a>和<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/DELETE" target="_blank" rel="noopener"><code>DELETE</code></a> 等方法都是<strong>幂等</strong>的，而 <a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/POST" target="_blank" rel="noopener"><code>POST</code></a> 方法不是。所有的 <a href="https://developer.mozilla.org/en-US/docs/Glossary/safe" target="_blank" rel="noopener">safe</a> 方法(指不修改资源的 HTTP 方法)也都是幂等的。</p>
-<p>幂等性只与后端服务器的实际状态有关，而每一次请求接收到的状态码不一定相同。例如，第一次调用<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/DELETE" target="_blank" rel="noopener"><code>DELETE</code></a> 方法有可能返回 <a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/200" target="_blank" rel="noopener"><code>200</code></a>，但是后续的请求可能会返回<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/404" target="_blank" rel="noopener"><code>404</code></a>。<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Methods/DELETE" target="_blank" rel="noopener"><code>DELETE</code></a> 的言外之意是，开发者<strong>不应该使用<code>DELETE</code>方法实现具有删除最后条目功能的 RESTful API</strong>。</p>
-<p>需要注意的是，服务器不一定会确保请求方法的幂等性，有些应用可能会错误地打破幂等性约束。</p>
-<p><code>GET /pageX HTTP/1.1</code>是幂等的。连续调用多次，客户端接收到的结果都是一样的：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">GET /pageX HTTP/1.1   </span><br><span class="line">GET /pageX HTTP/1.1   </span><br><span class="line">GET /pageX HTTP/1.1   </span><br><span class="line">GET /pageX HTTP/1.1</span><br></pre></td></tr></table></figure>
-
-<p><code>POST /add_row HTTP/1.1</code>不是幂等的。如果调用多次，就会增加多行记录：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">POST /add_row HTTP/1.1</span><br><span class="line">POST /add_row HTTP/1.1   -&gt; Adds a 2nd row</span><br><span class="line">POST /add_row HTTP/1.1   -&gt; Adds a 3rd row</span><br></pre></td></tr></table></figure>
-
-<p><code>DELETE /idX/delete HTTP/1.1</code>是幂等的，即便是不同请求之间接收到的状态码不一样：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DELETE /idX/delete HTTP/1.1   -&gt; Returns 200 if idX exists</span><br><span class="line">DELETE /idX/delete HTTP/1.1   -&gt; Returns 404 as it just got deleted</span><br><span class="line">DELETE /idX/delete HTTP/1.1   -&gt; Returns 404</span><br></pre></td></tr></table></figure>
-
-<h2 id="安全方法"><a href="#安全方法" class="headerlink" title="安全方法"></a>安全方法</h2><p>安全方法是指不修改资源的 HTTP 方法。譬如，当使用 GET 或者 HEAD 作为资源 URL，都必须不去改变资源。然而，这并不全准确。意思是：它不改变资源的 表示形式。对于安全方法，它仍然可能改变服务器上的内容或资源，但这必须不导致不同的表现形式。</p>
-<p>这表示下述是不对的，因为它实际上将删除博客文章：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;blog&#x2F;1234&#x2F;delete HTTP&#x2F;1.1</span><br></pre></td></tr></table></figure>
-
-<p>安全方法是那些可以被缓存、对资源无损预加载的方法。</p>
-<h2 id="幂等性分析"><a href="#幂等性分析" class="headerlink" title="幂等性分析"></a>幂等性分析</h2><p>HTTP幂等方法，是指无论调用多少次都不会有不同结果的 HTTP 方法。不管你调用一次，还是调用一百次，一千次，结果都是相同的。</p>
-<p>还是以之前的博文的例子为例。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">GET     &#x2F;tickets       # 获取ticket列表</span><br><span class="line">GET     &#x2F;tickets&#x2F;12    # 查看某个具体的ticket</span><br><span class="line">POST    &#x2F;tickets       # 新建一个ticket</span><br><span class="line">PUT     &#x2F;tickets&#x2F;12    # 更新ticket 12</span><br><span class="line">PATCH   &#x2F;tickets&#x2F;12    # 更新ticket 12</span><br><span class="line">DELETE  &#x2F;tickets&#x2F;12    # 删除ticekt 12</span><br></pre></td></tr></table></figure>
-
-<h3 id="HTTP-GET方法"><a href="#HTTP-GET方法" class="headerlink" title="HTTP GET方法"></a>HTTP GET方法</h3><p>HTTP GET方法，用于获取资源，不管调用多少次接口，结果都不会改变，所以是幂等的。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET     &#x2F;tickets       # 获取ticket列表</span><br><span class="line">GET     &#x2F;tickets&#x2F;12    # 查看某个具体的ticket</span><br></pre></td></tr></table></figure>
-
-<p>只是查询数据，不会影响到资源的变化，因此我们认为它幂等。</p>
-<p>值得注意，幂等性指的是作用于结果而非资源本身。怎么理解呢？例如，这个HTTP GET方法可能会每次得到不同的返回内容，但并不影响资源。</p>
-<p>可能你会问有这种情况么？当然有咯。例如，我们有一个接口获取当前时间，我们就应该设计成</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET     &#x2F;service_time # 获取服务器当前时间</span><br></pre></td></tr></table></figure>
-
-<p>它本身不会对资源本身产生影响，因此满足幂等性。</p>
-<h3 id="HTTP-POST方法"><a href="#HTTP-POST方法" class="headerlink" title="HTTP POST方法"></a>HTTP POST方法</h3><p>HTTP POST方法是一个非幂等方法，因为调用多次，都将产生新的资源。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST    &#x2F;tickets       # 新建一个ticket</span><br></pre></td></tr></table></figure>
-
-<p>因为它会对资源本身产生影响，每次调用都会有新的资源产生，因此不满足幂等性。</p>
-<h3 id="HTTP-PUT方法"><a href="#HTTP-PUT方法" class="headerlink" title="HTTP PUT方法"></a>HTTP PUT方法</h3><p>HTTP PUT方法是不是幂等的呢？我们来看下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PUT     &#x2F;tickets&#x2F;12    # 更新ticket 12</span><br></pre></td></tr></table></figure>
-
-<p>因为它直接把实体部分的数据替换到服务器的资源，我们多次调用它，只会产生一次影响，但是有相同结果的 HTTP 方法，所以满足幂等性。</p>
-<h3 id="HTTP-PATCH方法"><a href="#HTTP-PATCH方法" class="headerlink" title="HTTP PATCH方法"></a>HTTP PATCH方法</h3><p>HTTP PATCH方法是非幂等的。HTTP POST方法和HTTP PUT方法可能比较好理解，但是HTTP PATCH方法只是更新部分资源，怎么是非幂等的呢?</p>
-<p>因为，PATCH提供的实体则需要根据程序或其它协议的定义，解析后在服务器上执行，以此来修改服务器上的资源。换句话说，PATCH请求是会执行某个程序的，如果重复提交，程序可能执行多次，对服务器上的资源就可能造成额外的影响，这就可以解释它为什么是非幂等的了。</p>
-<p>可能你还不能理解这点。我们举个例子</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PATCH   &#x2F;tickets&#x2F;12    # 更新ticket 12</span><br></pre></td></tr></table></figure>
-
-<p>此时，我们服务端对方法的处理是，当调用一次方法，更新部分字段，将这条ticket记录的操作记录加一，这次，每次调用的资源是不是变了呢，所以它是有可能是非幂等的操作。</p>
-<h3 id="HTTP-DELETE方法"><a href="#HTTP-DELETE方法" class="headerlink" title="HTTP DELETE方法"></a>HTTP DELETE方法</h3><p>HTTP DELETE方法用于删除资源，会将资源删除。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DELETE  &#x2F;tickets&#x2F;12    # 删除ticekt 12</span><br></pre></td></tr></table></figure>
-
-<p>调用一次和多次对资源产生影响是相同的，所以也满足幂等性。</p>
-<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><h3 id="部分-HTTP-方法概览"><a href="#部分-HTTP-方法概览" class="headerlink" title="(部分) HTTP 方法概览"></a>(部分) HTTP 方法概览</h3><table>
-<thead>
-<tr>
-<th align="left">HTTP Method</th>
-<th align="left">Idempotent</th>
-<th align="left">Safe</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left">OPTIONS</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
-</tr>
-<tr>
-<td align="left">GET</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
-</tr>
-<tr>
-<td align="left">HEAD</td>
-<td align="left">yes</td>
-<td align="left">yes</td>
-</tr>
-<tr>
-<td align="left">PUT</td>
-<td align="left">yes</td>
-<td align="left">no</td>
-</tr>
-<tr>
-<td align="left">POST</td>
-<td align="left">no</td>
-<td align="left">no</td>
-</tr>
-<tr>
-<td align="left">DELETE</td>
-<td align="left">yes</td>
-<td align="left">no</td>
-</tr>
-<tr>
-<td align="left">PATCH</td>
-<td align="left">no</td>
-<td align="left">no</td>
-</tr>
-</tbody></table>
-<h2 id="如何设计符合幂等性的高质量RESTful-API"><a href="#如何设计符合幂等性的高质量RESTful-API" class="headerlink" title="如何设计符合幂等性的高质量RESTful API"></a>如何设计符合幂等性的高质量RESTful API</h2><h3 id="HTTP-GET方法-vs-HTTP-POST方法"><a href="#HTTP-GET方法-vs-HTTP-POST方法" class="headerlink" title="HTTP GET方法 vs HTTP POST方法"></a>HTTP GET方法 vs HTTP POST方法</h3><p>也许，你会想起一个面试题。HTTP请求的GET与POST方式有什么区别？你可能会回答到：GET方式通过URL提交数据，数据在URL中可以看到；POST方式，数据放置在HTML HEADER内提交。但是，我们现在从RESTful的资源角度来看待问题，HTTP GET方法是幂等的，所以它适合作为查询操作，HTTP POST方法是非幂等的，所以用来表示新增操作。</p>
-<p>但是，也有例外，我们有的时候可能需要把查询方法改造成HTTP POST方法。比如，超长（1k）的GET URL使用POST方法来替代，因为GET受到URL长度的限制。虽然，它不符合幂等性，但是它是一种折中的方案。</p>
-<h3 id="HTTP-POST方法-vs-HTTP-PUT方法"><a href="#HTTP-POST方法-vs-HTTP-PUT方法" class="headerlink" title="HTTP POST方法 vs HTTP PUT方法"></a>HTTP POST方法 vs HTTP PUT方法</h3><p>对于HTTP POST方法和TTP PUT方法，我们一般的理解是POST表示创建资源，PUT表示更新资源。当然，这个是正确的理解。</p>
-<p>但是，实际上，两个方法都用于创建资源，更为本质的差别是在幂等性。HTTP POST方法是非幂等，所以用来表示创建资源，HTTP PUT方法是幂等的，因此表示更新资源更加贴切。</p>
-<h3 id="HTTP-PUT方法-vs-HTTP-PATCH方法"><a href="#HTTP-PUT方法-vs-HTTP-PATCH方法" class="headerlink" title="HTTP PUT方法 vs HTTP PATCH方法"></a>HTTP PUT方法 vs HTTP PATCH方法</h3><p>此时，你看会有另外一个问题。HTTP PUT方法和HTTP PATCH方法，都是用来表述更新资源，它们之间有什么区别呢？我们一般的理解是PUT表示更新全部资源，PATCH表示更新部分资源。首先，这个是我们遵守的第一准则。根据上面的描述，PATCH方法是非幂等的，因此我们在设计我们服务端的RESTful API的时候，也需要考虑。如果，我们想要明确的告诉调用者我们的资源是幂等的，我的设计更倾向于使用HTTP PUT方法。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="">如何理解 RESTful 的幂等性</a></p>
-<p>[RESTful 手册](<a href="https://sofish.github.io/restcookbook/http" target="_blank" rel="noopener">https://sofish.github.io/restcookbook/http</a> methods/idempotency/)</p>
-<p><a href="https://developer.mozilla.org/zh-CN/docs/Glossary/幂等" target="_blank" rel="noopener">幂等</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8C%B9%E9%85%8D%E7%9A%84KMP%E7%AE%97%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/21/%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%8C%B9%E9%85%8D%E7%9A%84KMP%E7%AE%97%E6%B3%95/" class="post-title-link" itemprop="url">字符串匹配的KMP算法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-21 13:39:55 / 修改时间：21:43:31" itemprop="dateCreated datePublished" datetime="2020-07-21T13:39:55+08:00">2020-07-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="http://en.wikipedia.org/wiki/String_searching_algorithm" target="_blank" rel="noopener">字符串匹配</a>是计算机的基本任务之一。</p>
-<p>举例来说，有一个字符串”BBC ABCDAB ABCDABCDABDE”，我想知道，里面是否包含另一个字符串”ABCDABD”？</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050101.jpg" alt="img"></p>
-<p>许多算法可以完成这个任务，<a href="http://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm" target="_blank" rel="noopener">Knuth-Morris-Pratt算法</a>（简称KMP）是最常用的之一。它以三个发明者命名，起头的那个K就是著名科学家Donald Knuth。</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050102.jpg" alt="img"></p>
-<p>这种算法不太容易理解，网上有很多<a href="http://www.google.com/search?q=Knuth-Morris-Pratt+algorithm" target="_blank" rel="noopener">解释</a>，但读起来都很费劲。直到读到<a href="http://jakeboxer.com/blog/2009/12/13/the-knuth-morris-pratt-algorithm-in-my-own-words/" target="_blank" rel="noopener">Jake Boxer</a>的文章，我才真正理解这种算法。下面，我用自己的语言，试图写一篇比较好懂的KMP算法解释。</p>
-<p>1.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050103.png" alt="img"></p>
-<p>首先，字符串”BBC ABCDAB ABCDABCDABDE”的第一个字符与搜索词”ABCDABD”的第一个字符，进行比较。因为B与A不匹配，所以搜索词后移一位。</p>
-<p>2.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050104.png" alt="img"></p>
-<p>因为B与A不匹配，搜索词再往后移。</p>
-<p>3.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050105.png" alt="img"></p>
-<p>就这样，直到字符串有一个字符，与搜索词的第一个字符相同为止。</p>
-<p>4.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050106.png" alt="img"></p>
-<p>接着比较字符串和搜索词的下一个字符，还是相同。</p>
-<p>5.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
-<p>直到字符串有一个字符，与搜索词对应的字符不相同为止。</p>
-<p>6.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050108.png" alt="img"></p>
-<p>这时，最自然的反应是，将搜索词整个后移一位，再从头逐个比较。这样做虽然可行，但是效率很差，因为你要把”搜索位置”移到已经比较过的位置，重比一遍。</p>
-<p>7.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
-<p>一个基本事实是，当空格与D不匹配时，你其实知道前面六个字符是”ABCDAB”。KMP算法的想法是，设法利用这个已知信息，不要把”搜索位置”移回已经比较过的位置，继续把它向后移，这样就提高了效率。</p>
-<p>8.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050109.png" alt="img"></p>
-<p>怎么做到这一点呢？可以针对搜索词，算出一张《部分匹配表》（Partial Match Table）。这张表是如何产生的，后面再介绍，这里只要会用就可以了。</p>
-<p>9.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050107.png" alt="img"></p>
-<p>已知空格与D不匹配时，前面六个字符”ABCDAB”是匹配的。查表可知，最后一个匹配字符B对应的”部分匹配值”为2，因此按照下面的公式算出向后移动的位数：</p>
-<blockquote>
-<p>　　移动位数 = 已匹配的字符数 - 对应的部分匹配值</p>
-</blockquote>
-<p>因为 6 - 2 等于4，所以将搜索词向后移动4位。</p>
-<p>10.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050110.png" alt="img"></p>
-<p>因为空格与Ｃ不匹配，搜索词还要继续往后移。这时，已匹配的字符数为2（”AB”），对应的”部分匹配值”为0。所以，移动位数 = 2 - 0，结果为 2，于是将搜索词向后移2位。</p>
-<p>11.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050111.png" alt="img"></p>
-<p>因为空格与A不匹配，继续后移一位。</p>
-<p>12.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050112.png" alt="img"></p>
-<p>逐位比较，直到发现C与D不匹配。于是，移动位数 = 6 - 2，继续将搜索词向后移动4位。</p>
-<p>13.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050113.png" alt="img"></p>
-<p>逐位比较，直到搜索词的最后一位，发现完全匹配，于是搜索完成。如果还要继续搜索（即找出全部匹配），移动位数 = 7 - 0，再将搜索词向后移动7位，这里就不再重复了。</p>
-<p>14.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050114.png" alt="img"></p>
-<p>下面介绍《部分匹配表》是如何产生的。</p>
-<p>首先，要了解两个概念：”前缀”和”后缀”。 “前缀”指除了最后一个字符以外，一个字符串的全部头部组合；”后缀”指除了第一个字符以外，一个字符串的全部尾部组合。</p>
-<p>15.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050109.png" alt="img"></p>
-<p>“部分匹配值”就是”前缀”和”后缀”的最长的共有元素的长度。以”ABCDABD”为例，</p>
-<blockquote>
-<p>　　－　“A”的前缀和后缀都为空集，共有元素的长度为0；</p>
-<p>　　－　“AB”的前缀为[A]，后缀为[B]，共有元素的长度为0；</p>
-<p>　　－　“ABC”的前缀为[A, AB]，后缀为[BC, C]，共有元素的长度0；</p>
-<p>　　－　“ABCD”的前缀为[A, AB, ABC]，后缀为[BCD, CD, D]，共有元素的长度为0；</p>
-<p>　　－　“ABCDA”的前缀为[A, AB, ABC, ABCD]，后缀为[BCDA, CDA, DA, A]，共有元素为”A”，长度为1；</p>
-<p>　　－　“ABCDAB”的前缀为[A, AB, ABC, ABCD, ABCDA]，后缀为[BCDAB, CDAB, DAB, AB, B]，共有元素为”AB”，长度为2；</p>
-<p>　　－　“ABCDABD”的前缀为[A, AB, ABC, ABCD, ABCDA, ABCDAB]，后缀为[BCDABD, CDABD, DABD, ABD, BD, D]，共有元素的长度为0。</p>
-</blockquote>
-<p>16.</p>
-<p><img src="http://www.ruanyifeng.com/blogimg/asset/201305/bg2013050112.png" alt="img"></p>
-<p>“部分匹配”的实质是，有时候，字符串头部和尾部会有重复。比如，”ABCDAB”之中有两个”AB”，那么它的”部分匹配值”就是2（”AB”的长度）。搜索词移动的时候，第一个”AB”向后移动4位（字符串长度-部分匹配值），就可以来到第二个”AB”的位置。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="[http://www.ruanyifeng.com/blog/2013/05/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm.html](http://www.ruanyifeng.com/blog/2013/05/Knuth–Morris–Pratt_algorithm.html)">字符串匹配的KMP算法</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1994,7 +2029,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2050,7 +2085,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

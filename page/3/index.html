@@ -186,6 +186,720 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/18/CopyOnWriteArrayList/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/18/CopyOnWriteArrayList/" class="post-title-link" itemprop="url">CopyOnWriteArrayList</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-18 13:07:06 / 修改时间：21:12:58" itemprop="dateCreated datePublished" datetime="2020-07-18T13:07:06+08:00">2020-07-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Copy-On-Write-是什么？"><a href="#Copy-On-Write-是什么？" class="headerlink" title="Copy-On-Write 是什么？"></a>Copy-On-Write 是什么？</h2><p>首先我讲一下什么是<code>Copy-On-Write</code>，顾名思义，在计算机中就是当你想要对一块内存进行修改时，我们不在原有内存块中进行<code>写</code>操作，而是将内存拷贝一份，在新的内存中进行<code>写</code>操作，<code>写</code>完之后呢，就将指向原来内存指针指向新的内存，原来的内存就可以被回收掉嘛！</p>
+<p>网上兄弟们说了，这是一种用于程序设计中的<code>优化策略</code>，是一种<code>延时懒惰策略</code>。都说优化优化，那么到底优化了哪些问题呢？</p>
+<p>先给大家一份代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IteratorTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">		</span><br><span class="line">		list.add(<span class="string">"1"</span>);</span><br><span class="line">		list.add(<span class="string">"2"</span>);</span><br><span class="line">		list.add(<span class="string">"3"</span>);</span><br><span class="line">		</span><br><span class="line">		Iterator&lt;String&gt; iter = list.iterator();</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//我当前正在迭代集合（这里模拟并发中读取某一list的场景）</span></span><br><span class="line">		<span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">			</span><br><span class="line">			System.err.println(iter.next());</span><br><span class="line">		</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		System.err.println(Arrays.toString(list.toArray()));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面的程序片段在单线程下执行时没什么毛病的，但到了多线程的环境中，可能就GG了！为什么呢？因为多线程环境中，你在迭代的时候是不允许有其他线程对这个集合list进行添加元素的，看下面这段代码，你会发现抛出<code>java.util.ConcurrentModificationException</code>的异常。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IteratorTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		list.add(<span class="string">"1"</span>);</span><br><span class="line">		list.add(<span class="string">"2"</span>);</span><br><span class="line">		list.add(<span class="string">"3"</span>);</span><br><span class="line"></span><br><span class="line">		Iterator&lt;String&gt; iter = list.iterator();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 存放10个线程的线程池</span></span><br><span class="line">		ExecutorService service = Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 执行10个任务(我当前正在迭代集合（这里模拟并发中读取某一list的场景）)</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					<span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">						System.err.println(iter.next());</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// 执行10个任务</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					list.add(<span class="string">"121"</span>);<span class="comment">// 添加数据</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		System.err.println(Arrays.toString(list.toArray()));</span><br><span class="line">		</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>1、这里的<code>迭代</code>表示我当前正在读取某种<code>集合</code>中的数据,属于<code>读</code>操作；</li>
+<li>2、线程则模拟当前程序处于多线程环境中，有其他线程正在修改该数据</li>
+</ul>
+<p>这里暴露的问题是什么呢？</p>
+<ul>
+<li>多线程会对迭代集合产生影响，影响读操作</li>
+</ul>
+<p>解决：</p>
+<ul>
+<li><code>CopyOnWriteArrayList</code> 避免了多线程操作List线程不安全的问题</li>
+</ul>
+<h2 id="CopyOnWriteArrayList介绍"><a href="#CopyOnWriteArrayList介绍" class="headerlink" title="CopyOnWriteArrayList介绍"></a>CopyOnWriteArrayList介绍</h2><p>从JDK1.5开始Java并发包里提供了两个使用<code>CopyOnWrite</code>机制实现的并发容器,它们是<code>CopyOnWriteArrayList</code>和<code>CopyOnWriteArraySet</code>。<code>CopyOnWrite</code>容器非常有用，可以在非常多的并发场景中使用到。</p>
+<p><code>CopyOnWriteArrayList</code>原理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">上面已经讲了，就是在写的时候不对原集合进行修改，而是重新复制一份，修改完之后，再移动指针</span><br></pre></td></tr></table></figure>
+
+<p>那么你可能会问？就算是对原集合进行复制，在多线程环境中不也是一样会导致写入冲突吗？没错，但是你可能还不知道<code>CopyOnWriteArrayList</code>中增加删除元素的实现细节，下面我就说说网上老是提到的<code>add()方法</code></p>
+<h2 id="CopyOnWriteArrayList简单源码解读"><a href="#CopyOnWriteArrayList简单源码解读" class="headerlink" title="CopyOnWriteArrayList简单源码解读"></a>CopyOnWriteArrayList简单源码解读</h2><p><code>add()</code>方法源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Appends the specified element to the end of this list.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> e element to be appended to this list</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> &#123;<span class="doctag">@code</span> true&#125; (as specified by &#123;<span class="doctag">@link</span> Collection#add&#125;)</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">add</span><span class="params">(E e)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> ReentrantLock lock = <span class="keyword">this</span>.lock;<span class="comment">//重入锁</span></span><br><span class="line">        lock.lock();<span class="comment">//加锁啦</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Object[] elements = getArray();</span><br><span class="line">            <span class="keyword">int</span> len = elements.length;</span><br><span class="line">            Object[] newElements = Arrays.copyOf(elements, len + <span class="number">1</span>);<span class="comment">//拷贝新数组</span></span><br><span class="line">            newElements[len] = e;</span><br><span class="line">            setArray(newElements);<span class="comment">//将引用指向新数组  1</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();<span class="comment">//解锁啦</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>恍然大悟，小样，原来<code>add()</code>在添加集合的时候加上了锁，保证了同步，避免了多线程写的时候会Copy出N个副本出来。(<code>想想，你在遍历一个10个元素的集合，每遍历一次有1人调用add方法，你说当你遍历10次，这add方法是不是得被调用10次呢？是不是得copy出10分新集合呢？万一这个集合非常大呢？</code>)</p>
+<p>那么？你还要问？<code>CopyOnWriteArrayList</code>是怎么解决线程安全问题的？答案就是—-<code>写时复制，加锁</code> 还要问？那么有没有这么一种情况，当一个线程刚好调用完<code>add()</code>方法，也就是刚好执行到上面<code>1</code>处的代码，也就是刚好将引用指向心数组，而此时有线程正在遍历呢？会不会报错呢？（<code>答案是不会的，因为你正在遍历的集合是旧的，这就有点难受啦，哈哈~</code>）</p>
+<p>当你把上面的代码的<code>ArrayList</code>改为<code>CopyOnWriteArrayList</code>，执行就不会报错啦！</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">IteratorTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">static</span> CopyOnWriteArrayList&lt;String&gt; list = <span class="keyword">new</span> CopyOnWriteArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		list.add(<span class="string">"1"</span>);</span><br><span class="line">		list.add(<span class="string">"2"</span>);</span><br><span class="line">		list.add(<span class="string">"3"</span>);</span><br><span class="line"></span><br><span class="line">		Iterator&lt;String&gt; iter = list.iterator();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 存放10个线程的线程池</span></span><br><span class="line">		ExecutorService service = Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// 执行10个任务(我当前正在迭代集合（这里模拟并发中读取某一list的场景）)</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					<span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">						System.err.println(iter.next());</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					list.add(<span class="string">"121"</span>);<span class="comment">// 添加数据</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">// 执行10个任务</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					list.add(<span class="string">"121"</span>);<span class="comment">// 添加数据</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">			service.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">				<span class="meta">@Override</span></span><br><span class="line">				<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">					<span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">						System.err.println(iter.next());</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		System.err.println(Arrays.toString(list.toArray()));</span><br><span class="line">		</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="CopyOnWriteArrayList-优缺点"><a href="#CopyOnWriteArrayList-优缺点" class="headerlink" title="CopyOnWriteArrayList 优缺点"></a>CopyOnWriteArrayList 优缺点</h2><p>缺点：</p>
+<ul>
+<li>1、耗内存（集合复制）</li>
+<li>2、实时性不高</li>
+</ul>
+<p>优点：</p>
+<ul>
+<li>1、数据一致性完整，为什么？因为加锁了，并发数据不会乱</li>
+<li>2、解决了<code>像ArrayList</code>、<code>Vector</code>这种集合多线程遍历迭代问题，记住，<code>Vector</code>虽然线程安全，只不过是加了<code>synchronized</code>关键字，迭代问题完全没有解决！</li>
+</ul>
+<h2 id="CopyOnWriteArrayList-使用场景"><a href="#CopyOnWriteArrayList-使用场景" class="headerlink" title="CopyOnWriteArrayList 使用场景"></a>CopyOnWriteArrayList 使用场景</h2><ul>
+<li>1、读多写少（白名单，黑名单，商品类目的访问和更新场景），为什么？因为写的时候会复制新集合</li>
+<li>2、集合不大，为什么？因为写的时候会复制新集合</li>
+<li>实时性要求不高，为什么，因为有可能会读取到旧的集合数据</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5aaa2ba8f265da239530b69e" target="_blank" rel="noopener">CopyOnWriteArrayList</a><br><a href="https://www.cnblogs.com/wucao/p/5350461.html" target="_blank" rel="noopener">如何线程安全地遍历List：Vector、CopyOnWriteArrayList</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/Linux%20IO%E6%A8%A1%E5%BC%8F%E5%8F%8A%20select%E3%80%81poll%E3%80%81epoll%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/16/Linux%20IO%E6%A8%A1%E5%BC%8F%E5%8F%8A%20select%E3%80%81poll%E3%80%81epoll%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">Linux IO模式及 select、poll、epoll详解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-17 06:59:38 / 修改时间：15:38:15" itemprop="dateCreated datePublished" datetime="2020-07-17T06:59:38+08:00">2020-07-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>15k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>同步IO和异步IO，阻塞IO和非阻塞IO分别是什么，到底有什么区别？不同的人在不同的上下文下给出的答案是不同的。所以先限定一下本文的上下文。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">本文讨论的背景是Linux环境下的network IO。</span><br></pre></td></tr></table></figure>
+
+<h1 id="一-概念说明"><a href="#一-概念说明" class="headerlink" title="一 概念说明"></a>一 概念说明</h1><p>在进行解释之前，首先要说明几个概念：<br> - 用户空间和内核空间<br> - 进程切换<br> - 进程的阻塞<br> - 文件描述符<br> - 缓存 I/O</p>
+<h2 id="用户空间与内核空间"><a href="#用户空间与内核空间" class="headerlink" title="用户空间与内核空间"></a>用户空间与内核空间</h2><p>现在操作系统都是采用虚拟存储器，那么对32位操作系统而言，它的寻址空间（虚拟存储空间）为4G（2的32次方）。操作系统的核心是内核，独立于普通的应用程序，可以访问受保护的内存空间，也有访问底层硬件设备的所有权限。为了保证用户进程不能直接操作内核（kernel），保证内核的安全，操心系统将虚拟空间划分为两部分，一部分为内核空间，一部分为用户空间。针对linux操作系统而言，将最高的1G字节（从虚拟地址0xC0000000到0xFFFFFFFF），供内核使用，称为内核空间，而将较低的3G字节（从虚拟地址0x00000000到0xBFFFFFFF），供各个进程使用，称为用户空间。</p>
+<h2 id="进程切换"><a href="#进程切换" class="headerlink" title="进程切换"></a>进程切换</h2><p>为了控制进程的执行，内核必须有能力挂起正在CPU上运行的进程，并恢复以前挂起的某个进程的执行。这种行为被称为进程切换。因此可以说，任何进程都是在操作系统内核的支持下运行的，是与内核紧密相关的。</p>
+<p>从一个进程的运行转到另一个进程上运行，这个过程中经过下面这些变化：<br> \1. 保存处理机上下文，包括程序计数器和其他寄存器。<br> \2. 更新PCB信息。<br> \3. 把进程的PCB移入相应的队列，如就绪、在某事件阻塞等队列。<br> \4. 选择另一个进程执行，并更新其PCB。<br> \5. 更新内存管理的数据结构。<br> \6. 恢复处理机上下文。</p>
+<p>注：<strong>总而言之就是很耗资源</strong>，具体的可以参考这篇文章：<a href="http://guojing.me/linux-kernel-architecture/posts/process-switch/" target="_blank" rel="noopener">进程切换</a></p>
+<h2 id="进程的阻塞"><a href="#进程的阻塞" class="headerlink" title="进程的阻塞"></a>进程的阻塞</h2><p>正在执行的进程，由于期待的某些事件未发生，如请求系统资源失败、等待某种操作的完成、新数据尚未到达或无新工作做等，则由系统自动执行阻塞原语(Block)，使自己由运行状态变为阻塞状态。可见，进程的阻塞是进程自身的一种主动行为，也因此只有处于运行态的进程（获得CPU），才可能将其转为阻塞状态。<code>当进程进入阻塞状态，是不占用CPU资源的</code>。</p>
+<h2 id="文件描述符fd"><a href="#文件描述符fd" class="headerlink" title="文件描述符fd"></a>文件描述符fd</h2><p>文件描述符（File descriptor）是计算机科学中的一个术语，是一个用于表述指向文件的引用的抽象化概念。</p>
+<p>文件描述符在形式上是一个非负整数。实际上，它是一个索引值，指向内核为每一个进程所维护的该进程打开文件的记录表。当程序打开一个现有文件或者创建一个新文件时，内核向进程返回一个文件描述符。在程序设计中，一些涉及底层的程序编写往往会围绕着文件描述符展开。但是文件描述符这一概念往往只适用于UNIX、Linux这样的操作系统。</p>
+<h2 id="缓存-I-O"><a href="#缓存-I-O" class="headerlink" title="缓存 I/O"></a>缓存 I/O</h2><p>缓存 I/O 又被称作标准 I/O，大多数文件系统的默认 I/O 操作都是缓存 I/O。在 Linux 的缓存 I/O 机制中，操作系统会将 I/O 的数据缓存在文件系统的页缓存（ page cache ）中，也就是说，数据会先被拷贝到操作系统内核的缓冲区中，然后才会从操作系统内核的缓冲区拷贝到应用程序的地址空间。</p>
+<p><strong>缓存 I/O 的缺点：</strong><br> 数据在传输过程中需要在应用程序地址空间和内核进行多次数据拷贝操作，这些数据拷贝操作所带来的 CPU 以及内存开销是非常大的。</p>
+<h1 id="二-IO模式"><a href="#二-IO模式" class="headerlink" title="二 IO模式"></a>二 IO模式</h1><p>刚才说了，对于一次IO访问（以read举例），数据会先被拷贝到操作系统内核的缓冲区中，然后才会从操作系统内核的缓冲区拷贝到应用程序的地址空间。所以说，当一个read操作发生时，它会经历两个阶段：<br> \1. 等待数据准备 (Waiting for the data to be ready)<br> \2. 将数据从内核拷贝到进程中 (Copying the data from the kernel to the process)</p>
+<p>正式因为这两个阶段，linux系统产生了下面五种网络模式的方案。<br> - 阻塞 I/O（blocking IO）<br> - 非阻塞 I/O（nonblocking IO）<br> - I/O 多路复用（ IO multiplexing）<br> - 信号驱动 I/O（ signal driven IO）<br> - 异步 I/O（asynchronous IO）</p>
+<p>注：由于signal driven IO在实际中并不常用，所以我这只提及剩下的四种IO Model。</p>
+<h2 id="阻塞-I-O（blocking-IO）"><a href="#阻塞-I-O（blocking-IO）" class="headerlink" title="阻塞 I/O（blocking IO）"></a>阻塞 I/O（blocking IO）</h2><p>在linux中，默认情况下所有的socket都是blocking，一个典型的读操作流程大概是这样：<br><img src="/img/bVm1c3" alt="clipboard.png"></p>
+<p>当用户进程调用了recvfrom这个系统调用，kernel就开始了IO的第一个阶段：准备数据（对于网络IO来说，很多时候数据在一开始还没有到达。比如，还没有收到一个完整的UDP包。这个时候kernel就要等待足够的数据到来）。这个过程需要等待，也就是说数据被拷贝到操作系统内核的缓冲区中是需要一个过程的。而在用户进程这边，整个进程会被阻塞（当然，是进程自己选择的阻塞）。当kernel一直等到数据准备好了，它就会将数据从kernel中拷贝到用户内存，然后kernel返回结果，用户进程才解除block的状态，重新运行起来。</p>
+<blockquote>
+<p>所以，blocking IO的特点就是在IO执行的两个阶段都被block了。</p>
+</blockquote>
+<h2 id="非阻塞-I-O（nonblocking-IO）"><a href="#非阻塞-I-O（nonblocking-IO）" class="headerlink" title="非阻塞 I/O（nonblocking IO）"></a>非阻塞 I/O（nonblocking IO）</h2><p>linux下，可以通过设置socket使其变为non-blocking。当对一个non-blocking socket执行读操作时，流程是这个样子：<br><img src="/img/bVm1c4" alt="clipboard.png"></p>
+<p>当用户进程发出read操作时，如果kernel中的数据还没有准备好，那么它并不会block用户进程，而是立刻返回一个error。从用户进程角度讲 ，它发起一个read操作后，并不需要等待，而是马上就得到了一个结果。用户进程判断结果是一个error时，它就知道数据还没有准备好，于是它可以再次发送read操作。一旦kernel中的数据准备好了，并且又再次收到了用户进程的system call，那么它马上就将数据拷贝到了用户内存，然后返回。</p>
+<blockquote>
+<p>所以，nonblocking IO的特点是用户进程需要<strong>不断的主动询问</strong>kernel数据好了没有。</p>
+</blockquote>
+<h2 id="I-O-多路复用（-IO-multiplexing）"><a href="#I-O-多路复用（-IO-multiplexing）" class="headerlink" title="I/O 多路复用（ IO multiplexing）"></a>I/O 多路复用（ IO multiplexing）</h2><p>IO multiplexing就是我们说的select，poll，epoll，有些地方也称这种IO方式为event driven IO。select/epoll的好处就在于单个process就可以同时处理多个网络连接的IO。它的基本原理就是select，poll，epoll这个function会不断的轮询所负责的所有socket，当某个socket有数据到达了，就通知用户进程。</p>
+<p><img src="/img/bVm1c5" alt="clipboard.png"></p>
+<p><code>当用户进程调用了select，那么整个进程会被block</code>，而同时，kernel会“监视”所有select负责的socket，当任何一个socket中的数据准备好了，select就会返回。这个时候用户进程再调用read操作，将数据从kernel拷贝到用户进程。</p>
+<blockquote>
+<p>所以，I/O 多路复用的特点是通过一种机制一个进程能同时等待多个文件描述符，而这些文件描述符（套接字描述符）其中的任意一个进入读就绪状态，select()函数就可以返回。</p>
+</blockquote>
+<p>这个图和blocking IO的图其实并没有太大的不同，事实上，还更差一些。因为这里需要使用两个system call (select 和 recvfrom)，而blocking IO只调用了一个system call (recvfrom)。但是，用select的优势在于它可以同时处理多个connection。</p>
+<p>所以，如果处理的连接数不是很高的话，使用select/epoll的web server不一定比使用multi-threading + blocking IO的web server性能更好，可能延迟还更大。select/epoll的优势并不是对于单个连接能处理得更快，而是在于能处理更多的连接。）</p>
+<p>在IO multiplexing Model中，实际中，对于每一个socket，一般都设置成为non-blocking，但是，如上图所示，整个用户的process其实是一直被block的。只不过process是被select这个函数block，而不是被socket IO给block。</p>
+<h2 id="异步-I-O（asynchronous-IO）"><a href="#异步-I-O（asynchronous-IO）" class="headerlink" title="异步 I/O（asynchronous IO）"></a>异步 I/O（asynchronous IO）</h2><p>inux下的asynchronous IO其实用得很少。先看一下它的流程：<br><img src="/img/bVm1c8" alt="clipboard.png"></p>
+<p>用户进程发起read操作之后，立刻就可以开始去做其它的事。而另一方面，从kernel的角度，当它受到一个asynchronous read之后，首先它会立刻返回，所以不会对用户进程产生任何block。然后，kernel会等待数据准备完成，然后将数据拷贝到用户内存，当这一切都完成之后，kernel会给用户进程发送一个signal，告诉它read操作完成了。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="blocking和non-blocking的区别"><a href="#blocking和non-blocking的区别" class="headerlink" title="blocking和non-blocking的区别"></a>blocking和non-blocking的区别</h3><p>调用blocking IO会一直block住对应的进程直到操作完成，而non-blocking IO在kernel还准备数据的情况下会立刻返回。</p>
+<h3 id="synchronous-IO和asynchronous-IO的区别"><a href="#synchronous-IO和asynchronous-IO的区别" class="headerlink" title="synchronous IO和asynchronous IO的区别"></a>synchronous IO和asynchronous IO的区别</h3><p>在说明synchronous IO和asynchronous IO的区别之前，需要先给出两者的定义。POSIX的定义是这样子的：<br> -  A synchronous I/O operation causes the requesting process to be blocked until that I/O operation completes;<br> -  An asynchronous I/O operation does not cause the requesting process to be blocked;</p>
+<p>两者的区别就在于synchronous IO做”IO operation”的时候会将process阻塞。按照这个定义，之前所述的blocking IO，non-blocking IO，IO multiplexing都属于synchronous IO。</p>
+<p>有人会说，non-blocking IO并没有被block啊。这里有个非常“狡猾”的地方，定义中所指的”IO operation”是指真实的IO操作，就是例子中的recvfrom这个system call。non-blocking IO在执行recvfrom这个system call的时候，如果kernel的数据没有准备好，这时候不会block进程。但是，当kernel中数据准备好的时候，recvfrom会将数据从kernel拷贝到用户内存中，这个时候进程是被block了，在这段时间内，进程是被block的。</p>
+<p>而asynchronous IO则不一样，当进程发起IO 操作之后，就直接返回再也不理睬了，直到kernel发送一个信号，告诉进程说IO完成。在这整个过程中，进程完全没有被block。</p>
+<p><strong>各个IO Model的比较如图所示：</strong><br><img src="/img/bVm1c9" alt="clipboard.png"></p>
+<p>通过上面的图片，可以发现non-blocking IO和asynchronous IO的区别还是很明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但是它仍然要求进程去主动的check，并且当数据准备完成以后，也需要进程主动的再次调用recvfrom来将数据拷贝到用户内存。而asynchronous IO则完全不同。它就像是用户进程将整个IO操作交给了他人（kernel）完成，然后他人做完后发信号通知。在此期间，用户进程不需要去检查IO操作的状态，也不需要主动的去拷贝数据。</p>
+<h1 id="三-I-O-多路复用之select、poll、epoll详解"><a href="#三-I-O-多路复用之select、poll、epoll详解" class="headerlink" title="三 I/O 多路复用之select、poll、epoll详解"></a>三 I/O 多路复用之select、poll、epoll详解</h1><p>select，poll，epoll都是IO多路复用的机制。I/O多路复用就是通过一种机制，一个进程可以监视多个描述符，一旦某个描述符就绪（一般是读就绪或者写就绪），能够通知程序进行相应的读写操作。但select，poll，epoll本质上都是同步I/O，因为他们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的，而异步I/O则无需自己负责进行读写，异步I/O的实现会负责把数据从内核拷贝到用户空间。（这里啰嗦下）</p>
+<h2 id="select"><a href="#select" class="headerlink" title="select"></a>select</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">select</span> <span class="params">(<span class="keyword">int</span> n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>select 函数监视的文件描述符分3类，分别是writefds、readfds、和exceptfds。调用后select函数会阻塞，直到有描述副就绪（有数据 可读、可写、或者有except），或者超时（timeout指定等待时间，如果立即返回设为null即可），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符。</p>
+<p>select目前几乎在所有的平台上支持，其良好跨平台支持也是它的一个优点。select的一 个缺点在于单个进程能够监视的文件描述符的数量存在最大限制，在Linux上一般为1024，可以通过修改宏定义甚至重新编译内核的方式提升这一限制，但 是这样也会造成效率的降低。</p>
+<blockquote>
+<p>在linux下网络通信中，经常用到select机制，这是一种异步通信的实现方式，select中提供一fd_set的数据结果，实际上是一个long类型的数组， 每一个数组元素都能与一打开的文件句柄建立联系，通常这个句柄并不局限于网络通信中的socket句柄，还包括其他文件、命名管道或设备句柄等。当程序中调用select()时，由内核根据IO状态修改fd_set的内容，由此来通知执select()的进程哪一Socket或文件可读或者可写。</p>
+<p>　　select的本质上是通过设置或者检查存放fd标志位的数据结构来进行下一步处理。这样所带来的缺点是：</p>
+<p>　　1、单个进程可监视的fd数量受到了限制，在32位机器上，他所能管理的fd数量最大为1024。</p>
+<p>　　2、需要维护一个用来存放大量fd的数据结构，这样会使得用户空间和内核空间在传递该结构时复制开销大。</p>
+<p>　　3、对socket进行扫描时是线性扫描，当socket文件描述符数量变多时，大量的时间是被白白浪费掉的。</p>
+</blockquote>
+<h2 id="poll"><a href="#poll" class="headerlink" title="poll"></a>poll</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">poll</span> <span class="params">(struct pollfd *fds, <span class="keyword">unsigned</span> <span class="keyword">int</span> nfds, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>不同于select使用三个位图来表示三个fdset的方式，poll使用一个 pollfd的指针实现。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pollfd</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> fd; <span class="comment">/* file descriptor */</span></span><br><span class="line">    short events; <span class="comment">/* requested events to watch */</span></span><br><span class="line">    short revents; <span class="comment">/* returned events witnessed */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>pollfd结构包含了要监视的event和发生的event，不再使用select“参数-值”传递的方式。同时，pollfd并没有最大数量限制（但是数量过大后性能也是会下降）。 和select函数一样，poll返回后，需要轮询pollfd来获取就绪的描述符。</p>
+<blockquote>
+<p>从上面看，select和poll都需要在返回后，<strong>通过遍历文件描述符来获取已经就绪的socket</strong>。事实上，同时连接的大量客户端在一时刻可能只有很少的处于就绪状态，因此随着监视的描述符数量的增长，其效率也会线性下降。</p>
+</blockquote>
+<blockquote>
+<p>　poll是Linux中的字符设备驱动中有一个函数，Linux 2.5.44版本后已经被epoll所取代。poll机制是用在某些Unix系统中，使用poll()函数用于执行与select()函数同等功能的函数。</p>
+<p>　　poll本质上和select没有区别，它将用户传入的数组拷贝到内核空间，然后查询每个fd对应的设备状态，如果设备就绪则在设备等待队列中加入一项并继续遍历，如果遍历完所有fd后没有发现就绪设备，则挂起当前进程，直到设备就绪或者主动超时，被唤醒后它又要再次遍历fd。这个过程经历了多次无谓的遍历。</p>
+<p>　　相比于select机制，poll机制采用链表来进行文件描述符的存储，因此它并没有最大连接数的限制，但同样存在一些缺点：</p>
+<p>　　1、大量的fd的数组被整体复制于用户态和内核地址空间之间，而不管这样的复制是不是有意义。</p>
+<p>　　2、poll还有一个特点是“水平触发”，如果报告了fd后，没有被处理，那么下次poll时会再次报告该fd。</p>
+</blockquote>
+<h2 id="epoll"><a href="#epoll" class="headerlink" title="epoll"></a>epoll</h2><p>epoll是在2.6内核中提出的，是之前的select和poll的增强版本。相对于select和poll来说，epoll更加灵活，没有描述符限制。epoll使用一个文件描述符管理多个描述符，将用户关系的文件描述符的事件存放到内核的一个事件表中，这样在用户空间和内核空间的copy只需一次。</p>
+<p>　epoll是Linux内核为处理大批量的句柄而作了改进的poll，是Linux下多路复用IO接口select/poll的增强版本，它能显著提高程序在大量并发连接中只有少量活跃的情况下的系统CPU利用率。</p>
+<p>　　epoll会复用文件描述符集合来传递结果而不用迫使开发者每次等待事件之前都必须重新准备要被侦听的文件描述符集合，另一点原因就是获取事件的时候，它无须遍历整个被侦听的描述符集，只要遍历那些被内核IO事件异步唤醒而加入Ready队列的描述符集合就行了。epoll除了提供select/poll那种IO事件的电平触发（Level Triggered）外，还提供了边沿触发（Edge Triggered），这就使得用户空间程序有可能缓存IO状态，减少epoll_wait/epoll_pwait的调用，提高应用程序效率。</p>
+<p>　　相比于poll机制，epoll支持水平触发和边缘触发，最大的特点在于边缘触发，它只告诉进程哪些fd刚刚变为就需态，并且只会通知一次。在fd的数组在用户态和内核地址空间之间复制的问题上，epoll使用mmap减少复制开销。还有一个特点是，epoll使用“事件”的就绪通知方式，通过epoll_ctl注册fd，一旦该fd就绪，内核就会采用类似callback的回调机制来激活该fd，epoll_wait便可以收到通知。</p>
+<h3 id="一-epoll操作过程"><a href="#一-epoll操作过程" class="headerlink" title="一 epoll操作过程"></a>一 epoll操作过程</h3><p>epoll操作过程需要三个接口，分别如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">int epoll_create(int size)；//创建一个epoll的句柄，size用来告诉内核这个监听的数目一共有多大</span><br><span class="line">int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)；</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">epoll_wait</span><span class="params">(<span class="keyword">int</span> epfd, struct epoll_event * events, <span class="keyword">int</span> maxevents, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p><strong>1. int epoll_create(int size);</strong><br> 创建一个epoll的句柄，size用来告诉内核这个监听的数目一共有多大，这个参数不同于select()中的第一个参数，给出最大监听的fd+1的值，<code>参数size并不是限制了epoll所能监听的描述符最大个数，只是对内核初始分配内部数据结构的一个建议</code>。<br> 当创建好epoll句柄后，它就会占用一个fd值，在linux下如果查看/proc/进程id/fd/，是能够看到这个fd的，所以在使用完epoll后，必须调用close()关闭，否则可能导致fd被耗尽。</p>
+<p><strong>2. int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)；</strong><br> 函数是对指定描述符fd执行op操作。<br> - epfd：是epoll_create()的返回值。<br> - op：表示op操作，用三个宏来表示：添加EPOLL_CTL_ADD，删除EPOLL_CTL_DEL，修改EPOLL_CTL_MOD。分别添加、删除和修改对fd的监听事件。<br> - fd：是需要监听的fd（文件描述符）<br> - epoll_event：是告诉内核需要监听什么事，struct epoll_event结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> &#123;</span></span><br><span class="line">  <span class="keyword">__uint32_t</span> events;  <span class="comment">/* Epoll events */</span></span><br><span class="line">  <span class="keyword">epoll_data_t</span> data;  <span class="comment">/* User data variable */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//events可以是以下几个宏的集合：</span></span><br><span class="line">EPOLLIN ：表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；</span><br><span class="line">EPOLLOUT：表示对应的文件描述符可以写；</span><br><span class="line">EPOLLPRI：表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；</span><br><span class="line">EPOLLERR：表示对应的文件描述符发生错误；</span><br><span class="line">EPOLLHUP：表示对应的文件描述符被挂断；</span><br><span class="line">EPOLLET： 将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。</span><br><span class="line">EPOLLONESHOT：只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里</span><br></pre></td></tr></table></figure>
+
+<p><strong>3. int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);</strong><br> 等待epfd上的io事件，最多返回maxevents个事件。<br> 参数events用来从内核得到事件的集合，maxevents告之内核这个events有多大，这个maxevents的值不能大于创建epoll_create()时的size，参数timeout是超时时间（毫秒，0会立即返回，-1将不确定，也有说法说是永久阻塞）。该函数返回需要处理的事件数目，如返回0表示已超时。</p>
+<h3 id="二-工作模式"><a href="#二-工作模式" class="headerlink" title="二 工作模式"></a>二 工作模式</h3><p>　epoll对文件描述符的操作有两种模式：<strong>LT（level trigger）</strong>和<strong>ET（edge trigger）</strong>。LT模式是默认模式，LT模式与ET模式的区别如下：<br> 　<strong>LT模式</strong>：当epoll_wait检测到描述符事件发生并将此事件通知应用程序，<code>应用程序可以不立即处理该事件</code>。下次调用epoll_wait时，会再次响应应用程序并通知此事件。<br> 　<strong>ET模式</strong>：当epoll_wait检测到描述符事件发生并将此事件通知应用程序，<code>应用程序必须立即处理该事件</code>。如果不处理，下次调用epoll_wait时，不会再次响应应用程序并通知此事件。</p>
+<h4 id="1-LT模式"><a href="#1-LT模式" class="headerlink" title="1. LT模式"></a>1. LT模式</h4><p>LT(level triggered)是缺省的工作方式，并且同时支持block和no-block socket.在这种做法中，内核告诉你一个文件描述符是否就绪了，然后你可以对这个就绪的fd进行IO操作。如果你不作任何操作，内核还是会继续通知你的。</p>
+<h4 id="2-ET模式"><a href="#2-ET模式" class="headerlink" title="2. ET模式"></a>2. ET模式</h4><p>ET(edge-triggered)是高速工作方式，只支持no-block socket。在这种模式下，当描述符从未就绪变为就绪时，内核通过epoll告诉你。然后它会假设你知道文件描述符已经就绪，并且不会再为那个文件描述符发送更多的就绪通知，直到你做了某些操作导致那个文件描述符不再为就绪状态了(比如，你在发送，接收或者接收请求，或者发送接收的数据少于一定量时导致了一个EWOULDBLOCK 错误）。但是请注意，如果一直不对这个fd作IO操作(从而导致它再次变成未就绪)，内核不会发送更多的通知(only once)</p>
+<p>ET模式在很大程度上减少了epoll事件被重复触发的次数，因此效率要比LT模式高。epoll工作在ET模式的时候，必须使用非阻塞套接口，以避免由于一个文件句柄的阻塞读/阻塞写操作把处理多个文件描述符的任务饿死。</p>
+<h4 id="3-总结"><a href="#3-总结" class="headerlink" title="3. 总结"></a>3. 总结</h4><p><strong>假如有这样一个例子：</strong><br> \1. 我们已经把一个用来从管道中读取数据的文件句柄(RFD)添加到epoll描述符<br> \2. 这个时候从管道的另一端被写入了2KB的数据<br> \3. 调用epoll_wait(2)，并且它会返回RFD，说明它已经准备好读取操作<br> \4. 然后我们读取了1KB的数据<br> \5. 调用epoll_wait(2)……</p>
+<p><strong>LT模式：</strong><br> 如果是LT模式，那么在第5步调用epoll_wait(2)之后，仍然能受到通知。</p>
+<p><strong>ET模式：</strong><br> 如果我们在第1步将RFD添加到epoll描述符的时候使用了EPOLLET标志，那么在第5步调用epoll_wait(2)之后将有可能会挂起，因为剩余的数据还存在于文件的输入缓冲区内，而且数据发出端还在等待一个针对已经发出数据的反馈信息。只有在监视的文件句柄上发生了某个事件的时候 ET 工作模式才会汇报事件。因此在第5步的时候，调用者可能会放弃等待仍在存在于文件输入缓冲区内的剩余数据。</p>
+<p>当使用epoll的ET模型来工作时，当产生了一个EPOLLIN事件后，<br> 读数据的时候需要考虑的是当recv()返回的大小如果等于请求的大小，那么很有可能是缓冲区还有数据未读完，也意味着该次事件还没有处理完，所以还需要再次读取：</p>
+<p>​                        </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(rs)&#123;</span><br><span class="line">  buflen = recv(activeevents[i].data.fd, buf, <span class="keyword">sizeof</span>(buf), <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">if</span>(buflen &lt; <span class="number">0</span>)&#123;</span><br><span class="line">    <span class="comment">// 由于是非阻塞的模式,所以当errno为EAGAIN时,表示当前缓冲区已无数据可读</span></span><br><span class="line">    <span class="comment">// 在这里就当作是该次事件已处理处.</span></span><br><span class="line">    <span class="keyword">if</span>(errno == EAGAIN)&#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span>(buflen == <span class="number">0</span>)&#123;</span><br><span class="line">     <span class="comment">// 这里表示对端的socket已正常关闭.</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">if</span>(buflen == <span class="keyword">sizeof</span>(buf)&#123;</span><br><span class="line">      rs = <span class="number">1</span>;   <span class="comment">// 需要再次读取</span></span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">else</span>&#123;</span><br><span class="line">      rs = <span class="number">0</span>;</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>Linux中的EAGAIN含义</strong></p>
+</blockquote>
+<p>Linux环境下开发经常会碰到很多错误(设置errno)，其中EAGAIN是其中比较常见的一个错误(比如用在非阻塞操作中)。<br>    从字面上来看，是提示再试一次。这个错误经常出现在当应用程序进行一些非阻塞(non-blocking)操作(对文件或socket)的时候。</p>
+<p>例如，以 O_NONBLOCK的标志打开文件/socket/FIFO，如果你连续做read操作而没有数据可读。此时程序不会阻塞起来等待数据准备就绪返回，read函数会返回一个错误EAGAIN，提示你的应用程序现在没有数据可读请稍后再试。<br>    又例如，当一个系统调用(比如fork)因为没有足够的资源(比如虚拟内存)而执行失败，返回EAGAIN提示其再调用一次(也许下次就能成功)。</p>
+<h3 id="三-代码演示"><a href="#三-代码演示" class="headerlink" title="三 代码演示"></a>三 代码演示</h3><p>下面是一段不完整的代码且格式不对，意在表述上面的过程，去掉了一些模板代码。</p>
+<p>​                        </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> IPADDRESS   <span class="meta-string">"127.0.0.1"</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PORT        8787</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MAXSIZE     1024</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> LISTENQ     5</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> FDSIZE      1000</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> EPOLLEVENTS 100</span></span><br><span class="line"></span><br><span class="line">listenfd = socket_bind(IPADDRESS,PORT);</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">events</span>[<span class="title">EPOLLEVENTS</span>];</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//创建一个描述符</span></span><br><span class="line">epollfd = epoll_create(FDSIZE);</span><br><span class="line"></span><br><span class="line"><span class="comment">//添加监听描述符事件</span></span><br><span class="line">add_event(epollfd,listenfd,EPOLLIN);</span><br><span class="line"></span><br><span class="line"><span class="comment">//循环等待</span></span><br><span class="line"><span class="keyword">for</span> ( ; ; )&#123;</span><br><span class="line">    <span class="comment">//该函数返回已经准备好的描述符事件数目</span></span><br><span class="line">    ret = epoll_wait(epollfd,events,EPOLLEVENTS,<span class="number">-1</span>);</span><br><span class="line">    <span class="comment">//处理接收到的连接</span></span><br><span class="line">    handle_events(epollfd,events,ret,listenfd,buf);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//事件处理函数</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">handle_events</span><span class="params">(<span class="keyword">int</span> epollfd,struct epoll_event *events,<span class="keyword">int</span> num,<span class="keyword">int</span> listenfd,<span class="keyword">char</span> *buf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">     <span class="keyword">int</span> i;</span><br><span class="line">     <span class="keyword">int</span> fd;</span><br><span class="line">     <span class="comment">//进行遍历;这里只要遍历已经准备好的io事件。num并不是当初epoll_create时的FDSIZE。</span></span><br><span class="line">     <span class="keyword">for</span> (i = <span class="number">0</span>;i &lt; num;i++)</span><br><span class="line">     &#123;</span><br><span class="line">         fd = events[i].data.fd;</span><br><span class="line">        <span class="comment">//根据描述符的类型和事件类型进行处理</span></span><br><span class="line">         <span class="keyword">if</span> ((fd == listenfd) &amp;&amp;(events[i].events &amp; EPOLLIN))</span><br><span class="line">            handle_accpet(epollfd,listenfd);</span><br><span class="line">         <span class="keyword">else</span> <span class="keyword">if</span> (events[i].events &amp; EPOLLIN)</span><br><span class="line">            do_read(epollfd,fd,buf);</span><br><span class="line">         <span class="keyword">else</span> <span class="keyword">if</span> (events[i].events &amp; EPOLLOUT)</span><br><span class="line">            do_write(epollfd,fd,buf);</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//添加事件</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">add_event</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> fd,<span class="keyword">int</span> state)</span></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span>;</span></span><br><span class="line">    ev.events = state;</span><br><span class="line">    ev.data.fd = fd;</span><br><span class="line">    epoll_ctl(epollfd,EPOLL_CTL_ADD,fd,&amp;ev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//处理接收到的连接</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">handle_accpet</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> listenfd)</span></span>&#123;</span><br><span class="line">     <span class="keyword">int</span> clifd;     </span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">cliaddr</span>;</span>     </span><br><span class="line">     <span class="keyword">socklen_t</span>  cliaddrlen;     </span><br><span class="line">     clifd = accept(listenfd,(struct sockaddr*)&amp;cliaddr,&amp;cliaddrlen);     </span><br><span class="line">     <span class="keyword">if</span> (clifd == <span class="number">-1</span>)         </span><br><span class="line">     perror(<span class="string">"accpet error:"</span>);     </span><br><span class="line">     <span class="keyword">else</span> &#123;         </span><br><span class="line">         <span class="built_in">printf</span>(<span class="string">"accept a new client: %s:%d\n"</span>,inet_ntoa(cliaddr.sin_addr),cliaddr.sin_port);                       <span class="comment">//添加一个客户描述符和事件         </span></span><br><span class="line">         add_event(epollfd,clifd,EPOLLIN);     </span><br><span class="line">     &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//读处理</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">do_read</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> fd,<span class="keyword">char</span> *buf)</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> nread;</span><br><span class="line">    nread = <span class="built_in">read</span>(fd,buf,MAXSIZE);</span><br><span class="line">    <span class="keyword">if</span> (nread == <span class="number">-1</span>)     &#123;         </span><br><span class="line">        perror(<span class="string">"read error:"</span>);         </span><br><span class="line">        <span class="built_in">close</span>(fd); <span class="comment">//记住close fd        </span></span><br><span class="line">        delete_event(epollfd,fd,EPOLLIN); <span class="comment">//删除监听 </span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (nread == <span class="number">0</span>)     &#123;         </span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>,<span class="string">"client close.\n"</span>);</span><br><span class="line">        <span class="built_in">close</span>(fd); <span class="comment">//记住close fd       </span></span><br><span class="line">        delete_event(epollfd,fd,EPOLLIN); <span class="comment">//删除监听 </span></span><br><span class="line">    &#125;     </span><br><span class="line">    <span class="keyword">else</span> &#123;         </span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"read message is : %s"</span>,buf);        </span><br><span class="line">        <span class="comment">//修改描述符对应的事件，由读改为写         </span></span><br><span class="line">        modify_event(epollfd,fd,EPOLLOUT);     </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//写处理</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">do_write</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> fd,<span class="keyword">char</span> *buf)</span> </span>&#123;     </span><br><span class="line">    <span class="keyword">int</span> nwrite;     </span><br><span class="line">    nwrite = <span class="built_in">write</span>(fd,buf,<span class="built_in">strlen</span>(buf));     </span><br><span class="line">    <span class="keyword">if</span> (nwrite == <span class="number">-1</span>)&#123;         </span><br><span class="line">        perror(<span class="string">"write error:"</span>);        </span><br><span class="line">        <span class="built_in">close</span>(fd);   <span class="comment">//记住close fd       </span></span><br><span class="line">        delete_event(epollfd,fd,EPOLLOUT);  <span class="comment">//删除监听    </span></span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        modify_event(epollfd,fd,EPOLLIN); </span><br><span class="line">    &#125;    </span><br><span class="line">    <span class="built_in">memset</span>(buf,<span class="number">0</span>,MAXSIZE); </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//删除事件</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">delete_event</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> fd,<span class="keyword">int</span> state)</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span>;</span></span><br><span class="line">    ev.events = state;</span><br><span class="line">    ev.data.fd = fd;</span><br><span class="line">    epoll_ctl(epollfd,EPOLL_CTL_DEL,fd,&amp;ev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//修改事件</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">modify_event</span><span class="params">(<span class="keyword">int</span> epollfd,<span class="keyword">int</span> fd,<span class="keyword">int</span> state)</span></span>&#123;     </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">ev</span>;</span></span><br><span class="line">    ev.events = state;</span><br><span class="line">    ev.data.fd = fd;</span><br><span class="line">    epoll_ctl(epollfd,EPOLL_CTL_MOD,fd,&amp;ev);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//注：另外一端我就省了</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="四-epoll总结"><a href="#四-epoll总结" class="headerlink" title="四 epoll总结"></a>四 epoll总结</h3><p>在 select/poll中，进程只有在调用一定的方法后，内核才对所有监视的文件描述符进行扫描，而<strong>epoll事先通过epoll_ctl()来注册一 个文件描述符，一旦基于某个文件描述符就绪时，内核会采用类似callback的回调机制，迅速激活这个文件描述符，当进程调用epoll_wait() 时便得到通知</strong>。(<code>此处去掉了遍历文件描述符，而是通过监听回调的的机制</code>。这正是epoll的魅力所在。)</p>
+<p><strong>epoll的优点主要是一下几个方面：</strong><br> \1. 监视的描述符数量不受限制，它所支持的FD上限是最大可以打开文件的数目，这个数字一般远大于2048,举个例子,在1GB内存的机器上大约是10万左 右，具体数目可以cat /proc/sys/fs/file-max察看,一般来说这个数目和系统内存关系很大。select的最大缺点就是进程打开的fd是有数量限制的。这对 于连接数量比较大的服务器来说根本不能满足。虽然也可以选择多进程的解决方案( Apache就是这样实现的)，不过虽然linux上面创建进程的代价比较小，但仍旧是不可忽视的，加上进程间数据同步远比不上线程间同步的高效，所以也不是一种完美的方案。</p>
+<ol>
+<li>IO的效率不会随着监视fd的数量的增长而下降。epoll不同于select和poll轮询的方式，而是通过每个fd定义的回调函数来实现的。只有就绪的fd才会执行回调函数。</li>
+</ol>
+<p><strong>如果没有大量的idle -connection或者dead-connection，epoll的效率并不会比select/poll高很多，但是当遇到大量的idle- connection，就会发现epoll的效率大大高于select/poll。</strong></p>
+<h2 id="select、poll与epoll的比较"><a href="#select、poll与epoll的比较" class="headerlink" title="select、poll与epoll的比较"></a>select、poll与epoll的比较</h2><h3 id="1、支持一个进程所能管理的最大连接数"><a href="#1、支持一个进程所能管理的最大连接数" class="headerlink" title="　　1、支持一个进程所能管理的最大连接数"></a>　　1、支持一个进程所能管理的最大连接数</h3><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>select</td>
+<td>单个进程所能打开的最大连接数有FD_SETSIZE宏定义，其大小是32个整数的大小（在32位的机器上，大小就是32<em>32，同理64位机器上FD_SETSIZE为32</em>64），当然我们可以对进行修改，然后重新编译内核，但是性能可能会受到影响，这需要进一步的测试。</td>
+</tr>
+<tr>
+<td>poll</td>
+<td>poll本质上和select没有区别，但是它没有最大连接数的限制，原因是它是基于链表来存储的</td>
+</tr>
+<tr>
+<td>epoll</td>
+<td>虽然连接数有上限，但是很大，1G内存的机器上可以打开10万左右的连接，2G内存的机器可以打开20万左右的连接</td>
+</tr>
+</tbody></table>
+<h3 id="2、文件描述符剧增后带来的IO效率问题"><a href="#2、文件描述符剧增后带来的IO效率问题" class="headerlink" title="　　2、文件描述符剧增后带来的IO效率问题"></a>　　2、文件描述符剧增后带来的IO效率问题</h3><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>select</td>
+<td>因为每次调用时都会对连接进行线性遍历，所以随着FD的增加会造成遍历速度慢的“线性下降性能问题”。</td>
+</tr>
+<tr>
+<td>poll</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>epoll</td>
+<td>因为epoll内核中实现是根据每个fd上的callback函数来实现的，只有活跃的socket才会主动调用callback，所以在活跃socket较少的情况下，使用epoll没有前面两者的线性下降的性能问题，但是所有socket都很活跃的情况下，可能会有性能问题。</td>
+</tr>
+</tbody></table>
+<h3 id="3、消息传递的方式"><a href="#3、消息传递的方式" class="headerlink" title="　　3、消息传递的方式"></a>　　3、消息传递的方式</h3><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>select</td>
+<td>内核需要将消息传递到用户空间，都需要内核拷贝动作</td>
+</tr>
+<tr>
+<td>poll</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>epoll</td>
+<td>epoll通过内核和用户空间共享一块内存来实现的。</td>
+</tr>
+</tbody></table>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000003063859" target="_blank" rel="noopener">Linux IO模式及 select、poll、epoll详解</a></p>
+<p><a href="http://guojing.me/linux-kernel-architecture/posts/process-switch/" target="_blank" rel="noopener">进程切换</a><br><a href="https://zh.wikipedia.org/wiki/文件描述符" target="_blank" rel="noopener">维基百科-文件描述符</a><br><a href="http://www.ibm.com/developerworks/cn/linux/l-cn-directio/" target="_blank" rel="noopener">Linux 中直接 I/O 机制的介绍</a><br><a href="http://blog.csdn.net/historyasamirror/article/details/5778378" target="_blank" rel="noopener">IO - 同步，异步，阻塞，非阻塞 （亡羊补牢篇）</a><br><a href="http://www.cnblogs.com/bigwangdi/p/3182958.html" target="_blank" rel="noopener">Linux中select poll和epoll的区别</a><br><a href="http://www.cnblogs.com/Anker/archive/2013/08/14/3258674.html" target="_blank" rel="noopener">IO多路复用之select总结</a><br><a href="http://www.cnblogs.com/Anker/archive/2013/08/15/3261006.html" target="_blank" rel="noopener">IO多路复用之poll总结</a><br><a href="http://www.cnblogs.com/Anker/archive/2013/08/17/3263780.html" target="_blank" rel="noopener">IO多路复用之epoll总结</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/%E7%94%A8shell%E5%88%86%E6%9E%90%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%97%A5%E5%BF%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/16/%E7%94%A8shell%E5%88%86%E6%9E%90%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%97%A5%E5%BF%97/" class="post-title-link" itemprop="url">用shell分析服务器日志</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-17 06:48:50 / 修改时间：14:54:02" itemprop="dateCreated datePublished" datetime="2020-07-17T06:48:50+08:00">2020-07-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>1、查看有多少个IP访问：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;print $1&#125;&#39; log_file|sort|uniq|wc -l</span><br></pre></td></tr></table></figure>
+
+<p>2、查看某一个页面被访问的次数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep &quot;&#x2F;index.php&quot; log_file | wc -l</span><br></pre></td></tr></table></figure>
+
+<p>3、查看每一个IP访问了多少个页面：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;++S[$1]&#125; END &#123;for (a in S) print a,S[a]&#125;&#39; log_file &gt; log.txt</span><br></pre></td></tr></table></figure>
+
+<p><code>sort -n -t &#39; &#39; -k 2 log.txt</code>   <strong>配合sort进一步排序</strong></p>
+<p>4、将每个IP访问的页面数进行从小到大排序：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;++S[$1]&#125; END &#123;for (a in S) print S[a],a&#125;&#39; log_file | sort -n</span><br></pre></td></tr></table></figure>
+
+<p>5、查看某一个IP访问了哪些页面：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep ^111.111.111.111 log_file| awk &#39;&#123;print $1,$7&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p>6、去掉搜索引擎统计的页面：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;print $12,$1&#125;&#39; log_file | grep ^\&quot;Mozilla | awk &#39;&#123;print $2&#125;&#39; |sort | uniq | wc -l</span><br></pre></td></tr></table></figure>
+
+<p>7、查看2015年8月16日14时这一个小时内有多少IP访问:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;print $4,$1&#125;&#39; log_file | grep 16&#x2F;Aug&#x2F;2015:14 | awk &#39;&#123;print $2&#125;&#39;| sort | uniq | wc -l</span><br></pre></td></tr></table></figure>
+
+<p>8、查看访问前十个ip地址</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;&#123;print $1&#125;&#39; |sort|uniq -c|sort -nr |head -10 access_log</span><br></pre></td></tr></table></figure>
+
+<p><strong>uniq -c 相当于分组统计并把统计数放在最前面</strong><br><code>cat access.log|awk &#39;{print $1}&#39;|sort|uniq -c|sort -nr|head -10</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log|awk &#39;&#123;counts[$(11)]+&#x3D;1&#125;; END &#123;for(url in counts) print counts[url], url&#125;</span><br></pre></td></tr></table></figure>
+
+<p>9、访问次数最多的10个文件或页面</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat log_file|awk &#39;&#123;print $11&#125;&#39;|sort|uniq -c|sort -nr | head -10</span><br><span class="line">cat log_file|awk &#39;&#123;print $11&#125;&#39;|sort|uniq -c|sort -nr|head -20</span><br></pre></td></tr></table></figure>
+
+<p><code>awk &#39;{print $1}&#39; log_file |sort -n -r |uniq -c | sort -n -r | head -20</code><br><strong>访问量最大的前20个ip</strong></p>
+<p>10、通过子域名访问次数，依据referer来计算，稍有不准</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log | awk &#39;&#123;print $11&#125;&#39; | sed -e &#39; s&#x2F;http:\&#x2F;\&#x2F;&#x2F;&#x2F;&#39; -e &#39; s&#x2F;\&#x2F;.*&#x2F;&#x2F;&#39; | sort | uniq -c | sort -rn | head -20</span><br></pre></td></tr></table></figure>
+
+<p>11、列出传输大小最大的几个文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat www.access.log |awk &#39;($7~&#x2F;\.php&#x2F;)&#123;print $10 &quot; &quot; $1 &quot; &quot; $4 &quot; &quot; $7&#125;&#39;|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p>12、列出输出大于200000byte(约200kb)的页面以及对应页面发生次数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat www.access.log |awk &#39;($10 &gt; 200000 &amp;&amp; $7~&#x2F;\.php&#x2F;)&#123;print $7&#125;&#39;|sort -n|uniq -c|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p>13、如果日志最后一列记录的是页面文件传输时间，则有列出到客户端最耗时的页面</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat www.access.log |awk &#39;($7~&#x2F;\.php&#x2F;)&#123;print $NF &quot; &quot; $1 &quot; &quot; $4 &quot; &quot; $7&#125;&#39;|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p>14、列出最最耗时的页面(超过60秒的)的以及对应页面发生次数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat www.access.log |awk &#39;($NF &gt; 60 &amp;&amp; $7~&#x2F;\.php&#x2F;)&#123;print $7&#125;&#39;|sort -n|uniq -c|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p>15、列出传输时间超过 30 秒的文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat www.access.log |awk &#39;($NF &gt; 30)&#123;print $7&#125;&#39;|sort -n|uniq -c|sort -nr|head -20</span><br></pre></td></tr></table></figure>
+
+<p>16、列出当前服务器每一进程运行的数量，倒序排列</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | awk -F &#39; &#39; &#39;&#123;print $8 &quot; &quot; $9&#125;&#39; |sort | uniq -c |sort -nr |head -20</span><br></pre></td></tr></table></figure>
+
+<p>17、查看apache当前并发访问数</p>
+<p><strong>对比httpd.conf中MaxClients的数字差距多少</strong><br><code>netstat -an | grep ESTABLISHED | wc -l</code></p>
+<p>18、可以使用如下参数查看数据</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ps -ef|grep httpd|wc -l</span><br><span class="line"></span><br><span class="line">1388</span><br></pre></td></tr></table></figure>
+<p><strong>统计httpd进程数，连个请求会启动一个进程，使用于Apache服务器。</strong><br><strong>表示Apache能够处理1388个并发请求，这个值Apache可根据负载情况自动调整</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">netstat -nat|grep -i &quot;80&quot;|wc -l</span><br><span class="line"></span><br><span class="line">4341</span><br></pre></td></tr></table></figure>
+<p><strong>netstat -an会打印系统当前网络链接状态，而grep -i “80”是用来提取与80端口有关的连接的，wc -l进行连接数统计。</strong><br><strong>最终返回的数字就是当前所有80端口的请求总数</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netstat -na|grep ESTABLISHED|wc -l</span><br><span class="line">376</span><br></pre></td></tr></table></figure>
+<p><strong>netstat -an会打印系统当前网络链接状态，而grep ESTABLISHED 提取出已建立连接的信息。 然后wc -l统计</strong><br><strong>最终返回的数字就是当前所有80端口的已建立连接的总数。</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -nat||grep ESTABLISHED|wc</span><br></pre></td></tr></table></figure>
+
+<p><strong>可查看所有建立连接的详细记录</strong></p>
+<p>19、输出每个ip的连接数，以及总的各个状态的连接数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -n | awk &#39;&#x2F;^tcp&#x2F; &#123;n&#x3D;split($(NF-1),array,&quot;:&quot;);if(n&lt;&#x3D;2)++S[array[(1)]];else++S[array[(4)]];++s[$NF];++N&#125; END &#123;for(a in S)&#123;printf(&quot;%-20s %s\n&quot;, a, S[a]);++I&#125;printf(&quot;%-20s %s\n&quot;,&quot;TOTAL_IP&quot;,I);for(a in s) printf(&quot;%-20s %s\n&quot;,a, s[a]);printf(&quot;%-20s %s\n&quot;,&quot;TOTAL_LINK&quot;,N);&#125;</span><br></pre></td></tr></table></figure>
+
+<p>20、其他的收集</p>
+<p><strong>分析日志文件下 2012-05-04 访问页面最高 的前20个 URL  并排序</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log |grep &#39;04&#x2F;May&#x2F;2012&#39;| awk &#39;&#123;print $11&#125;&#39;|sort|uniq -c|sort -nr|head -20</span><br></pre></td></tr></table></figure>
+
+<p><strong>查询受访问页面的URL地址中 含有 <a href="http://www.abc.com" target="_blank" rel="noopener">www.abc.com</a> 网址的 IP 地址</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access_log | awk &#39;($11~&#x2F;\www.abc.com&#x2F;)&#123;print $1&#125;&#39;|sort|uniq -c|sort -nr</span><br></pre></td></tr></table></figure>
+
+<p><strong>获取访问最高的10个IP地址  同时也可以按时间来查询</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat linewow-access.log|awk &#39;&#123;print $1&#125;&#39;|sort|uniq -c|sort -nr|head -10</span><br></pre></td></tr></table></figure>
+
+<p><strong><em>\</em>时间段查询日志时间段的情况**</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat log_file | egrep &#39;15&#x2F;Aug&#x2F;2015|16&#x2F;Aug&#x2F;2015&#39; |awk &#39;&#123;print $1&#125;&#39;|sort|uniq -c|sort -nr|head -10</span><br></pre></td></tr></table></figure>
+
+<p><strong>分析2015/8/15 到 2015/8/16 访问”/index.php?g=Member&amp;m=Public&amp;a=sendValidCode”的IP倒序排列</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat log_file | egrep &#39;15&#x2F;Aug&#x2F;2015|16&#x2F;Aug&#x2F;2015&#39; | awk &#39;&#123;if($7 &#x3D;&#x3D; &quot;&#x2F;index.php?g&#x3D;Member&amp;m&#x3D;Public&amp;a&#x3D;sendValidCode&quot;) print $1,$7&#125;&#39;|sort|uniq -c|sort -nr</span><br></pre></td></tr></table></figure>
+
+<p><strong>(7里面包含.php的就输出,本句的意思是最耗时的一百个PHP页面</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat log_file |awk &#39;($7~&#x2F;\.php&#x2F;)&#123;print $NF &quot; &quot; $1 &quot; &quot; $4 &quot; &quot; $7&#125;&#39;|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p><strong>列出最最耗时的页面(超过60秒的)的以及对应页面发生次数</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log |awk &#39;($NF &gt; 60 &amp;&amp; $7~&#x2F;\.php&#x2F;)&#123;print $7&#125;&#39;|sort -n|uniq -c|sort -nr|head -100</span><br></pre></td></tr></table></figure>
+
+<p><strong>统计网站流量（G)</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log |awk &#39;&#123;sum+&#x3D;$10&#125; END &#123;print sum&#x2F;1024&#x2F;1024&#x2F;1024&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p><strong>统计404的连接</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk &#39;($9 ~&#x2F;404&#x2F;)&#39; access.log | awk &#39;&#123;print $9,$7&#125;&#39; | sort</span><br></pre></td></tr></table></figure>
+
+<p><strong>统计http status</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat access.log |awk &#39;&#123;counts[$(9)]+&#x3D;1&#125;; END &#123;for(code in counts) print code, counts[code]&#125;&#39;&#96; </span><br><span class="line">&#96;cat access.log |awk &#39;&#123;print $9&#125;&#39;|sort|uniq -c|sort -rn</span><br></pre></td></tr></table></figure>
+
+<p><strong>每秒并发</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch &quot;awk &#39;&#123;if($9~&#x2F;200|30|404&#x2F;)COUNT[$4]++&#125;END&#123;for( a in COUNT) print a,COUNT[a]&#125;&#39; log_file|sort -k 2 -nr|head -n10&quot;</span><br></pre></td></tr></table></figure>
+
+<p><strong>带宽统计</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat apache.log |awk &#39;&#123;if($7~&#x2F;GET&#x2F;) count++&#125;END&#123;print &quot;client_request&#x3D;&quot;count&#125;&#39;&#96; </span><br><span class="line">&#96;cat apache.log |awk &#39;&#123;BYTE+&#x3D;$11&#125;END&#123;print &quot;client_kbyte_out&#x3D;&quot;BYTE&#x2F;1024&quot;KB&quot;&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p><strong>找出某天访问次数最多的10个IP</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat &#x2F;tmp&#x2F;access.log | grep &quot;20&#x2F;Mar&#x2F;2011&quot; |awk &#39;&#123;print $3&#125;&#39;|sort |uniq -c|sort -nr|head</span><br></pre></td></tr></table></figure>
+
+<p><strong>当天ip连接数最高的ip都在干些什么</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat access.log | grep &quot;10.0.21.17&quot; | awk &#39;&#123;print $8&#125;&#39; | sort | uniq -c | sort -nr | head -n 10</span><br></pre></td></tr></table></figure>
+
+<p><strong>小时单位里ip连接数最多的10个时段</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk -vFS&#x3D;&quot;[:]&quot; &#39;&#123;gsub(&quot;-.*&quot;,&quot;&quot;,$1);num[$2&quot; &quot;$1]++&#125;END&#123;for(i in num)print i,num[i]&#125;&#39; log_file | sort -n -k 3 -r | head -10</span><br></pre></td></tr></table></figure>
+
+<p><strong>找出访问次数最多的几个分钟</strong> </p>
+<p><code>awk &#39;{print $1}&#39; access.log | grep &quot;20/Mar/2011&quot; |cut -c 14-18|sort|uniq -c|sort -nr|head</code><br><strong>取5分钟日志</strong><br><code>if [ $DATE_MINUTE != $DATE_END_MINUTE ] ;then</code> #则判断开始时间戳与结束时间戳是否相等<br><code>START_LINE=sed -n &quot;/$DATE_MINUTE/=&quot; $APACHE_LOG|head -n1</code> #如果不相等，则取出开始时间戳的行号，与结束时间戳的行号 </p>
+<p><strong>查看tcp的链接状态</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">netstat -nat |awk &#39;&#123;print $6&#125;&#39;|sort|uniq -c|sort -rn </span><br><span class="line">    </span><br><span class="line">netstat -n | awk &#39;&#x2F;^tcp&#x2F; &#123;++S[$NF]&#125;;END &#123;for(a in S) print a, S[a]&#125;&#39; </span><br><span class="line"></span><br><span class="line">netstat -n | awk &#39;&#x2F;^tcp&#x2F; &#123;++state[$NF]&#125;; END &#123;for(key in state) print key,&quot;\t&quot;,state[key]&#125;&#39; </span><br><span class="line">    </span><br><span class="line">netstat -n | awk &#39;&#x2F;^tcp&#x2F; &#123;++arr[$NF]&#125;;END &#123;for(k in arr) print k,&quot;\t&quot;,arr[k]&#125;&#39; </span><br><span class="line">    </span><br><span class="line">netstat -n |awk &#39;&#x2F;^tcp&#x2F; &#123;print $NF&#125;&#39;|sort|uniq -c|sort -rn </span><br><span class="line">    </span><br><span class="line">netstat -ant | awk &#39;&#123;print $NF&#125;&#39; | grep -v &#39;[a-z]&#39; | sort | uniq -c</span><br><span class="line">netstat -ant|awk &#39;&#x2F;ip:80&#x2F;&#123;split($5,ip,&quot;:&quot;);++S[ip[1]]&#125;END&#123;for (a in S) print S[a],a&#125;&#39; |sort -n </span><br><span class="line">    </span><br><span class="line">netstat -ant|awk &#39;&#x2F;:80&#x2F;&#123;split($5,ip,&quot;:&quot;);++S[ip[1]]&#125;END&#123;for (a in S) print S[a],a&#125;&#39; |sort -rn|head -n 10 </span><br><span class="line">    </span><br><span class="line">awk &#39;BEGIN&#123;printf (&quot;http_code\tcount_num\n&quot;)&#125;&#123;COUNT[$10]++&#125;END&#123;for (a in COUNT) printf a&quot;\t\t&quot;COUNT[a]&quot;\n&quot;&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p><strong>查找请求数前20个IP（常用于查找攻来源）：</strong><br><code>netstat -anlp|grep 80|grep tcp|awk &#39;{print $5}&#39;|awk -F: &#39;{print $1}&#39;|sort|uniq -c|sort -nr|head -n20</code><br><code>netstat -ant |awk &#39;/:80/{split($5,ip,&quot;:&quot;);++A[ip[1]]}END{for(i in A) print A[i],i}&#39; |sort -rn|head -n20</code></p>
+<p><strong>用tcpdump嗅探80端口的访问看看谁最高</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tcpdump -i eth0 -tnn dst port 80 -c 1000 | awk -F&quot;.&quot; &#39;&#123;print $1&quot;.&quot;$2&quot;.&quot;$3&quot;.&quot;$4&#125;&#39; | sort | uniq -c | sort -nr |head -20</span><br></pre></td></tr></table></figure>
+
+<p><strong>查找较多time_wait连接</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -n|grep TIME_WAIT|awk &#39;&#123;print $5&#125;&#39;|sort|uniq -c|sort -rn|head -n20</span><br></pre></td></tr></table></figure>
+
+<p><strong>找查较多的SYN连接</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">netstat -an | grep SYN | awk &#39;&#123;print $5&#125;&#39; | awk -F: &#39;&#123;print $1&#125;&#39; | sort | uniq -c | sort -nr | more</span><br></pre></td></tr></table></figure>
+
+<p><strong>根据端口列进程</strong><br><code>netstat -ntlp | grep 80 | awk &#39;{print $7}&#39; | cut -d/ -f1</code></p>
+<p><strong>查看了连接数和当前的连接数</strong> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netstat -ant | grep $ip:80 | wc -l&#96; </span><br><span class="line">&#96;netstat -ant | grep $ip:80 | grep EST | wc -l</span><br></pre></td></tr></table></figure>
+
+<p><strong>查看IP访问次数</strong><br><code>netstat -nat|grep &quot;:80&quot;|awk &#39;{print $5}&#39; |awk -F: &#39;{print $1}&#39; | sort| uniq -c|sort -n</code></p>
+<p><strong>Linux命令分析当前的链接状况</strong><br><code>netstat -n | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</code></p>
+<p><code>watch &quot;netstat -n | awk &#39;/^tcp/ {++S[\$NF]} END {for(a in S) print a, S[a]}&#39;&quot;</code>  # 通过watch可以一直监控</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">LAST_ACK 5 #关闭一个TCP连接需要从两个方向上分别进行关闭，双方都是通过发送FIN来表示单方向数据的关闭，当通信双方发送了最后一个FIN的时候，发送方此时处于LAST_ACK状态，当发送方收到对方的确认（Fin的Ack确认）后才真正关闭整个TCP连接；</span><br><span class="line"></span><br><span class="line">SYN_RECV 30  # 表示正在等待处理的请求数；</span><br><span class="line"></span><br><span class="line">ESTABLISHED 1597 # 表示正常数据传输状态； </span><br><span class="line"></span><br><span class="line">FIN_WAIT1 51 # 表示server端主动要求关闭tcp连接； </span><br><span class="line"></span><br><span class="line">FIN_WAIT2 504 # 表示客户端中断连接； </span><br><span class="line"></span><br><span class="line">TIME_WAIT 1057  # 表示处理完毕，等待超时结束的请求数；</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000009745139" target="_blank" rel="noopener">shell在手分析服务器日志不用愁</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/%20kafka%E4%B8%AD%E7%9A%84topic%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%9B%E8%A1%8C%E5%88%86%E5%8C%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/16/%20kafka%E4%B8%AD%E7%9A%84topic%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%9B%E8%A1%8C%E5%88%86%E5%8C%BA/" class="post-title-link" itemprop="url">kafka中的topic为什么要进行分区</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-17 06:24:39 / 修改时间：14:33:38" itemprop="dateCreated datePublished" datetime="2020-07-17T06:24:39+08:00">2020-07-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Kafka/" itemprop="url" rel="index"><span itemprop="name">Kafka</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Kafka可以将主题划分为多个分区（Partition），会根据分区规则选择把消息存储到哪个分区中，只要如果分区规则设置的合理，那么所有的消息将会被均匀的分布到不同的分区中，这样就实现了负载均衡和水平扩展。另外，多个订阅者可以从一个或者多个分区中同时消费数据，以支撑海量数据处理能力：</p>
+<p><img src="https://pic3.zhimg.com/50/v2-b30dec8282913a27d1978aae5a6e6431_hd.jpg?source=1940ef5c" alt="img">)<img src="https://pic3.zhimg.com/80/v2-b30dec8282913a27d1978aae5a6e6431_720w.jpg?source=1940ef5c" alt="img"></p>
+<p>Kafka的设计也是源自生活，好比是为公路运输，不同的起始点和目的地需要修不同高速公路（主题），高速公路上可以提供多条车道（分区），流量大的公路多修几条车道保证畅通，流量小的公路少修几条车道避免浪费。收费站好比消费者，车多的时候多开几个一起收费避免堵在路上，车少的时候开几个让汽车并道就好了，嗯……</p>
+<p>顺便说一句，由于消息是以追加到分区中的，多个分区顺序写磁盘的总效率要比随机写内存还要高（引用Apache Kafka – A High Throughput Distributed Messaging System的观点），是Kafka高吞吐率的重要保证之一。</p>
+<p>为了保证数据的可靠性，Kafka会给每个分区找一个节点当带头大哥（Leader），以及若干个节点当随从（Follower）。消息写入分区时，带头大哥除了自己复制一份外还会复制到多个随从。如果随从挂了，Kafka会再找一个随从从带头大哥那里同步历史消息；如果带头大哥挂了，随从中会选举出新一任的带头大哥，继续笑傲江湖。</p>
+<p><img src="https://pic3.zhimg.com/50/v2-59a85614d80d122c935bc03a065aba43_hd.jpg?source=1940ef5c" alt="img">)<img src="https://pic3.zhimg.com/80/v2-59a85614d80d122c935bc03a065aba43_720w.jpg?source=1940ef5c" alt="img"></p>
+<h3 id="1-kafka为什么要在topic里加入分区的概念？"><a href="#1-kafka为什么要在topic里加入分区的概念？" class="headerlink" title="1.kafka为什么要在topic里加入分区的概念？"></a>1.kafka为什么要在topic里加入分区的概念？</h3><p>topic是逻辑的概念，partition是物理的概念，对用户来说是透明的。producer只需要关心消息发往哪个topic，而consumer只关心自己订阅哪个topic，并不关心每条消息存于整个集群的哪个broker。</p>
+<p>为了性能考虑，如果topic内的消息只存于一个broker，那这个broker会成为瓶颈，无法做到水平扩展。所以把topic内的数据分布到整个集群就是一个自然而然的设计方式。Partition的引入就是解决水平扩展问题的一个方案。</p>
+<p>每个partition可以被认为是一个无限长度的数组，新数据顺序追加进这个数组。物理上，每个partition对应于一个文件夹。一个broker上可以存放多个partition。这样，producer可以将数据发送给多个broker上的多个partition，consumer也可以并行从多个broker上的不同paritition上读数据，实现了水平扩展.</p>
+<h3 id="2-如果没有分区-topic中的segment消息写满后-直接给订阅者不是也可以吗"><a href="#2-如果没有分区-topic中的segment消息写满后-直接给订阅者不是也可以吗" class="headerlink" title="2.如果没有分区,topic中的segment消息写满后,直接给订阅者不是也可以吗?"></a>2.如果没有分区,topic中的segment消息写满后,直接给订阅者不是也可以吗?</h3><p>“segment消息写满后”，consume消费数据并不需要等到segment写满，只要有一条数据被commit，就可以立马被消费.</p>
+<p>segment对应一个文件（实现上对应2个文件，一个数据文件，一个索引文件），一个partition对应一个文件夹，一个partition里理论上可以包含任意多个segment。所以partition可以认为是在segment上做了一层包装。</p>
+<p>这个问题换个角度问可能更好，“为什么有了partition还需要segment”。</p>
+<p>如果不引入segment，一个partition直接对应一个文件（应该说两个文件，一个数据文件，一个索引文件），那这个文件会一直增大。同时，在做data purge时，需要把文件的前面部分给删除，不符合kafka对文件的顺序写优化设计方案。引入segment后，每次做data purge，只需要把旧的segment整个文件删除即可，保证了每个segment的顺序写，</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.zhihu.com/question/28925721/answer/139861200" target="_blank" rel="noopener">kafka中的topic为什么要进行分区</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/%20Kafka%20%E7%AE%80%E4%BB%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1292,593 +2006,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/" class="post-title-link" itemprop="url">数据库逻辑设计之三大范式</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-10 06:43:29 / 修改时间：14:58:28" itemprop="dateCreated datePublished" datetime="2020-07-10T06:43:29+08:00">2020-07-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、第一范式"><a href="#一、第一范式" class="headerlink" title="一、第一范式"></a>一、第一范式</h2><p><strong>列不可再分</strong></p>
-<p>1NF是对属性的<strong><code>原子性</code></strong>，要求属性具有原子性，不可再分解；</p>
-<blockquote>
-<p>表：字段1、 字段2(字段2.1、字段2.2)、字段3 ……</p>
-</blockquote>
-<p>如学生（学号，姓名，性别，出生年月日），如果认为最后一列还可以再分成（出生年，出生月，出生日），它就不是一范式了，否则就是；</p>
-<h2 id="二、第二范式"><a href="#二、第二范式" class="headerlink" title="二、第二范式"></a>二、第二范式</h2><p><strong>主键(可为多列)可以将每一行完全区分开来,且主键不冗余</strong></p>
-<p>2NF是对记录的<strong><code>惟一性</code></strong>，要求记录有惟一标识，即实体的惟一性，即<strong>不存在部分依赖</strong>；</p>
-<blockquote>
-<p>表：学号、课程号、姓名、学分;</p>
-</blockquote>
-<p>这个表明显说明了两个事务:学生信息, 课程信息;由于非主键字段必须依赖主键，这里<strong>学分依赖课程号</strong>，<strong>姓名依赖与学号</strong>，所以不符合二范式。</p>
-<p><strong>可能会存在问题：</strong></p>
-<ul>
-<li><code>数据冗余:</code>，每条记录都含有相同信息；</li>
-<li><code>删除异常：</code>删除所有学生成绩，就把课程信息全删除了；</li>
-<li><code>插入异常：</code>学生未选课，无法记录进数据库；</li>
-<li><code>更新异常：</code>调整课程学分，所有行都调整。</li>
-</ul>
-<p><strong>正确做法:</strong><br>学生：<code>Student</code>(学号, 姓名)；<br>课程：<code>Course</code>(课程号, 学分)；<br>选课关系：<code>StudentCourse</code>(学号, 课程号, 成绩)。</p>
-<h2 id="三、第三范式"><a href="#三、第三范式" class="headerlink" title="三、第三范式"></a>三、第三范式</h2><p>满足一二范式条件下,<strong>不存在对主键的传递依赖</strong></p>
-<p>3NF是对字段的<strong><code>冗余性</code></strong>，要求任何字段不能由其他字段派生出来，它要求字段没有冗余，即不存在传递依赖；</p>
-<blockquote>
-<p>表: 学号, 姓名, 年龄, 学院名称, 学院电话</p>
-</blockquote>
-<p>因为存在<strong>依赖传递</strong>: (学号) → (学生)→(所在学院) → (学院电话) 。</p>
-<p><strong>可能会存在问题：</strong></p>
-<ul>
-<li><code>数据冗余:</code>有重复值；</li>
-<li><code>更新异常：</code>有重复的冗余信息，修改时需要同时修改多条记录，否则会出现<strong>数据不一致的情况</strong> 。</li>
-</ul>
-<p><strong>正确做法：</strong></p>
-<p>学生：(学号, 姓名, 年龄, 所在学院)； </p>
-<p>学院：(学院, 电话)。</p>
-<h2 id="四、反范式化"><a href="#四、反范式化" class="headerlink" title="四、反范式化"></a>四、反范式化</h2><p><strong>一般说来，数据库只需满足第三范式（<code>3NF</code>）就行了。</strong></p>
-<p>没有冗余的数据库设计可以做到。但是，没有冗余的数据库未必是最好的数据库，有时为了提高运行效率，就必须降低范式标准，适当保留冗余数据。具体做法是：在概念数据模型设计时遵守第三范式，降低范式标准的工作放到物理数据模型设计时考虑。降低范式就是增加字段，允许冗余，<strong><code>达到以空间换时间的目的</code></strong>。</p>
-<p>〖例〗：有一张存放商品的基本表，“金额”这个字段的存在，表明该表的设计不满足第三范式，因为“金额”可以由“单价”乘以“数量”得到，说明“金额”是冗余字段。但是，增加“金额”这个冗余字段，可以提高查询统计的速度，这就是以空间换时间的作法。</p>
-<p>在<code>Rose 2002</code>中，规定列有两种类型：<strong>数据列</strong>和<strong>计算列</strong>。“金额”这样的列被称为“计算列”，而“单价”和“数量”这样的列被称为“数据列”。</p>
-<h2 id="五、范式化设计和反范式化设计的优缺点"><a href="#五、范式化设计和反范式化设计的优缺点" class="headerlink" title="五、范式化设计和反范式化设计的优缺点"></a>五、范式化设计和反范式化设计的优缺点</h2><h3 id="5-1-范式化"><a href="#5-1-范式化" class="headerlink" title="5.1 范式化"></a>5.1 范式化</h3><p><strong>优点：</strong></p>
-<ul>
-<li>减少数据冗余,数据表体积小更新快</li>
-<li>更新操作更快</li>
-</ul>
-<p><strong>缺点：</strong></p>
-<ul>
-<li>查询操作需要多表关联,降低了性能</li>
-<li>更难进行索引优化</li>
-</ul>
-<h3 id="5-2-反范式化"><a href="#5-2-反范式化" class="headerlink" title="5.2 反范式化"></a>5.2 反范式化</h3><p><strong>优点：</strong></p>
-<ul>
-<li>可以减少查询时表的关联</li>
-<li>更好地进行索引优化</li>
-</ul>
-<p><strong>缺点：</strong></p>
-<ul>
-<li>数据冗余,维护不方便</li>
-<li>修改数据不方便</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://segmentfault.com/a/1190000013695030" target="_blank" rel="noopener">数据库逻辑设计之三大范式</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/" class="post-title-link" itemprop="url">RESTful API 最佳实践</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-09 11:23:58 / 修改时间：19:35:41" itemprop="dateCreated datePublished" datetime="2020-07-09T11:23:58+08:00">2020-07-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>4.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><a href="http://www.ruanyifeng.com/blog/2011/09/restful.html" target="_blank" rel="noopener">RESTful</a> 是目前最流行的 API 设计规范，用于 Web 数据接口的设计。</p>
-<p>它的大原则容易把握，但是细节不容易做对。本文总结 RESTful 的设计细节，介绍如何设计出易于理解和使用的 API。</p>
-<p><img src="https://www.wangbase.com/blogimg/asset/201810/bg2018100301.jpg" alt="img"></p>
-<h2 id="一、URL-设计"><a href="#一、URL-设计" class="headerlink" title="一、URL 设计"></a>一、URL 设计</h2><h3 id="1-1-动词-宾语"><a href="#1-1-动词-宾语" class="headerlink" title="1.1 动词 + 宾语"></a>1.1 动词 + 宾语</h3><p>RESTful 的核心思想就是，客户端发出的数据操作指令都是”动词 + 宾语”的结构。比如，<code>GET /articles</code>这个命令，<code>GET</code>是动词，<code>/articles</code>是宾语。</p>
-<p>动词通常就是五种 HTTP 方法，对应 CRUD 操作。</p>
-<blockquote>
-<ul>
-<li>GET：读取（Read）</li>
-<li>POST：新建（Create）</li>
-<li>PUT：更新（Update）</li>
-<li>PATCH：更新（Update），通常是部分更新</li>
-<li>DELETE：删除（Delete）</li>
-</ul>
-</blockquote>
-<p>根据 HTTP 规范，动词一律大写。</p>
-<h3 id="1-2-动词的覆盖"><a href="#1-2-动词的覆盖" class="headerlink" title="1.2 动词的覆盖"></a>1.2 动词的覆盖</h3><p>有些客户端只能使用<code>GET</code>和<code>POST</code>这两种方法。服务器必须接受<code>POST</code>模拟其他三个方法（<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>）。</p>
-<p>这时，客户端发出的 HTTP 请求，要加上<code>X-HTTP-Method-Override</code>属性，告诉服务器应该使用哪一个动词，覆盖<code>POST</code>方法。</p>
-<blockquote>
-<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">POST /api/Person/4 HTTP/1.1  </span><br><span class="line"><span class="attribute">X-HTTP-Method-Override</span>: PUT</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，<code>X-HTTP-Method-Override</code>指定本次请求的方法是<code>PUT</code>，而不是<code>POST</code>。</p>
-<h3 id="1-3-宾语必须是名词"><a href="#1-3-宾语必须是名词" class="headerlink" title="1.3 宾语必须是名词"></a>1.3 宾语必须是名词</h3><p>宾语就是 API 的 URL，是 HTTP 动词作用的对象。它应该是名词，不能是动词。比如，<code>/articles</code>这个 URL 就是正确的，而下面的 URL 不是名词，所以都是错误的。</p>
-<blockquote>
-<ul>
-<li>/getAllCars</li>
-<li>/createNewCar</li>
-<li>/deleteAllRedCars</li>
-</ul>
-</blockquote>
-<h3 id="1-4-复数-URL"><a href="#1-4-复数-URL" class="headerlink" title="1.4 复数 URL"></a>1.4 复数 URL</h3><p>既然 URL 是名词，那么应该使用复数，还是单数？</p>
-<p>这没有统一的规定，但是常见的操作是读取一个集合，比如<code>GET /articles</code>（读取所有文章），这里明显应该是复数。</p>
-<p>为了统一起见，建议都使用复数 URL，比如<code>GET /articles/2</code>要好于<code>GET /article/2</code>。</p>
-<h3 id="1-5-避免多级-URL"><a href="#1-5-避免多级-URL" class="headerlink" title="1.5 避免多级 URL"></a>1.5 避免多级 URL</h3><p>常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个作者的某一类文章。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12/categories/2</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>这种 URL 不利于扩展，语义也不明确，往往要想一会，才能明白含义。</p>
-<p>更好的做法是，除了第一级，其他级别都用查询字符串表达。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12?categories=2</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>下面是另一个例子，查询已发布的文章。你可能会设计成下面的 URL。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles/published</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>查询字符串的写法明显更好。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles?published=true</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h2 id="二、状态码"><a href="#二、状态码" class="headerlink" title="二、状态码"></a>二、状态码</h2><h3 id="2-1-状态码必须精确"><a href="#2-1-状态码必须精确" class="headerlink" title="2.1 状态码必须精确"></a>2.1 状态码必须精确</h3><p>客户端的每一次请求，服务器都必须给出回应。回应包括 HTTP 状态码和数据两部分。</p>
-<p>HTTP 状态码就是一个三位数，分成五个类别。</p>
-<blockquote>
-<ul>
-<li><code>1xx</code>：相关信息</li>
-<li><code>2xx</code>：操作成功</li>
-<li><code>3xx</code>：重定向</li>
-<li><code>4xx</code>：客户端错误</li>
-<li><code>5xx</code>：服务器错误</li>
-</ul>
-</blockquote>
-<p>这五大类总共包含<a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes" target="_blank" rel="noopener">100多种</a>状态码，覆盖了绝大部分可能遇到的情况。每一种状态码都有标准的（或者约定的）解释，客户端只需查看状态码，就可以判断出发生了什么情况，所以服务器应该返回尽可能精确的状态码。</p>
-<p>API 不需要<code>1xx</code>状态码，下面介绍其他四类状态码的精确含义。</p>
-<h3 id="2-2-2xx-状态码"><a href="#2-2-2xx-状态码" class="headerlink" title="2.2 2xx 状态码"></a>2.2 2xx 状态码</h3><p><code>200</code>状态码表示操作成功，但是不同的方法可以返回更精确的状态码。</p>
-<blockquote>
-<ul>
-<li>GET: 200 OK</li>
-<li>POST: 201 Created</li>
-<li>PUT: 200 OK</li>
-<li>PATCH: 200 OK</li>
-<li>DELETE: 204 No Content</li>
-</ul>
-</blockquote>
-<p>上面代码中，<code>POST</code>返回<code>201</code>状态码，表示生成了新的资源；<code>DELETE</code>返回<code>204</code>状态码，表示资源已经不存在。</p>
-<p>此外，<code>202 Accepted</code>状态码表示服务器已经收到请求，但还未进行处理，会在未来再处理，通常用于异步操作。下面是一个例子。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">202</span> Accepted</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "task": &#123;</span><br><span class="line">    "href": "/api/company/job-management/jobs/2130040",</span><br><span class="line">    "id": "2130040"</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="2-3-3xx-状态码"><a href="#2-3-3xx-状态码" class="headerlink" title="2.3 3xx 状态码"></a>2.3 3xx 状态码</h3><p>API 用不到<code>301</code>状态码（永久重定向）和<code>302</code>状态码（暂时重定向，<code>307</code>也是这个含义），因为它们可以由应用级别返回，浏览器会直接跳转，API 级别可以不考虑这两种情况。</p>
-<p>API 用到的<code>3xx</code>状态码，主要是<code>303 See Other</code>，表示参考另一个 URL。它与<code>302</code>和<code>307</code>的含义一样，也是”暂时重定向”，区别在于<code>302</code>和<code>307</code>用于<code>GET</code>请求，而<code>303</code>用于<code>POST</code>、<code>PUT</code>和<code>DELETE</code>请求。收到<code>303</code>以后，浏览器不会自动跳转，而会让用户自己决定下一步怎么办。下面是一个例子。</p>
-<blockquote>
-<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">303</span> See Other</span><br><span class="line"><span class="attribute">Location</span>: /api/orders/12345</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="2-4-4xx-状态码"><a href="#2-4-4xx-状态码" class="headerlink" title="2.4 4xx 状态码"></a>2.4 4xx 状态码</h3><p><code>4xx</code>状态码表示客户端错误，主要有下面几种。</p>
-<p><code>400 Bad Request</code>：服务器不理解客户端的请求，未做任何处理。</p>
-<p><code>401 Unauthorized</code>：用户未提供身份验证凭据，或者没有通过身份验证。</p>
-<p><code>403 Forbidden</code>：用户通过了身份验证，但是不具有访问资源所需的权限。</p>
-<p><code>404 Not Found</code>：所请求的资源不存在，或不可用。</p>
-<p><code>405 Method Not Allowed</code>：用户已经通过身份验证，但是所用的 HTTP 方法不在他的权限之内。</p>
-<p><code>410 Gone</code>：所请求的资源已从这个地址转移，不再可用。</p>
-<p><code>415 Unsupported Media Type</code>：客户端要求的返回格式不支持。比如，API 只能返回 JSON 格式，但是客户端要求返回 XML 格式。</p>
-<p><code>422 Unprocessable Entity</code> ：客户端上传的附件无法处理，导致请求失败。</p>
-<p><code>429 Too Many Requests</code>：客户端的请求次数超过限额。</p>
-<h3 id="2-5-5xx-状态码"><a href="#2-5-5xx-状态码" class="headerlink" title="2.5 5xx 状态码"></a>2.5 5xx 状态码</h3><p><code>5xx</code>状态码表示服务端错误。一般来说，API 不会向用户透露服务器的详细信息，所以只要两个状态码就够了。</p>
-<p><code>500 Internal Server Error</code>：客户端请求有效，服务器处理时发生了意外。</p>
-<p><code>503 Service Unavailable</code>：服务器无法处理请求，一般用于网站维护状态。</p>
-<h2 id="三、服务器回应"><a href="#三、服务器回应" class="headerlink" title="三、服务器回应"></a>三、服务器回应</h2><h3 id="3-1-不要返回纯本文"><a href="#3-1-不要返回纯本文" class="headerlink" title="3.1 不要返回纯本文"></a>3.1 不要返回纯本文</h3><p>API 返回的数据格式，不应该是纯文本，而应该是一个 JSON 对象，因为这样才能返回标准的结构化数据。所以，服务器回应的 HTTP 头的<code>Content-Type</code>属性要设为<code>application/json</code>。</p>
-<p>客户端请求时，也要明确告诉服务器，可以接受 JSON 格式，即请求的 HTTP 头的<code>ACCEPT</code>属性也要设成<code>application/json</code>。下面是一个例子。</p>
-<blockquote>
-<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET /orders/2 HTTP/1.1 </span><br><span class="line"><span class="attribute">Accept</span>: application/json</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="3-2-发生错误时，不要返回-200-状态码"><a href="#3-2-发生错误时，不要返回-200-状态码" class="headerlink" title="3.2 发生错误时，不要返回 200 状态码"></a>3.2 发生错误时，不要返回 200 状态码</h3><p>有一种不恰当的做法是，即使发生错误，也返回<code>200</code>状态码，把错误信息放在数据体里面，就像下面这样。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "failure",</span><br><span class="line">  "data": &#123;</span><br><span class="line">    "error": "Expected at least two items in list."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面代码中，解析数据体以后，才能得知操作失败。</p>
-<p>这张做法实际上取消了状态码，这是完全不可取的。正确的做法是，状态码反映发生的错误，具体的错误信息放在数据体里面返回。下面是一个例子。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">400</span> Bad Request</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "error": "Invalid payoad.",</span><br><span class="line">  "detail": &#123;</span><br><span class="line">     "surname": "This field is required."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h3 id="3-3-提供链接"><a href="#3-3-提供链接" class="headerlink" title="3.3 提供链接"></a>3.3 提供链接</h3><p>API 的使用者未必知道，URL 是怎么设计的。一个解决方法就是，在回应中，给出相关链接，便于下一步操作。这样的话，用户只要记住一个 URL，就可以发现其他的 URL。这种方法叫做 HATEOAS。</p>
-<p>举例来说，GitHub 的 API 都在 <a href="https://api.github.com/" target="_blank" rel="noopener">api.github.com</a> 这个域名。访问它，就可以得到其他 URL。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  ...</span><br><span class="line">  "feeds_url": "https://api.github.com/feeds",</span><br><span class="line">  "followers_url": "https://api.github.com/user/followers",</span><br><span class="line">  "following_url": "https://api.github.com/user/following&#123;/target&#125;",</span><br><span class="line">  "gists_url": "https://api.github.com/gists&#123;/gist_id&#125;",</span><br><span class="line">  "hub_url": "https://api.github.com/hub",</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<p>上面的回应中，挑一个 URL 访问，又可以得到别的 URL。对于用户来说，不需要记住 URL 设计，只要从 api.github.com 一步步查找就可以了。</p>
-<p>HATEOAS 的格式没有统一规定，上面例子中，GitHub 将它们与其他属性放在一起。更好的做法应该是，将相关链接与其他属性分开。</p>
-<blockquote>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "In progress",</span><br><span class="line">   "links": &#123;[</span><br><span class="line">    &#123; "rel":"cancel", "method": "delete", "href":"/api/status/12345" &#125; ,</span><br><span class="line">    &#123; "rel":"edit", "method": "put", "href":"/api/status/12345" &#125;</span><br><span class="line">  ]&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</blockquote>
-<h2 id="四、参考链接"><a href="#四、参考链接" class="headerlink" title="四、参考链接"></a>四、参考链接</h2><ul>
-<li><a href="https://blog.florimondmanca.com/restful-api-design-13-best-practices-to-make-your-users-happy" target="_blank" rel="noopener">RESTful API Design: 13 Best Practices to Make Your Users Happy</a>, by Florimond Manca</li>
-<li><a href="https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank" rel="noopener">API design</a>, by MicroSoft Azure</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.ruanyifeng.com/blog/2018/10/restful-api-best-practices.html" target="_blank" rel="noopener">RESTful API 最佳实践</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/09/%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">信号量Semaphore与简单应用</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-09 11:06:01 / 修改时间：19:09:10" itemprop="dateCreated datePublished" datetime="2020-07-09T11:06:01+08:00">2020-07-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>信号量（Semaphore）是一种控制多线程（进程）访问共享资源的同步机制，是由荷兰的Dijkstra大佬在1962年前后提出来的。</p>
-<h2 id="信号量的原理"><a href="#信号量的原理" class="headerlink" title="信号量的原理"></a>信号量的原理</h2><p>信号量机制包含以下几个核心概念：</p>
-<ol>
-<li>信号量S，整型变量，需要初始化值大于0</li>
-<li>P原语，荷兰语Prolaag(probeer te verlagen)，表示减少信号量，该操作必须是原子的</li>
-<li>V原语，荷兰语Verhogen，表示增加信号量，该操作必须是原子的</li>
-</ol>
-<p><img src="https://user-gold-cdn.xitu.io/2019/4/19/16a334085455df02?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="信号量"></p>
-<p>从上图不难看出信号量的两个核心操作，P和V：</p>
-<ol>
-<li>P操作，原子减少S，然后如果<code>S &lt; 0</code>，则阻塞当前线程</li>
-<li>V操作，原子增加S，然后如果<code>S &lt;= 0</code>，则唤醒一个阻塞的线程</li>
-</ol>
-<p>信号量一般被用来控制多线程对共享资源的访问，允许最多S个线程同时访问临界区，多于S个的线程会被P操作阻塞，直到有线程执行完临界区代码后，调用V操作唤醒。所以PV操作必须是成对出现的。</p>
-<p>那么信号量可以用来干什么呢？</p>
-<ol>
-<li>信号量似乎天生就是为限流而生的，我们可以很容易用信号量实现一个<a href="#用信号量限流">限流器</a>。</li>
-<li>信号量可以用来实现<a href="#用信号量实现互斥锁">互斥锁</a>，初始化信号量<code>S = 1</code>，这样就只能有一个线程能访问临界区。很明显这是一个不可重入的锁。</li>
-<li>信号量甚至能够实现条件变量，比如<a href="#用信号量实现阻塞队列">阻塞队列</a></li>
-</ol>
-<h2 id="动手实现一个信号量"><a href="#动手实现一个信号量" class="headerlink" title="动手实现一个信号量"></a>动手实现一个信号量</h2><p>学习这些经典理论的时候，最好的办法还是用自己熟悉的编程语言实现一遍。Java并发包提供了一个信号量的<code>java.util.concurrent.Semaphore</code>，是用<code>AbstractQueuedSynchronizer</code>的共享模式实现的，以后会单独分析关于AQS相关的原理，这里不再展开描述，其核心思想是CAS。<br> 下面是我用Java实现的一个简单的信号量，这里使用<code>synchronized</code>来替代互斥锁</p>
-<h4 id="信号量实现"><a href="#信号量实现" class="headerlink" title="信号量实现"></a>信号量实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Semaphore</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 信号量S</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> s;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Semaphore</span><span class="params">(<span class="keyword">int</span> s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.s = s;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * P原语，原子操作</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * S减decr，如果S小于0，阻塞当前线程</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">p</span><span class="params">(<span class="keyword">int</span> decr)</span> </span>&#123;</span><br><span class="line">        s -= decr;</span><br><span class="line">        <span class="keyword">if</span> (s &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                wait();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                <span class="comment">// ...</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * V原语，原子操作</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * S加incr，如果S小于等于0，唤醒一个等待中的线程</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">v</span><span class="params">(<span class="keyword">int</span> incr)</span> </span>&#123;</span><br><span class="line">        s += incr;</span><br><span class="line">        <span class="keyword">if</span> (s &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            notify();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="用信号量限流"><a href="#用信号量限流" class="headerlink" title="用信号量限流"></a>用信号量限流</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Limiter</span> <span class="keyword">implements</span> <span class="title">Executor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore semaphore;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Limiter</span><span class="params">(<span class="keyword">int</span> limit)</span> </span>&#123;</span><br><span class="line">        semaphore = <span class="keyword">new</span> Semaphore(limit);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span><span class="params">(Runnable runnable)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (runnable != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">                semaphore.p(<span class="number">1</span>);</span><br><span class="line">                runnable.run();</span><br><span class="line">                semaphore.v(<span class="number">1</span>);</span><br><span class="line">            &#125;).start();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="用信号量实现互斥锁"><a href="#用信号量实现互斥锁" class="headerlink" title="用信号量实现互斥锁"></a>用信号量实现互斥锁</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SemaphoreLock</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore semaphore = <span class="keyword">new</span> Semaphore(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        semaphore.p(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        semaphore.v(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="用信号量实现阻塞队列"><a href="#用信号量实现阻塞队列" class="headerlink" title="用信号量实现阻塞队列"></a>用信号量实现阻塞队列</h4><p>实现阻塞队列需要两个信号量和一个锁（锁也可以用信号量代替）</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SemaphoreBlockingQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore notFull;</span><br><span class="line">    <span class="keyword">private</span> Semaphore notEmpty;</span><br><span class="line">    <span class="keyword">private</span> SemaphoreLock lock = <span class="keyword">new</span> SemaphoreLock();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object[] table;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> size;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SemaphoreBlockingQueue</span><span class="params">(<span class="keyword">int</span> cap)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (cap &lt; <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"capacity must be &gt; 0"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        notEmpty = <span class="keyword">new</span> Semaphore(<span class="number">0</span>);</span><br><span class="line">        notFull = <span class="keyword">new</span> Semaphore(cap);</span><br><span class="line">        table = <span class="keyword">new</span> Object[cap];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 如果队列是满的就会阻塞</span></span><br><span class="line">        notFull.p(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">// lock保证队列的原子添加</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        table[size++] = t;</span><br><span class="line">        lock.unlock();</span><br><span class="line">        <span class="comment">// 唤醒一个阻塞在notEmpty的线程</span></span><br><span class="line">        notEmpty.v(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">poll</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        T element;</span><br><span class="line">        <span class="comment">// 如果队列是空就会阻塞</span></span><br><span class="line">        notEmpty.p(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">// lock保证队列的原子删除</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        element = (T) table[--size];</span><br><span class="line">        lock.unlock();</span><br><span class="line">        <span class="comment">// 唤醒一个阻塞在notFull的线程</span></span><br><span class="line">        notFull.v(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">return</span> element;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5cb57b79518825327a059ea6" target="_blank" rel="noopener">信号量机制</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/git%E6%8C%87%E4%BB%A4%E4%B9%8Brebase/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/09/git%E6%8C%87%E4%BB%A4%E4%B9%8Brebase/" class="post-title-link" itemprop="url">git指令之rebase</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-09 08:11:30 / 修改时间：17:15:37" itemprop="dateCreated datePublished" datetime="2020-07-09T08:11:30+08:00">2020-07-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/" itemprop="url" rel="index"><span itemprop="name">版本控制</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>968</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>假设你现在基于远程分支”origin”，创建一个叫”mywork”的分支。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b mywork origin</span><br></pre></td></tr></table></figure>
-
-
-
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase0.png" alt="img"></p>
-<p>现在我们在这个分支做一些修改，然后生成两个提交(commit).</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ vi file.txt</span><br><span class="line">$ git commit</span><br><span class="line">$ vi otherfile.txt</span><br><span class="line">$ git commit</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-
-<p>但是与此同时，有些人也在”origin”分支上做了一些修改并且做了提交了. 这就意味着”origin”和”mywork”这两个分支各自”前进”了，它们之间”分叉”了。</p>
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase1.png" alt="img"></p>
-<p>在这里，你可以用”pull”命令把”origin”分支上的修改拉下来并且和你的修改合并； 结果看起来就像一个新的”合并的提交”(merge commit):</p>
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase2.png" alt="img"></p>
-<p>但是，如果你想让”mywork”分支历史看起来像没有经过任何合并一样，你也许可以用 <a href="http://www.kernel.org/pub/software/scm/git/docs/git-rebase.html" target="_blank" rel="noopener">git rebase</a>:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout mywork</span><br><span class="line">$ git rebase origin</span><br></pre></td></tr></table></figure>
-
-<p>这些命令会把你的”mywork”分支里的每个提交(commit)取消掉，并且把它们临时 保存为补丁(patch)(这些补丁放到”.git/rebase”目录中),然后把”mywork”分支更新 到最新的”origin”分支，最后把保存的这些补丁应用到”mywork”分支上。</p>
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase3.png" alt="img"></p>
-<p>当’mywork’分支更新之后，它会指向这些新创建的提交(commit),而那些老的提交会被丢弃。 如果运行垃圾收集命令(pruning garbage collection), 这些被丢弃的提交就会删除. （请查看 <a href="http://www.kernel.org/pub/software/scm/git/docs/git-gc.html" target="_blank" rel="noopener">git gc</a>)</p>
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase4.png" alt="img"></p>
-<p>现在我们可以看一下用合并(merge)和用rebase所产生的历史的区别：</p>
-<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase5.png" alt="img"></p>
-<p>在rebase的过程中，也许会出现冲突(conflict). 在这种情况，Git会停止rebase并会让你去解决 冲突；在解决完冲突后，用”git-add”命令去更新这些内容的索引(index), 然后，你无需执行 git-commit,只要执行:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git rebase --continue</span><br></pre></td></tr></table></figure>
-
-<p>这样git会继续应用(apply)余下的补丁。</p>
-<p>在任何时候，你可以用<code>--abort</code>参数来终止rebase的行动，并且”mywork” 分支会回到rebase开始前的状态。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git rebase --abort</span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>本文整理自</p>
-<p><a href="http://gitbook.liuhui998.com/4_2.html" target="_blank" rel="noopener">rebase</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1950,7 +2077,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2006,7 +2133,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

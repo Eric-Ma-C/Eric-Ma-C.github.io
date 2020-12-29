@@ -186,6 +186,366 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/23/%E9%A1%BA%E6%97%B6%E9%92%88%E6%89%93%E5%8D%B0%E7%9F%A9%E9%98%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/23/%E9%A1%BA%E6%97%B6%E9%92%88%E6%89%93%E5%8D%B0%E7%9F%A9%E9%98%B5/" class="post-title-link" itemprop="url">顺时针打印矩阵</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-24 03:56:14 / 修改时间：12:01:00" itemprop="dateCreated datePublished" datetime="2020-05-24T03:56:14+08:00">2020-05-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>输入一个矩阵，按照从外向里以顺时针的顺序依次打印出每一个数字，例如，如果输入如下4 X 4矩阵： 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 则依次打印出数字1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10.</p>
+<p>四个方向,一圈一圈分别处理;最后处理单行,单列的情况</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ArrayList&lt;Integer&gt; <span class="title">printMatrix</span><span class="params">(<span class="keyword">int</span>[][] matrix)</span> </span>&#123;</span><br><span class="line">    ArrayList&lt;Integer&gt; ans = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">int</span> row = matrix.length, col = matrix[<span class="number">0</span>].length;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> circle = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> stepCol = col - <span class="number">1</span>, stepRow = row - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (col - circle * <span class="number">2</span> &gt; <span class="number">1</span> &amp;&amp; row - circle * <span class="number">2</span> &gt; <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> start1 = circle;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = start1; i &lt; stepCol + start1; i++) &#123;</span><br><span class="line">            ans.add(matrix[circle][i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> start2 = circle;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = start2; j &lt; stepRow + start2; j++) &#123;</span><br><span class="line">            ans.add(matrix[j][col - circle - <span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> start3 = col - circle - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = start3; i &gt; start3 - stepCol; i--) &#123;</span><br><span class="line">            ans.add(matrix[row - circle - <span class="number">1</span>][i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> start4 = row - circle - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = start4; j &gt; start4 - stepRow; j--) &#123;</span><br><span class="line">            ans.add(matrix[j][circle]);</span><br><span class="line">        &#125;</span><br><span class="line">        stepCol -= <span class="number">2</span>;</span><br><span class="line">        stepRow -= <span class="number">2</span>;</span><br><span class="line">        circle++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (row - circle * <span class="number">2</span> == <span class="number">1</span> &amp;&amp; col - circle * <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">/** 处理最后剩一个的问题 */</span></span><br><span class="line">        ans.add(matrix[row / <span class="number">2</span>][col / <span class="number">2</span>]);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (col - circle * <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="comment">/** 处理单列 */</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = circle; i &lt; row - circle; i++) &#123;</span><br><span class="line">                ans.add(matrix[i][col / <span class="number">2</span>]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (row - circle * <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="comment">/** 处理单行 */</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = circle; j &lt; col - circle; j++) &#123;</span><br><span class="line">                ans.add(matrix[row / <span class="number">2</span>][j]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ans;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h2><p>链接：<a href="https://www.nowcoder.com/questionTerminal/9b4c81a02cd34f76be2659fa0d54342a?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/9b4c81a02cd34f76be2659fa0d54342a?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
+<h3 id="1-分析"><a href="#1-分析" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>刷 LeetCode 看到的大神题解，感觉容易理解且好写<br>简单来说，就是不断地收缩矩阵的边界<br>定义四个变量代表范围，up、down、left、right</p>
+<ol>
+<li>向右走存入整行的值，当存入后，该行再也不会被遍历，代表上边界的 up 加一，同时判断是否和代表下边界的 down 交错 </li>
+<li>向下走存入整列的值，当存入后，该列再也不会被遍历，代表右边界的 right 减一，同时判断是否和代表左边界的 left 交错 </li>
+<li>向左走存入整行的值，当存入后，该行再也不会被遍历，代表下边界的 down 减一，同时判断是否和代表上边界的 up 交错 </li>
+<li>向上走存入整列的值，当存入后，该列再也不会被遍历，代表左边界的 left 加一，同时判断是否和代表右边界的 right 交错 </li>
+</ol>
+<h3 id="2-代码"><a href="#2-代码" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> ArrayList&lt;Integer&gt; <span class="title">printMatrix</span><span class="params">(<span class="keyword">int</span> [][] matrix)</span> </span>&#123;</span><br><span class="line">        ArrayList&lt;Integer&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">if</span>(matrix == <span class="keyword">null</span> || matrix.length == <span class="number">0</span> || matrix[<span class="number">0</span>].length == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> list;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> up = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> down = matrix.length-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> left = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> right = matrix[<span class="number">0</span>].length-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">            <span class="comment">// 最上面一行</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> col=left;col&lt;=right;col++)&#123;</span><br><span class="line">                list.add(matrix[up][col]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 向下逼近</span></span><br><span class="line">            up++;</span><br><span class="line">            <span class="comment">// 判断是否越界</span></span><br><span class="line">            <span class="keyword">if</span>(up &gt; down)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 最右边一行</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> row=up;row&lt;=down;row++)&#123;</span><br><span class="line">                list.add(matrix[row][right]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 向左逼近</span></span><br><span class="line">            right--;</span><br><span class="line">            <span class="comment">// 判断是否越界</span></span><br><span class="line">            <span class="keyword">if</span>(left &gt; right)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 最下面一行</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> col=right;col&gt;=left;col--)&#123;</span><br><span class="line">                list.add(matrix[down][col]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 向上逼近</span></span><br><span class="line">            down--;</span><br><span class="line">            <span class="comment">// 判断是否越界</span></span><br><span class="line">            <span class="keyword">if</span>(up &gt; down)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 最左边一行</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> row=down;row&gt;=up;row--)&#123;</span><br><span class="line">                list.add(matrix[row][left]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 向右逼近</span></span><br><span class="line">            left++;</span><br><span class="line">            <span class="comment">// 判断是否越界</span></span><br><span class="line">            <span class="keyword">if</span>(left &gt; right)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> list;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-复杂度"><a href="#3-复杂度" class="headerlink" title="3. 复杂度"></a>3. 复杂度</h3><p>时间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(n)&preview=true" alt="img"><br>空间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(1)&preview=true" alt="img"></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/23/%E6%A0%91%E7%9A%84%E5%AD%90%E7%BB%93%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/23/%E6%A0%91%E7%9A%84%E5%AD%90%E7%BB%93%E6%9E%84/" class="post-title-link" itemprop="url">树的子结构</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-24 02:23:23 / 修改时间：10:25:30" itemprop="dateCreated datePublished" datetime="2020-05-24T02:23:23+08:00">2020-05-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>输入两棵二叉树A，B，判断B是不是A的子结构。（ps：我们约定空树不是任意一个树的子结构）</p>
+<p>注意子结构和子树的区别</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">HasSubtree</span><span class="params">(TreeNode root1, TreeNode root2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root2 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    List&lt;TreeNode&gt; treeNodeList = getNode(root2.val, root1);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (TreeNode treeNode : treeNodeList) &#123;</span><br><span class="line">        <span class="keyword">if</span> (judgeTree(treeNode, root2)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 判断子结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">judgeTree</span><span class="params">(TreeNode r1, TreeNode r2)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (r2 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (r1 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (r1.val != r2.val) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> judgeTree(r1.left, r2.left) &amp;&amp; judgeTree(r1.right, r2.right);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 找到所有值相同的节点</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">List&lt;TreeNode&gt; <span class="title">getNode</span><span class="params">(<span class="keyword">int</span> <span class="keyword">var</span>, TreeNode root)</span> </span>&#123;</span><br><span class="line">    List&lt;TreeNode&gt; ans = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    Stack&lt;TreeNode&gt; stack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    <span class="keyword">if</span> (root != <span class="keyword">null</span>) &#123;</span><br><span class="line">        stack.push(root);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">while</span> (!stack.empty()) &#123;</span><br><span class="line">        TreeNode tmp = stack.pop();</span><br><span class="line">        <span class="keyword">if</span> (tmp.val == <span class="keyword">var</span>) &#123;</span><br><span class="line">            ans.add(tmp);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (tmp.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (tmp.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ans;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E9%95%9C%E5%83%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E9%95%9C%E5%83%8F/" class="post-title-link" itemprop="url">二叉树的镜像</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-05-23 06:51:22 / 修改时间：15:04:00" itemprop="dateCreated datePublished" datetime="2020-05-23T06:51:22+08:00">2020-05-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>701</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>操作给定的二叉树，将其变换为源二叉树的镜像。</p>
+<h2 id="输入描述"><a href="#输入描述" class="headerlink" title="输入描述:"></a>输入描述:</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">二叉树的镜像定义：源二叉树 </span><br><span class="line">    	    8</span><br><span class="line">    	   &#x2F;  \</span><br><span class="line">    	  6   10</span><br><span class="line">    	 &#x2F; \  &#x2F; \</span><br><span class="line">    	5  7 9 11</span><br><span class="line">    	镜像二叉树</span><br><span class="line">    	    8</span><br><span class="line">    	   &#x2F;  \</span><br><span class="line">    	  10   6</span><br><span class="line">    	 &#x2F; \  &#x2F; \</span><br><span class="line">    	11 9 7  5</span><br></pre></td></tr></table></figure>
+
+<p>递归最简单</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Mirror</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    TreeNode left = root.left;</span><br><span class="line">    root.left = root.right;</span><br><span class="line">    root.right = left;</span><br><span class="line"></span><br><span class="line">    Mirror(root.left);</span><br><span class="line">    Mirror(root.right);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>非递归</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Mirror</span><span class="params">(TreeNode root)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (root == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    Stack&lt;TreeNode&gt; stack = <span class="keyword">new</span> Stack&lt;&gt;();</span><br><span class="line">    stack.push(root);</span><br><span class="line">    <span class="keyword">while</span> (!stack.empty()) &#123;</span><br><span class="line">        TreeNode tmp = stack.pop();</span><br><span class="line">        TreeNode left = tmp.left;</span><br><span class="line">        tmp.left = tmp.right;</span><br><span class="line">        tmp.right = left;</span><br><span class="line">        <span class="keyword">if</span> (tmp.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.left);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (tmp.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">            stack.push(tmp.right);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E5%90%88%E5%B9%B6%E4%B8%A4%E4%B8%AA%E6%8E%92%E5%BA%8F%E7%9A%84%E9%93%BE%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/22/%E5%90%88%E5%B9%B6%E4%B8%A4%E4%B8%AA%E6%8E%92%E5%BA%8F%E7%9A%84%E9%93%BE%E8%A1%A8/" class="post-title-link" itemprop="url">合并两个排序的链表</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-23 06:49:00" itemprop="dateCreated datePublished" datetime="2020-05-23T06:49:00+08:00">2020-05-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-05-24 14:27:19" itemprop="dateModified" datetime="2020-05-24T14:27:19+08:00">2020-05-24</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>644</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>输入两个单调递增的链表，输出两个链表合成后的链表，当然我们需要合成后的链表满足单调不减规则。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> ListNode <span class="title">Merge</span><span class="params">(ListNode list1, ListNode list2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (list1 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> list2;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (list2 == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> list1;</span><br><span class="line">    &#125;</span><br><span class="line">    ListNode head = <span class="keyword">null</span>, pre = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">while</span> (list1 != <span class="keyword">null</span> &amp;&amp; list2 != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (list1.val &lt;= list2.val) &#123;</span><br><span class="line">            <span class="keyword">if</span> (head == <span class="keyword">null</span>) &#123;</span><br><span class="line">                head = list1;</span><br><span class="line">                pre = head;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                pre.next = list1;</span><br><span class="line">                pre = list1;</span><br><span class="line">            &#125;</span><br><span class="line">            list1 = list1.next;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (head == <span class="keyword">null</span>) &#123;</span><br><span class="line">                head = list2;</span><br><span class="line">                pre = head;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                pre.next = list2;</span><br><span class="line">                pre = list2;</span><br><span class="line">            &#125;</span><br><span class="line">            list2 = list2.next;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    pre.next = (list1 != <span class="keyword">null</span>) ? list1 : list2;</span><br><span class="line">    <span class="keyword">return</span> head;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>todo:还可以用递归的方式</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/22/%E6%95%B0%E5%80%BC%E7%9A%84%E6%95%B4%E6%95%B0%E6%AC%A1%E6%96%B9/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -765,481 +1125,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E8%B7%B3%E5%8F%B0%E9%98%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/21/%E8%B7%B3%E5%8F%B0%E9%98%B6/" class="post-title-link" itemprop="url">跳台阶</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-22 04:49:37 / 修改时间：12:52:12" itemprop="dateCreated datePublished" datetime="2020-05-22T04:49:37+08:00">2020-05-22</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>967</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h1><p>一只青蛙一次可以跳上1级台阶，也可以跳上2级。求该青蛙跳上一个n级的台阶总共有多少种跳法（先后次序不同算不同的结果）。</p>
-<p>裴波那契数列</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">JumpFloor</span><span class="params">(<span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (target &lt; <span class="number">3</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span>[] fb = <span class="keyword">new</span> <span class="keyword">int</span>[target + <span class="number">1</span>];</span><br><span class="line">    fb[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">    fb[<span class="number">2</span>] = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">3</span>; i &lt; target + <span class="number">1</span>; i++) &#123;</span><br><span class="line">        fb[i] = fb[i - <span class="number">2</span>] + fb[i - <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fb[target];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/8c82a5b80378478f9484d87d1c5f12a4?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/8c82a5b80378478f9484d87d1c5f12a4?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="迭代"><a href="#迭代" class="headerlink" title="迭代"></a>迭代</h2><p>本质上还是斐波那契数列，所以迭代也可以求</p>
-<p>当成 dp 问题来想的话：首先分析问题，它最终解是由前面的解累积起来的解，如何缩小问题的规模？</p>
-<p>首先可知，第一阶有只能一步，一种；，第二阶可以两次一步、一次两步两种</p>
-<ul>
-<li>若楼梯阶级 n = 3<ul>
-<li>跳 2 步到 3：剩下的是第一步没跳，起始跳到第一步只有一种</li>
-<li>跳 1 步到 3：剩下的是第二步没跳，起始跳到第二步有两种</li>
-</ul>
-</li>
-</ul>
-<p>通过分类讨论，问题规模就减少了:</p>
-<ul>
-<li>若楼梯阶级 n = n<ul>
-<li>跳 2 步到 n：剩下的是第 n - 2 步没跳，起始跳到第 n - 2 步设它为 pre2 种</li>
-<li>跳 1 步到 n：剩下的是第 n - 1 步没跳，起始跳到第 n - 1 步设它为 pre1 种</li>
-</ul>
-</li>
-</ul>
-<p>同时可以发现第 n 阶的解法，只要用到 n - 1 和 n - 2 阶是多少，其他的不用考虑，因此用两个变量临时存下来即可</p>
-<p>dp(i) = dp(i-2) + dp(i-1)</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">JumpFloor</span><span class="params">(<span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(target &lt;= <span class="number">2</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> target;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> pre2 = <span class="number">1</span>, pre1 = <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">3</span>; i &lt;= target; i++)&#123;</span><br><span class="line">            <span class="keyword">int</span> cur = pre2 + pre1;</span><br><span class="line">            pre2 = pre1;</span><br><span class="line">            pre1 = cur;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> pre1;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/21/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%95%B0%E5%88%97/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/21/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%95%B0%E5%88%97/" class="post-title-link" itemprop="url">斐波那契数列</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-22 04:38:36 / 修改时间：12:43:01" itemprop="dateCreated datePublished" datetime="2020-05-22T04:38:36+08:00">2020-05-22</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%89%91%E6%8C%87Offer/" itemprop="url" rel="index"><span itemprop="name">剑指Offer</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>大家都知道斐波那契数列，现在要求输入一个整数n，请你输出斐波那契数列的第n项（从0开始，第0项为0，第1项是1）。</p>
-<p>n&lt;=39;</p>
-<p>使用数组存储中间状态(最简单的动态规划),避免递归造成的调用栈空间消耗</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">Fibonacci</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span>[] fb=<span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">40</span>];</span><br><span class="line">    fb[<span class="number">0</span>]=<span class="number">0</span>;fb[<span class="number">1</span>]=<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">2</span>; i &lt; <span class="number">40</span>; i++) &#123;</span><br><span class="line">        fb[i]=fb[i-<span class="number">2</span>]+fb[i-<span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> fb[n];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="网上题解"><a href="#网上题解" class="headerlink" title="网上题解"></a>网上题解</h1><p>链接：<a href="https://www.nowcoder.com/questionTerminal/c6c7742f5ba7442aada113136ddea0c3?answerType=1&amp;f=discussion" target="_blank" rel="noopener">https://www.nowcoder.com/questionTerminal/c6c7742f5ba7442aada113136ddea0c3?answerType=1&amp;f=discussion</a><br>来源：牛客网</p>
-<h2 id="1-递归法"><a href="#1-递归法" class="headerlink" title="1. 递归法"></a>1. 递归法</h2><h3 id="1-分析"><a href="#1-分析" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>斐波那契数列的标准公式为：F(1)=1，F(2)=1, F(n)=F(n-1)+F(n-2)（n&gt;=3，n∈N*）<br>根据公式可以直接写出：</p>
-<h3 id="2-代码"><a href="#2-代码" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">Fibonacci</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n&lt;=<span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> n;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> Fibonacci(n-<span class="number">1</span>) + Fibonacci(n-<span class="number">2</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-复杂度"><a href="#3-复杂度" class="headerlink" title="3. 复杂度"></a>3. 复杂度</h3><p>时间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(2%5En)&preview=true" alt="img"><br>空间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(1)&preview=true" alt="img"></p>
-<h2 id="2-优化递归"><a href="#2-优化递归" class="headerlink" title="2. 优化递归"></a>2. 优化递归</h2><h3 id="1-分析-1"><a href="#1-分析-1" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>递归会重复计算大量相同数据，我们用个数组把结果存起来8！</p>
-<h3 id="2-代码-1"><a href="#2-代码-1" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">Fibonacci</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> ans[] = <span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">40</span>];</span><br><span class="line">        ans[<span class="number">0</span>] = <span class="number">0</span>;</span><br><span class="line">        ans[<span class="number">1</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">2</span>;i&lt;=n;i++)&#123;</span><br><span class="line">            ans[i] = ans[i-<span class="number">1</span>] + ans[i-<span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans[n];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-复杂度："><a href="#3-复杂度：" class="headerlink" title="3. 复杂度："></a>3. 复杂度：</h3><p>时间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(n)&preview=true" alt="img"><br>空间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(n)&preview=true" alt="img"></p>
-<h2 id="3-优化存储"><a href="#3-优化存储" class="headerlink" title="3. 优化存储"></a>3. 优化存储</h2><h3 id="1-分析-2"><a href="#1-分析-2" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>其实我们可以发现每次就用到了最近的两个数，所以我们可以只存储最近的两个数</p>
-<ul>
-<li>sum 存储第 n 项的值 </li>
-<li>one 存储第 n-1 项的值 </li>
-<li>two 存储第 n-2 项的值 </li>
-</ul>
-<h3 id="2-代码-2"><a href="#2-代码-2" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">Fibonacci</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span>(n == <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> two = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> one = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">2</span>;i&lt;=n;i++)&#123;</span><br><span class="line">            sum = two + one;</span><br><span class="line">            two = one;</span><br><span class="line">            one = sum;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sum;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-复杂度：-1"><a href="#3-复杂度：-1" class="headerlink" title="3. 复杂度："></a>3. 复杂度：</h3><p>时间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(n)&preview=true" alt="img"><br>空间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(1)&preview=true" alt="img"></p>
-<h2 id="4-持续优化"><a href="#4-持续优化" class="headerlink" title="4. 持续优化"></a>4. 持续优化</h2><h3 id="1-分析-3"><a href="#1-分析-3" class="headerlink" title="1. 分析"></a>1. 分析</h3><p>观察上一版发现，sum 只在每次计算第 n 项的时候用一下，其实还可以利用 sum 存储第 n-1 项，例如当计算完 f(5) 时 sum 存储的是 f(5) 的值，当需要计算 f(6) 时，f(6) = f(5) + f(4)，sum 存储的 f(5)，f(4) 存储在 one 中，由 f(5)-f(3) 得到<br>如图：<br><img src="https://uploadfiles.nowcoder.com/images/20190809/1078265_1565356750394_CDC679BEBBE282E170AB6FE0DCA8445E" alt="图片标题"> </p>
-<p><img src="https://uploadfiles.nowcoder.com/images/20190809/1078265_1565356789738_F3CCDD27D2000E3F9255A7E3E2C48800" alt="图片标题"> </p>
-<p><img src="https://uploadfiles.nowcoder.com/images/20190809/1078265_1565356834024_156005C5BAF40FF51A327F1C34F2975B" alt="图片说明"> </p>
-<p><img src="https://uploadfiles.nowcoder.com/images/20190809/1078265_1565356908370_799BAD5A3B514F096E69BBC4A7896CD9" alt="图片标题"> </p>
-<p><img src="https://uploadfiles.nowcoder.com/images/20190809/1078265_1565356960932_D0096EC6C83575373E3A21D129FF8FEF" alt="图片标题"> </p>
-<h3 id="2-代码-3"><a href="#2-代码-3" class="headerlink" title="2. 代码"></a>2. 代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">Fibonacci</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(n == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span>(n == <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">int</span> sum = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> one = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">2</span>;i&lt;=n;i++)&#123;</span><br><span class="line">            sum = sum + one;</span><br><span class="line">            one = sum - one;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> sum;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-复杂度-1"><a href="#3-复杂度-1" class="headerlink" title="3. 复杂度"></a>3. 复杂度</h3><p>时间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(n)&preview=true" alt="img"><br>空间复杂度：<img src="https://www.nowcoder.com/equation?tex=O(1)&preview=true" alt="img"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/19/Python%20Web%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/19/Python%20Web%E5%BC%80%E5%8F%91%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Python Web开发入门</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-20 05:55:48 / 修改时间：13:57:36" itemprop="dateCreated datePublished" datetime="2020-05-20T05:55:48+08:00">2020-05-20</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>本文内容为慕课网Python全栈案例入门课程笔记,<a href="https://www.imooc.com/learn/864" target="_blank" rel="noopener">点击跳转课程页面</a></p>
-<h1 id="后端"><a href="#后端" class="headerlink" title="后端"></a>后端</h1><h4 id="Python-web框架"><a href="#Python-web框架" class="headerlink" title="Python web框架"></a>Python web框架</h4><ul>
-<li>flask    简单轻量,灵活性大,创建于2010</li>
-<li>django 简单,比flask重,灵活性不如flask,创建于2006</li>
-<li>web.py 简单轻量,不再维护,创建于2008</li>
-</ul>
-<h1 id="web应用开发流程"><a href="#web应用开发流程" class="headerlink" title="web应用开发流程"></a>web应用开发流程</h1><ol>
-<li>产品分析: 用户需求,市场调研</li>
-<li>技术选型: 前端,后端,数据库,业务框架(大数据,直播)</li>
-<li>开发实现: 前后端开发,测试</li>
-<li>生产上线: 部署,升级,峰值处理,成本优化,警报处理<h1 id="Python基础"><a href="#Python基础" class="headerlink" title="Python基础"></a>Python基础</h1><h4 id="常用数据类型"><a href="#常用数据类型" class="headerlink" title="常用数据类型"></a>常用数据类型</h4></li>
-</ol>
-<ul>
-<li>字符串:<code>str,unicode</code><br>python3.x只有str</li>
-<li>列表:<code>list 可变列表, tuple 不可变列表, set 唯一列表</code><br>tuple内的元素是不变的</li>
-<li>字典:<code>dict</code><br>key —&gt; value映射,数据量大可用redis数据库</li>
-</ul>
-<h4 id="生成器"><a href="#生成器" class="headerlink" title="生成器"></a>生成器</h4><p>generator</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 一次性产生10个元素的数组,占内存</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">10</span>)</span><br><span class="line">	<span class="keyword">print</span> i</span><br><span class="line">	</span><br><span class="line"><span class="comment">#xrange() 函数用法与 range 完全相同，所不同的是生成的不是一个数组，而是一个生成器,依次产生1,2,3...节省内存</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> xrange(<span class="number">10</span>) <span class="comment">#</span></span><br><span class="line">	<span class="keyword">print</span> i</span><br></pre></td></tr></table></figure>
-<h4 id="迭代器"><a href="#迭代器" class="headerlink" title="迭代器"></a>迭代器</h4><p>迭代器对象从集合的第一个元素开始访问，直到所有的元素被访问完结束。迭代器只能往前不会后退。<br>迭代器有两个基本的方法：<code>iter()</code>和 <code>next()</code>。<br>字符串<code>str</code>，列表<code>list</code>或元组<code>tuple</code>对象都可用于创建迭代器：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>list=[<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>it = iter(list)    <span class="comment"># 创建迭代器对象</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">print</span> (next(it))   <span class="comment"># 输出迭代器的下一个元素</span></span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">print</span> (next(it))</span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="comment"># 可以使用常规for语句进行遍历：</span></span><br><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> it:</span><br><span class="line">    <span class="keyword">print</span> (x, end=<span class="string">" "</span>)</span><br></pre></td></tr></table></figure>
-
-<h4 id="切片"><a href="#切片" class="headerlink" title="切片"></a>切片</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>list = range(<span class="number">10</span>)</span><br><span class="line">&gt;&gt;&gt;&gt; list</span><br><span class="line">[<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>,<span class="number">9</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>list[<span class="number">5</span> : <span class="number">7</span>]    <span class="comment"># 切片,第5-6个位置</span></span><br><span class="line">[<span class="number">5</span>, <span class="number">6</span>]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>list[<span class="number">-2</span> : ]    <span class="comment"># 倒数第二个位置到最后</span></span><br><span class="line">[<span class="number">8</span>, <span class="number">9</span>]</span><br></pre></td></tr></table></figure>
-<h4 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h4><ul>
-<li>def 自定义函数</li>
-<li>lambda 匿名函数<figure class="highlight plain"><figcaption><span>[arg1 [,arg2,.....argn]]:expression```</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#96;&#96;&#96;python</span><br><span class="line"> &gt;&gt;&gt; sum &#x3D; lambda arg1, arg2: arg1 + arg2</span><br><span class="line"> &gt;&gt;&gt; print (&quot;相加后的值为 : &quot;, sum( 10, 20 ))</span><br><span class="line">	相加后的值为 :  30</span><br></pre></td></tr></table></figure>
-
-
-</li>
-</ul>
-<ul>
-<li>functools.partial 函数封装</li>
-<li>functools.wraps 装饰器</li>
-</ul>
-<p>python中函数像变量一样,可作为参数传入另一个函数:<br><img src="https://img-blog.csdnimg.cn/20191210100759984.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h4 id="列表-字典推导式"><a href="#列表-字典推导式" class="headerlink" title="列表 / 字典推导式"></a>列表 / 字典推导式</h4><ul>
-<li><strong>列表推导式</strong>可以方便地由<code>a_list</code>生成新的列表<code>b_list</code></li>
-<li><strong>字典推导式</strong>可以方便地由列表<code>a_list</code>和<code>string.letters</code>生成新的字典<code>b_dict</code><br><img src="https://img-blog.csdnimg.cn/20191210100255508.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h4 id="列表-字典解析式"><a href="#列表-字典解析式" class="headerlink" title="列表 / 字典解析式"></a>列表 / 字典解析式</h4></li>
-<li>使用<code>enumerate</code>可以在遍历时方便地获取<strong>列表</strong>下标<code>index</code></li>
-<li>使用<code>iteritems()</code>迭代器可以方便地遍历<strong>字典</strong><code>(key,value)</code>,快速又省内存<br><img src="https://img-blog.csdnimg.cn/20191210100351382.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h1 id="Flask"><a href="#Flask" class="headerlink" title="Flask"></a>Flask</h1><h3 id="最简单的web-app"><a href="#最简单的web-app" class="headerlink" title="最简单的web app"></a>最简单的web app</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask</span><br><span class="line">app = Flask(__name__) <span class="comment">### 生成一个web app对象</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route('/')  ### 注册一个url,当请求url+'/'这个网址时,执行hello_world函数</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hello_world</span><span class="params">()</span>:</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">'Hello, World!'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">	app.run()     <span class="comment">### run(host=None, port=None, debug=None, **options)</span></span><br><span class="line">				  <span class="comment">### 默认host: 127.0.0.1</span></span><br><span class="line">				  <span class="comment">### 默认port: 5000</span></span><br></pre></td></tr></table></figure>
-<h3 id="调试flask应用"><a href="#调试flask应用" class="headerlink" title="调试flask应用"></a>调试flask应用</h3></li>
-<li>设置app.run(debug=True)</li>
-<li>Python打印log,前端页面打印log(开发者模式)</li>
-<li>本地开发可以使用断点调试<h3 id="图书馆管理系统"><a href="#图书馆管理系统" class="headerlink" title="图书馆管理系统"></a>图书馆管理系统</h3><img src="https://img-blog.csdnimg.cn/20191209194815498.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191209195033835.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><h4 id="项目文件"><a href="#项目文件" class="headerlink" title="项目文件"></a>项目文件</h4></li>
-</ul>
-<p><strong>接口与逻辑分开设计</strong></p>
-<ul>
-<li>views.py: url接口逻辑<br><img src="https://img-blog.csdnimg.cn/20191209195357219.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>logic.py: 逻辑处理<br><img src="https://img-blog.csdnimg.cn/20191209200108740.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>run.py: 应用发布<br><img src="https://img-blog.csdnimg.cn/20191209200429598.png" alt="在这里插入图片描述"></li>
-</ul>
-<h1 id="实践-DashBoard可视化"><a href="#实践-DashBoard可视化" class="headerlink" title="实践:DashBoard可视化"></a>实践:DashBoard可视化</h1><p><a href="https://github.com/litaotao/IPython-Dashboard" target="_blank" rel="noopener">点击获取项目源码</a></p>
-<h2 id="应用设计"><a href="#应用设计" class="headerlink" title="应用设计"></a>应用设计</h2><p><img src="https://img-blog.csdnimg.cn/20191209220402880.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br><img src="https://img-blog.csdnimg.cn/20191209220500455.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>项目文件结构:<br><img src="https://img-blog.csdnimg.cn/20191209222556417.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></p>
-<h2 id="python应用发布工具"><a href="#python应用发布工具" class="headerlink" title="python应用发布工具"></a>python应用发布工具</h2><p>CI / CD  持续集成,持续部署</p>
-<ol>
-<li>setup.py打包至pip公共仓库, 通过pip安装 / 卸载</li>
-<li>github hooks,  travis 轻量,适合中小型项目</li>
-<li>jenkins 较重,适合中大型项目</li>
-</ol>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/19/Web%E5%89%8D%E7%AB%AF%E5%85%A5%E9%97%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/05/19/Web%E5%89%8D%E7%AB%AF%E5%85%A5%E9%97%A8/" class="post-title-link" itemprop="url">Web前端入门</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-05-20 05:52:00 / 修改时间：13:58:27" itemprop="dateCreated datePublished" datetime="2020-05-20T05:52:00+08:00">2020-05-20</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="前端"><a href="#前端" class="headerlink" title="前端"></a>前端</h1><p>前端开发三把瑞士军刀:</p>
-<ul>
-<li><strong>HTML 超文本标记语言</strong> <code>HyperText Markup Language</code><br>一种标记语言,用标记标签描述网页(静态网页)</li>
-<li><strong>CSS 层叠样式表</strong> <code>Cascading Style Sheets</code><br>样式定义如何显示HTML元素,大小,形状等<br>样式表可内置于HTML文件中,但专业的做法是独立存放</li>
-<li><strong>JS JavaScript</strong><br>一种轻量级的高级编程语言<br>服务于网页交互,生成动态网页<br>同CSS一样,JS可嵌入在HTML文件中,但专业的做法是单独存放</li>
-</ul>
-<p><img src="https://img-blog.csdnimg.cn/20191209164927586.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>补充</p>
-<ul>
-<li><strong>jQuery</strong><br>jQuery是一个轻量级的”写的少，做的多”的<strong>JavaScript库</strong>。是目前最流行的 JS 框架，而且提供了大量的扩展。jQuery <strong>极大地简化了 JavaScript 编程</strong>.</li>
-<li><strong>bootstrap</strong><br>Bootstrap来自 Twitter,是基于HTML5和CSS3开发的<strong>CSS框架</strong>，它在jQuery的基础上进行了更为个性化的完善，形成一套自己独有的网站风格，并兼容大部分jQuery插件,可以<strong>方便地使用预定义的各种CSS元素和样式</strong>。</li>
-</ul>
-<br>
-
-<ul>
-<li><p><strong>JSP java服务器页面</strong> <code>Java Server Pages</code><br>JSP是为了简化Servlet的工作出现的替代品，Servlet输出HTML非常困难(需要一行一行print)，JSP就是替代Servlet输出HTML的。jsp更注重前端显示，servlet更注重模型和业务逻辑.简单地说,jsp就是在html里面写java代码，servlet就是在java里面写html代码,其实jsp经过容器解释之后就是servlet.<br>MVC模式在Web开发中的好处是非常明显，它规避了JSP与Servlet各自的短板，Servlet只负责业务逻辑而不会通过out.append()动态生成HTML代码；JSP中也不会充斥着大量的业务代码。这大大提高了代码的可读性和可维护性。</p>
-</li>
-<li><p><strong>Ajax  Asynchronous JavaScript + XML</strong><br>异步JavaScript和XML,Ajax是一种技术方案，但并不是一种新技术。它依赖现有的CSS/HTML/JavaScript，而其中最核心的依赖是浏览器提供的<strong>XMLHttpRequest对象</strong>，是这个对象使得浏览器可以发出HTTP请求与接收HTTP响应。实现了<strong>在页面不刷新个情况下和服务器进行数据交互</strong>。</p>
-</li>
-<li><p><strong>Grunt</strong><br>是一个前端自动化工具,提高工作效率.Grunt可以帮助你处理需要重复执行的压缩，编译，单元测试，代码检查以及打包发布等任务.</p>
-</li>
-<li><p><strong>Node.js</strong><br>是一种通过JavaScript语言开发web服务端应用的框架,简单地说就是运行在服务端的 JavaScript。Node.js是一个事件驱动I/O服务端JavaScript环境，基于Google的V8引擎，V8引擎执行Javascript的速度非常快，性能非常好。<br>如果你是一个前端程序员，你不懂得像PHP、Python或Ruby等动态编程语言，然后你想创建自己的服务，那么Node.js是一个非常好的选择。当然，如果你是后端程序员，想部署一些高性能的服务，那么学习Node.js也是一个非常好的选择。</p>
-</li>
-</ul>
-<h3 id="简单的例子"><a href="#简单的例子" class="headerlink" title="简单的例子"></a>简单的例子</h3><p>显示当前时间,刷新页面更新时间<br><img src="https://img-blog.csdnimg.cn/20191209201144526.png" alt="在这里插入图片描述"><br>对应的.html文件<br><img src="https://img-blog.csdnimg.cn/2019120920150448.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>&lt;head&gt;定义了当前网页在浏览器标签栏的标题,编码格式,当前页面css,js资源下载链接<br>&lt;body&gt;定义了网页中显示的元素<br>&lt;script&gt;js脚本,定义动态内容,这里每刷新一次更新一次显示时间</p>
-<h4 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h4><p>chrome –&gt; F12 –&gt; Console<br>输入</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = document.getElementById(<span class="string">"time"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a.textContent = <span class="string">" hello world "</span></span><br><span class="line"> <span class="string">" hello world "</span></span><br></pre></td></tr></table></figure>
-<p>网页内容会跟着改变</p>
-<h4 id="复杂一点的例子"><a href="#复杂一点的例子" class="headerlink" title="复杂一点的例子"></a>复杂一点的例子</h4><p>点击开始显示当前实时时间,点击停止时间暂停更新<br>颜色,布局:居中显示,设置字体颜色<br><img src="https://img-blog.csdnimg.cn/20191209212141134.png" alt="在这里插入图片描述"></p>
-<ul>
-<li>.html文件<br>&lt;head&gt;下新定义了.css和.js文件位置<br>&lt;button&gt;新定义了点击事件<br><img src="https://img-blog.csdnimg.cn/20191209213114526.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2VyaWM0Nzg0NTEw,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"></li>
-<li>.css文件<br>id选择器:#id { 属性 }<br><img src="https://img-blog.csdnimg.cn/20191209213510444.png" alt="在这里插入图片描述"></li>
-<li>.js文件<br>业务逻辑<br><img src="https://img-blog.csdnimg.cn/20191209213633443.png" alt="在这里插入图片描述"></li>
-</ul>
-<h1 id="前后端分离"><a href="#前后端分离" class="headerlink" title="前后端分离"></a>前后端分离</h1><p>职责分离,架构分离<br>前后端分开开发,各自持续集成,分离上线<br>前后端协作依靠配置文件<br>注意区别<strong>全栈工程师</strong>和<strong>前后端分离前的web工程师</strong></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1311,7 +1196,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1367,7 +1252,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

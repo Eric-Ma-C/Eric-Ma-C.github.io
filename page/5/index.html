@@ -186,6 +186,708 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">抽象类和接口的区别</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-03 05:44:15 / 修改时间：13:59:13" itemprop="dateCreated datePublished" datetime="2020-07-03T05:44:15+08:00">2020-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="抽象类"><a href="#抽象类" class="headerlink" title="抽象类"></a>抽象类</h2><p>抽象类在我们实际开发当中扮演了一个什么样的角色？当我们在开发或者设计一些功能和属性大部分差不多的<code>Activity</code>或者是<code>class</code>的时候，为了避免大量重复的工作，最好的做法就是抽取一个公共的基类，这样做的目的即可以减少重复的代码，又让代码变得简洁，简单。</p>
+<p><strong>因此抽象类就是用于抽取，捕捉子类通用共性的一种类</strong>。<strong>只能用于作为父类</strong>，提供给子类继承并且不能被实例化，作为被用来创建继承层级的一种模板。也是多态特性的一种重要表现形式。</p>
+<p>下面举个简单的例子帮助理解</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo3Abstract</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Zi z = <span class="keyword">new</span> Zi();</span><br><span class="line">        z.print();                  <span class="comment">//直接调用子类中的print方法</span></span><br><span class="line">        z.method();                 <span class="comment">//也可以拿到从父类继承的method方法</span></span><br><span class="line">      </span><br><span class="line">      Fu f= <span class="keyword">new</span> Zi();               <span class="comment">//父类指向子类对象。</span></span><br><span class="line">      f.print();                    <span class="comment">//编译看左边，运行看右边。</span></span><br><span class="line">     System.out.println(f.i);       <span class="comment">//out i0</span></span><br><span class="line">    </span><br><span class="line">      </span><br><span class="line">      Zi zx=(Zi)f;                  <span class="comment">//向下转型</span></span><br><span class="line">      zx.print1111();               <span class="comment">//才能拿到子类特有的方法。</span></span><br><span class="line">     System.out.println(zx.i);      <span class="comment">// out 20</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">10</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;   <span class="comment">//抽象方法必须有子类重写后使用</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span> </span>&#123;          <span class="comment">//非抽象方法子类可以直接继承用</span></span><br><span class="line">        System.out.println(<span class="string">"Hello World!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zi</span> <span class="keyword">extends</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">20</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Zi"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print1111</span><span class="params">()</span></span>&#123;</span><br><span class="line">       System.out.println(<span class="string">"Zi111"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述例子说明了，抽象类最重要的特点之一，就是可以Zi类拿到Fu提供的method方法，又拥有了自己的特性（print方法）。这样就大大减少了代码的冗余。但是有有一点需要注意的是当我们面向接口编程的时候，当重写了父类中的抽象方法的时候，编译时，找的父类的方法体，倒是<strong>实际上在运行过程中，使用的是子类的实现方法</strong>。这是一种<strong>动态绑定</strong>实现机制，也是Java语言的重要基石。</p>
+<p>多态的弊端在于，当采用面向接口编程的过程中，当需要到子类的特性的时候，就必须向下转型，这样才能拿到子类的特性（特有的方法）。这其实也很好理解，因为在内存的存储中，Zi类继承Fu，在Zi类的内存中，有一部分是保存有Fu类的相关数据的地址值的，所以我们在才能对代码实现复用，但是面向接口编程的时候，是从Fu类的内存中去找值的，所以<code>f.i</code>和<code>zx.i</code>值完全是不一样，当我们想要拿到子类值的时候，只能向下转型才能拿到20，否则就只能拿到父类的成员变量里面的10。换句话说，只有父类和子类二者重写方法之间，存在动态绑定的过程，当时其他方面（比如说成员变量），是不存在动态绑定的，他们是有各自存有的区域。这点需要特别注意。</p>
+<h3 id="抽象类的一些特性"><a href="#抽象类的一些特性" class="headerlink" title="抽象类的一些特性"></a>抽象类的一些特性</h3><ul>
+<li>抽象类不能被实例化，但<strong>可以有构造函数</strong></li>
+<li>抽象方法<strong>必须由子类进行重写</strong></li>
+<li>只要包含一个抽象方法的类，就必须定义为抽象类，不管是否还包含其他方法</li>
+<li>抽象类中可以包含具体的方法，也<strong>可以不包含抽象方法</strong></li>
+<li>抽象类可以包含普通成员变量，其访问类型可以任意</li>
+<li>抽象类也可以包含静态成员变量，其访问类型可以任意</li>
+<li>子类中的抽象方法不能与父类的抽象方法同名</li>
+<li><strong>abstract不能与private、static、final或native并列修饰同一个方法</strong></li>
+</ul>
+<h2 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h2><p>接口是抽象方法的集合。如果一个类实现了某个接口，那么它就继承了这个接口的抽象方法。这就像契约模式，如果实现了这个接口，那么就必须确保使用这些方法。接口只是一种形式，接口自身不能做任何事情</p>
+<p>下面同样是用一个例子来说明</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo1Interface</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Inter i = <span class="keyword">new</span> Demo();</span><br><span class="line">        i.print();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> num = <span class="number">10</span>;              <span class="comment">//接口中所有的变量都是常量</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print11</span><span class="params">()</span></span>;                <span class="comment">//接口中所有的方法都是抽象的</span></span><br><span class="line">    <span class="comment">/*public void method() &#123;                //错误: 接口方法不能带有主体</span></span><br><span class="line"><span class="comment">        System.out.println("aaa");          //接口中所有的方法都是抽象的</span></span><br><span class="line"><span class="comment">    &#125;*/</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo</span> <span class="keyword">implements</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"print"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>正如上面提到的一样，接口之中的方法，所有都是抽象方法并且<strong>修饰符只能是public</strong>，因为接口本身就是提供的一种规范和约束。当你实现一个接口的时候就必须实现里面所有的方法。这里需要注意的仍然是上述的多态的弊端，再次就不再赘述了。并且不能定义变量，只能定义常量。</p>
+<h3 id="接口的多继承"><a href="#接口的多继承" class="headerlink" title="接口的多继承"></a>接口的多继承</h3><p>在Java中，类的多继承是不合法，但接口允许多继承。</p>
+<p>在接口的多继承中extends关键字只需要使用一次，在其后跟着继承接口。 如下所示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Hockey</span> <span class="keyword">extends</span> <span class="title">Sports</span>, <span class="title">Event</span></span></span><br></pre></td></tr></table></figure>
+
+<p>以上的程序片段是合法定义的子接口，与类不同的是，接口允许多继承，而 Sports及 Event 可能定义或是继承相同的方法.</p>
+<blockquote>
+<p>注意:接口不能再实现(implements)接口.</p>
+</blockquote>
+<h3 id="接口的一些特性"><a href="#接口的一些特性" class="headerlink" title="接口的一些特性"></a>接口的一些特性</h3><ul>
+<li>接口中<strong>不能有构造方法</strong>。</li>
+<li>接口的所有方法自动被声明为public，而且只能为<code>public</code>，如果使用<code>protected</code>、<code>private</code>，会导致编译错误。</li>
+<li>接口可以定义”成员变量”，而且会自动转为<code>public final static</code>，即<strong>常量</strong>，而且必须被显式初始化。</li>
+<li>接口中的所有方法都是抽象方法，不能包含实现的方法，也不能包含静态方法</li>
+<li>实现接口的<strong>非抽象类</strong>必须实现接口的所有方法，而<strong>抽象类</strong>不需要</li>
+<li>不能使用<code>new</code>来实现化接口，但可以声明一个接口变量，它必须引用一个实现该接口的类的对象，可以使用instanceOf来判断一个类是否实现了某个接口，如<code>if (object instanceOf ClassName){doSth()}</code>;</li>
+<li>在实现多接口的时候一定要注意方法名的重复</li>
+</ul>
+<h2 id="抽象类和接口的区别"><a href="#抽象类和接口的区别" class="headerlink" title="抽象类和接口的区别"></a>抽象类和接口的区别</h2><p>有了上述的知识储备，我想我们终于可以来回答一下这二者之间的区别了。</p>
+<table>
+<thead>
+<tr>
+<th><strong>参数</strong></th>
+<th><strong>抽象类</strong></th>
+<th><strong>接口</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>默认的方法实现</td>
+<td>它可以有默认的方法实现</td>
+<td>接口完全是抽象的。它根本不存在方法的实现</td>
+</tr>
+<tr>
+<td>关键字</td>
+<td>子类使用<strong>extends</strong>关键字来继承抽象类。如果子类不是抽象类的话，它需要提供抽象类中所有声明的方法的实现。</td>
+<td>子类使用关键字<strong>implements</strong>来实现接口。它需要提供接口中所有声明的方法的实现</td>
+</tr>
+<tr>
+<td>构造器</td>
+<td>抽象类可以有构造器</td>
+<td>接口不能有构造器</td>
+</tr>
+<tr>
+<td>与正常Java类的区别</td>
+<td>除了你不能实例化抽象类之外，它和普通Java类没有任何区别</td>
+<td>接口是完全不同的类型</td>
+</tr>
+<tr>
+<td>访问修饰符</td>
+<td>抽象方法可以有<strong>public</strong>、<strong>protected</strong>和<strong>default</strong>这些修饰符</td>
+<td>接口方法默认修饰符是<strong>public</strong>。你不可以使用其它修饰符。</td>
+</tr>
+<tr>
+<td>main方法</td>
+<td>抽象方法可以有main方法并且我们可以运行它</td>
+<td>接口没有main方法，因此我们不能运行它。</td>
+</tr>
+<tr>
+<td>多继承</td>
+<td>抽象类只可以继承一个类和实现多个接口</td>
+<td>接口和接口之间是可以多继承或者单继承多实现的。</td>
+</tr>
+<tr>
+<td>速度</td>
+<td>它比接口速度要快</td>
+<td>接口是稍微有点慢的，因为它需要时间去寻找在类中实现的方法。</td>
+</tr>
+<tr>
+<td>添加新方法</td>
+<td>如果你往抽象类中添加新的方法，你可以给它提供默认的实现。因此你不需要改变你现在的代码。</td>
+<td>如果你往接口中添加方法，那么你必须改变实现该接口的类。</td>
+</tr>
+<tr>
+<td>设计理念</td>
+<td>is-a的关系，体现的是一种关系的延续</td>
+<td>like-a体现的是一种功能的扩展关系</td>
+</tr>
+</tbody></table>
+<h3 id="具体使用的场景"><a href="#具体使用的场景" class="headerlink" title="具体使用的场景"></a>具体使用的场景</h3><ul>
+<li>如果你拥有一些方法并且想让它们中的一些有默认实现，那么使用抽象类吧。</li>
+<li>如果你想实现多重继承，那么你必须使用接口。由于<strong>Java不支持多继承</strong>，子类不能够继承多个类，但可以实现多个接口。因此你就可以使用接口来解决它。</li>
+<li>如果基本功能在不断改变，那么就需要使用抽象类。如果不断改变基本功能并且使用接口，那么就需要改变所有实现了该接口的类。</li>
+<li>多用组合，少用继承。((合成/聚合)关联复用原则)</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/entry/59b0a3556fb9a0248a4023d0" target="_blank" rel="noopener">抽象类和接口的区别</a><br><a href="http://www.jianshu.com/p/2b5a9bdcd25f" target="_blank" rel="noopener">Java基础篇(一)：接口与抽象类</a><br><a href="http://www.importnew.com/12399.html" target="_blank" rel="noopener">Java抽象类与接口的区别</a><br><a href="http://yanhui.site/2017/07/19/Java学习笔记整理（9）/" target="_blank" rel="noopener">Java学习笔记整理(9)</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/" class="post-title-link" itemprop="url">磁盘调度算法</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-03 03:19:07 / 修改时间：11:20:24" itemprop="dateCreated datePublished" datetime="2020-07-03T03:19:07+08:00">2020-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p> 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。<br>  <strong>本文内容</strong></p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp" alt="img"></p>
+<h2 id="1-一次磁盘读-写操作需要的时间"><a href="#1-一次磁盘读-写操作需要的时间" class="headerlink" title="1 一次磁盘读/写操作需要的时间"></a>1 一次磁盘读/写操作需要的时间</h2><p> <strong>寻找时间（寻道时间）</strong>Ts：在读/写数据前，需要将磁头移动到指定磁道所花费的时间。<br>  寻道时间分两步：</p>
+<blockquote>
+<p>(1) 启动磁头臂消耗的时间：s。<br> (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。</p>
+</blockquote>
+<p> 则寻道时间  <strong>Ts = s + m * n。</strong></p>
+<p> 磁头移动到指定的磁道，但是不一定正好在所需要读/写的扇区，所以需要通过磁盘旋转使磁头定位到目标扇区。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c31119740df4673d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/397/format/webp" alt="img"></p>
+<p> <strong>延迟时间TR</strong>：通过旋转磁盘，使磁头定位到目标扇区所需要的时间。设磁盘转速为r（单位：转/秒，或转/分），则<strong>平均所需延迟时间TR</strong> = (1/2)*(1/r) = 1/2r。</p>
+<blockquote>
+<p>1/r就是转一圈所需的时间。找到目标扇区平均需要转半圈，因此再乘以1/2。</p>
+</blockquote>
+<p> <strong>传输时间TR</strong>：从磁盘读出或向磁盘中写入数据所经历的时间，假设磁盘转速为r，此次读/写的字节数为b，每个磁道上的字节数为N，则传输时间<strong>TR</strong> = (b/N) * (1/r) = b/(rN)。</p>
+<blockquote>
+<p>每个磁道可存N字节数据，因此b字节数据需要b/N个磁道才能存储。而读/写一个磁道所需的时间刚好是转一圈的时间1/r。</p>
+</blockquote>
+<p> 总的平均时间<strong>Ta = Ts + 1/2r + b/(rN)</strong>，由于延迟时间和传输时间都是与磁盘转速有关的，且是线性相关。而转速又是磁盘的固有属性，因此无法通过操作系统优化延迟时间和传输时间。所以只能优化寻找时间。</p>
+<h2 id="2-磁盘调度算法"><a href="#2-磁盘调度算法" class="headerlink" title="2 磁盘调度算法"></a>2 磁盘调度算法</h2><h4 id="2-1-先来先服务算法（FCFS）"><a href="#2-1-先来先服务算法（FCFS）" class="headerlink" title="2.1 先来先服务算法（FCFS）"></a>2.1 先来先服务算法（FCFS）</h4><p> 算法思想：<strong>根据进程请求访问磁盘的先后顺序进行调度。</strong><br>  假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。<br>  按照先来先服务算法规则，按照请求到达的顺序，磁头需要一次移动到55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-b03c89ed3cc6cdbd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/618/format/webp" alt="img"></p>
+<p> 磁头共移动了 45 + 3 + 19 + 21 + 72 + 70 + 10 + 112 + 146 = 498个磁道。响应一个请求平均需要移动498 / 9 = 55.3个磁道（平均寻找长度）。<br>  优点：<strong>公平；如果请求访问的磁道比较集中的话，算法性能还算可以</strong>。<br>  缺点：<strong>如果大量进程竞争使用磁盘，请求访问的磁道很分散，FCFS在性能上很差，寻道时间长</strong>。</p>
+<h4 id="2-2-最短寻找时间优先（SSTF）"><a href="#2-2-最短寻找时间优先（SSTF）" class="headerlink" title="2.2 最短寻找时间优先（SSTF）"></a>2.2 最短寻找时间优先（SSTF）</h4><p> 算法思想：<strong>优先处理的磁道是与当前磁头最近的磁道。可以保证每次寻道时间最短，但是不能保证总的寻道时间最短</strong>。（其实是贪心算法的思想，只是选择眼前最优，但是总体未必最优）。</p>
+<p> 假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-592a5a7f84d61fba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/586/format/webp" alt="img"></p>
+<p> 磁头总共移动了（100 -18）+ （184 -18） = 248个磁道。响应一个请求平均需要移动248 / 9 = 27.5个磁道（平均寻找长度）。<br>  缺点：<strong>可能产生饥饿现象</strong>。<br>  本例中，如果在处理18号磁道的访问请求时又来了一个38号磁道的访问请求，处理38号磁道的访问请求又来了一个18号磁道访问请求。如果有源源不断的18号、38号磁道访问请求，那么150、160、184号磁道请求的访问就永远得不到满足，从而产生饥饿现象。这里产生饥饿的原因是<strong>磁头在一小块区域来回移动。</strong></p>
+<h4 id="2-3-扫描算法（SCAN）"><a href="#2-3-扫描算法（SCAN）" class="headerlink" title="2.3 扫描算法（SCAN）"></a>2.3 扫描算法（SCAN）</h4><p> SSTF算法会产生饥饿的原因在于：磁头有可能再一个小区域内来回得移动。为了防止这个问题，可以规定：<strong>磁头只有移动到请求最外侧磁道或最内侧磁道才可以反向移动，如果在磁头移动的方向上已经没有请求，就可以立即改变磁头移动，不必移动到最内/外侧的磁道。</strong>这就是扫描算法的思想。由于磁头移动的方式很像电梯，因此也叫<strong>电梯算法</strong>。</p>
+<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c340b6ad722b5403.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp" alt="img"></p>
+<p> 磁头共移动了（184 - 100）+ （184 -18） = 250个磁道。响应一个请求平均需要移动 250 / 9 = 27.5个磁道（平均寻找长度）。</p>
+<p> 优点：<strong>性能较好，寻道时间较短，不会产生饥饿现象。</strong><br>  缺点：<strong>SCAN算法对于各个位置磁道的响应频率不平均</strong>。（假设此时磁头正在往右移动，且刚处理过90号磁道，那么下次处理90号磁道的请求就需要等待低头移动很长一段距离；而响应了184号磁道的请求之后，很快又可以再次响应184号磁道请求了。）</p>
+<h4 id="2-4-循环扫描算法（C-SCAN）"><a href="#2-4-循环扫描算法（C-SCAN）" class="headerlink" title="2.4 循环扫描算法（C-SCAN）"></a>2.4 循环扫描算法（C-SCAN）</h4><p> SCAN算法对各个位置磁道的响应频率不平均，而C-SCAN算法就是为了解决这个问题。规定只有磁头朝某个特定方向移动时才处理磁道访问请求，而<strong>返回时直接快速移动至最靠边缘的并且需要访问的磁道上而不处理任何请求。</strong><br>  通俗理解就是SCAN算在改变磁头方向时不处理磁盘访问请求而是直接移动到另一端最靠边的磁盘访问请求的磁道上。</p>
+<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-53c43dcf70a1f1fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/793/format/webp" alt="img"></p>
+<p> 磁头共移动了（184 -100）+ （184 - 18）+（90 - 18）=322个磁道。响应一个请求平均需要移动322 / 9 = 35.8个磁道（平均寻找长度）。</p>
+<p> 优点：<strong>相比于SCAN算法，对于各个位置磁道响应频率很平均。</strong><br>  缺点：<strong>相比于SCAN算法，平均寻道时间更长。</strong></p>
+<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3 小结"></a>3 小结</h2><p><img src="https:////upload-images.jianshu.io/upload_images/18464438-51a047178ff21028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1017/format/webp" alt="img"></p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/3c2b79af130b" target="_blank" rel="noopener">磁盘调度算法</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">编译原理简介</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-03 02:43:35 / 修改时间：10:52:50" itemprop="dateCreated datePublished" datetime="2020-07-03T02:43:35+08:00">2020-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="编译器的工作步骤"><a href="#编译器的工作步骤" class="headerlink" title="编译器的工作步骤"></a>编译器的工作步骤</h2><p>在开始说任何东西之前，我们先来大致看一下编译器是怎么工作的——从代码到程序，大概要经过下面这样的步骤——这里用粗浅的语言进行解释，先有个印象即可，后面还会提到</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<ul>
+<li>词法分析：编程语言的语句，由一堆堆的单词组成——比如变量类型名、变量名、函数名、值、符号等。既然我们要让机器来分析源程序然后编译，那么就需要首先让计算机能够明白我们写的语句是什么意思，而理解语句的第一步就是理解每个词。所谓词法分析，进行的工作就是让计算机识别单词；</li>
+<li>语法分析：完成语法分析，就是识别语句的结构；</li>
+<li>语义分析：该步骤的目标，就是确定“某一条语句是什么意思”，检查一下说的有没有不合法的地方；</li>
+<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
+<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
+<li>中间代码优化：中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率；</li>
+<li>目标代码生成：中间代码经过优化，就可以生成目标代码了。比如二进制程序的机器码，或者各种 VM 用的字节码。</li>
+</ul>
+<h2 id="词法分析器-Lex-和词法分析器-Yacc："><a href="#词法分析器-Lex-和词法分析器-Yacc：" class="headerlink" title="词法分析器 Lex 和词法分析器 Yacc："></a>词法分析器 Lex 和词法分析器 Yacc：</h2><p>Lex（Lexical Analyzar） 是词法分析器， Yacc（Yet Another Compiler Compiler） 是语法分析器。</p>
+<p>虽然从名字上看，这两个东西就已经是“分析器”了，然而实际上并不是，他们是用来生成“分析器”的工具。Lex 是用来生成词法分析器的工具，Yacc 是用来生成语法分析器的工具。</p>
+<p>这两个工具可以根据我们输入的词法 / 语法规则，自动生成相应的语法分析器、词法分析器，然后这些分析器就可以帮助我们简单地完成对源代码的词法、语法分析。</p>
+<p>因这两样工具的存在，开发编译器、解释器的词语法分析器的难度被极大降低。在现代编译器、解释器的开发中，真正有难度的地方在于语义分析和后期优化。</p>
+<h4 id="Lex正规式示例："><a href="#Lex正规式示例：" class="headerlink" title="Lex正规式示例："></a>Lex正规式示例：</h4><p>在 Lex 中，我们可以使用一种被称为“正规式”的字符串，来简单地定义“某种符号应该长成什么样子”。 我们先直接体验一下。 比如下面这个实际定义 Number 和 Identifier 的例子：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3079359573?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h4 id="Yacc-的产生式示例："><a href="#Yacc-的产生式示例：" class="headerlink" title="Yacc 的产生式示例："></a>Yacc 的产生式示例：</h4><p>Yacc 用如下这种形式来定义“一个表达式应该长成什么样子”： <code>E : E &#39;+&#39; E | E &#39;*&#39; E | id</code> 这段代码说明，一个表达式 E 可以有三种情况组成：最简单的情况就是 id 。一个变量 x ，他自己就是一个表达式，两个表达式相加是一个表达式，两个表达式相乘还是一个表达式。</p>
+<p>对于这个产生式，如果我们写<code>x-y</code>就是不合法的——因为我们并没有定义两个表达式可以被 ‘-‘ 连接</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c355a8f32d6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>例：对于 Yacc 而言，-x–y也是合法的。对于表达式“-2–3”，这里的减号有一元操作也有二元操作，实际计算的情况是这样的：(-2)-(-3 )</p>
+<h2 id="语言之间的翻译"><a href="#语言之间的翻译" class="headerlink" title="语言之间的翻译"></a>语言之间的翻译</h2><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3c115a1cfa?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>高级语言之间可以实现跨语言的翻译。</p>
+<p>预编译的例子：sql、c 混合编程。 sql、c 混合编程，实际上的运行方式是先把 sql 变成 c 语言，再对由 sql 转换来的 c 和本来就是 c 的部分进行整体编译。把 sql 转成 c 的过程就叫“预编译”，Lex、Yacc 就是这样的。</p>
+<p>在 UltraGram 中，就可以把我们写的 Lex、Yacc 变成合法的 C 代码。我们就可以把这两份代码和我们自己写的 C 代码一起编译，实现开发自己的解释器/编译器。（lex yacc 就是开发解释器编译器这种东西的工具，将曾需要手工实现的词法语法分析自动化实现）。</p>
+<p>对于反汇编，编译器为了防止反汇编会在编译时加入一些无效代码。</p>
+<h2 id="编译器与解释器"><a href="#编译器与解释器" class="headerlink" title="编译器与解释器"></a>编译器与解释器</h2><h3 id="语言翻译"><a href="#语言翻译" class="headerlink" title="语言翻译"></a>语言翻译</h3><p>语言翻译分为两种，分别是先翻译后执行和边翻译边执行。二者基本功能相同。且在翻译的角度来看，两种方式涉及的原理、方法、技术都是类似的</p>
+<h4 id="先翻译后执行"><a href="#先翻译后执行" class="headerlink" title="先翻译后执行"></a>先翻译后执行</h4><p>比如 C 这种需要编译的语言。特点是效率高、省空间。但交互性、动态性差，可移植性也差。。多数语言都是这种。</p>
+<p>![img](data:image/svg+xml;utf8,<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1277" height="458"></svg>)</p>
+<h4 id="边翻译边执行"><a href="#边翻译边执行" class="headerlink" title="边翻译边执行"></a>边翻译边执行</h4><p>比如 py、js、java 这种使用解释器工作的语言。跟上面的基本相反。</p>
+<p>生成字节码然后运行。从高级语言到字节码实际上是翻译，在运行时再从字节码转化成机器码执行。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c42f98beb0b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h2 id="编译器的工作原理和基本组成"><a href="#编译器的工作原理和基本组成" class="headerlink" title="编译器的工作原理和基本组成"></a>编译器的工作原理和基本组成</h2><h3 id="通用程序设计语言的主要成分"><a href="#通用程序设计语言的主要成分" class="headerlink" title="通用程序设计语言的主要成分"></a>通用程序设计语言的主要成分</h3><p>语言都由声明、操作两大部分组成，声明+操作=语言的完整定义。</p>
+<h4 id="例：过程式语言："><a href="#例：过程式语言：" class="headerlink" title="例：过程式语言："></a>例：过程式语言：</h4><p>过程式语言有<strong>两种语句</strong>：声明性语句和操作性语句。前者提供操作对象的性质（比如数据类型、数据值、对象的作用域）。后者则描述各个操作（比如赋值）的次序，进行实际操作。</p>
+<p>编译器对上述两种语句使用不同的方式进行处理。对于声明性的，就是给被声明的对象<strong>分配一块空间</strong>（称为“环境”）。操作则是<strong>生成针对环境的可执行代码序列</strong>，比如从某个被声明的空间中取值，进行某些运算后将结果放到某个空间中。</p>
+<p>因此，“先声明后引用”的规则，能够方便编译器对语言进行处理，也能提升执行效率。</p>
+<p>例如，一些语言支持如下操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i&#x3D;10;           &#x2F;&#x2F; 在没有对 i 进行声明的情况下直接赋整数值</span><br><span class="line">i&#x3D;&quot;abcdefg&quot;;    &#x2F;&#x2F; 直接重新赋字符串值</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>虽然看起来是两行代码，但是在实际执行中，执行过程是：为整型分配空间-&gt;写入整数值10-&gt;重新分配空间-&gt;写入字符串值。将导致效率的降低。</p>
+<h3 id="以阶段划分编译器"><a href="#以阶段划分编译器" class="headerlink" title="以阶段划分编译器"></a>以阶段划分编译器</h3><p>编译器的工作过程可以大致划分为四步：词法分析、语法分析、语义分析、目标代码生成。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>其中，中间代码生成及其之前的步骤，编译器和解释器可以是一致的。</p>
+<ul>
+<li>词法分析：相当于识别每个词代表什么。进行的工作就是识别单词。单词至少分为：关键字、标识符、字面量、特殊符号；</li>
+<li>语法分析：识别语句的结构。通常以树的形式表示；</li>
+<li>语义分析：前两者正确的情况下，语义未必正确。确保“什么语句是什么意思”——检查结构正确的句子是否语义合法，也可以修改语法树的结构；</li>
+<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
+<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
+<li>中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率。</li>
+</ul>
+<h4 id="例：编译器各阶段工作："><a href="#例：编译器各阶段工作：" class="headerlink" title="例：编译器各阶段工作："></a>例：编译器各阶段工作：</h4><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c518b98ba42?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<ul>
+<li><p>词法分析：将源程序转化为记号流（记号流是线性结构的），源代码中的变量名在记号流中被替换为id1、id2这样的标识符。若我们只写一个 <code>real x</code>，在词法分析执行完后仍然是正确的——词法分析只看代码中的单词是否符合规则，而不关心结构。但在语法分析中就过不了了；</p>
+</li>
+<li><p>语法分析：该步骤，我们将记号流分析为两个语法树。因为句子是有层次关系的，树又可以用于描述层次关系，因此我们使用语法树来描述句子的语法结构。右下角语法树的意思是：对 id3 和 60 使用 * 进行运算，再将结果和 id2 使用 + 进行操作…… 最后赋值给 id1；</p>
+</li>
+<li><p>语义分析：对语法分析生成的两个语法树进行分析。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c4d53a02901?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<p>语义分析这一步，要看语法结构正确的语法树的含义是否正确——这一步也可以做些附加的操作，比如这里对60的转换，这就是编译器为了简化语言而自动进行的附加工作——对类型进行了自动转换。另又如C语言中，我们可以写 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1+2.0</span><br></pre></td></tr></table></figure>
+
+<p> 这样的式子，与此同理，也是编译器自动在语义分析时进行了类型转换。</p>
+</li>
+</ul>
+<ul>
+<li><p>中间代码优化：将4条语句转为了两条；</p>
+</li>
+<li><p>目标代码生成，解决汇编、可重定位、内存形式（Load-and-Go）问题</p>
+</li>
+</ul>
+<h3 id="编译器的分析-综合模式"><a href="#编译器的分析-综合模式" class="headerlink" title="编译器的分析/综合模式"></a>编译器的分析/综合模式</h3><p>编译器可分为前后端，前端进行语言结构和意义的分析，后端进行语言意义的处理。</p>
+<p>中间代码是前后端的分界。编译器的基础架构就分为前端、源代码的中间表示和后端。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c599e972afb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
+<h3 id="编译器扫描遍数"><a href="#编译器扫描遍数" class="headerlink" title="编译器扫描遍数"></a>编译器扫描遍数</h3><p>在编译原理中有个术语，叫做“扫描”，“一遍扫描”是指：在编译的每个阶段中，编译程序将程序代码完整分析一遍的工作模式。</p>
+<p>比如：</p>
+<ol>
+<li>词法分析阶段，把整个程序转化为记号流，这叫一遍；</li>
+<li>词法分析，对记号流（记号流本身就是一种程序的变体）分析得到语法树，这又叫一遍；</li>
+<li>语义分析，对语法树（语法树是记号流的变体，也就是程序的变体）进行修改，分析得到中间代码，这又叫一遍；</li>
+</ol>
+<p>扫描遍数的影响因素：</p>
+<ol>
+<li><p>软硬件条件：如内存太小或者要做全局优化。想要做比较好的优化就需要全面了解程序，扫描的遍数就要增加；</p>
+</li>
+<li><p>语言结构：如果先声明后引用，就只需要扫描一遍；但如果先引用后声明，处理起来就比较复杂，需要多扫描一遍；</p>
+</li>
+<li><p>编译技术，比如拉链-回填</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">goto lab1;</span><br><span class="line">...</span><br><span class="line">goto lab2;</span><br><span class="line">...</span><br><span class="line">lab1:...</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>拉链-回填实际上也是先引用后声明，但只需要扫描一遍——当第一次读到引用时，先把后面的目标位置填个问号，读到多次也都填上问号——因为引用了相同的东西，所以这个问号可以“拉成一条链”。当我们确定了lab1的具体标号位置时，就回头把那一串的内容都填上。这并不是第二次扫描，叫做“拉链-回填”</p>
+</li>
+</ol>
+<h3 id="编译器的编写"><a href="#编译器的编写" class="headerlink" title="编译器的编写"></a>编译器的编写</h3><ol>
+<li>直接用语言写；</li>
+<li>使用编译器编写工具：包括语法/词法分析工具、语法制导翻译、代码生成、数据流分析等；</li>
+<li>基于编译器基础架构的编译器构造系统。也就是开放式编译器，比如LLVM、GCC、SUIF等。这样开发，就是自己用工具搞定词法分析、语法分析，再用这玩意做后端，就能开发出来自己的编译器了</li>
+</ol>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5eca2d53f265da76e97d31ba" target="_blank" rel="noopener">编译原理笔记1：概述编译相关的基本知识</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86%E5%8F%8A%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/02/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86%E5%8F%8A%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">MySQL索引原理及慢查询优化-转载</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-02 09:27:33 / 修改时间：18:50:46" itemprop="dateCreated datePublished" datetime="2020-07-02T09:27:33+08:00">2020-07-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>16k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>14 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>MySQL凭借着出色的性能、低廉的成本、丰富的资源，已经成为绝大多数互联网公司的首选关系型数据库。虽然性能出色，但所谓“好马配好鞍”，如何能够更好的使用它，已经成为开发工程师的必修课，我们经常会从职位描述上看到诸如“精通MySQL”、“SQL语句优化”、“了解数据库原理”等要求。我们知道一般的应用系统，读写比例在10:1左右，而且插入操作和一般的更新操作很少出现性能问题，遇到最多的，也是最容易出问题的，还是一些复杂的查询操作，所以查询语句的优化显然是重中之重。</p>
+<p>本人从2013年7月份起，一直在美团核心业务系统部做慢查询的优化工作，共计十余个系统，累计解决和积累了上百个慢查询案例。随着业务的复杂性提升，遇到的问题千奇百怪，五花八门，匪夷所思。本文旨在以开发工程师的角度来解释数据库索引的原理和如何优化慢查询。</p>
+<h2 id="一个慢查询引发的思考"><a href="#一个慢查询引发的思考" class="headerlink" title="一个慢查询引发的思考"></a>一个慢查询引发的思考</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   <span class="keyword">count</span>(*) </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   task </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   <span class="keyword">status</span>=<span class="number">2</span> </span><br><span class="line">   <span class="keyword">and</span> operator_id=<span class="number">20839</span> </span><br><span class="line">   <span class="keyword">and</span> operate_time&gt;<span class="number">1371169729</span> </span><br><span class="line">   <span class="keyword">and</span> operate_time&lt;<span class="number">1371174603</span> </span><br><span class="line">   <span class="keyword">and</span> <span class="keyword">type</span>=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
+
+<p>系统使用者反应有一个功能越来越慢，于是工程师找到了上面的SQL。</p>
+<p>并且兴致冲冲的找到了我，“这个SQL需要优化，给我把每个字段都加上索引”。</p>
+<p>我很惊讶，问道：“为什么需要每个字段都加上索引？”</p>
+<p>“把查询的字段都加上索引会更快”，工程师信心满满。</p>
+<p>“这种情况完全可以建一个联合索引，因为是最左前缀匹配，所以operate_time需要放到最后，而且还需要把其他相关的查询都拿来，需要做一个综合评估。”</p>
+<p>“联合索引？最左前缀匹配？综合评估？”工程师不禁陷入了沉思。</p>
+<p>多数情况下，我们知道索引能够提高查询效率，但应该如何建立索引？索引的顺序如何？许多人却只知道大概。其实理解这些概念并不难，而且索引的原理远没有想象的那么复杂。</p>
+<h2 id="MySQL索引原理"><a href="#MySQL索引原理" class="headerlink" title="MySQL索引原理"></a>MySQL索引原理</h2><h3 id="索引目的"><a href="#索引目的" class="headerlink" title="索引目的"></a>索引目的</h3><p>索引的目的在于提高查询效率，可以类比字典，如果要查“mysql”这个单词，我们肯定需要定位到m字母，然后从下往下找到y字母，再找到剩下的sql。如果没有索引，那么你可能需要把所有单词看一遍才能找到你想要的，如果我想找到m开头的单词呢？或者ze开头的单词呢？是不是觉得如果没有索引，这个事情根本无法完成？</p>
+<h3 id="索引原理"><a href="#索引原理" class="headerlink" title="索引原理"></a>索引原理</h3><p>除了词典，生活中随处可见索引的例子，如火车站的车次表、图书的目录等。它们的原理都是一样的，通过不断的缩小想要获得数据的范围来筛选出最终想要的结果，同时把随机的事件变成顺序的事件，也就是我们总是通过同一种查找方式来锁定数据。</p>
+<p>数据库也是一样，但显然要复杂许多，因为不仅面临着等值查询，还有范围查询(&gt;、&lt;、between、in)、模糊查询(like)、并集查询(or)等等。数据库应该选择怎么样的方式来应对所有的问题呢？我们回想字典的例子，能不能把数据分成段，然后分段查询呢？最简单的如果1000条数据，1到100分成第一段，101到200分成第二段，201到300分成第三段……这样查第250条数据，只要找第三段就可以了，一下子去除了90%的无效数据。但如果是1千万的记录呢，分成几段比较好？稍有算法基础的同学会想到搜索树，其平均复杂度是lgN，具有不错的查询性能。但这里我们忽略了一个关键的问题，复杂度模型是基于每次相同的操作成本来考虑的，数据库实现比较复杂，数据保存在磁盘上，而为了提高性能，每次又可以把部分数据读入内存来计算，因为我们知道访问磁盘的成本大概是访问内存的十万倍左右，所以简单的搜索树难以满足复杂的应用场景。</p>
+<h4 id="磁盘IO与预读"><a href="#磁盘IO与预读" class="headerlink" title="磁盘IO与预读"></a>磁盘IO与预读</h4><p>前面提到了访问磁盘，那么这里先简单介绍一下磁盘IO和预读，磁盘读取数据靠的是机械运动，每次读取数据花费的时间可以分为寻道时间、旋转延迟、传输时间三个部分，寻道时间指的是磁臂移动到指定磁道所需要的时间，主流磁盘一般在5ms以下；旋转延迟就是我们经常听说的磁盘转速，比如一个磁盘7200转，表示每分钟能转7200次，也就是说1秒钟能转120次，旋转延迟就是1/120/2 = 4.17ms；传输时间指的是从磁盘读出或将数据写入磁盘的时间，一般在零点几毫秒，相对于前两个时间可以忽略不计。那么访问一次磁盘的时间，即一次磁盘IO的时间约等于5+4.17 = 9ms左右，听起来还挺不错的，但要知道一台500 -MIPS的机器每秒可以执行5亿条指令，因为指令依靠的是电的性质，换句话说执行一次IO的时间可以执行40万条指令，数据库动辄十万百万乃至千万级数据，每次9毫秒的时间，显然是个灾难。下图是计算机硬件延迟的对比图，供大家参考：</p>
+<p><img src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2014/7f46a0a4.png" alt="various-system-software-hardware-latencies"></p>
+<p>various-system-software-hardware-latencies</p>
+<p>考虑到磁盘IO是非常高昂的操作，计算机操作系统做了一些优化，当一次IO时，不光把当前磁盘地址的数据，而是把相邻的数据也都读取到内存缓冲区内，因为局部预读性原理告诉我们，当计算机访问一个地址的数据的时候，与其相邻的数据也会很快被访问到。每一次IO读取的数据我们称之为一页(page)。具体一页有多大数据跟操作系统有关，一般为4k或8k，也就是我们读取一页内的数据时候，实际上才发生了一次IO，这个理论对于索引的数据结构设计非常有帮助。</p>
+<h4 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h4><p>前面讲了生活中索引的例子，索引的基本原理，数据库的复杂性，又讲了操作系统的相关知识，目的就是让大家了解，任何一种数据结构都不是凭空产生的，一定会有它的背景和使用场景，我们现在总结一下，我们需要这种数据结构能够做些什么，其实很简单，那就是：每次查找数据时把磁盘IO次数控制在一个很小的数量级，最好是常数数量级。那么我们就想到如果一个高度可控的多路搜索树是否能满足需求呢？就这样，b+树应运而生。</p>
+<h4 id="详解b-树"><a href="#详解b-树" class="headerlink" title="详解b+树"></a>详解b+树</h4><p><img src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2014/7af22798.jpg" alt="b+树"></p>
+<p>b+树</p>
+<p>如上图，是一颗b+树，关于b+树的定义可以参见<a href="http://zh.wikipedia.org/wiki/B%2B树" target="_blank" rel="noopener">B+树</a>(百度百科定义的B+树索引节点关键字数等于子树个数)，这里只说一些重点，浅蓝色的块我们称之为一个磁盘块，可以看到每个磁盘块包含几个数据项（深蓝色所示）和指针（黄色所示），如磁盘块1包含数据项17和35，包含指针P1、P2、P3，P1表示小于17的磁盘块，P2表示在17和35之间的磁盘块，P3表示大于35的磁盘块。真实的数据存在于叶子节点即3、5、9、10、13、15、28、29、36、60、75、79、90、99。非叶子节点只不存储真实的数据，只存储指引搜索方向的数据项，如17、35并不真实存在于数据表中。</p>
+<h4 id="b-树的查找过程"><a href="#b-树的查找过程" class="headerlink" title="b+树的查找过程"></a>b+树的查找过程</h4><p>如图所示，如果要查找数据项29，那么首先会把磁盘块1由磁盘加载到内存，此时发生一次IO，在内存中用二分查找确定29在17和35之间，锁定磁盘块1的P2指针，内存时间因为非常短（相比磁盘的IO）可以忽略不计，通过磁盘块1的P2指针的磁盘地址把磁盘块3由磁盘加载到内存，发生第二次IO，29在26和30之间，锁定磁盘块3的P2指针，通过指针加载磁盘块8到内存，发生第三次IO，同时内存中做二分查找找到29，结束查询，总计三次IO。真实的情况是，3层的b+树可以表示上百万的数据，如果上百万的数据查找只需要三次IO，性能提高将是巨大的，如果没有索引，每个数据项都要发生一次IO，那么总共需要百万次的IO(更严谨的话:百万*数据项长度/4K)，显然成本非常非常高。</p>
+<h4 id="b-树性质"><a href="#b-树性质" class="headerlink" title="b+树性质"></a>b+树性质</h4><p>1.通过上面的分析，我们知道IO次数取决于b+数的高度h，假设当前数据表的数据为N，每个磁盘块的数据项的数量是m，则有h=㏒(m+1)N，当数据量N一定的情况下，m越大，h越小；而m = 磁盘块的大小 / 数据项的大小，磁盘块的大小也就是一个数据页的大小，是固定的，如果数据项占的空间越小，数据项的数量越多，树的高度越低。这就是为什么每个数据项，即索引字段要尽量的小，比如int占4字节，要比bigint8字节少一半。这也是为什么b+树要求把真实的数据放到叶子节点而不是内层节点，一旦放到内层节点，磁盘块的数据项会大幅度下降，导致树增高。当数据项等于1时将会退化成线性表。</p>
+<p>2.当b+树的数据项是复合的数据结构，比如(name,age,sex)的时候，b+数是按照从左到右的顺序来建立搜索树的，比如当(张三,20,F)这样的数据来检索的时候，b+树会优先比较name来确定下一步的所搜方向，如果name相同再依次比较age和sex，最后得到检索的数据；但当(20,F)这样的没有name的数据来的时候，b+树就不知道下一步该查哪个节点，因为建立搜索树的时候name就是第一个比较因子，必须要先根据name来搜索才能知道下一步去哪里查询。比如当(张三,F)这样的数据来检索时，b+树可以用name来指定搜索方向，但下一个字段age的缺失，所以只能把名字等于张三的数据都找到，然后再匹配性别是F的数据了， 这个是非常重要的性质，即索引的<strong>最左匹配</strong>特性。</p>
+<h2 id="慢查询优化"><a href="#慢查询优化" class="headerlink" title="慢查询优化"></a>慢查询优化</h2><p>关于MySQL索引原理是比较枯燥的东西，大家只需要有一个感性的认识，并不需要理解得非常透彻和深入。我们回头来看看一开始我们说的慢查询，了解完索引原理之后，大家是不是有什么想法呢？先总结一下索引的几大基本原则：</p>
+<h3 id="建索引的几大原则"><a href="#建索引的几大原则" class="headerlink" title="建索引的几大原则"></a>建索引的几大原则</h3><p>1<strong>.最左前缀匹配原则</strong>，非常重要的原则，mysql会一直向右匹配<strong>直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong>，比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整。</p>
+<p>2.<strong>=和in可以乱序</strong>，比如a = 1 and b = 2 and c = 3 建立(a,b,c)索引可以任意顺序，mysql的查询优化器会帮你优化成索引可以识别的形式。</p>
+<p>3.尽量<strong>选择区分度高的列</strong>作为索引，区分度的公式是count(distinct col)/count(*)，表示字段不重复的比例，比例越大我们扫描的记录数越少，唯一键的区分度是1，而一些状态、性别字段可能在大数据面前区分度就是0，那可能有人会问，这个比例有什么经验值吗？使用场景不同，这个值也很难确定，一般需要join的字段我们都要求是0.1以上，即平均1条扫描10条记录。</p>
+<p>4.<strong>索引列不能参与计算</strong>，保持列“干净”，比如from_unixtime(create_time) = ’2014-05-29’就不能使用到索引，原因很简单，b+树中存的都是数据表中的字段值，但进行检索时，需要把所有元素都应用函数才能比较，显然成本太大。所以语句应该写成create_time = unix_timestamp(’2014-05-29’)。</p>
+<p>5.<strong>尽量的扩展索引，不要新建索引</strong>。比如表中已经有a的索引，现在要加(a,b)的索引，那么只需要修改原来的索引即可。</p>
+<h3 id="回到开始的慢查询"><a href="#回到开始的慢查询" class="headerlink" title="回到开始的慢查询"></a>回到开始的慢查询</h3><p>根据最左匹配原则，最开始的sql语句的索引应该是status、operator_id、type、operate_time的联合索引；其中status、operator_id、type的顺序可以颠倒，所以我才会说，把这个表的所有相关查询都找到，会综合分析；比如还有如下查询：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> task <span class="keyword">where</span> <span class="keyword">status</span> = <span class="number">0</span> <span class="keyword">and</span> <span class="keyword">type</span> = <span class="number">12</span> <span class="keyword">limit</span> <span class="number">10</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*) <span class="keyword">from</span> task <span class="keyword">where</span> <span class="keyword">status</span> = <span class="number">0</span> ;</span><br></pre></td></tr></table></figure>
+
+<p>那么索引建立成(status,type,operator_id,operate_time)就是非常正确的，因为可以覆盖到所有情况。这个就是利用了索引的最左匹配的原则</p>
+<h3 id="查询优化神器-explain命令"><a href="#查询优化神器-explain命令" class="headerlink" title="查询优化神器 - explain命令"></a>查询优化神器 - explain命令</h3><p>关于explain命令相信大家并不陌生，具体用法和字段含义可以参考官网<a href="http://dev.mysql.com/doc/refman/5.5/en/explain-output.html" target="_blank" rel="noopener">explain-output</a>，这里需要强调rows是核心指标，绝大部分rows小的语句执行一定很快（有例外，下面会讲到）。所以优化语句基本上都是在优化rows。</p>
+<h3 id="慢查询优化基本步骤"><a href="#慢查询优化基本步骤" class="headerlink" title="慢查询优化基本步骤"></a>慢查询优化基本步骤</h3><p>0.先运行看看是否真的很慢，注意设置SQL_NO_CACHE</p>
+<p>1.where条件单表查，锁定最小返回记录表。这句话的意思是把查询语句的where都应用到表中返回的记录数最小的表开始查起，单表每个字段分别查询，看哪个字段的区分度最高</p>
+<p>2.explain查看执行计划，是否与1预期一致（从锁定记录较少的表开始查询）</p>
+<p>3.order by limit 形式的sql语句让排序的表优先查</p>
+<p>4.了解业务方使用场景</p>
+<p>5.加索引时参照建索引的几大原则</p>
+<p>6.观察结果，不符合预期继续从0分析</p>
+<h3 id="几个慢查询案例"><a href="#几个慢查询案例" class="headerlink" title="几个慢查询案例"></a>几个慢查询案例</h3><p>下面几个例子详细解释了如何分析和优化慢查询。</p>
+<h4 id="复杂语句写法"><a href="#复杂语句写法" class="headerlink" title="复杂语句写法"></a>复杂语句写法</h4><p>很多情况下，我们写SQL只是为了实现功能，这只是第一步，不同的语句书写方式对于效率往往有本质的差别，这要求我们对mysql的执行计划和索引原则有非常清楚的认识，请看下面的语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   <span class="keyword">distinct</span> cert.emp_id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   (</span><br><span class="line">      <span class="keyword">select</span></span><br><span class="line">         emp.id <span class="keyword">as</span> emp_id,</span><br><span class="line">         emp_cert.id <span class="keyword">as</span> cert_id </span><br><span class="line">      <span class="keyword">from</span></span><br><span class="line">         employee emp </span><br><span class="line">      <span class="keyword">left</span> <span class="keyword">join</span></span><br><span class="line">         emp_certificate emp_cert </span><br><span class="line">            <span class="keyword">on</span> emp.id = emp_cert.emp_id </span><br><span class="line">      <span class="keyword">where</span></span><br><span class="line">         emp.is_deleted=<span class="number">0</span></span><br><span class="line">   ) cert </span><br><span class="line">      <span class="keyword">on</span> (</span><br><span class="line">         cl.ref_table=<span class="string">'Employee'</span> </span><br><span class="line">         <span class="keyword">and</span> cl.ref_oid= cert.emp_id</span><br><span class="line">      ) </span><br><span class="line">      <span class="keyword">or</span> (</span><br><span class="line">         cl.ref_table=<span class="string">'EmpCertificate'</span> </span><br><span class="line">         <span class="keyword">and</span> cl.ref_oid= cert.cert_id</span><br><span class="line">      ) </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span>;</span><br></pre></td></tr></table></figure>
+
+<p>0.先运行一下，53条记录 1.87秒，又没有用聚合语句，比较慢</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">53 rows in <span class="keyword">set</span> (<span class="number">1.87</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>1.explain</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br><span class="line">| id | select_type | table      | type  | possible_keys                   | key                   | key_len | ref               | rows  | Extra                          |</span><br><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br><span class="line">|  1 | PRIMARY     | cl         | range | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date     | 8       | NULL              |   379 | Using where; Using temporary   |</span><br><span class="line">|  1 | PRIMARY     | &lt;derived2&gt; | ALL   | NULL                            | NULL                  | NULL    | NULL              | 63727 | Using where; Using join buffer |</span><br><span class="line">|  2 | DERIVED     | emp        | ALL   | NULL                            | NULL                  | NULL    | NULL              | 13317 | Using where                    |</span><br><span class="line">|  2 | DERIVED     | emp_cert   | ref   | emp_certificate_empid           | emp_certificate_empid | 4       | meituanorg.emp.id |     1 | Using index                    |</span><br><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>简述一下执行计划，首先mysql根据idx_last_upd_date索引扫描cm_log表获得379条记录；然后查表扫描了63727条记录，分为两部分，derived表示构造表，也就是不存在的表，可以简单理解成是一个语句形成的结果集，后面的数字表示语句的ID。derived2表示的是ID = 2的查询构造了虚拟表，并且返回了63727条记录。我们再来看看ID = 2的语句究竟做了写什么返回了这么大量的数据，首先全表扫描employee表13317条记录，然后根据索引emp_certificate_empid关联emp_certificate表，rows = 1表示，每个关联都只锁定了一条记录，效率比较高。获得后，再和cm_log的379条记录根据规则关联。从执行过程上可以看出返回了太多的数据，返回的数据绝大部分cm_log都用不到，因为cm_log只锁定了379条记录。</p>
+<p>如何优化呢？可以看到我们在运行完后还是要和cm_log做join,那么我们能不能之前和cm_log做join呢？仔细分析语句不难发现，其基本思想是如果cm_log的ref_table是EmpCertificate就关联emp_certificate表，如果ref_table是Employee就关联employee表，我们完全可以拆成两部分，并用union连接起来，注意这里用union，而不用union all是因为原语句有“distinct”来得到唯一的记录，而union恰好具备了这种功能。如果原语句中没有distinct不需要去重，我们就可以直接使用union all了，因为使用union需要去重的动作，会影响SQL性能。</p>
+<p>优化过的语句如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   emp.id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   employee emp </span><br><span class="line">      <span class="keyword">on</span> cl.ref_table = <span class="string">'Employee'</span> </span><br><span class="line">      <span class="keyword">and</span> cl.ref_oid = emp.id  </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span> </span><br><span class="line">   <span class="keyword">and</span> emp.is_deleted = <span class="number">0</span>  </span><br><span class="line"><span class="keyword">union</span></span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">   emp.id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   emp_certificate ec </span><br><span class="line">      <span class="keyword">on</span> cl.ref_table = <span class="string">'EmpCertificate'</span> </span><br><span class="line">      <span class="keyword">and</span> cl.ref_oid = ec.id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   employee emp </span><br><span class="line">      <span class="keyword">on</span> emp.id = ec.emp_id  </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span> </span><br><span class="line">   <span class="keyword">and</span> emp.is_deleted = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<p>4.不需要了解业务场景，只需要改造的语句和改造之前的语句保持结果一致</p>
+<p>5.现有索引可以满足，不需要建索引</p>
+<p>6.用改造后的语句实验一下，只需要10ms 降低了近200倍！</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">| id | select_type  | table      | type   | possible_keys                   | key               | key_len | ref                   | rows | Extra       |</span><br><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">|  1 | PRIMARY      | cl         | range  | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date | 8       | NULL                  |  379 | Using where |</span><br><span class="line">|  1 | PRIMARY      | emp        | eq_ref | PRIMARY                         | PRIMARY           | 4       | meituanorg.cl.ref_oid |    1 | Using where |</span><br><span class="line">|  2 | UNION        | cl         | range  | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date | 8       | NULL                  |  379 | Using where |</span><br><span class="line">|  2 | UNION        | ec         | eq_ref | PRIMARY,emp_certificate_empid   | PRIMARY           | 4       | meituanorg.cl.ref_oid |    1 |             |</span><br><span class="line">|  2 | UNION        | emp        | eq_ref | PRIMARY                         | PRIMARY           | 4       | meituanorg.ec.emp_id  |    1 | Using where |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | ALL    | NULL                            | NULL              | NULL    | NULL                  | NULL |             |</span><br><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">53 rows in <span class="keyword">set</span> (<span class="number">0.01</span> sec)</span><br></pre></td></tr></table></figure>
+
+<h4 id="明确应用场景"><a href="#明确应用场景" class="headerlink" title="明确应用场景"></a>明确应用场景</h4><p>举这个例子的目的在于颠覆我们对列的区分度的认知，一般上我们认为区分度越高的列，越容易锁定更少的记录，但在一些特殊的情况下，这种理论是有局限性的。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   * </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   stage_poi sp </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   sp.accurate_result=<span class="number">1</span> </span><br><span class="line">   <span class="keyword">and</span> (</span><br><span class="line">      sp.sync_status=<span class="number">0</span> </span><br><span class="line">      <span class="keyword">or</span> sp.sync_status=<span class="number">2</span> </span><br><span class="line">      <span class="keyword">or</span> sp.sync_status=<span class="number">4</span></span><br><span class="line">   );</span><br></pre></td></tr></table></figure>
+
+<p>0.先看看运行多长时间,951条数据6.22秒，真的很慢。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">951 rows in <span class="keyword">set</span> (<span class="number">6.22</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>1.先explain，rows达到了361万，type = ALL表明是全表扫描。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows    | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | sp    | ALL  | NULL          | NULL | NULL    | NULL | 3613155 | Using where |</span><br><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>2.所有字段都应用查询返回记录数，因为是单表查询 0已经做过了951条。</p>
+<p>3.让explain的rows 尽量逼近951。</p>
+<p>看一下accurate_result = 1的记录数：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*),accurate_result <span class="keyword">from</span> stage_poi  <span class="keyword">group</span> <span class="keyword">by</span> accurate_result;</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br><span class="line">| count(*) | accurate_result |</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br><span class="line">|     1023 |              -1 |</span><br><span class="line">|  2114655 |               0 |</span><br><span class="line">|   972815 |               1 |</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>我们看到accurate_result这个字段的区分度非常低，整个表只有-1,0,1三个值，加上索引也无法锁定特别少量的数据。</p>
+<p>再看一下sync_status字段的情况：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*),sync_status <span class="keyword">from</span> stage_poi  <span class="keyword">group</span> <span class="keyword">by</span> sync_status;</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br><span class="line">| count(*) | sync_status |</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br><span class="line">|     3080 |           0 |</span><br><span class="line">|  3085413 |           3 |</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>同样的区分度也很低，根据理论，也不适合建立索引。</p>
+<p>问题分析到这，好像得出了这个表无法优化的结论，两个列的区分度都很低，即便加上索引也只能适应这种情况，很难做普遍性的优化，比如当sync_status 0、3分布的很平均，那么锁定记录也是百万级别的。</p>
+<p>4.找业务方去沟通，看看使用场景。业务方是这么来使用这个SQL语句的，每隔五分钟会扫描符合条件的数据，处理完成后把sync_status这个字段变成1,五分钟符合条件的记录数并不会太多，1000个左右。了解了业务方的使用场景后，优化这个SQL就变得简单了，因为业务方保证了数据的不平衡，如果加上索引可以过滤掉绝大部分不需要的数据。</p>
+<p>5.根据建立索引规则，使用如下语句建立索引</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> stage_poi <span class="keyword">add</span> <span class="keyword">index</span> idx_acc_status(accurate_result,sync_status);</span><br></pre></td></tr></table></figure>
+
+<p>6.观察预期结果,发现只需要200ms，快了30多倍。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">952 rows in <span class="keyword">set</span> (<span class="number">0.20</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>我们再来回顾一下分析问题的过程，单表查询相对来说比较好优化，大部分时候只需要把where条件里面的字段依照规则加上索引就好，如果只是这种“无脑”优化的话，显然一些区分度非常低的列，不应该加索引的列也会被加上索引，这样会对插入、更新性能造成严重的影响，同时也有可能影响其它的查询语句。所以我们第4步调差SQL的使用场景非常关键，我们只有知道这个业务场景，才能更好地辅助我们更好的分析和优化查询语句。</p>
+<h4 id="无法优化的语句"><a href="#无法优化的语句" class="headerlink" title="无法优化的语句"></a>无法优化的语句</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) <span class="keyword">as</span> created_time,</span><br><span class="line">   from_unixtime(c.last_modified) <span class="keyword">as</span> last_modified,</span><br><span class="line">   c.last_modified_user_id  </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   contact_branch cb </span><br><span class="line">      <span class="keyword">on</span>  c.id = cb.contact_id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   branch_user bu </span><br><span class="line">      <span class="keyword">on</span>  cb.branch_id = bu.branch_id </span><br><span class="line">      <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">         <span class="number">1</span>,</span><br><span class="line">      <span class="number">2</span>)  </span><br><span class="line">   <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">      org_emp_info oei </span><br><span class="line">         <span class="keyword">on</span>  oei.data_id = bu.user_id </span><br><span class="line">         <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span> </span><br><span class="line">         <span class="keyword">and</span> oei.node_right &lt;= <span class="number">10802</span> </span><br><span class="line">         <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>  </span><br><span class="line">   <span class="keyword">order</span> <span class="keyword">by</span></span><br><span class="line">      c.created_time <span class="keyword">desc</span>  <span class="keyword">limit</span> <span class="number">0</span> ,</span><br><span class="line">      <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
+
+<p>还是几个步骤。</p>
+<p>0.先看语句运行多长时间，10条记录用了13秒，已经不可忍受。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10 rows in <span class="keyword">set</span> (<span class="number">13.06</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>1.explain</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | type   | possible_keys                       | key                     | key_len | ref                      | rows | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | oei   | ref    | idx_category_left_right,idx_data_id | idx_category_left_right | 5       | const                    | 8849 | Using where; Using temporary; Using filesort |</span><br><span class="line">|  1 | SIMPLE      | bu    | ref    | PRIMARY,idx_userid_status           | idx_userid_status       | 4       | meituancrm.oei.data_id   |   76 | Using where; Using index                     |</span><br><span class="line">|  1 | SIMPLE      | cb    | ref    | idx_branch_id,idx_contact_branch_id | idx_branch_id           | 4       | meituancrm.bu.branch_id  |    1 |                                              |</span><br><span class="line">|  1 | SIMPLE      | c     | eq_ref | PRIMARY                             | PRIMARY                 | 108     | meituancrm.cb.contact_id |    1 |                                              |</span><br><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+
+<p>从执行计划上看，mysql先查org_emp_info表扫描8849记录，再用索引idx_userid_status关联branch_user表，再用索引idx_branch_id关联contact_branch表，最后主键关联contact表。</p>
+<p>rows返回的都非常少，看不到有什么异常情况。我们在看一下语句，发现后面有order by + limit组合，会不会是排序量太大搞的？于是我们简化SQL，去掉后面的order by 和 limit，看看到底用了多少记录来排序。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">  <span class="keyword">count</span>(*)</span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   contact_branch cb </span><br><span class="line">      <span class="keyword">on</span>  c.id = cb.contact_id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   branch_user bu </span><br><span class="line">      <span class="keyword">on</span>  cb.branch_id = bu.branch_id </span><br><span class="line">      <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">         <span class="number">1</span>,</span><br><span class="line">      <span class="number">2</span>)  </span><br><span class="line">   <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">      org_emp_info oei </span><br><span class="line">         <span class="keyword">on</span>  oei.data_id = bu.user_id </span><br><span class="line">         <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span> </span><br><span class="line">         <span class="keyword">and</span> oei.node_right &lt;= <span class="number">10802</span> </span><br><span class="line">         <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>  </span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| <span class="keyword">count</span>(*) |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">|   <span class="number">778878</span> |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line"><span class="number">1</span> <span class="keyword">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">5.19</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>发现排序之前居然锁定了778878条记录，如果针对70万的结果集排序，将是灾难性的，怪不得这么慢，那我们能不能换个思路，先根据contact的created_time排序，再来join会不会比较快呢？</p>
+<p>于是改造成下面的语句，也可以用straight_join来优化：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) as created_time,</span><br><span class="line">   from_unixtime(c.last_modified) as last_modified,</span><br><span class="line">   c.last_modified_user_id   </span><br><span class="line">from</span><br><span class="line">   contact c  </span><br><span class="line">where</span><br><span class="line">   exists (</span><br><span class="line">      select</span><br><span class="line">         1 </span><br><span class="line">      from</span><br><span class="line">         contact_branch cb  </span><br><span class="line">      inner join</span><br><span class="line">         branch_user bu        </span><br><span class="line">            on  cb.branch_id &#x3D; bu.branch_id        </span><br><span class="line">            and bu.status in (</span><br><span class="line">               1,</span><br><span class="line">            2)      </span><br><span class="line">         inner join</span><br><span class="line">            org_emp_info oei           </span><br><span class="line">               on  oei.data_id &#x3D; bu.user_id           </span><br><span class="line">               and oei.node_left &gt;&#x3D; 2875           </span><br><span class="line">               and oei.node_right &lt;&#x3D; 10802           </span><br><span class="line">               and oei.org_category &#x3D; - 1      </span><br><span class="line">         where</span><br><span class="line">            c.id &#x3D; cb.contact_id    </span><br><span class="line">      )    </span><br><span class="line">   order by</span><br><span class="line">      c.created_time desc  limit 0 ,</span><br><span class="line">      10;</span><br></pre></td></tr></table></figure>
+
+<p>验证一下效果 预计在1ms内，提升了13000多倍！</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>本以为至此大工告成，但我们在前面的分析中漏了一个细节，先排序再join和先join再排序理论上开销是一样的，为何提升这么多是因为有一个limit！大致执行过程是：mysql先按索引排序得到前10条记录，然后再去join过滤，当发现不够10条的时候，再次去10条，再次join，这显然在内层join过滤的数据非常多的时候，将是灾难的，极端情况，内层一条数据都找不到，mysql还傻乎乎的每次取10条，几乎遍历了这个数据表！</p>
+<p>用不同参数的SQL试验下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   sql_no_cache   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) <span class="keyword">as</span> created_time,</span><br><span class="line">   from_unixtime(c.last_modified) <span class="keyword">as</span> last_modified,</span><br><span class="line">   c.last_modified_user_id    </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c   </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   <span class="keyword">exists</span> (</span><br><span class="line">      <span class="keyword">select</span></span><br><span class="line">         <span class="number">1</span>        </span><br><span class="line">      <span class="keyword">from</span></span><br><span class="line">         contact_branch cb         </span><br><span class="line">      <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">         branch_user bu                     </span><br><span class="line">            <span class="keyword">on</span>  cb.branch_id = bu.branch_id                     </span><br><span class="line">            <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">               <span class="number">1</span>,</span><br><span class="line">            <span class="number">2</span>)                </span><br><span class="line">         <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">            org_emp_info oei                           </span><br><span class="line">               <span class="keyword">on</span>  oei.data_id = bu.user_id                           </span><br><span class="line">               <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span>                           </span><br><span class="line">               <span class="keyword">and</span> oei.node_right &lt;= <span class="number">2875</span>                           </span><br><span class="line">               <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>                </span><br><span class="line">         <span class="keyword">where</span></span><br><span class="line">            c.id = cb.contact_id           </span><br><span class="line">      )        </span><br><span class="line">   <span class="keyword">order</span> <span class="keyword">by</span></span><br><span class="line">      c.created_time <span class="keyword">desc</span>  <span class="keyword">limit</span> <span class="number">0</span> ,</span><br><span class="line">      <span class="number">10</span>;</span><br><span class="line">Empty <span class="keyword">set</span> (<span class="number">2</span> <span class="keyword">min</span> <span class="number">18.99</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>2 min 18.99 sec！比之前的情况还糟糕很多。由于mysql的nested loop机制，遇到这种情况，基本是无法优化的。这条语句最终也只能交给应用系统去优化自己的逻辑了。</p>
+<p>通过这个例子我们可以看到，并不是所有语句都能优化，而往往我们优化时，由于SQL用例回归时落掉一些极端情况，会造成比原来还严重的后果。所以，第一：不要指望所有语句都能通过SQL优化，第二：不要过于自信，只针对具体case来优化，而忽略了更复杂的情况。</p>
+<p>慢查询的案例就分析到这儿，以上只是一些比较典型的案例。我们在优化过程中遇到过超过1000行，涉及到16个表join的“垃圾SQL”，也遇到过线上线下数据库差异导致应用直接被慢查询拖死，也遇到过varchar等值比较没有写单引号，还遇到过笛卡尔积查询直接把从库搞死。再多的案例其实也只是一些经验的积累，如果我们熟悉查询优化器、索引的内部原理，那么分析这些案例就变得特别简单了。</p>
+<h2 id="写在后面的话"><a href="#写在后面的话" class="headerlink" title="写在后面的话"></a>写在后面的话</h2><p>本文以一个慢查询案例引入了MySQL索引原理、优化慢查询的一些方法论;并针对遇到的典型案例做了详细的分析。其实做了这么长时间的语句优化后才发现，任何数据库层面的优化都抵不上应用系统的优化，同样是MySQL，可以用来支撑Google/FaceBook/Taobao应用，但可能连你的个人网站都撑不住。套用最近比较流行的话：“查询容易，优化不易，且写且珍惜！”</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://tech.meituan.com/2014/06/30/mysql-index.html" target="_blank" rel="noopener">MySQL索引原理及慢查询优化</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/01/%E4%BB%80%E4%B9%88%E6%98%AFService%20Mesh/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1267,766 +1969,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/30/MySQL%E5%91%BD%E4%BB%A4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/30/MySQL%E5%91%BD%E4%BB%A4/" class="post-title-link" itemprop="url">MySQL命令</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-30 09:04:35 / 修改时间：17:09:26" itemprop="dateCreated datePublished" datetime="2020-06-30T09:04:35+08:00">2020-06-30</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>13k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>12 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>MySQL的基本操作可以包括两个方面：MySQL常用语句如高频率使用的增删改查（CRUD）语句和MySQL高级功能，如存储过程，触发器，事务处理等。而这两个方面又可以细分如下：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/4/17/162d138e4ae68c7e?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="MySQL基本操作总结.png"></p>
-<ul>
-<li>MySQL常用语句<ol>
-<li>表（或者数据库）的CRUD</li>
-<li>表数据的CRUD，其中表数据查询使用最多，也更复杂。查询可以按照单表还是多表可以分为：单表SELECT查询和多表的联结查询（INNER JOIN, LEFT JOIN, RIGHT JOIN和FULL JOIN）以及组合查询UNION和UNION ALL</li>
-<li>SQL语句中各个关键字的执行顺序</li>
-</ol>
-</li>
-<li>MySQL的高级功能<ol>
-<li>存储过程</li>
-<li>事务处理</li>
-<li>触发器</li>
-</ol>
-</li>
-</ul>
-<h1 id="1-表-或数据库-操作语句"><a href="#1-表-或数据库-操作语句" class="headerlink" title="1. 表(或数据库)操作语句"></a>1. 表(或数据库)操作语句</h1><h2 id="1-1-查询表（或数据库）"><a href="#1-1-查询表（或数据库）" class="headerlink" title="1.1. 查询表（或数据库）"></a>1.1. 查询表（或数据库）</h2><ol>
-<li><strong>获取所有可用的数据库</strong>：<code>SHOW DATABASES</code>；</li>
-<li><strong>选择数据库</strong>：<code>USE customers</code>；</li>
-<li>用于显示数据库服务器的状态信息：<code>SHOW STATUS</code>；</li>
-<li>用来显示授权用户的安全权限：<code>SHOW GRANTS</code>；</li>
-<li>用来显示数据库服务器或警告信息：<code>SHOW ERRORS</code> 或者 <code>SHOW WARNINGS</code>；</li>
-<li><strong>用于显示创建数据库时的创建语句</strong>：<code>SHOW CREATE DATABASE customers</code>；</li>
-<li><strong>用于显示创建表时的创建语句</strong>：<code>SHOW CREATE TABLE customers</code>；</li>
-<li><strong>获取当前所选的数据库中所有可用的表</strong>：<code>SHOW TABLES</code>；</li>
-<li><strong>获取表中所有列的信息</strong>：<code>SHOW COLUMNS FROM tableName</code>；同时DESCRIBE语句有相同的效果：<code>DESCRIBE tableName</code>；</li>
-</ol>
-<h2 id="1-2-新建表（或）数据库"><a href="#1-2-新建表（或）数据库" class="headerlink" title="1.2. 新建表（或）数据库"></a>1.2. 新建表（或）数据库</h2><ol>
-<li><p><strong>新建数据库</strong>：<code>CREATE DATABASE customers</code>;</p>
-</li>
-<li><p><strong>创建表可以使用CREATE TABLE语句</strong>:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> customers(</span><br><span class="line">  cust_id <span class="built_in">INT</span> <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  cust_name <span class="built_in">CHAR</span>(<span class="number">50</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  cust_age <span class="built_in">INT</span> <span class="literal">NULL</span> <span class="keyword">DEFAULT</span> <span class="number">18</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span>(cust_id)</span><br><span class="line">)<span class="keyword">ENGINE</span>=<span class="keyword">INNODB</span>;</span><br></pre></td></tr></table></figure>
-
-<p>有这样一些细节：</p>
-<ol>
-<li>允许<strong>NULL</strong>值，则说明在插入行数据时允许不给出该列的值，而<strong>NOT NULL</strong>则表示在插入或者更新该列数据，必须明确给出该列的值；</li>
-<li><strong>DEFAULT</strong>表示该列的默认值，在插入行数据时，若没有给出该列的值就会使用其指定的默认值；</li>
-<li><strong>PRIMARY KEY</strong>用于指定主键，主键可以指定一列数据，而可以由多列数据组合构成，如<code>PRIMARY KEY(cust_id,cust_name)</code>；</li>
-<li><strong>ENGINE</strong>用于指定引擎类型。常见的引擎类型有这些：（1）InnoDB是一个支持可靠的事务处理的引擎，但是不支持全文本搜索；（2）MyISAM是一个性能极高的引擎，它支持全文本搜索，但是不支持事务处理；（3）MEMORY在功能上等同于MyISAM，但由于数据存储在内存中，速度很快（特别适合于临时表）；</li>
-</ol>
-</li>
-<li><p>在创建表的时候可以使用<strong>FOREIGN KEY</strong>来创建外键，即一个表中的FOREIGN KEY指向另一个表中PRIMARY KEY。外键FOREIGN KEY用于约束破坏表的联结动作，保证两个表的数据完整性。同时也能防止非法数据插入外键列，因为该列值必须指向另一个表的主键。实例为：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> Orders</span><br><span class="line">(</span><br><span class="line">Id_O <span class="built_in">int</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">OrderNo <span class="built_in">int</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">Id_P <span class="built_in">int</span>,</span><br><span class="line">PRIMARY <span class="keyword">KEY</span> (Id_O),</span><br><span class="line"><span class="keyword">FOREIGN</span> <span class="keyword">KEY</span> (Id_P) <span class="keyword">REFERENCES</span> Persons(Id_P)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<h2 id="1-3-删除表（或数据库）"><a href="#1-3-删除表（或数据库）" class="headerlink" title="1.3 删除表（或数据库）"></a>1.3 删除表（或数据库）</h2><ol>
-<li><strong>删除数据库</strong>：<code>DROP DATABASE customers</code>；</li>
-<li><strong>删除表</strong>，使用DROP TABLE子句：<code>DROP TABLE customers</code>。</li>
-</ol>
-<h2 id="1-4-更新表"><a href="#1-4-更新表" class="headerlink" title="1.4 更新表"></a>1.4 更新表</h2><ol>
-<li><p>更新表结构信息可以使用<strong>ALTER TABLE</strong>子句，如为表增加一列：<code>ALTER TABLE vendors ADD vend_name CHAR(20)</code>；另外经常用于定义外键，如：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> customers </span><br><span class="line"><span class="keyword">ADD</span> <span class="keyword">CONSTRAINT</span> fk_custormer_orders</span><br><span class="line"><span class="keyword">FOREIGN</span> <span class="keyword">KEY</span>(cust_id) <span class="keyword">REFERENCES</span> orders (order_cust)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p><strong>重命名表，使用RENAME子句</strong>。<code>RENAME TABLE backup_customers TO customers, backup_vendors TO vendors</code>；更改多个表名，之间用逗号间隔</p>
-</li>
-</ol>
-<h1 id="2-表数据操作语句"><a href="#2-表数据操作语句" class="headerlink" title="2 表数据操作语句"></a>2 表数据操作语句</h1><h2 id="2-1-查询表数据"><a href="#2-1-查询表数据" class="headerlink" title="2.1 查询表数据"></a>2.1 查询表数据</h2><blockquote>
-<p><strong>基本查询语句</strong></p>
-</blockquote>
-<ol>
-<li>根据过滤条件查询表中的单列或者多列或者全部列的信息<strong>SELECT FROM WEHERE</strong>：<code>SELECT cust_id,cust_name FROM customers WHERE cust_id=10086</code>；其中过滤条件操作符有：=，&lt;&gt;,!=,&lt;,&lt;=,&gt;,&gt;=,BETWEEN AND,IS NULL；</li>
-<li>为查询出的某一列信息去重<strong>DISTINCT</strong>：<code>SELECT DISTINCT cust_name FROM customers</code>；</li>
-<li>限制单列查询结果的行数：<code>SELECT cust_name FROM customers LIMIT 5</code>；LIMIT后跟一个数值，表示从第0行开始取，共取5行数据；如果LIMIT 5，5表示从第5行（数据库中实际第6行记录）开始取，共取5行数据。注意：数据是从第0行开始计数的；</li>
-<li><strong>ORDER BY</strong>子句取一个或者多个列，据此对输出进行排序：<code>SELECT cust_id,cust_name FROM customers ORDER BY cust_id DESC, cust_name</code>;</li>
-<li><strong>IN</strong>操作符用来指定条件范围，范围中的每个条件都可以进行匹配：<code>SELECT cust_id, cust_name FROM customers WHERE cust_id IN (1000,2000)</code>。另外，NOT操作符可以和IN操作符配合使用，用于表示检索出不符合条件的所有数据；</li>
-<li><strong>LIKE</strong>操作符用来表明模糊查询，与之配合使用的通配符有<strong>%</strong>，%表示任何字符出现任何次数；<code>_</code>，<code>_</code>表示只能匹配一个字符：<code>SELECT cust_id,cust_name FROM customers WHERE cust_name LIKE &#39;%happy%&#39;</code>；</li>
-<li>使用分组查询并可以满足一定的分组过滤条件<strong>GROUP BY HAVING</strong>。如检索总计订单金额大于等于50的订单号和订单总金额，并按总金额进行排序：<code>SELECT order_num,SUM(quantity*item_price) AS order_total FROM orderitems GROUP BY order_num HAVING SUM(quantity*item_price)&gt;=50 ORDER BY order_total</code></li>
-<li><strong>WHERE和HAVING的比较</strong>。WHERE是行级过滤，而HAVING是组级过滤。被WHERE过滤掉的数据不会出现在分组中。WHERE中通配符以及多个WHERE子句的连接同样适用于HAVING子句；</li>
-<li>GROUP BY的使用注意事项： （1）GROUP BY子句中可以嵌套分组（即通过多个列进行分组<code>GROUP BY cust_id, cust_name</code>），但是进行数据汇总时，是在最后规定的分组上进行；（2）GROUP BY子句中列出的每个列都必须是检索列或者是有效的表达式。（3）如果有NULL值，将值NULL作为一个分组进行返回，如果有多行NULL值，它们将分为一组</li>
-<li>嵌套其他查询中的查询，称之为<strong>子查询</strong>。执行过程由里向外，里层查询结果作为外层查询的条件：<code>SELECT cust_id FROM orders WHERE order_num IN (SELECT order_num FROM orderitems WHERE prod_id = &#39;happy&#39;)</code>。当然，多表的查询可以是用联结查询。</li>
-</ol>
-<blockquote>
-<p><strong>联结查询</strong></p>
-</blockquote>
-<ol>
-<li>内联结用又称之为内部联结，是基于两个表 之间的的相等测试。如果不加过滤条件，会造成“笛卡尔积”。<code>SELECT vend_name,prod_name,prod_price FROM vendors INNER JOIN products ON vendors.vend_id=products.vend_id</code>；同样可以使用WHERE进行多表联结查询，但是更推荐使用INNER JOIN等联结方式；</li>
-<li>外部联结包括左外联结<strong>LEFT JOIN</strong>和右外联结<strong>RIGHT JOIN</strong>和全连接<strong>FULL JOIN</strong>。例如查询每个客户的订单数：<code>SELECT customers.cust_id,orders.orders_num FROM customers LEFT JOIN orders ON orders.cust_id =customers.cust_id</code>；LEFT JOIN 会全部返回左表数据，RIGHT JOIN会全部返回右表数据，FULL JOIN会将左右两个表的数据全部返回；</li>
-<li>联结查询与聚集函数一起使用。如查询每个客户的订单数：<code>SELECT customers.cust_name,customers.cust_id,COUNT(orders.order_num) AS num_ord FROM customers INNER JOIN orders ON customers.cust_id=orders.cust_id GROUP BY customers.cust_id</code>；</li>
-</ol>
-<blockquote>
-<p><strong>组合查询</strong></p>
-</blockquote>
-<ol>
-<li>多个查询（SELECT）可以使用UNION将多个查询结果进行合并成一个结果集返回，<strong>UNIO</strong>N必须包含两个及两个以上的SELECT查询，并且每个传必须包含相同的列、表达式或聚集函数，数据类型不必完全相同，MySQL会进行隐式的类型转换。<code>SELECT vend_id,prod_id,prod_price FROM products WHERE prod_price&gt;5 UINON SELECT vend_id,prod_id,prod_price FROM products WHERE vend_id IN (1001,1002)</code>;</li>
-<li><strong>UNION</strong>返回的是去重后的结果，如果不需要去重则可以使用<strong>UNION ALL</strong>；</li>
-<li>可以多组合查询使用ORDER BY进行排序，但是是针对的最终的结果集进行排序，而不是其中单个SELECT查询进行排序，因此对于组合查询来说ORDER BY子句只有一个。<code>SELECT vend_id,prod_id,prod_price FROM products WHERE prod_price&gt;5 UINON SELECT vend_id,prod_id,prod_price FROM products WHERE vend_id IN (1001,1002) ORDER BY vend_id</code></li>
-</ol>
-<blockquote>
-<p><strong>使用函数对数据进行处理</strong></p>
-</blockquote>
-<ol>
-<li>拼接列名：<code>SELECT Concat (vendName,&#39;(&#39;,vendCountry,&#39;)&#39;) FROM vendors ORDER BY vendName</code>；</li>
-<li>执行算术表达式计算：<code>SELECT prodId, quantity,price, quantity</code>*<code>price AS expandedPrice FROM orderItems</code>；</li>
-<li>文本处理函数如Upper(),LTrim(),RTrim()等函数。比如使用Upper函数将文本转换成大写：<code>SELECT vendName, Upper(vendName) FROM vendors ORDER BY vendName</code>；</li>
-<li>时间和日期处理函数，如Date(),Day()等。<code>SELECT custId, orderNum FROM orders WHERE Date(orderDate)=&#39;2015-09-01&#39;</code>；</li>
-<li>数值处理函数，如Abs(),Cos()等；</li>
-<li>常用的聚集函数。如AVG(),COUNT(),MAX(),MIN()以及SUM()。<code>SELECT COUNT(*) AS numbers, MIN(prod_price) AS price_min, MAX(prod_price) AS price_max,AVG(prod_price) AS price_avg FROM products</code>；</li>
-</ol>
-<h2 id="2-2-插入表数据"><a href="#2-2-插入表数据" class="headerlink" title="2.2 插入表数据"></a>2.2 插入表数据</h2><ol>
-<li>向表中插入行数据可以使用INSERT INTO子句，更安全的方式是指定列名。<code>INSERT INTO customers (cust_name, cust_email) VALUES(&#39;happy&#39;,&#39;happy@gmail.com&#39;)</code>；在INSERT INTO子句中能够省略列名的前提条件是：该列可以允许定义为NULL值或者在定义该列时给出去了默认值；</li>
-<li>如果插入多行数据可以将多组值用逗号进行分隔即可。<code>INSERT INTO customers (cust_name, cust_email) VALUES(&#39;happy&#39;,&#39;happy@gmail.com&#39;),(&#39;smart&#39;,&#39;smart@gmail.com&#39;)</code>；</li>
-<li>将查询出来的数据插入表中，可以使用INSERT SELECT语句。<code>INSERT INTO customers(cust_id,cust_contact) SELECT cust_id, cust_contact FROM customers WHERE cust_id&gt;5</code>；其中SELECT中可以带WHERE过滤条件；INSERT SELECT通常被用于复制表数据</li>
-</ol>
-<h2 id="2-3-更新表数据"><a href="#2-3-更新表数据" class="headerlink" title="2.3 更新表数据"></a>2.3 更新表数据</h2><ol>
-<li>如果要更新表数据的话，使用UPDATE子句：<code>UPDATE customers SET cust_name =&#39;happy&#39;,cust_email=&#39;happy@gmail.com&#39; WHERE cust_id = 1001</code>；</li>
-<li><strong>注意：如果不加WHERE条件指定到某一行的话，会更新表中某一列全部的数据</strong>。</li>
-</ol>
-<h2 id="2-4-删除表数据"><a href="#2-4-删除表数据" class="headerlink" title="2.4 删除表数据"></a>2.4 删除表数据</h2><ol>
-<li>如果从表中删除数据的话，可以使用DELETE子句。<code>DELETE FROM customers WHERE cust_id = 10086</code>；删除的数据必定是表中行数据，而不是某一列。因此，与UPDATE子句相比，DELETE子句并不需要指定是哪一列，而仅仅只需要指定具体的表名即可；</li>
-<li><strong>注意：如果不添加WHERE指定条件的话，会将整个表中所有行数据全部删除。另外，DELETE只是删除表中的数据，而不会删除表结构信息；</strong></li>
-<li>如果想删除表中全部的数据，可以使用<strong>TRUNCATE</strong>，比DELETE删除效率更高；</li>
-</ol>
-<h1 id="3-SQL中关键字执行顺序"><a href="#3-SQL中关键字执行顺序" class="headerlink" title="3. SQL中关键字执行顺序"></a>3. SQL中关键字执行顺序</h1><p>在SQL语句中每个关键字都会按照顺序往下执行，而每一步操作，会生成一个虚拟表，最后产生的虚拟表会作为执行的最终结果返回。下面的是常用的关键字的执行顺序：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">(8)<span class="keyword">SELECT</span> (<span class="number">9</span>)<span class="keyword">DISTINCT</span>&lt;select_list&gt;</span><br><span class="line">(<span class="number">1</span>)<span class="keyword">FROM</span> &lt;left_table&gt;</span><br><span class="line">(<span class="number">3</span>)&lt;join_type&gt; <span class="keyword">JOIN</span> &lt;right_table&gt;</span><br><span class="line">(<span class="number">2</span>)            <span class="keyword">ON</span> &lt;join_condition&gt;</span><br><span class="line">(<span class="number">4</span>)<span class="keyword">WHERE</span> &lt;where_condition&gt;</span><br><span class="line">(<span class="number">5</span>)<span class="keyword">GROUP</span> <span class="keyword">BY</span>&lt;group_by_list&gt;</span><br><span class="line">(<span class="number">6</span>)<span class="keyword">WITH</span>&#123;<span class="keyword">CUBE</span>|<span class="keyword">ROLLUP</span>&#125;</span><br><span class="line">(<span class="number">7</span>)<span class="keyword">HAVING</span>&lt;having_condition&gt;</span><br><span class="line">(<span class="number">10</span>)<span class="keyword">ORDER</span> <span class="keyword">BY</span>&lt;order_by_list&gt;</span><br><span class="line">(<span class="number">11</span>)<span class="keyword">LIMIT</span>&lt;limit_number&gt;</span><br></pre></td></tr></table></figure>
-
-<ol>
-<li><strong>FROM</strong>：对FROM左边的表和右边的表计算笛卡尔积，产生虚表VT1；</li>
-<li><strong>ON</strong>：对虚拟表VT1进行ON筛选，只有那些符合<join_condition>条件的行才会被记录在虚拟表VT2中；</li>
-<li><strong>JOIN</strong>：如果是OUT JOIN，那么将保留表中（如左表或者右表）未匹配的行作为外部行添加到虚拟表VT2中，从而产生虚拟表VT3；</li>
-<li><strong>WHERE</strong>:对虚拟表VT3进行WHERE条件过滤，只有符合<where_condition>的记录才会被放入到虚拟表VT4；</li>
-<li><strong>GROUP BY</strong>：根据GROUP BY子句中的列，对虚拟表VT4进行分组操作，产生虚拟表VT5；</li>
-<li><strong>CUBE|ROLLUP</strong>：对虚拟表VT5进行CUBE或者ROLLUP操作，产生虚拟表VT6；</li>
-<li><strong>HAVING</strong>：对虚拟表VT6进行HAVING条件过滤，只有符合<having_condition>的记录才会被插入到虚拟表VT7中；</li>
-<li><strong>SELECT</strong>：执行SELECT操作，选择指定的列，插入到虚拟表VT8中；</li>
-<li><strong>DISTINCT</strong>：对虚拟表VT8中的记录进行去重，产生虚拟表VT9；</li>
-<li><strong>ORDER BY</strong>：将虚拟表VT9中的记录按照<order_by_list>进行排序操作，产生虚拟表VT10；</li>
-<li><strong>LIMIT</strong>：取出指定行的记录，产生虚拟表VT11，并将结果返回。</li>
-</ol>
-<h1 id="4-索引"><a href="#4-索引" class="headerlink" title="4. 索引"></a>4. 索引</h1><p>MySQL索引的建立对于MySQL的高效运行是很重要的，索引可以大大提高MySQL的检索速度。索引分单列索引和组合索引。单列索引，即一个索引只包含单个列，而组合索引，即一个索引包含多个列。</p>
-<h2 id="4-1-创建索引"><a href="#4-1-创建索引" class="headerlink" title="4.1 创建索引"></a>4.1 创建索引</h2><p>创建索引有两种方式，一种是直接利用CREATE INDEX进行创建，另外一种则是通过修改表结构来进行添加，则是利用ALTER TABLE语句。</p>
-<ol>
-<li><p>使用CREATE INDEX</p>
-<p>语法为：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> [<span class="keyword">UNIQUE</span>|FULLTEXT|SPATIAL] <span class="keyword">INDEX</span> index_name</span><br><span class="line">[<span class="keyword">USING</span> index_type]</span><br><span class="line"><span class="keyword">ON</span> table_name (index_col_name,...)</span><br></pre></td></tr></table></figure>
-
-<p>其中对应的语法变量信息如下：</p>
-<blockquote>
-<p><strong>[UNIQUE|FULLTEXT|SPATIAL]</strong></p>
-</blockquote>
-<p>其中括号中的这三个关键字表示创建的索引类型，它们分别表示<strong>唯一索引</strong>、<strong>全文索引</strong>、<strong>空间索引</strong>三种不同的索引类型。如果我们不指定任何关键字，则默认为普通索引。</p>
-<blockquote>
-<p><strong>index_name</strong></p>
-</blockquote>
-<p><code>index_name</code>表示索引的名称，由用户自行定义，以便于以后对该索引进行修改等管理操作。</p>
-<blockquote>
-<p><strong>index_type</strong></p>
-</blockquote>
-<p><code>index_type</code>表示索引的具体实现方式，在MySQL中，有两种不同形式的索引——BTREE索引和HASH索引。在存储引擎为MyISAM和InnoDB的表中只能使用BTREE，其默认值就是BTREE；在存储引擎为MEMORY或者HEAP的表中可以使用HASH和BTREE两种类型的索引，其默认值为HASH。</p>
-<blockquote>
-<p><strong>index_colname</strong></p>
-</blockquote>
-<p><code>index_col_name</code>表示需要创建索引的字段名称，我们还可以针对多个字段创建复合索引，只需要在多个字段名称之间以英文逗号隔开即可。此外，对于CHAR或VARCHAR类型的字段，我们还可以只使用字段内容前面的一部分来创建索引，只需要在对应的字段名称后面加上形如(length)的指令即可，表示只需要使用字段内容前面的length个字符来创建索引。在这里，我们以customers表的cust_name字段(类型为VARCHAR(50))为例，使用cust_name字段的6个字符前缀来创建索引。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">INDEX</span> idx_cust_name <span class="keyword">ON</span> <span class="keyword">user</span> (cust_name(<span class="number">6</span>));</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用ALTER TABLE</p>
-<p>语法为：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table_name</span><br><span class="line"><span class="keyword">ADD</span> [<span class="keyword">UNIQUE</span>|FULLTEXT|SPATIAL] <span class="keyword">INDEX</span> index_name </span><br><span class="line">(index_col_name,...) [<span class="keyword">USING</span> index_type]</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<h2 id="4-2-删除索引"><a href="#4-2-删除索引" class="headerlink" title="4.2 删除索引"></a>4.2 删除索引</h2><p>删除指定表中指定名称的索引，语法为：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> table_name</span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">INDEX</span> index_name;</span><br></pre></td></tr></table></figure>
-
-<p>例如删除名称为idx_cust_name的索引，其SQL语句为：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> customers</span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">INDEX</span> idx_cust_name;</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-3-修改索引"><a href="#4-3-修改索引" class="headerlink" title="4.3 修改索引"></a>4.3 修改索引</h2><p>在MySQL中并没有提供修改索引的直接指令，一般情况下，我们需要先删除掉原索引，再根据需要创建一个同名的索引，从而变相地实现修改索引操作。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--先删除</span></span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> <span class="keyword">user</span></span><br><span class="line"><span class="keyword">DROP</span> <span class="keyword">INDEX</span> idx_user_username;</span><br><span class="line"><span class="comment">--再以修改后的内容创建同名索引</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">INDEX</span> idx_cust_name <span class="keyword">ON</span> customers (cust_name(<span class="number">8</span>));</span><br></pre></td></tr></table></figure>
-
-<h2 id="4-4-查看索引"><a href="#4-4-查看索引" class="headerlink" title="4.4 查看索引"></a>4.4 查看索引</h2><p>在MySQL中，要查看某个数据库表中的索引也非常简单，只需要使用以下两个命令中的任意一种即可。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">--如果查看索引前，没有使用user db_name等命令指定具体的数据库，则必须加上FROM db_name</span></span><br><span class="line"><span class="keyword">SHOW</span> <span class="keyword">INDEX</span> <span class="keyword">FROM</span> table_name [<span class="keyword">FROM</span> db_name]</span><br><span class="line"><span class="comment">--如果查看索引前，没有使用user db_name等命令指定具体的数据库，则必须加上db_name.前缀</span></span><br><span class="line"><span class="keyword">SHOW</span> <span class="keyword">INDEX</span> <span class="keyword">FROM</span> [db_name.]table_name</span><br></pre></td></tr></table></figure>
-
-<h1 id="5-存储过程"><a href="#5-存储过程" class="headerlink" title="5. 存储过程"></a>5. 存储过程</h1><ol>
-<li>什么是存储过程？存储过程简单来说，就是为了复用性或者实现复杂的业务功能，而保存的一条或多条MySQL语句的集合，可将其视为批文件；</li>
-<li>为什么使用存储过程？（1）通过把处理封装在容易使用的单元中，简化复杂的操作；（2）由于不要求反复建立一系列处理步骤，这保证了数据的完整性，如果所有的开发人员和应用程序都使用同一存储过程，则所使用的代码都是相同的；（3）简化对变动的管理。如果表名、列名或业务逻辑有变化，只需要更改存储过程的代码，使用它的开发人员甚至不需要知道这些变化，也就是具备了安全性；（4）提高了性能，因为使用存储过程比单独使用SQL语句要快；（5）存储过程可用来编写功能更灵活的代码。因此，存储过程的具备三个特性:<strong>简单可复用、安全以及高性能</strong>；</li>
-<li>存储过程的缺点？（1）存储过程编写比基本的SQL语句更加复杂，需要更高的技能；（2）可能没有创建存储过程的权限，数据库管理员可能会限制创建存储过程的权限，允许用户使用存储过程，而不允许用户自由创建存储过程；</li>
-</ol>
-<blockquote>
-<p><strong>创建存储过程</strong></p>
-</blockquote>
-<ol>
-<li><p>创建存储过程。如需要统计用户订单总金额，如果该用户需要交税的话，订单总金额则需要再加上税费</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">DELIMITER //</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">PROCEDURE</span> ordertotal(</span><br><span class="line"><span class="keyword">IN</span> custid <span class="built_in">INT</span>,</span><br><span class="line"><span class="keyword">IN</span> taxable <span class="built_in">BOOLEAN</span>,</span><br><span class="line"><span class="keyword">OUT</span> ototal <span class="built_in">DECIMAL</span>(<span class="number">8</span>,<span class="number">2</span>)</span><br><span class="line">)<span class="keyword">COMMENT</span> <span class="string">'obtain total order price'</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">BEGIN</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*declare variable for total*/</span></span><br><span class="line"><span class="keyword">DECLARE</span> total <span class="built_in">DECIMAL</span>(<span class="number">8</span>,<span class="number">2</span>);</span><br><span class="line"><span class="keyword">DECLARE</span> taxrate <span class="built_in">INT</span> <span class="keyword">DEFAULT</span> <span class="number">6</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/*get the order total*/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="keyword">SUM</span>(item_price*item_quantity) <span class="keyword">INTO</span> total</span><br><span class="line"><span class="keyword">FROM</span> customers</span><br><span class="line"><span class="keyword">WHERE</span> cust_id = custid;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*is this taxable?*/</span></span><br><span class="line"></span><br><span class="line">IF taxable THEN</span><br><span class="line">	<span class="keyword">SELECT</span> total+(total/<span class="number">100</span>*taxrate) <span class="keyword">INTO</span> total;</span><br><span class="line"><span class="keyword">END</span> <span class="keyword">IF</span>;</span><br><span class="line"><span class="keyword">SELECT</span> total <span class="keyword">INTO</span> ototal;</span><br><span class="line"><span class="keyword">END</span> //</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>有这样一些细节： 1. 使用<code>CREATE PROCEDURE</code>语句进行创建，（）圆括号中为存储过程的参数，其中参数类型有：1.  <strong>IN</strong>类型，表示传递给存储过程；2. <strong>OUT</strong> 类型，表示存储过程返回的结果，在调用存储过程时需要传入@开始的变量；3. <strong>INOUT</strong>类型，表示在存储过程中可以传入和传出； 2. <strong>DECLARE</strong>用来声明一个变量，如这里的total，taxrate。注意MySQL中定义变量时都是变量名在前，数据类型在后。 3. 存储过程具体逻辑写在<strong>BEGIN END</strong>之间； 4. 将值赋给变量使用<strong>INTO</strong>关键字； 5. 由于存储过程中每个SQL语句中用；作为分隔符，会和单个SQL造成冲突，因此可使用<strong>DELIMITER</strong>重新定义分类符，如该例子中定义//为分隔符，自然存储过程结尾就用END //结尾，而不再是END。同时，分隔符//成对出现后，恢复到默认的”;”作为分隔符；</p>
-<blockquote>
-<p><strong>执行存储过程</strong></p>
-</blockquote>
-<ol>
-<li><p>使用CALL子句执行存储过程，CALL子句接受存储过程的名称以及需要传递的参数。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CALL</span> ordertotal(<span class="number">1</span>,<span class="literal">TRUE</span>,@total);</span><br><span class="line"><span class="keyword">SELECT</span> @total;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>如果存储过程中定义了OUT类型的输入参数，那么在执行存储过程时需要传入变量，如这里@total，并且变量都是用@开始的。如果存储过程中没有参数的话，就用空圆括号表示即可，<code>CALL ordertotal()</code>；</p>
-<blockquote>
-<p><strong>删除存储过程</strong></p>
-</blockquote>
-<ol>
-<li>删除存储过程，可以使用DROP PROCEDURE子句。如<code>DROP PROCEDURE ordertotal</code>；</li>
-</ol>
-<blockquote>
-<p><strong>查询存储过程</strong></p>
-</blockquote>
-<ol>
-<li>显示创建一个存储过程的语句，可以使用SHOW CREATE PROCEDURE。如<code>SHOW CREATE PROCEDURE ordertotal</code>；</li>
-<li>查询所有存储过程的状态，如果在定义存储过程中使用COMMENT添加注释，可以查看。同时可以LIKE进行过滤结果。如<code>SHOW PROCEDURE STATUS LIKE &#39;%order%&#39;</code>;</li>
-</ol>
-<h1 id="6-事务处理"><a href="#6-事务处理" class="headerlink" title="6. 事务处理"></a>6. 事务处理</h1><ol>
-<li><p>什么是事务？</p>
-<p>事务处理是用来维护数据库的完整性，它保证成批的MySQL操作要么完全执行，要么完全不执行。事务处理是一种机制，用来管理必须成批执行的MySQL操作，它们要么时作为整体执行或者完全不执行。</p>
-</li>
-<li><p>关键概念：</p>
-<ol>
-<li>事务：是指一组SQL语句；</li>
-<li>回退：是指撤销指定的SQL语句的过程；</li>
-<li>提交：指将未存储的SQL语句的结果写入数据库表中；</li>
-<li>保留点：指事务处理中设置的临时占位符，可以对它发布回退；</li>
-</ol>
-</li>
-<li><p>如何创建执行事务？</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">START</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> customers (cust_name,item_price,item_quantity) <span class="keyword">VALUES</span> (<span class="string">'1'</span>,<span class="number">5</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> customers;</span><br><span class="line"><span class="keyword">SAVEPOINT</span> insertinto;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> customers (cust_name,item_price,item_quantity) <span class="keyword">VALUES</span> (<span class="string">'2'</span>,<span class="number">5</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">ROLLBACK</span> <span class="keyword">TO</span> insertinto;</span><br></pre></td></tr></table></figure>
-
-<p>执行结果为：插入数据(‘1’,5,18)有效，因为，只会从保留点SAFEPOINT之后开始回退，也就是说保留点SAFEPOINT之前的SQL语句执行的结果仍然有效。</p>
-<p>有这样一些细节：</p>
-<ol>
-<li><strong>STAET TRANSACTION</strong>用来表示下面的SQL语句集为一段事务；</li>
-<li><strong>SAFEPOINT</strong> 用于指定保留点insertinto；</li>
-<li><strong>ROLLBACK TO</strong>表示从指定保留点开始回退，也就是说保留点之前的SQL语句执行结果依然有效。如果仅仅使用<strong>ROLLBACK</strong>进行回退的话就表示从STAET TRANSACTION之后所有的SQL语句执行效果都会撤销；</li>
-</ol>
-</li>
-<li><p>MySQL提交（写或保存）操作是自动进行的，这称之为隐含提交。但是在事务处理块中，提交不会隐含进行，要使用COMMIT子句进行提交。如：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">START</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> customers (cust_name,item_price,item_quantity) <span class="keyword">VALUES</span> (<span class="string">'1'</span>,<span class="number">5</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> customers (cust_name,item_price,item_quantity) <span class="keyword">VALUES</span> (<span class="string">'2'</span>,<span class="number">5</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<p>采用COMMIT提交事务，如果两条SQL语句都执行成功，才会将数据都写入表中。</p>
-<h1 id="7-触发器"><a href="#7-触发器" class="headerlink" title="7. 触发器"></a>7. 触发器</h1><ol>
-<li><p>什么是触发器？</p>
-<p>当某条SQL语句发生时，自动执行某些其他的SQL语句的时候就需要使用到触发器。触发器只能响应：DELETE，INSERT,UPDATE这三个特定操作。</p>
-</li>
-<li><p>创建触发器？</p>
-<p>创建触发器时需要给出最重要的四条信息：1.全局唯一的触发器名；2.触发器关联的表；3.触发器在何时执行（操作执行之前或者之后）4.触发器应该响应的活动（DELETE, INSERT或者UPDATE）；</p>
-<p>由于触发器只能响应特定的三种类型的操作，因此可创建的触发器也就三种类型:INSERT触发器，DELETE触发器以及UPDATE触发器。</p>
-<blockquote>
-<p><strong>INSERT触发器</strong></p>
-</blockquote>
-<p>在执行INSERT触发器时，也这样几点需要注意：1.在INSERT触发器代码内，可以引用一个名为NEW的虚拟表，可以用NEW来访问刚插入的行数据；2.在BEFORE INSERT触发器中，NEW中的值可以被更新；3.对于AUTO_INCREMENT列，NEW在INSERT执行之前包含0，在INSERT执行之后包含新的自定生成值。</p>
-<p>创建一个INSERT触发器，每次插入一行数据，每次会返回当前插入的行数据的id。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*创建触发器*/</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TRIGGER</span> insertcustomers <span class="keyword">AFTER</span> <span class="keyword">INSERT</span> <span class="keyword">ON</span> customers</span><br><span class="line"><span class="keyword">FOR</span> <span class="keyword">EACH</span> <span class="keyword">ROW</span> <span class="keyword">SELECT</span> NEW.cust_id <span class="keyword">INTO</span> @newinsertid;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*执行触发器*/</span></span><br><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> customers (cust_name,item_price,item_quantity) <span class="keyword">VALUES</span> (<span class="string">'2'</span>,<span class="number">5</span>,<span class="number">18</span>);</span><br><span class="line"><span class="keyword">SELECT</span> @newinsertid;</span><br></pre></td></tr></table></figure>
-
-<p>有这样一些细节：</p>
-<ol>
-<li>使用CREATE TRIGGER来创建触发器；</li>
-<li>AFTER INSERT表明在插入行数据之后，触发器才会执行特征操作；</li>
-<li>FOR EACH ROW 表示对插入的每一行数据，触发器都起作用；</li>
-<li>针对INSERT触发器，可以使用虚拟表NEW，来使用刚插入的行数据。比如例子中，<code>SELECT NEW.cust_id INTO @newinsertid</code>表示将新插入的行数据的id赋值给变量@newinsertid；</li>
-</ol>
-<blockquote>
-<p><strong>DELETE触发器</strong></p>
-</blockquote>
-<p>DELETE触发器在DELETE语句执行之前或者之后，需要知道以下两点：</p>
-<ol>
-<li>在DELETE触发器代码内，可以引用一个名为OLD的虚拟表，来访问被删除的行；</li>
-<li>OLD表中的数据只能读，不能被更新，而在INSERT触发器中，就可以通过NEW来更新被插入的行数据；</li>
-</ol>
-<p>例如，针对customers表，当删除一行数据时，返回被删除数据的<code>cust_id</code>以及<code>cust_name</code>:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*创建DELETE触发器*/</span></span><br><span class="line"></span><br><span class="line">DELIMITER //</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TRIGGER</span> insertcustomers <span class="keyword">AFTER</span> <span class="keyword">DELETE</span> <span class="keyword">ON</span> customers</span><br><span class="line"><span class="keyword">FOR</span> <span class="keyword">EACH</span> <span class="keyword">ROW</span> </span><br><span class="line"><span class="keyword">BEGIN</span> </span><br><span class="line">  <span class="keyword">SELECT</span> OLD.cust_name <span class="keyword">INTO</span> @deletecustname;</span><br><span class="line">  <span class="keyword">SELECT</span> OLD.cust_id <span class="keyword">INTO</span> @deletecustid;</span><br><span class="line"><span class="keyword">END</span> //</span><br><span class="line"></span><br><span class="line"><span class="comment">/*调用DELETE触发器*/</span></span><br><span class="line"><span class="keyword">DELETE</span> <span class="keyword">FROM</span> customers <span class="keyword">WHERE</span> cust_id = <span class="number">3</span>;</span><br><span class="line"><span class="keyword">SELECT</span> @deletecustname;</span><br><span class="line"><span class="keyword">SELECT</span> @deletecustid;</span><br></pre></td></tr></table></figure>
-
-<p>基本上与创建INSERT触发器一样，只不过在DELETE触发器中只能使用OLD来访问被删除的行数据。</p>
-<blockquote>
-<p><strong>UPDATE触发器</strong></p>
-</blockquote>
-<p>UPDATE触发器在UPDATE语句执行之前或者之后执行，需要知道一下几点：</p>
-<ol>
-<li>在BEFORE UPDATE触发器中可以使用NEW和OLD来访问数据，而在AFTER UPDATE触发器中使用NEW来访问数据会报错，只能使用OLD来访问数据；</li>
-<li>在BEFORE UPDATE触发器中，NEW中的值可以被改变，即允许更改将用于UPDATE的数据；</li>
-<li>OLD中的行数据只能读，不能被更新；</li>
-</ol>
-<p>一个UPDATE触发器示例如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*创建UPDATE触发器*/</span></span><br><span class="line"></span><br><span class="line">DELIMITER //</span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TRIGGER</span> insertcustomers <span class="keyword">BEFORE</span> <span class="keyword">UPDATE</span> <span class="keyword">ON</span> customers</span><br><span class="line"><span class="keyword">FOR</span> <span class="keyword">EACH</span> <span class="keyword">ROW</span> </span><br><span class="line"><span class="keyword">BEGIN</span> </span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> NEW.cust_name <span class="keyword">INTO</span> @beforeupdate;</span><br><span class="line"><span class="keyword">SET</span> NEW.cust_name = <span class="string">'reset_name'</span>;</span><br><span class="line"><span class="keyword">SELECT</span> OLD.cust_name <span class="keyword">INTO</span> @afterupdate;</span><br><span class="line"><span class="keyword">END</span> //</span><br><span class="line"></span><br><span class="line"><span class="comment">/*调用UPDATE触发器*/</span></span><br><span class="line"><span class="keyword">UPDATE</span> customers <span class="keyword">SET</span> cust_name = <span class="string">'happy'</span> <span class="keyword">WHERE</span> cust_id = <span class="number">5</span>;</span><br><span class="line"><span class="keyword">SELECT</span> @beforeupdate;</span><br><span class="line"><span class="keyword">SELECT</span> @afterupdate;</span><br></pre></td></tr></table></figure>
-
-<p>输出为@beforeupdate为‘happay’，而@afterupdate为’reset_name’。有这样一些细节：</p>
-<ol>
-<li>NEW虚拟表中的数据可以更改，如这里采用        <code>SET NEW.cust_name = &#39;reset_name&#39;;</code>，将待更新的<code>cust_name由“happy”变成了“reset_name”</code>；</li>
-<li>在BEFORE UPDATE触发器中可以使用NEW和OLD来访问数据，而在AFTER UPDATE触发器中使用NEW来访问数据会报错；</li>
-</ol>
-</li>
-<li><p>删除触发器？</p>
-<p>删除触发器，可以使用 DROP TRIGGER语句，比如<code>DROP TRIGGER insertcustomers;</code>。触发器不能更新或者覆盖，如果要修改触发器，必须删除这个触发器。</p>
-</li>
-</ol>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5ae55861f265da0ba062ec71" target="_blank" rel="noopener">MySQL命令，一篇文章替你全部搞定</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/29/%E5%88%9D%E8%AF%86Lock%E4%B8%8EAbstractQueuedSynchronizer(AQS)/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/29/%E5%88%9D%E8%AF%86Lock%E4%B8%8EAbstractQueuedSynchronizer(AQS)/" class="post-title-link" itemprop="url">初识Lock与AbstractQueuedSynchronizer(AQS)</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-30 07:43:33 / 修改时间：19:10:38" itemprop="dateCreated datePublished" datetime="2020-06-30T07:43:33+08:00">2020-06-30</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>9.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id="自己实现一个锁"><a href="#自己实现一个锁" class="headerlink" title="自己实现一个锁"></a>自己实现一个锁</h1><h2 id="自旋实现锁"><a href="#自旋实现锁" class="headerlink" title="自旋实现锁"></a>自旋实现锁</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpinLock</span> </span>&#123;</span><br><span class="line">    <span class="comment">//原子引用线程</span></span><br><span class="line">    AtomicReference&lt;Thread&gt; atomicReference = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mylock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        System.out.println(Thread.currentThread().getName() + <span class="string">"\t come in"</span>);</span><br><span class="line">        <span class="comment">// 自旋获取锁</span></span><br><span class="line">        <span class="keyword">while</span> (!atomicReference.compareAndSet(<span class="keyword">null</span>, thread)) &#123;</span><br><span class="line">    </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">myUnlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        <span class="comment">// CAS解锁</span></span><br><span class="line">        atomicReference.compareAndSet(thread, <span class="keyword">null</span>);</span><br><span class="line">        System.out.println(Thread.currentThread().getName()+<span class="string">"\t invoked myunlock()"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>缺点：耗费CPU资源，没有竞争到锁的线程会一直占用CPU资源进行CAS操作。</p>
-<h2 id="park-自旋实现锁"><a href="#park-自旋实现锁" class="headerlink" title="park+自旋实现锁"></a>park+自旋实现锁</h2><p>Java提供了一个较为底层的并发工具类：LockSupport，可以让线程停止下来(阻塞)，还可以唤醒线程。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 阻塞线程</span></span><br><span class="line">LockSupport.park(Object blocker) </span><br><span class="line"><span class="comment">// 唤醒线程</span></span><br><span class="line">LockSupport.unpark(Thread thread)</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpinLock</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 原子引用线程</span></span><br><span class="line">    AtomicReference&lt;Thread&gt; atomicReference = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">    <span class="comment">// 阻塞线程队列</span></span><br><span class="line">    Queue&lt;Thread&gt; parkQueue = <span class="keyword">new</span> LinkedBlockingQueue&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mylock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(Thread.currentThread().getName() + <span class="string">"\t come in"</span>);</span><br><span class="line">        <span class="comment">// 自旋获取锁</span></span><br><span class="line">        <span class="keyword">while</span> (!atomicReference.compareAndSet(<span class="keyword">null</span>, thread)) &#123;</span><br><span class="line">            park();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">myUnlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        <span class="comment">// CAS解锁</span></span><br><span class="line">        atomicReference.compareAndSet(thread, <span class="keyword">null</span>);</span><br><span class="line">        System.out.println(Thread.currentThread().getName()+<span class="string">"\t invoked myunlock()"</span>);</span><br><span class="line">        lock_notify();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">park</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        parkQueue.add(Thread.currentThread());</span><br><span class="line">        LockSupport.park(Thread.currentThread());</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unpark</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread t = parkQueue.poll();</span><br><span class="line">        LockSupport.unpark(t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="concurrent包的结构层次"><a href="#concurrent包的结构层次" class="headerlink" title="concurrent包的结构层次"></a>concurrent包的结构层次</h1><p>在针对并发编程中，Doug Lea大师为我们提供了大量实用，高性能的工具类，针对这些代码进行研究会让我们队并发编程的掌握更加透彻也会大大提升我们队并发编程技术的热爱。这些代码在java.util.concurrent包下。如下图，即为concurrent包的目录结构图。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/5/3/163260cff7a637f5?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="concurrent目录结构.png">concurrent目录结构.png</p>
-<p>其中包含了两个子包：atomic以及lock，另外在concurrent下的阻塞队列以及executors,这些就是concurrent包中的精华，之后会一一进行学习。而这些类的实现主要是依赖于volatile以及CAS（关于volatile可以看<a href="https://juejin.im/post/5ae9b41b518825670b33e6c4" target="_blank" rel="noopener">这篇文章</a>，关于CAS可以看<a href="https://juejin.im/post/5ae6dc04f265da0ba351d3ff" target="_blank" rel="noopener">这篇文章的3.1节</a>），从整体上来看concurrent包的整体实现图如下图所示：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/5/3/163260cff7cb847c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="concurrent包实现整体示意图.png">concurrent包实现整体示意图.png</p>
-<h1 id="lock简介"><a href="#lock简介" class="headerlink" title="lock简介"></a>lock简介</h1><p>我们下来看concurent包下的lock子包。锁是用来控制多个线程访问共享资源的方式，一般来说，一个锁能够防止多个线程同时访问共享资源。在Lock接口出现之前，java程序主要是靠synchronized关键字实现锁功能的，而java SE5之后，并发包中增加了lock接口，它提供了与synchronized一样的锁功能。<strong>虽然它失去了像synchronize关键字隐式加锁解锁的便捷性，但是却拥有了锁获取和释放的可操作性，可中断的获取锁以及超时获取锁等多种synchronized关键字所不具备的同步特性。</strong>通常使用显示使用lock的形式如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Lock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">lock.lock();</span><br><span class="line"><span class="keyword">try</span>&#123;</span><br><span class="line">	.......</span><br><span class="line">&#125;<span class="keyword">finally</span>&#123;</span><br><span class="line">	lock.unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>需要注意的是<strong>synchronized同步块执行完成或者遇到异常是锁会自动释放，而lock必须调用unlock()方法释放锁，因此在finally块中释放锁</strong>。</p>
-<h2 id="Lock接口API"><a href="#Lock接口API" class="headerlink" title="Lock接口API"></a>Lock接口API</h2><p>我们现在就来看看lock接口定义了哪些方法：</p>
-<blockquote>
-<p>void lock(); //获取锁 void lockInterruptibly() throws InterruptedException；//获取锁的过程能够响应中断 boolean tryLock();//非阻塞式响应中断能立即返回，获取锁放回true反之返回fasle boolean tryLock(long time, TimeUnit unit) throws InterruptedException;//超时获取锁，在超时内或者未中断的情况下能够获取锁 Condition newCondition();//获取与lock绑定的等待通知组件，当前线程必须获得了锁才能进行等待，进行等待时会先释放锁，当再次获取锁时才能从等待中返回</p>
-</blockquote>
-<p>上面是lock接口下的五个方法，也只是从源码中英译中翻译了一遍，感兴趣的可以自己的去看看。那么在locks包下有哪些类实现了该接口了？先从最熟悉的ReentrantLock说起。</p>
-<blockquote>
-<p>public class ReentrantLock implements <strong>Lock</strong>, java.io.Serializable</p>
-</blockquote>
-<p>很显然ReentrantLock实现了lock接口，接下来我们来仔细研究一下它是怎样实现的。当你查看源码时你会惊讶的发现ReentrantLock并没有多少代码，另外有一个很明显的特点是：<strong>基本上所有的方法的实现实际上都是调用了其静态内存类<code>Sync</code>中的方法，而Sync类继承了<code>AbstractQueuedSynchronizer（AQS）</code></strong>。可以看出要想理解ReentrantLock关键核心在于对队列同步器AbstractQueuedSynchronizer（简称同步器）的理解。</p>
-<h2 id="初识AQS"><a href="#初识AQS" class="headerlink" title="初识AQS"></a>初识AQS</h2><p>关于AQS在源码中有十分具体的解释：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"> Provides a framework <span class="keyword">for</span> implementing blocking locks and related</span><br><span class="line"> synchronizers (semaphores, events, etc) that rely on</span><br><span class="line"> first-in-first-out (FIFO) wait queues.  This <span class="class"><span class="keyword">class</span> <span class="title">is</span> <span class="title">designed</span> <span class="title">to</span></span></span><br><span class="line"><span class="class"> <span class="title">be</span> <span class="title">a</span> <span class="title">useful</span> <span class="title">basis</span> <span class="title">for</span> <span class="title">most</span> <span class="title">kinds</span> <span class="title">of</span> <span class="title">synchronizers</span> <span class="title">that</span> <span class="title">rely</span> <span class="title">on</span> <span class="title">a</span></span></span><br><span class="line"><span class="class"> <span class="title">single</span> <span class="title">atomic</span> </span>&#123;<span class="meta">@code</span> <span class="keyword">int</span>&#125; value to represent state. Subclasses</span><br><span class="line"> must define the <span class="keyword">protected</span> methods that change <span class="keyword">this</span> state, and which</span><br><span class="line"> define what that state means in terms of <span class="keyword">this</span> object being acquired</span><br><span class="line"> or released.  Given these, the other methods in <span class="keyword">this</span> <span class="class"><span class="keyword">class</span> <span class="title">carry</span></span></span><br><span class="line"><span class="class"> <span class="title">out</span> <span class="title">all</span> <span class="title">queuing</span> <span class="title">and</span> <span class="title">blocking</span> <span class="title">mechanics</span>. <span class="title">Subclasses</span> <span class="title">can</span> <span class="title">maintain</span></span></span><br><span class="line"><span class="class"> <span class="title">other</span> <span class="title">state</span> <span class="title">fields</span>, <span class="title">but</span> <span class="title">only</span> <span class="title">the</span> <span class="title">atomically</span> <span class="title">updated</span> </span>&#123;<span class="meta">@code</span> <span class="keyword">int</span>&#125;</span><br><span class="line"> value manipulated using methods &#123;@link #getState&#125;, &#123;@link</span><br><span class="line"> #setState&#125; and &#123;@link #compareAndSetState&#125; is tracked with respect</span><br><span class="line"> to synchronization.</span><br><span class="line">&lt;p&gt;Subclasses should be defined as non-<span class="keyword">public</span> internal helper</span><br><span class="line">classes that are used to implement the synchronization properties</span><br><span class="line">of their enclosing <span class="class"><span class="keyword">class</span>.  <span class="title">Class</span></span></span><br><span class="line"><span class="class"></span>&#123;<span class="meta">@code</span> AbstractQueuedSynchronizer&#125; does not implement any</span><br><span class="line">synchronization <span class="class"><span class="keyword">interface</span>.  <span class="title">Instead</span> <span class="title">it</span> <span class="title">defines</span> <span class="title">methods</span> <span class="title">such</span> <span class="title">as</span></span></span><br><span class="line">&#123;@link #acquireInterruptibly&#125; that can be invoked as</span><br><span class="line">appropriate by concrete locks and related synchronizers to</span><br><span class="line">implement their <span class="keyword">public</span> methods.</span><br></pre></td></tr></table></figure>
-
-
-
-<p>同步器是用来构建锁和其他同步组件的基础框架，它的实现主要依赖一个int成员变量来表示同步状态以及通过一个FIFO队列构成等待队列。它的<strong>子类必须重写AQS的几个protected修饰的用来改变同步状态的方法</strong>，其他方法主要是实现了排队和阻塞机制。<strong>状态的更新使用getState,setState以及compareAndSetState这三个方法</strong>。</p>
-<p>子类被<strong>推荐定义为自定义同步组件的静态内部类</strong>，同步器自身没有实现任何同步接口，它仅仅是定义了若干同步状态的获取和释放方法来供自定义同步组件的使用，同步器既支持独占式获取同步状态，也可以支持共享式获取同步状态，这样就可以方便的实现不同类型的同步组件。</p>
-<p>同步器是实现锁（也可以是任意同步组件）的关键，在锁的实现中聚合同步器，利用同步器实现锁的语义。可以这样理解二者的关系：<strong>锁是面向使用者，它定义了使用者与锁交互的接口，隐藏了实现细节；同步器是面向锁的实现者，它简化了锁的实现方式，屏蔽了同步状态的管理，线程的排队，等待和唤醒等底层操作</strong>。锁和同步器很好的隔离了使用者和实现者所需关注的领域。</p>
-<h2 id="AQS的模板方法设计模式"><a href="#AQS的模板方法设计模式" class="headerlink" title="AQS的模板方法设计模式"></a>AQS的模板方法设计模式</h2><p>AQS的设计是使用模板方法设计模式，它将<strong>一些方法开放给子类进行重写，而同步器给同步组件所提供模板方法又会重新调用被子类所重写的方法</strong>。举个例子，AQS中需要重写的方法tryAcquire：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> UnsupportedOperationException();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>ReentrantLock中NonfairSync（继承AQS）会重写该方法为：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">tryAcquire</span><span class="params">(<span class="keyword">int</span> acquires)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> nonfairTryAcquire(acquires);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>而AQS中的模板方法acquire():</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">acquire</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (!tryAcquire(arg) &amp;&amp;</span><br><span class="line">           acquireQueued(addWaiter(Node.EXCLUSIVE), arg))</span><br><span class="line">           selfInterrupt();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>会调用tryAcquire方法，而此时当继承AQS的NonfairSync调用模板方法acquire时就会调用已经被NonfairSync重写的tryAcquire方法。这就是使用AQS的方式，在弄懂这点后会lock的实现理解有很大的提升。可以归纳总结为这么几点：</p>
-<ol>
-<li>同步组件（这里不仅仅值锁，还包括CountDownLatch等）的实现依赖于同步器AQS，在同步组件实现中，使用AQS的方式被推荐定义继承AQS的静态内存类；</li>
-<li>AQS采用模板方法进行设计，AQS的protected修饰的方法需要由继承AQS的子类进行重写实现，当调用AQS的子类的方法时就会调用被重写的方法；</li>
-<li>AQS负责同步状态的管理，线程的排队，等待和唤醒这些底层操作，而Lock等同步组件主要专注于实现同步语义；</li>
-<li>在重写AQS的方式时，使用AQS提供的<code>getState(),setState(),compareAndSetState()</code>方法进行修改同步状态</li>
-</ol>
-<p>AQS可重写的方法如下图（摘自《java并发编程的艺术》一书）：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/5/3/163260cff7d16b38?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="AQS可重写的方法.png">AQS可重写的方法.png</p>
-<p>在实现同步组件时AQS提供的模板方法如下图：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/5/3/163260cff87fe8bf?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="AQS提供的模板方法.png">AQS提供的模板方法.png</p>
-<p>AQS提供的模板方法可以分为3类：</p>
-<ol>
-<li>独占式获取与释放同步状态；</li>
-<li>共享式获取与释放同步状态；</li>
-<li>查询同步队列中等待线程情况；</li>
-</ol>
-<p>同步组件通过AQS提供的模板方法实现自己的同步语义。</p>
-<h1 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h1><p>下面使用一个例子来进一步理解下AQS的使用。这个例子也是来源于AQS源码中的example。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Mutex</span> <span class="keyword">implements</span> <span class="title">Lock</span>, <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span> </span>&#123;    <span class="comment">// Our internal helper class    // 继承AQS的静态内存类    // 重写方法    private static class Sync extends AbstractQueuedSynchronizer &#123;        // Reports whether in locked state        protected boolean isHeldExclusively() &#123;            return getState() == 1;        &#125;    // Acquires the lock if state is zero    public boolean tryAcquire(int acquires) &#123;        assert acquires == 1; // Otherwise unused        if (compareAndSetState(0, 1)) &#123;            setExclusiveOwnerThread(Thread.currentThread());            return true;        &#125;        return false;    &#125;     // Releases the lock by setting state to zero    protected boolean tryRelease(int releases) &#123;        assert releases == 1; // Otherwise unused        if (getState() == 0) throw new IllegalMonitorStateException();        setExclusiveOwnerThread(null);        setState(0);        return true;    &#125;     // Provides a Condition    Condition newCondition() &#123;        return new ConditionObject();    &#125;     // Deserializes properly    private void readObject(ObjectInputStream s)            throws IOException, ClassNotFoundException &#123;        s.defaultReadObject();        setState(0); // reset to unlocked state    &#125; &#125; // The sync object does all the hard work. We just forward to it. private final Sync sync = new Sync(); //使用同步器的模板方法实现自己的同步语义 public void lock() &#123;    sync.acquire(1); &#125; public boolean tryLock() &#123;    return sync.tryAcquire(1); &#125; public void unlock() &#123;    sync.release(1); &#125; public Condition newCondition() &#123;    return sync.newCondition(); &#125; public boolean isLocked() &#123;    return sync.isHeldExclusively(); &#125; public boolean hasQueuedThreads() &#123;    return sync.hasQueuedThreads(); &#125; public void lockInterruptibly() throws InterruptedException &#123;    sync.acquireInterruptibly(1); &#125; public boolean tryLock(long timeout, TimeUnit unit)        throws InterruptedException &#123;    return sync.tryAcquireNanos(1, unit.toNanos(timeout)); &#125; 复制代码 复制代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>MutexDemo：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MutextDemo</span> </span>&#123;    <span class="keyword">private</span> <span class="keyword">static</span> Mutex mutex = <span class="keyword">new</span> Mutex(); <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;        Thread thread = <span class="keyword">new</span> Thread(() -&gt; &#123;            mutex.lock();            <span class="keyword">try</span> &#123;                Thread.sleep(<span class="number">3000</span>);            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;                e.printStackTrace();            &#125; <span class="keyword">finally</span> &#123;                mutex.unlock();            &#125;        &#125;);        thread.start();    &#125; &#125; 复制代码 复制代码</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>执行情况：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2018/5/3/163260cff934a80f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="mutex的执行情况.png">mutex的执行情况.png</p>
-<p>上面的这个例子实现了独占锁的语义，在同一个时刻只允许一个线程占有锁。MutexDemo新建了10个线程，分别睡眠3s。从执行情况也可以看出来当前Thread-6正在执行占有锁而其他Thread-7,Thread-8等线程处于WAIT状态。按照推荐的方式，Mutex定义了一个<strong>继承AQS的静态内部类Sync</strong>,并且重写了AQS的tryAcquire等等方法，而对state的更新也是利用了setState(),getState()，compareAndSetState()这三个方法。在实现实现lock接口中的方法也只是调用了AQS提供的模板方法（因为Sync继承AQS）。从这个例子就可以很清楚的看出来，在同步组件的实现上主要是利用了AQS，而AQS“屏蔽”了同步状态的修改，线程排队等底层实现，通过AQS的模板方法可以很方便的给同步组件的实现者进行调用。而针对用户来说，只需要调用同步组件提供的方法来实现并发编程即可。同时在新建一个同步组件时需要把握的两个关键点是：</p>
-<ol>
-<li>实现同步组件时推荐定义继承AQS的静态内存类，并重写需要的protected修饰的方法；</li>
-<li>同步组件语义的实现依赖于AQS的模板方法，而AQS模板方法又依赖于被AQS的子类所重写的方法。</li>
-</ol>
-<p>通俗点说，因为AQS整体设计思路采用模板方法设计模式，同步组件以及AQS的功能实际上别切分成各自的两部分：</p>
-<p><strong>同步组件实现者的角度：</strong></p>
-<p>通过可重写的方法：<strong>独占式</strong>： tryAcquire()(独占式获取同步状态），tryRelease()（独占式释放同步状态）；<strong>共享式</strong> ：tryAcquireShared()(共享式获取同步状态)，tryReleaseShared()(共享式释放同步状态)；<strong>告诉AQS怎样判断当前同步状态是否成功获取或者是否成功释放</strong>。同步组件专注于对当前同步状态的逻辑判断，从而实现自己的同步语义。这句话比较抽象，举例来说，上面的Mutex例子中通过tryAcquire方法实现自己的同步语义，在该方法中如果当前同步状态为0（即该同步组件没被任何线程获取），当前线程可以获取同时将状态更改为1返回true，否则，该组件已经被线程占用返回false。很显然，该同步组件只能在同一时刻被线程占用，Mutex专注于获取释放的逻辑来实现自己想要表达的同步语义。</p>
-<p><strong>AQS的角度</strong></p>
-<p>而对AQS来说，只需要同步组件返回的true和false即可，因为AQS会对true和false会有不同的操作，true会认为当前线程获取同步组件成功直接返回，而false的话就AQS也会将当前线程插入同步队列等一系列的方法。</p>
-<p>总的来说，同步组件通过重写AQS的方法实现自己想要表达的同步语义，而AQS只需要同步组件表达的true和false即可，AQS会针对true和false不同的情况做不同的处理，至于底层实现，可以<a href="https://juejin.im/post/5aeb07ab6fb9a07ac36350c8" target="_blank" rel="noopener">看这篇文章</a>。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://blog.csdn.net/TJtulong/article/details/105345940" target="_blank" rel="noopener">Java中的锁及AQS实现原理</a></p>
-<p><a href="https://juejin.im/post/5aeb055b6fb9a07abf725c8c" target="_blank" rel="noopener">初识Lock与AbstractQueuedSynchronizer(AQS)</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/29/Java%E4%B8%ADLock%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8E%9F%E7%90%86/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/29/Java%E4%B8%ADLock%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8E%9F%E7%90%86/" class="post-title-link" itemprop="url">Java中Lock接口的原理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-30 07:43:33 / 修改时间：16:46:53" itemprop="dateCreated datePublished" datetime="2020-06-30T07:43:33+08:00">2020-06-30</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Lock接口"><a href="#Lock接口" class="headerlink" title="Lock接口"></a>Lock接口</h2><p>锁是用来<strong>控制多个线程访问共享资源</strong>的方式，一般来说，一个锁能够防止多个线程同时访问共享资源（但是有些锁可以允许多个线程并发的访问共享资源，比如读写锁）。</p>
-<p>在Lock接口出现之前，Java程序是靠synchronized关键字实现锁功能的，而Java 5之后，并发包中新增了Lock接口（以及相关实现类）用来实现锁功能，它提供了与synchronized关键字类似的同步功能，只是在使用时需要显式地获取和释放锁。虽然它缺少了（通过synchronized块或者方法所提供的）隐式获取释放锁的便捷性，但是却拥有了锁获取与释放的可操作性、可中断的获取锁以及超时获取锁等多种synchronized关键字所不具备的同步特性。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">X</span></span>&#123;</span><br><span class="line">    <span class="comment">//定义锁对象</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReentrantLock lock=<span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="comment">//定义需要保证线程安全的方法</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">m</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="comment">//加锁</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            <span class="comment">//...method body</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//使用finally块来保证释放锁</span></span><br><span class="line">        <span class="keyword">finally</span>&#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>使用<code>Reentrantlock</code>可以进行尝试锁定<code>tryLock()</code>，这样无法锁定，或者在指定时间内无法锁定，返回false；</p>
-<p>使用<code>ReentrantLock</code>还可以调用<code>lockInterruptibly()</code>方法，可以对线程<code>interrupt()</code>方法做出响应，在一个线程等待锁的过程中，可以被打断，打断后会抛异常。</p>
-<h2 id="自己实现一个锁"><a href="#自己实现一个锁" class="headerlink" title="自己实现一个锁"></a>自己实现一个锁</h2><h3 id="自旋实现锁"><a href="#自旋实现锁" class="headerlink" title="自旋实现锁"></a>自旋实现锁</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpinLock</span> </span>&#123;</span><br><span class="line">    <span class="comment">//原子引用线程</span></span><br><span class="line">    AtomicReference&lt;Thread&gt; atomicReference = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mylock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        System.out.println(Thread.currentThread().getName() + <span class="string">"\t come in"</span>);</span><br><span class="line">        <span class="comment">// 自旋获取锁</span></span><br><span class="line">        <span class="keyword">while</span> (!atomicReference.compareAndSet(<span class="keyword">null</span>, thread)) &#123;</span><br><span class="line">    </span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">myUnlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        <span class="comment">// CAS解锁</span></span><br><span class="line">        atomicReference.compareAndSet(thread, <span class="keyword">null</span>);</span><br><span class="line">        System.out.println(Thread.currentThread().getName()+<span class="string">"\t invoked myunlock()"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>缺点：耗费CPU资源，没有竞争到锁的线程会一直占用CPU资源进行CAS操作。</p>
-<h3 id="park-自旋实现锁"><a href="#park-自旋实现锁" class="headerlink" title="park+自旋实现锁"></a>park+自旋实现锁</h3><p>Java提供了一个较为底层的并发工具类：LockSupport，可以让线程停止下来(阻塞)，还可以唤醒线程。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 阻塞线程</span></span><br><span class="line">LockSupport.park(Object blocker) </span><br><span class="line"><span class="comment">// 唤醒线程</span></span><br><span class="line">LockSupport.unpark(Thread thread)</span><br></pre></td></tr></table></figure>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SpinLock</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 原子引用线程</span></span><br><span class="line">    AtomicReference&lt;Thread&gt; atomicReference = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">    <span class="comment">// 阻塞线程队列</span></span><br><span class="line">    Queue&lt;Thread&gt; parkQueue = <span class="keyword">new</span> LinkedBlockingQueue&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">mylock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(Thread.currentThread().getName() + <span class="string">"\t come in"</span>);</span><br><span class="line">        <span class="comment">// 自旋获取锁</span></span><br><span class="line">        <span class="keyword">while</span> (!atomicReference.compareAndSet(<span class="keyword">null</span>, thread)) &#123;</span><br><span class="line">            park();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">myUnlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread thread = Thread.currentThread();</span><br><span class="line">        <span class="comment">// CAS解锁</span></span><br><span class="line">        atomicReference.compareAndSet(thread, <span class="keyword">null</span>);</span><br><span class="line">        System.out.println(Thread.currentThread().getName()+<span class="string">"\t invoked myunlock()"</span>);</span><br><span class="line">        lock_notify();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">park</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        parkQueue.add(Thread.currentThread());</span><br><span class="line">        LockSupport.park(Thread.currentThread());</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unpark</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        Thread t = parkQueue.poll();</span><br><span class="line">        LockSupport.unpark(t);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="队列同步器AQS"><a href="#队列同步器AQS" class="headerlink" title="队列同步器AQS"></a>队列同步器AQS</h2><p>队列同步器AbstractQueuedSynchronizer（AQS）是用来构建锁或者其他同步组件的基础框架，它使用了一个int成员变量表示同步状态，通过内置的FIFO队列来完成资源获取线程的排队工作，并发包的作者（Doug Lea）期望它能够成为实现大部分同步需求的基础。</p>
-<h3 id="AQS的实现"><a href="#AQS的实现" class="headerlink" title="AQS的实现"></a>AQS的实现</h3><h4 id="FIFO队列"><a href="#FIFO队列" class="headerlink" title="FIFO队列"></a>FIFO队列</h4><p>同步器依赖内部的同步队列（一个FIFO双向队列）来完成同步状态的管理，当前线程获取同步状态失败时，同步器会将当前线程以及等待状态等信息构造成为一个节点（Node）并将其加入同步队列，同时会阻塞当前线程，当同步状态释放时，会把首节点中的线程唤醒，使其再次尝试获取同步状态。</p>
-<p>AQS中的节点Node：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Node</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 等待状态，若值为-1，表示后继节点处于等待状态</span></span><br><span class="line">    <span class="keyword">volatile</span> <span class="keyword">int</span> waitStatus;</span><br><span class="line">    <span class="comment">// 前一个节点</span></span><br><span class="line">    <span class="keyword">volatile</span> Node prev;</span><br><span class="line">    <span class="comment">// 下一个节点</span></span><br><span class="line">    <span class="keyword">volatile</span> Node next;</span><br><span class="line">    <span class="comment">// 节点绑定线程</span></span><br><span class="line">    <span class="keyword">volatile</span> Thread thread;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>AQS的属性：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractQueuedSynchronizer</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 等待队列头结点</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">transient</span> <span class="keyword">volatile</span> Node head;</span><br><span class="line">    <span class="comment">// 等待队列尾结点</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">transient</span> <span class="keyword">volatile</span> Node tail;</span><br><span class="line">    <span class="comment">// 状态</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">int</span> state;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>​    未完待续</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://blog.csdn.net/TJtulong/article/details/105345940" target="_blank" rel="noopener">Java中的锁及AQS实现原理</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/28/Java%20protected%20%E5%85%B3%E9%94%AE%E5%AD%97%E8%AF%A6%E8%A7%A3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/28/Java%20protected%20%E5%85%B3%E9%94%AE%E5%AD%97%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">Java protected 关键字详解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-29 02:18:56 / 修改时间：10:27:47" itemprop="dateCreated datePublished" datetime="2020-06-29T02:18:56+08:00">2020-06-29</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.4k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>很多介绍Java语言的书籍(包括《Java编程思想》)都对protected介绍的比较的简单，基本都是一句话，就是:被protected修饰的成员对于本包和其子类可见。这种说法有点太过含糊，常常会对大家造成误解。实际上，protected的可见性在于两点：</p>
-<ul>
-<li><p>基类的protected成员是<strong>包内可见</strong>的，并且<strong>对子类可见</strong>；</p>
-</li>
-<li><p>若<strong>子类与基类不在同一包中</strong>，那么在子类中，子类实例<strong>可以访问其从基类继承而来的protected方法</strong>，而<strong>不能访问基类实例的protected方法</strong>。</p>
-</li>
-</ul>
-<p>我们可以通过以下几个关于protected方法可见性的例子来进一步掌握protected关键字。在碰到涉及protected成员的调用时，首先要确定出该protected成员来自何方，其可见性范围是什么，然后就可以判断出当前用法是否可行了，看下面七个例子：</p>
-<h2 id="1-、示例一"><a href="#1-、示例一" class="headerlink" title="(1)、示例一"></a>(1)、示例一</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例一</span></span><br><span class="line"><span class="keyword">package</span> p1;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Father1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">f</span><span class="params">()</span> </span>&#123;&#125;    <span class="comment">// 父类Father1中的protected方法</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p1;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Son1</span> <span class="keyword">extends</span> <span class="title">Father1</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p11;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Son11</span> <span class="keyword">extends</span> <span class="title">Father1</span></span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p1;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test1</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Son1 son1 = <span class="keyword">new</span> Son1();</span><br><span class="line">        son1.f(); <span class="comment">// Compile OK     ----（1）</span></span><br><span class="line">        son1.clone(); <span class="comment">// Compile Error     ----（2）</span></span><br><span class="line"></span><br><span class="line">        Son11 son = <span class="keyword">new</span> Son11();    </span><br><span class="line">        son11.f(); <span class="comment">// Compile OK     ----（3）</span></span><br><span class="line">        son11.clone(); <span class="comment">// Compile Error     ----（4）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于上面的示例，首先看(1)(3)，其中的f()方法从类Father1继承而来，其可见性是包p1及其子类Son1和Son11，而由于调用f()方法的类Test1所在的包也是p1，因此（1）(3)处编译通过。其次看(2)(4)，其中的clone()方法的可见性是java.lang包及其所有子类，对于语句“son1.clone();”和“son11.clone();”，二者的clone()在类Son1、Son11中是可见的，但对Test1是不可见的，因此（1）(3)处编译不通过。</p>
-<h2 id="2-、示例二"><a href="#2-、示例二" class="headerlink" title="(2)、示例二"></a>(2)、示例二</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例二</span></span><br><span class="line"><span class="keyword">package</span> p2;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException</span>&#123;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">super</span>.clone();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p22;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test2</span> <span class="keyword">extends</span> <span class="title">MyObject2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">       MyObject2 obj = <span class="keyword">new</span> MyObject2();</span><br><span class="line">       obj.clone(); <span class="comment">// Compile Error         ----（1）</span></span><br><span class="line"></span><br><span class="line">       Test2 tobj = <span class="keyword">new</span> Test2();</span><br><span class="line">       tobj.clone(); <span class="comment">// Complie OK         ----（2）</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类MyObject2本身，因此其可见性为包p2及MyObject2的子类，虽然Test2是MyObject2的子类，但在Test2中不能访问基类MyObject2的protected方法clone()，因此编译不通过;对于(2)而言，由于在Test2中访问的是其本身实例的从基类MyObject2继承来的的clone()，因此编译通过。</p>
-<h2 id="3-、示例三"><a href="#3-、示例三" class="headerlink" title="(3)、示例三"></a>(3)、示例三</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例三</span></span><br><span class="line"><span class="keyword">package</span> p3;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject3</span> <span class="keyword">extends</span> <span class="title">Test3</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p33;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test3</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">    MyObject3 obj = <span class="keyword">new</span> MyObject3();</span><br><span class="line">    obj.clone();   <span class="comment">// Compile OK     ------（1）</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类Test3，因此其可见性为包p33及其子类MyObject3，而（1）正是在p33的类Test3中调用，属于同一包，编译通过。</p>
-<h2 id="4-、示例四"><a href="#4-、示例四" class="headerlink" title="(4)、示例四"></a>(4)、示例四</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例四</span></span><br><span class="line"><span class="keyword">package</span> p4;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject4</span> <span class="keyword">extends</span> <span class="title">Test4</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">protected</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">super</span>.clone();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">package</span> p44;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test4</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span> </span>&#123;</span><br><span class="line">    MyObject4 obj = <span class="keyword">new</span> MyObject4();</span><br><span class="line">    obj.clone(); <span class="comment">// Compile Error      -----（1）</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类MyObject4，因此其可见性为包p4及其子类(此处没有子类)，而类Test4却在包p44中，因此不满足可见性，编译不通过。</p>
-<h2 id="5-、示例五"><a href="#5-、示例五" class="headerlink" title="(5)、示例五"></a>(5)、示例五</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例五</span></span><br><span class="line"><span class="keyword">package</span> p5;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject5</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> Object <span class="title">clone</span><span class="params">()</span> <span class="keyword">throws</span> CloneNotSupportedException</span>&#123;</span><br><span class="line">       <span class="keyword">return</span> <span class="keyword">super</span>.clone();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test5</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> CloneNotSupportedException </span>&#123;</span><br><span class="line">       MyObject5 obj = <span class="keyword">new</span> MyObject5();</span><br><span class="line">       obj.clone(); <span class="comment">// Compile OK        ----(1)</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类MyObject5，因此其可见性为包p5及其子类(此处没有子类)，而类Test5也在包p5中，因此满足可见性，编译通过。</p>
-<h2 id="6-、示例六"><a href="#6-、示例六" class="headerlink" title="(6)、示例六"></a>(6)、示例六</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例六</span></span><br><span class="line"><span class="keyword">package</span> p6;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject6</span> <span class="keyword">extends</span> <span class="title">Test6</span></span>&#123;&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test6</span> </span>&#123;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    MyObject6 obj = <span class="keyword">new</span> MyObject6();</span><br><span class="line">    obj.clone();        <span class="comment">// Compile OK   -------（1）</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类Test6，因此其可见性为包p6及其子类MyObject6，而类Test6也在包p6中，因此满足可见性，编译通过。</p>
-<h2 id="7-、示例七"><a href="#7-、示例七" class="headerlink" title="(7)、示例七"></a>(7)、示例七</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//示例七</span></span><br><span class="line"><span class="keyword">package</span> p7;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyObject7</span> <span class="keyword">extends</span> <span class="title">Test7</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Test7 test = <span class="keyword">new</span> Test7();</span><br><span class="line">        test.clone(); <span class="comment">// Compile Error   ----- (1)</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test7</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>　　对于(1)而言，clone()方法来自于类Object，因此该clone()方法可见性为包java.lang及其子类Test7，由于类MyObject7不在此范围内，因此不满足可见性，编译不通过。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://blog.csdn.net/justloveyou_/article/details/61672133" target="_blank" rel="noopener">Java protected 关键字详解</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2098,7 +2040,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2154,7 +2096,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

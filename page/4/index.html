@@ -186,6 +186,593 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/%E6%95%B0%E6%8D%AE%E5%BA%93%E9%80%BB%E8%BE%91%E8%AE%BE%E8%AE%A1%E4%B9%8B%E4%B8%89%E5%A4%A7%E8%8C%83%E5%BC%8F/" class="post-title-link" itemprop="url">数据库逻辑设计之三大范式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-10 06:43:29 / 修改时间：14:58:28" itemprop="dateCreated datePublished" datetime="2020-07-10T06:43:29+08:00">2020-07-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、第一范式"><a href="#一、第一范式" class="headerlink" title="一、第一范式"></a>一、第一范式</h2><p><strong>列不可再分</strong></p>
+<p>1NF是对属性的<strong><code>原子性</code></strong>，要求属性具有原子性，不可再分解；</p>
+<blockquote>
+<p>表：字段1、 字段2(字段2.1、字段2.2)、字段3 ……</p>
+</blockquote>
+<p>如学生（学号，姓名，性别，出生年月日），如果认为最后一列还可以再分成（出生年，出生月，出生日），它就不是一范式了，否则就是；</p>
+<h2 id="二、第二范式"><a href="#二、第二范式" class="headerlink" title="二、第二范式"></a>二、第二范式</h2><p><strong>主键(可为多列)可以将每一行完全区分开来,且主键不冗余</strong></p>
+<p>2NF是对记录的<strong><code>惟一性</code></strong>，要求记录有惟一标识，即实体的惟一性，即<strong>不存在部分依赖</strong>；</p>
+<blockquote>
+<p>表：学号、课程号、姓名、学分;</p>
+</blockquote>
+<p>这个表明显说明了两个事务:学生信息, 课程信息;由于非主键字段必须依赖主键，这里<strong>学分依赖课程号</strong>，<strong>姓名依赖与学号</strong>，所以不符合二范式。</p>
+<p><strong>可能会存在问题：</strong></p>
+<ul>
+<li><code>数据冗余:</code>，每条记录都含有相同信息；</li>
+<li><code>删除异常：</code>删除所有学生成绩，就把课程信息全删除了；</li>
+<li><code>插入异常：</code>学生未选课，无法记录进数据库；</li>
+<li><code>更新异常：</code>调整课程学分，所有行都调整。</li>
+</ul>
+<p><strong>正确做法:</strong><br>学生：<code>Student</code>(学号, 姓名)；<br>课程：<code>Course</code>(课程号, 学分)；<br>选课关系：<code>StudentCourse</code>(学号, 课程号, 成绩)。</p>
+<h2 id="三、第三范式"><a href="#三、第三范式" class="headerlink" title="三、第三范式"></a>三、第三范式</h2><p>满足一二范式条件下,<strong>不存在对主键的传递依赖</strong></p>
+<p>3NF是对字段的<strong><code>冗余性</code></strong>，要求任何字段不能由其他字段派生出来，它要求字段没有冗余，即不存在传递依赖；</p>
+<blockquote>
+<p>表: 学号, 姓名, 年龄, 学院名称, 学院电话</p>
+</blockquote>
+<p>因为存在<strong>依赖传递</strong>: (学号) → (学生)→(所在学院) → (学院电话) 。</p>
+<p><strong>可能会存在问题：</strong></p>
+<ul>
+<li><code>数据冗余:</code>有重复值；</li>
+<li><code>更新异常：</code>有重复的冗余信息，修改时需要同时修改多条记录，否则会出现<strong>数据不一致的情况</strong> 。</li>
+</ul>
+<p><strong>正确做法：</strong></p>
+<p>学生：(学号, 姓名, 年龄, 所在学院)； </p>
+<p>学院：(学院, 电话)。</p>
+<h2 id="四、反范式化"><a href="#四、反范式化" class="headerlink" title="四、反范式化"></a>四、反范式化</h2><p><strong>一般说来，数据库只需满足第三范式（<code>3NF</code>）就行了。</strong></p>
+<p>没有冗余的数据库设计可以做到。但是，没有冗余的数据库未必是最好的数据库，有时为了提高运行效率，就必须降低范式标准，适当保留冗余数据。具体做法是：在概念数据模型设计时遵守第三范式，降低范式标准的工作放到物理数据模型设计时考虑。降低范式就是增加字段，允许冗余，<strong><code>达到以空间换时间的目的</code></strong>。</p>
+<p>〖例〗：有一张存放商品的基本表，“金额”这个字段的存在，表明该表的设计不满足第三范式，因为“金额”可以由“单价”乘以“数量”得到，说明“金额”是冗余字段。但是，增加“金额”这个冗余字段，可以提高查询统计的速度，这就是以空间换时间的作法。</p>
+<p>在<code>Rose 2002</code>中，规定列有两种类型：<strong>数据列</strong>和<strong>计算列</strong>。“金额”这样的列被称为“计算列”，而“单价”和“数量”这样的列被称为“数据列”。</p>
+<h2 id="五、范式化设计和反范式化设计的优缺点"><a href="#五、范式化设计和反范式化设计的优缺点" class="headerlink" title="五、范式化设计和反范式化设计的优缺点"></a>五、范式化设计和反范式化设计的优缺点</h2><h3 id="5-1-范式化"><a href="#5-1-范式化" class="headerlink" title="5.1 范式化"></a>5.1 范式化</h3><p><strong>优点：</strong></p>
+<ul>
+<li>减少数据冗余,数据表体积小更新快</li>
+<li>更新操作更快</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>查询操作需要多表关联,降低了性能</li>
+<li>更难进行索引优化</li>
+</ul>
+<h3 id="5-2-反范式化"><a href="#5-2-反范式化" class="headerlink" title="5.2 反范式化"></a>5.2 反范式化</h3><p><strong>优点：</strong></p>
+<ul>
+<li>可以减少查询时表的关联</li>
+<li>更好地进行索引优化</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>数据冗余,维护不方便</li>
+<li>修改数据不方便</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://segmentfault.com/a/1190000013695030" target="_blank" rel="noopener">数据库逻辑设计之三大范式</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/RESTful%20API%20%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/" class="post-title-link" itemprop="url">RESTful API 最佳实践</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-09 11:23:58 / 修改时间：19:35:41" itemprop="dateCreated datePublished" datetime="2020-07-09T11:23:58+08:00">2020-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Web/" itemprop="url" rel="index"><span itemprop="name">Web</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><a href="http://www.ruanyifeng.com/blog/2011/09/restful.html" target="_blank" rel="noopener">RESTful</a> 是目前最流行的 API 设计规范，用于 Web 数据接口的设计。</p>
+<p>它的大原则容易把握，但是细节不容易做对。本文总结 RESTful 的设计细节，介绍如何设计出易于理解和使用的 API。</p>
+<p><img src="https://www.wangbase.com/blogimg/asset/201810/bg2018100301.jpg" alt="img"></p>
+<h2 id="一、URL-设计"><a href="#一、URL-设计" class="headerlink" title="一、URL 设计"></a>一、URL 设计</h2><h3 id="1-1-动词-宾语"><a href="#1-1-动词-宾语" class="headerlink" title="1.1 动词 + 宾语"></a>1.1 动词 + 宾语</h3><p>RESTful 的核心思想就是，客户端发出的数据操作指令都是”动词 + 宾语”的结构。比如，<code>GET /articles</code>这个命令，<code>GET</code>是动词，<code>/articles</code>是宾语。</p>
+<p>动词通常就是五种 HTTP 方法，对应 CRUD 操作。</p>
+<blockquote>
+<ul>
+<li>GET：读取（Read）</li>
+<li>POST：新建（Create）</li>
+<li>PUT：更新（Update）</li>
+<li>PATCH：更新（Update），通常是部分更新</li>
+<li>DELETE：删除（Delete）</li>
+</ul>
+</blockquote>
+<p>根据 HTTP 规范，动词一律大写。</p>
+<h3 id="1-2-动词的覆盖"><a href="#1-2-动词的覆盖" class="headerlink" title="1.2 动词的覆盖"></a>1.2 动词的覆盖</h3><p>有些客户端只能使用<code>GET</code>和<code>POST</code>这两种方法。服务器必须接受<code>POST</code>模拟其他三个方法（<code>PUT</code>、<code>PATCH</code>、<code>DELETE</code>）。</p>
+<p>这时，客户端发出的 HTTP 请求，要加上<code>X-HTTP-Method-Override</code>属性，告诉服务器应该使用哪一个动词，覆盖<code>POST</code>方法。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">POST /api/Person/4 HTTP/1.1  </span><br><span class="line"><span class="attribute">X-HTTP-Method-Override</span>: PUT</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，<code>X-HTTP-Method-Override</code>指定本次请求的方法是<code>PUT</code>，而不是<code>POST</code>。</p>
+<h3 id="1-3-宾语必须是名词"><a href="#1-3-宾语必须是名词" class="headerlink" title="1.3 宾语必须是名词"></a>1.3 宾语必须是名词</h3><p>宾语就是 API 的 URL，是 HTTP 动词作用的对象。它应该是名词，不能是动词。比如，<code>/articles</code>这个 URL 就是正确的，而下面的 URL 不是名词，所以都是错误的。</p>
+<blockquote>
+<ul>
+<li>/getAllCars</li>
+<li>/createNewCar</li>
+<li>/deleteAllRedCars</li>
+</ul>
+</blockquote>
+<h3 id="1-4-复数-URL"><a href="#1-4-复数-URL" class="headerlink" title="1.4 复数 URL"></a>1.4 复数 URL</h3><p>既然 URL 是名词，那么应该使用复数，还是单数？</p>
+<p>这没有统一的规定，但是常见的操作是读取一个集合，比如<code>GET /articles</code>（读取所有文章），这里明显应该是复数。</p>
+<p>为了统一起见，建议都使用复数 URL，比如<code>GET /articles/2</code>要好于<code>GET /article/2</code>。</p>
+<h3 id="1-5-避免多级-URL"><a href="#1-5-避免多级-URL" class="headerlink" title="1.5 避免多级 URL"></a>1.5 避免多级 URL</h3><p>常见的情况是，资源需要多级分类，因此很容易写出多级的 URL，比如获取某个作者的某一类文章。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12/categories/2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>这种 URL 不利于扩展，语义也不明确，往往要想一会，才能明白含义。</p>
+<p>更好的做法是，除了第一级，其他级别都用查询字符串表达。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /authors/12?categories=2</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>下面是另一个例子，查询已发布的文章。你可能会设计成下面的 URL。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles/published</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>查询字符串的写法明显更好。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET /articles?published=true</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h2 id="二、状态码"><a href="#二、状态码" class="headerlink" title="二、状态码"></a>二、状态码</h2><h3 id="2-1-状态码必须精确"><a href="#2-1-状态码必须精确" class="headerlink" title="2.1 状态码必须精确"></a>2.1 状态码必须精确</h3><p>客户端的每一次请求，服务器都必须给出回应。回应包括 HTTP 状态码和数据两部分。</p>
+<p>HTTP 状态码就是一个三位数，分成五个类别。</p>
+<blockquote>
+<ul>
+<li><code>1xx</code>：相关信息</li>
+<li><code>2xx</code>：操作成功</li>
+<li><code>3xx</code>：重定向</li>
+<li><code>4xx</code>：客户端错误</li>
+<li><code>5xx</code>：服务器错误</li>
+</ul>
+</blockquote>
+<p>这五大类总共包含<a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes" target="_blank" rel="noopener">100多种</a>状态码，覆盖了绝大部分可能遇到的情况。每一种状态码都有标准的（或者约定的）解释，客户端只需查看状态码，就可以判断出发生了什么情况，所以服务器应该返回尽可能精确的状态码。</p>
+<p>API 不需要<code>1xx</code>状态码，下面介绍其他四类状态码的精确含义。</p>
+<h3 id="2-2-2xx-状态码"><a href="#2-2-2xx-状态码" class="headerlink" title="2.2 2xx 状态码"></a>2.2 2xx 状态码</h3><p><code>200</code>状态码表示操作成功，但是不同的方法可以返回更精确的状态码。</p>
+<blockquote>
+<ul>
+<li>GET: 200 OK</li>
+<li>POST: 201 Created</li>
+<li>PUT: 200 OK</li>
+<li>PATCH: 200 OK</li>
+<li>DELETE: 204 No Content</li>
+</ul>
+</blockquote>
+<p>上面代码中，<code>POST</code>返回<code>201</code>状态码，表示生成了新的资源；<code>DELETE</code>返回<code>204</code>状态码，表示资源已经不存在。</p>
+<p>此外，<code>202 Accepted</code>状态码表示服务器已经收到请求，但还未进行处理，会在未来再处理，通常用于异步操作。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">202</span> Accepted</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "task": &#123;</span><br><span class="line">    "href": "/api/company/job-management/jobs/2130040",</span><br><span class="line">    "id": "2130040"</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="2-3-3xx-状态码"><a href="#2-3-3xx-状态码" class="headerlink" title="2.3 3xx 状态码"></a>2.3 3xx 状态码</h3><p>API 用不到<code>301</code>状态码（永久重定向）和<code>302</code>状态码（暂时重定向，<code>307</code>也是这个含义），因为它们可以由应用级别返回，浏览器会直接跳转，API 级别可以不考虑这两种情况。</p>
+<p>API 用到的<code>3xx</code>状态码，主要是<code>303 See Other</code>，表示参考另一个 URL。它与<code>302</code>和<code>307</code>的含义一样，也是”暂时重定向”，区别在于<code>302</code>和<code>307</code>用于<code>GET</code>请求，而<code>303</code>用于<code>POST</code>、<code>PUT</code>和<code>DELETE</code>请求。收到<code>303</code>以后，浏览器不会自动跳转，而会让用户自己决定下一步怎么办。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">303</span> See Other</span><br><span class="line"><span class="attribute">Location</span>: /api/orders/12345</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="2-4-4xx-状态码"><a href="#2-4-4xx-状态码" class="headerlink" title="2.4 4xx 状态码"></a>2.4 4xx 状态码</h3><p><code>4xx</code>状态码表示客户端错误，主要有下面几种。</p>
+<p><code>400 Bad Request</code>：服务器不理解客户端的请求，未做任何处理。</p>
+<p><code>401 Unauthorized</code>：用户未提供身份验证凭据，或者没有通过身份验证。</p>
+<p><code>403 Forbidden</code>：用户通过了身份验证，但是不具有访问资源所需的权限。</p>
+<p><code>404 Not Found</code>：所请求的资源不存在，或不可用。</p>
+<p><code>405 Method Not Allowed</code>：用户已经通过身份验证，但是所用的 HTTP 方法不在他的权限之内。</p>
+<p><code>410 Gone</code>：所请求的资源已从这个地址转移，不再可用。</p>
+<p><code>415 Unsupported Media Type</code>：客户端要求的返回格式不支持。比如，API 只能返回 JSON 格式，但是客户端要求返回 XML 格式。</p>
+<p><code>422 Unprocessable Entity</code> ：客户端上传的附件无法处理，导致请求失败。</p>
+<p><code>429 Too Many Requests</code>：客户端的请求次数超过限额。</p>
+<h3 id="2-5-5xx-状态码"><a href="#2-5-5xx-状态码" class="headerlink" title="2.5 5xx 状态码"></a>2.5 5xx 状态码</h3><p><code>5xx</code>状态码表示服务端错误。一般来说，API 不会向用户透露服务器的详细信息，所以只要两个状态码就够了。</p>
+<p><code>500 Internal Server Error</code>：客户端请求有效，服务器处理时发生了意外。</p>
+<p><code>503 Service Unavailable</code>：服务器无法处理请求，一般用于网站维护状态。</p>
+<h2 id="三、服务器回应"><a href="#三、服务器回应" class="headerlink" title="三、服务器回应"></a>三、服务器回应</h2><h3 id="3-1-不要返回纯本文"><a href="#3-1-不要返回纯本文" class="headerlink" title="3.1 不要返回纯本文"></a>3.1 不要返回纯本文</h3><p>API 返回的数据格式，不应该是纯文本，而应该是一个 JSON 对象，因为这样才能返回标准的结构化数据。所以，服务器回应的 HTTP 头的<code>Content-Type</code>属性要设为<code>application/json</code>。</p>
+<p>客户端请求时，也要明确告诉服务器，可以接受 JSON 格式，即请求的 HTTP 头的<code>ACCEPT</code>属性也要设成<code>application/json</code>。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET /orders/2 HTTP/1.1 </span><br><span class="line"><span class="attribute">Accept</span>: application/json</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="3-2-发生错误时，不要返回-200-状态码"><a href="#3-2-发生错误时，不要返回-200-状态码" class="headerlink" title="3.2 发生错误时，不要返回 200 状态码"></a>3.2 发生错误时，不要返回 200 状态码</h3><p>有一种不恰当的做法是，即使发生错误，也返回<code>200</code>状态码，把错误信息放在数据体里面，就像下面这样。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "failure",</span><br><span class="line">  "data": &#123;</span><br><span class="line">    "error": "Expected at least two items in list."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面代码中，解析数据体以后，才能得知操作失败。</p>
+<p>这张做法实际上取消了状态码，这是完全不可取的。正确的做法是，状态码反映发生的错误，具体的错误信息放在数据体里面返回。下面是一个例子。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">400</span> Bad Request</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "error": "Invalid payoad.",</span><br><span class="line">  "detail": &#123;</span><br><span class="line">     "surname": "This field is required."</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="3-3-提供链接"><a href="#3-3-提供链接" class="headerlink" title="3.3 提供链接"></a>3.3 提供链接</h3><p>API 的使用者未必知道，URL 是怎么设计的。一个解决方法就是，在回应中，给出相关链接，便于下一步操作。这样的话，用户只要记住一个 URL，就可以发现其他的 URL。这种方法叫做 HATEOAS。</p>
+<p>举例来说，GitHub 的 API 都在 <a href="https://api.github.com/" target="_blank" rel="noopener">api.github.com</a> 这个域名。访问它，就可以得到其他 URL。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  ...</span><br><span class="line">  "feeds_url": "https://api.github.com/feeds",</span><br><span class="line">  "followers_url": "https://api.github.com/user/followers",</span><br><span class="line">  "following_url": "https://api.github.com/user/following&#123;/target&#125;",</span><br><span class="line">  "gists_url": "https://api.github.com/gists&#123;/gist_id&#125;",</span><br><span class="line">  "hub_url": "https://api.github.com/hub",</span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<p>上面的回应中，挑一个 URL 访问，又可以得到别的 URL。对于用户来说，不需要记住 URL 设计，只要从 api.github.com 一步步查找就可以了。</p>
+<p>HATEOAS 的格式没有统一规定，上面例子中，GitHub 将它们与其他属性放在一起。更好的做法应该是，将相关链接与其他属性分开。</p>
+<blockquote>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 <span class="number">200</span> OK</span><br><span class="line"><span class="attribute">Content-Type</span>: application/json</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  "status": "In progress",</span><br><span class="line">   "links": &#123;[</span><br><span class="line">    &#123; "rel":"cancel", "method": "delete", "href":"/api/status/12345" &#125; ,</span><br><span class="line">    &#123; "rel":"edit", "method": "put", "href":"/api/status/12345" &#125;</span><br><span class="line">  ]&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h2 id="四、参考链接"><a href="#四、参考链接" class="headerlink" title="四、参考链接"></a>四、参考链接</h2><ul>
+<li><a href="https://blog.florimondmanca.com/restful-api-design-13-best-practices-to-make-your-users-happy" target="_blank" rel="noopener">RESTful API Design: 13 Best Practices to Make Your Users Happy</a>, by Florimond Manca</li>
+<li><a href="https://docs.microsoft.com/en-us/azure/architecture/best-practices/api-design" target="_blank" rel="noopener">API design</a>, by MicroSoft Azure</li>
+</ul>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.ruanyifeng.com/blog/2018/10/restful-api-best-practices.html" target="_blank" rel="noopener">RESTful API 最佳实践</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/%E4%BF%A1%E5%8F%B7%E9%87%8F%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">信号量Semaphore与简单应用</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-09 11:06:01 / 修改时间：19:09:10" itemprop="dateCreated datePublished" datetime="2020-07-09T11:06:01+08:00">2020-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>信号量（Semaphore）是一种控制多线程（进程）访问共享资源的同步机制，是由荷兰的Dijkstra大佬在1962年前后提出来的。</p>
+<h2 id="信号量的原理"><a href="#信号量的原理" class="headerlink" title="信号量的原理"></a>信号量的原理</h2><p>信号量机制包含以下几个核心概念：</p>
+<ol>
+<li>信号量S，整型变量，需要初始化值大于0</li>
+<li>P原语，荷兰语Prolaag(probeer te verlagen)，表示减少信号量，该操作必须是原子的</li>
+<li>V原语，荷兰语Verhogen，表示增加信号量，该操作必须是原子的</li>
+</ol>
+<p><img src="https://user-gold-cdn.xitu.io/2019/4/19/16a334085455df02?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="信号量"></p>
+<p>从上图不难看出信号量的两个核心操作，P和V：</p>
+<ol>
+<li>P操作，原子减少S，然后如果<code>S &lt; 0</code>，则阻塞当前线程</li>
+<li>V操作，原子增加S，然后如果<code>S &lt;= 0</code>，则唤醒一个阻塞的线程</li>
+</ol>
+<p>信号量一般被用来控制多线程对共享资源的访问，允许最多S个线程同时访问临界区，多于S个的线程会被P操作阻塞，直到有线程执行完临界区代码后，调用V操作唤醒。所以PV操作必须是成对出现的。</p>
+<p>那么信号量可以用来干什么呢？</p>
+<ol>
+<li>信号量似乎天生就是为限流而生的，我们可以很容易用信号量实现一个<a href="#用信号量限流">限流器</a>。</li>
+<li>信号量可以用来实现<a href="#用信号量实现互斥锁">互斥锁</a>，初始化信号量<code>S = 1</code>，这样就只能有一个线程能访问临界区。很明显这是一个不可重入的锁。</li>
+<li>信号量甚至能够实现条件变量，比如<a href="#用信号量实现阻塞队列">阻塞队列</a></li>
+</ol>
+<h2 id="动手实现一个信号量"><a href="#动手实现一个信号量" class="headerlink" title="动手实现一个信号量"></a>动手实现一个信号量</h2><p>学习这些经典理论的时候，最好的办法还是用自己熟悉的编程语言实现一遍。Java并发包提供了一个信号量的<code>java.util.concurrent.Semaphore</code>，是用<code>AbstractQueuedSynchronizer</code>的共享模式实现的，以后会单独分析关于AQS相关的原理，这里不再展开描述，其核心思想是CAS。<br> 下面是我用Java实现的一个简单的信号量，这里使用<code>synchronized</code>来替代互斥锁</p>
+<h4 id="信号量实现"><a href="#信号量实现" class="headerlink" title="信号量实现"></a>信号量实现</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Semaphore</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 信号量S</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> s;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Semaphore</span><span class="params">(<span class="keyword">int</span> s)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.s = s;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * P原语，原子操作</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * S减decr，如果S小于0，阻塞当前线程</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">p</span><span class="params">(<span class="keyword">int</span> decr)</span> </span>&#123;</span><br><span class="line">        s -= decr;</span><br><span class="line">        <span class="keyword">if</span> (s &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                wait();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                <span class="comment">// ...</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * V原语，原子操作</span></span><br><span class="line"><span class="comment">     * &lt;p&gt;</span></span><br><span class="line"><span class="comment">     * S加incr，如果S小于等于0，唤醒一个等待中的线程</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">v</span><span class="params">(<span class="keyword">int</span> incr)</span> </span>&#123;</span><br><span class="line">        s += incr;</span><br><span class="line">        <span class="keyword">if</span> (s &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            notify();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="用信号量限流"><a href="#用信号量限流" class="headerlink" title="用信号量限流"></a>用信号量限流</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Limiter</span> <span class="keyword">implements</span> <span class="title">Executor</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore semaphore;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Limiter</span><span class="params">(<span class="keyword">int</span> limit)</span> </span>&#123;</span><br><span class="line">        semaphore = <span class="keyword">new</span> Semaphore(limit);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span><span class="params">(Runnable runnable)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (runnable != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">                semaphore.p(<span class="number">1</span>);</span><br><span class="line">                runnable.run();</span><br><span class="line">                semaphore.v(<span class="number">1</span>);</span><br><span class="line">            &#125;).start();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="用信号量实现互斥锁"><a href="#用信号量实现互斥锁" class="headerlink" title="用信号量实现互斥锁"></a>用信号量实现互斥锁</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SemaphoreLock</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore semaphore = <span class="keyword">new</span> Semaphore(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        semaphore.p(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        semaphore.v(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="用信号量实现阻塞队列"><a href="#用信号量实现阻塞队列" class="headerlink" title="用信号量实现阻塞队列"></a>用信号量实现阻塞队列</h4><p>实现阻塞队列需要两个信号量和一个锁（锁也可以用信号量代替）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SemaphoreBlockingQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Semaphore notFull;</span><br><span class="line">    <span class="keyword">private</span> Semaphore notEmpty;</span><br><span class="line">    <span class="keyword">private</span> SemaphoreLock lock = <span class="keyword">new</span> SemaphoreLock();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object[] table;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> size;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">SemaphoreBlockingQueue</span><span class="params">(<span class="keyword">int</span> cap)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (cap &lt; <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"capacity must be &gt; 0"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        notEmpty = <span class="keyword">new</span> Semaphore(<span class="number">0</span>);</span><br><span class="line">        notFull = <span class="keyword">new</span> Semaphore(cap);</span><br><span class="line">        table = <span class="keyword">new</span> Object[cap];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add</span><span class="params">(T t)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 如果队列是满的就会阻塞</span></span><br><span class="line">        notFull.p(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">// lock保证队列的原子添加</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        table[size++] = t;</span><br><span class="line">        lock.unlock();</span><br><span class="line">        <span class="comment">// 唤醒一个阻塞在notEmpty的线程</span></span><br><span class="line">        notEmpty.v(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> T <span class="title">poll</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        T element;</span><br><span class="line">        <span class="comment">// 如果队列是空就会阻塞</span></span><br><span class="line">        notEmpty.p(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">// lock保证队列的原子删除</span></span><br><span class="line">        lock.lock();</span><br><span class="line">        element = (T) table[--size];</span><br><span class="line">        lock.unlock();</span><br><span class="line">        <span class="comment">// 唤醒一个阻塞在notFull的线程</span></span><br><span class="line">        notFull.v(<span class="number">1</span>);</span><br><span class="line">        <span class="keyword">return</span> element;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5cb57b79518825327a059ea6" target="_blank" rel="noopener">信号量机制</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/09/git%E6%8C%87%E4%BB%A4%E4%B9%8Brebase/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/09/git%E6%8C%87%E4%BB%A4%E4%B9%8Brebase/" class="post-title-link" itemprop="url">git指令之rebase</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-07-09 08:11:30 / 修改时间：17:15:37" itemprop="dateCreated datePublished" datetime="2020-07-09T08:11:30+08:00">2020-07-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6/" itemprop="url" rel="index"><span itemprop="name">版本控制</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>968</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>假设你现在基于远程分支”origin”，创建一个叫”mywork”的分支。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout -b mywork origin</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase0.png" alt="img"></p>
+<p>现在我们在这个分支做一些修改，然后生成两个提交(commit).</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ vi file.txt</span><br><span class="line">$ git commit</span><br><span class="line">$ vi otherfile.txt</span><br><span class="line">$ git commit</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>但是与此同时，有些人也在”origin”分支上做了一些修改并且做了提交了. 这就意味着”origin”和”mywork”这两个分支各自”前进”了，它们之间”分叉”了。</p>
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase1.png" alt="img"></p>
+<p>在这里，你可以用”pull”命令把”origin”分支上的修改拉下来并且和你的修改合并； 结果看起来就像一个新的”合并的提交”(merge commit):</p>
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase2.png" alt="img"></p>
+<p>但是，如果你想让”mywork”分支历史看起来像没有经过任何合并一样，你也许可以用 <a href="http://www.kernel.org/pub/software/scm/git/docs/git-rebase.html" target="_blank" rel="noopener">git rebase</a>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git checkout mywork</span><br><span class="line">$ git rebase origin</span><br></pre></td></tr></table></figure>
+
+<p>这些命令会把你的”mywork”分支里的每个提交(commit)取消掉，并且把它们临时 保存为补丁(patch)(这些补丁放到”.git/rebase”目录中),然后把”mywork”分支更新 到最新的”origin”分支，最后把保存的这些补丁应用到”mywork”分支上。</p>
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase3.png" alt="img"></p>
+<p>当’mywork’分支更新之后，它会指向这些新创建的提交(commit),而那些老的提交会被丢弃。 如果运行垃圾收集命令(pruning garbage collection), 这些被丢弃的提交就会删除. （请查看 <a href="http://www.kernel.org/pub/software/scm/git/docs/git-gc.html" target="_blank" rel="noopener">git gc</a>)</p>
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase4.png" alt="img"></p>
+<p>现在我们可以看一下用合并(merge)和用rebase所产生的历史的区别：</p>
+<p><img src="http://gitbook.liuhui998.com/assets/images/figure/rebase5.png" alt="img"></p>
+<p>在rebase的过程中，也许会出现冲突(conflict). 在这种情况，Git会停止rebase并会让你去解决 冲突；在解决完冲突后，用”git-add”命令去更新这些内容的索引(index), 然后，你无需执行 git-commit,只要执行:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git rebase --continue</span><br></pre></td></tr></table></figure>
+
+<p>这样git会继续应用(apply)余下的补丁。</p>
+<p>在任何时候，你可以用<code>--abort</code>参数来终止rebase的行动，并且”mywork” 分支会回到rebase开始前的状态。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git rebase --abort</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>本文整理自</p>
+<p><a href="http://gitbook.liuhui998.com/4_2.html" target="_blank" rel="noopener">rebase</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/08/TCP%E6%B5%81%E9%87%8F%E6%8E%A7%E5%88%B6%E3%80%81%E6%8B%A5%E5%A1%9E%E6%8E%A7%E5%88%B6/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -959,708 +1546,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%8C%BA%E5%88%AB/" class="post-title-link" itemprop="url">抽象类和接口的区别</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-03 05:44:15 / 修改时间：13:59:13" itemprop="dateCreated datePublished" datetime="2020-07-03T05:44:15+08:00">2020-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="抽象类"><a href="#抽象类" class="headerlink" title="抽象类"></a>抽象类</h2><p>抽象类在我们实际开发当中扮演了一个什么样的角色？当我们在开发或者设计一些功能和属性大部分差不多的<code>Activity</code>或者是<code>class</code>的时候，为了避免大量重复的工作，最好的做法就是抽取一个公共的基类，这样做的目的即可以减少重复的代码，又让代码变得简洁，简单。</p>
-<p><strong>因此抽象类就是用于抽取，捕捉子类通用共性的一种类</strong>。<strong>只能用于作为父类</strong>，提供给子类继承并且不能被实例化，作为被用来创建继承层级的一种模板。也是多态特性的一种重要表现形式。</p>
-<p>下面举个简单的例子帮助理解</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo3Abstract</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Zi z = <span class="keyword">new</span> Zi();</span><br><span class="line">        z.print();                  <span class="comment">//直接调用子类中的print方法</span></span><br><span class="line">        z.method();                 <span class="comment">//也可以拿到从父类继承的method方法</span></span><br><span class="line">      </span><br><span class="line">      Fu f= <span class="keyword">new</span> Zi();               <span class="comment">//父类指向子类对象。</span></span><br><span class="line">      f.print();                    <span class="comment">//编译看左边，运行看右边。</span></span><br><span class="line">     System.out.println(f.i);       <span class="comment">//out i0</span></span><br><span class="line">    </span><br><span class="line">      </span><br><span class="line">      Zi zx=(Zi)f;                  <span class="comment">//向下转型</span></span><br><span class="line">      zx.print1111();               <span class="comment">//才能拿到子类特有的方法。</span></span><br><span class="line">     System.out.println(zx.i);      <span class="comment">// out 20</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">10</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;   <span class="comment">//抽象方法必须有子类重写后使用</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">method</span><span class="params">()</span> </span>&#123;          <span class="comment">//非抽象方法子类可以直接继承用</span></span><br><span class="line">        System.out.println(<span class="string">"Hello World!"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Zi</span> <span class="keyword">extends</span> <span class="title">Fu</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> i=<span class="number">20</span>；</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"Zi"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print1111</span><span class="params">()</span></span>&#123;</span><br><span class="line">       System.out.println(<span class="string">"Zi111"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上述例子说明了，抽象类最重要的特点之一，就是可以Zi类拿到Fu提供的method方法，又拥有了自己的特性（print方法）。这样就大大减少了代码的冗余。但是有有一点需要注意的是当我们面向接口编程的时候，当重写了父类中的抽象方法的时候，编译时，找的父类的方法体，倒是<strong>实际上在运行过程中，使用的是子类的实现方法</strong>。这是一种<strong>动态绑定</strong>实现机制，也是Java语言的重要基石。</p>
-<p>多态的弊端在于，当采用面向接口编程的过程中，当需要到子类的特性的时候，就必须向下转型，这样才能拿到子类的特性（特有的方法）。这其实也很好理解，因为在内存的存储中，Zi类继承Fu，在Zi类的内存中，有一部分是保存有Fu类的相关数据的地址值的，所以我们在才能对代码实现复用，但是面向接口编程的时候，是从Fu类的内存中去找值的，所以<code>f.i</code>和<code>zx.i</code>值完全是不一样，当我们想要拿到子类值的时候，只能向下转型才能拿到20，否则就只能拿到父类的成员变量里面的10。换句话说，只有父类和子类二者重写方法之间，存在动态绑定的过程，当时其他方面（比如说成员变量），是不存在动态绑定的，他们是有各自存有的区域。这点需要特别注意。</p>
-<h3 id="抽象类的一些特性"><a href="#抽象类的一些特性" class="headerlink" title="抽象类的一些特性"></a>抽象类的一些特性</h3><ul>
-<li>抽象类不能被实例化，但<strong>可以有构造函数</strong></li>
-<li>抽象方法<strong>必须由子类进行重写</strong></li>
-<li>只要包含一个抽象方法的类，就必须定义为抽象类，不管是否还包含其他方法</li>
-<li>抽象类中可以包含具体的方法，也<strong>可以不包含抽象方法</strong></li>
-<li>抽象类可以包含普通成员变量，其访问类型可以任意</li>
-<li>抽象类也可以包含静态成员变量，其访问类型可以任意</li>
-<li>子类中的抽象方法不能与父类的抽象方法同名</li>
-<li><strong>abstract不能与private、static、final或native并列修饰同一个方法</strong></li>
-</ul>
-<h2 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h2><p>接口是抽象方法的集合。如果一个类实现了某个接口，那么它就继承了这个接口的抽象方法。这就像契约模式，如果实现了这个接口，那么就必须确保使用这些方法。接口只是一种形式，接口自身不能做任何事情</p>
-<p>下面同样是用一个例子来说明</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo1Interface</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Inter i = <span class="keyword">new</span> Demo();</span><br><span class="line">        i.print();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">interface</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span>;</span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> num = <span class="number">10</span>;              <span class="comment">//接口中所有的变量都是常量</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">print11</span><span class="params">()</span></span>;                <span class="comment">//接口中所有的方法都是抽象的</span></span><br><span class="line">    <span class="comment">/*public void method() &#123;                //错误: 接口方法不能带有主体</span></span><br><span class="line"><span class="comment">        System.out.println("aaa");          //接口中所有的方法都是抽象的</span></span><br><span class="line"><span class="comment">    &#125;*/</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Demo</span> <span class="keyword">implements</span> <span class="title">Inter</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">print</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"print"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>正如上面提到的一样，接口之中的方法，所有都是抽象方法并且<strong>修饰符只能是public</strong>，因为接口本身就是提供的一种规范和约束。当你实现一个接口的时候就必须实现里面所有的方法。这里需要注意的仍然是上述的多态的弊端，再次就不再赘述了。并且不能定义变量，只能定义常量。</p>
-<h3 id="接口的多继承"><a href="#接口的多继承" class="headerlink" title="接口的多继承"></a>接口的多继承</h3><p>在Java中，类的多继承是不合法，但接口允许多继承。</p>
-<p>在接口的多继承中extends关键字只需要使用一次，在其后跟着继承接口。 如下所示：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Hockey</span> <span class="keyword">extends</span> <span class="title">Sports</span>, <span class="title">Event</span></span></span><br></pre></td></tr></table></figure>
-
-<p>以上的程序片段是合法定义的子接口，与类不同的是，接口允许多继承，而 Sports及 Event 可能定义或是继承相同的方法.</p>
-<blockquote>
-<p>注意:接口不能再实现(implements)接口.</p>
-</blockquote>
-<h3 id="接口的一些特性"><a href="#接口的一些特性" class="headerlink" title="接口的一些特性"></a>接口的一些特性</h3><ul>
-<li>接口中<strong>不能有构造方法</strong>。</li>
-<li>接口的所有方法自动被声明为public，而且只能为<code>public</code>，如果使用<code>protected</code>、<code>private</code>，会导致编译错误。</li>
-<li>接口可以定义”成员变量”，而且会自动转为<code>public final static</code>，即<strong>常量</strong>，而且必须被显式初始化。</li>
-<li>接口中的所有方法都是抽象方法，不能包含实现的方法，也不能包含静态方法</li>
-<li>实现接口的<strong>非抽象类</strong>必须实现接口的所有方法，而<strong>抽象类</strong>不需要</li>
-<li>不能使用<code>new</code>来实现化接口，但可以声明一个接口变量，它必须引用一个实现该接口的类的对象，可以使用instanceOf来判断一个类是否实现了某个接口，如<code>if (object instanceOf ClassName){doSth()}</code>;</li>
-<li>在实现多接口的时候一定要注意方法名的重复</li>
-</ul>
-<h2 id="抽象类和接口的区别"><a href="#抽象类和接口的区别" class="headerlink" title="抽象类和接口的区别"></a>抽象类和接口的区别</h2><p>有了上述的知识储备，我想我们终于可以来回答一下这二者之间的区别了。</p>
-<table>
-<thead>
-<tr>
-<th><strong>参数</strong></th>
-<th><strong>抽象类</strong></th>
-<th><strong>接口</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>默认的方法实现</td>
-<td>它可以有默认的方法实现</td>
-<td>接口完全是抽象的。它根本不存在方法的实现</td>
-</tr>
-<tr>
-<td>关键字</td>
-<td>子类使用<strong>extends</strong>关键字来继承抽象类。如果子类不是抽象类的话，它需要提供抽象类中所有声明的方法的实现。</td>
-<td>子类使用关键字<strong>implements</strong>来实现接口。它需要提供接口中所有声明的方法的实现</td>
-</tr>
-<tr>
-<td>构造器</td>
-<td>抽象类可以有构造器</td>
-<td>接口不能有构造器</td>
-</tr>
-<tr>
-<td>与正常Java类的区别</td>
-<td>除了你不能实例化抽象类之外，它和普通Java类没有任何区别</td>
-<td>接口是完全不同的类型</td>
-</tr>
-<tr>
-<td>访问修饰符</td>
-<td>抽象方法可以有<strong>public</strong>、<strong>protected</strong>和<strong>default</strong>这些修饰符</td>
-<td>接口方法默认修饰符是<strong>public</strong>。你不可以使用其它修饰符。</td>
-</tr>
-<tr>
-<td>main方法</td>
-<td>抽象方法可以有main方法并且我们可以运行它</td>
-<td>接口没有main方法，因此我们不能运行它。</td>
-</tr>
-<tr>
-<td>多继承</td>
-<td>抽象类只可以继承一个类和实现多个接口</td>
-<td>接口和接口之间是可以多继承或者单继承多实现的。</td>
-</tr>
-<tr>
-<td>速度</td>
-<td>它比接口速度要快</td>
-<td>接口是稍微有点慢的，因为它需要时间去寻找在类中实现的方法。</td>
-</tr>
-<tr>
-<td>添加新方法</td>
-<td>如果你往抽象类中添加新的方法，你可以给它提供默认的实现。因此你不需要改变你现在的代码。</td>
-<td>如果你往接口中添加方法，那么你必须改变实现该接口的类。</td>
-</tr>
-<tr>
-<td>设计理念</td>
-<td>is-a的关系，体现的是一种关系的延续</td>
-<td>like-a体现的是一种功能的扩展关系</td>
-</tr>
-</tbody></table>
-<h3 id="具体使用的场景"><a href="#具体使用的场景" class="headerlink" title="具体使用的场景"></a>具体使用的场景</h3><ul>
-<li>如果你拥有一些方法并且想让它们中的一些有默认实现，那么使用抽象类吧。</li>
-<li>如果你想实现多重继承，那么你必须使用接口。由于<strong>Java不支持多继承</strong>，子类不能够继承多个类，但可以实现多个接口。因此你就可以使用接口来解决它。</li>
-<li>如果基本功能在不断改变，那么就需要使用抽象类。如果不断改变基本功能并且使用接口，那么就需要改变所有实现了该接口的类。</li>
-<li>多用组合，少用继承。((合成/聚合)关联复用原则)</li>
-</ul>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/entry/59b0a3556fb9a0248a4023d0" target="_blank" rel="noopener">抽象类和接口的区别</a><br><a href="http://www.jianshu.com/p/2b5a9bdcd25f" target="_blank" rel="noopener">Java基础篇(一)：接口与抽象类</a><br><a href="http://www.importnew.com/12399.html" target="_blank" rel="noopener">Java抽象类与接口的区别</a><br><a href="http://yanhui.site/2017/07/19/Java学习笔记整理（9）/" target="_blank" rel="noopener">Java学习笔记整理(9)</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95/" class="post-title-link" itemprop="url">磁盘调度算法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-03 03:19:07 / 修改时间：11:20:24" itemprop="dateCreated datePublished" datetime="2020-07-03T03:19:07+08:00">2020-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">操作系统</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p> 上文介绍了磁盘的结构，本文介绍磁盘的调度算法相关的内容。<br>  <strong>本文内容</strong></p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c1a5812a72809f7f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/707/format/webp" alt="img"></p>
-<h2 id="1-一次磁盘读-写操作需要的时间"><a href="#1-一次磁盘读-写操作需要的时间" class="headerlink" title="1 一次磁盘读/写操作需要的时间"></a>1 一次磁盘读/写操作需要的时间</h2><p> <strong>寻找时间（寻道时间）</strong>Ts：在读/写数据前，需要将磁头移动到指定磁道所花费的时间。<br>  寻道时间分两步：</p>
-<blockquote>
-<p>(1) 启动磁头臂消耗的时间：s。<br> (2) 移动磁头消耗的时间：假设磁头匀速移动，每跨越一个磁道消耗时间为m，共跨越n条磁道。</p>
-</blockquote>
-<p> 则寻道时间  <strong>Ts = s + m * n。</strong></p>
-<p> 磁头移动到指定的磁道，但是不一定正好在所需要读/写的扇区，所以需要通过磁盘旋转使磁头定位到目标扇区。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c31119740df4673d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/397/format/webp" alt="img"></p>
-<p> <strong>延迟时间TR</strong>：通过旋转磁盘，使磁头定位到目标扇区所需要的时间。设磁盘转速为r（单位：转/秒，或转/分），则<strong>平均所需延迟时间TR</strong> = (1/2)*(1/r) = 1/2r。</p>
-<blockquote>
-<p>1/r就是转一圈所需的时间。找到目标扇区平均需要转半圈，因此再乘以1/2。</p>
-</blockquote>
-<p> <strong>传输时间TR</strong>：从磁盘读出或向磁盘中写入数据所经历的时间，假设磁盘转速为r，此次读/写的字节数为b，每个磁道上的字节数为N，则传输时间<strong>TR</strong> = (b/N) * (1/r) = b/(rN)。</p>
-<blockquote>
-<p>每个磁道可存N字节数据，因此b字节数据需要b/N个磁道才能存储。而读/写一个磁道所需的时间刚好是转一圈的时间1/r。</p>
-</blockquote>
-<p> 总的平均时间<strong>Ta = Ts + 1/2r + b/(rN)</strong>，由于延迟时间和传输时间都是与磁盘转速有关的，且是线性相关。而转速又是磁盘的固有属性，因此无法通过操作系统优化延迟时间和传输时间。所以只能优化寻找时间。</p>
-<h2 id="2-磁盘调度算法"><a href="#2-磁盘调度算法" class="headerlink" title="2 磁盘调度算法"></a>2 磁盘调度算法</h2><h4 id="2-1-先来先服务算法（FCFS）"><a href="#2-1-先来先服务算法（FCFS）" class="headerlink" title="2.1 先来先服务算法（FCFS）"></a>2.1 先来先服务算法（FCFS）</h4><p> 算法思想：<strong>根据进程请求访问磁盘的先后顺序进行调度。</strong><br>  假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。<br>  按照先来先服务算法规则，按照请求到达的顺序，磁头需要一次移动到55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-b03c89ed3cc6cdbd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/618/format/webp" alt="img"></p>
-<p> 磁头共移动了 45 + 3 + 19 + 21 + 72 + 70 + 10 + 112 + 146 = 498个磁道。响应一个请求平均需要移动498 / 9 = 55.3个磁道（平均寻找长度）。<br>  优点：<strong>公平；如果请求访问的磁道比较集中的话，算法性能还算可以</strong>。<br>  缺点：<strong>如果大量进程竞争使用磁盘，请求访问的磁道很分散，FCFS在性能上很差，寻道时间长</strong>。</p>
-<h4 id="2-2-最短寻找时间优先（SSTF）"><a href="#2-2-最短寻找时间优先（SSTF）" class="headerlink" title="2.2 最短寻找时间优先（SSTF）"></a>2.2 最短寻找时间优先（SSTF）</h4><p> 算法思想：<strong>优先处理的磁道是与当前磁头最近的磁道。可以保证每次寻道时间最短，但是不能保证总的寻道时间最短</strong>。（其实是贪心算法的思想，只是选择眼前最优，但是总体未必最优）。</p>
-<p> 假设磁头的初始位置是100号磁道，有多个进程先后陆续地请求访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-592a5a7f84d61fba.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/586/format/webp" alt="img"></p>
-<p> 磁头总共移动了（100 -18）+ （184 -18） = 248个磁道。响应一个请求平均需要移动248 / 9 = 27.5个磁道（平均寻找长度）。<br>  缺点：<strong>可能产生饥饿现象</strong>。<br>  本例中，如果在处理18号磁道的访问请求时又来了一个38号磁道的访问请求，处理38号磁道的访问请求又来了一个18号磁道访问请求。如果有源源不断的18号、38号磁道访问请求，那么150、160、184号磁道请求的访问就永远得不到满足，从而产生饥饿现象。这里产生饥饿的原因是<strong>磁头在一小块区域来回移动。</strong></p>
-<h4 id="2-3-扫描算法（SCAN）"><a href="#2-3-扫描算法（SCAN）" class="headerlink" title="2.3 扫描算法（SCAN）"></a>2.3 扫描算法（SCAN）</h4><p> SSTF算法会产生饥饿的原因在于：磁头有可能再一个小区域内来回得移动。为了防止这个问题，可以规定：<strong>磁头只有移动到请求最外侧磁道或最内侧磁道才可以反向移动，如果在磁头移动的方向上已经没有请求，就可以立即改变磁头移动，不必移动到最内/外侧的磁道。</strong>这就是扫描算法的思想。由于磁头移动的方式很像电梯，因此也叫<strong>电梯算法</strong>。</p>
-<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-c340b6ad722b5403.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/788/format/webp" alt="img"></p>
-<p> 磁头共移动了（184 - 100）+ （184 -18） = 250个磁道。响应一个请求平均需要移动 250 / 9 = 27.5个磁道（平均寻找长度）。</p>
-<p> 优点：<strong>性能较好，寻道时间较短，不会产生饥饿现象。</strong><br>  缺点：<strong>SCAN算法对于各个位置磁道的响应频率不平均</strong>。（假设此时磁头正在往右移动，且刚处理过90号磁道，那么下次处理90号磁道的请求就需要等待低头移动很长一段距离；而响应了184号磁道的请求之后，很快又可以再次响应184号磁道请求了。）</p>
-<h4 id="2-4-循环扫描算法（C-SCAN）"><a href="#2-4-循环扫描算法（C-SCAN）" class="headerlink" title="2.4 循环扫描算法（C-SCAN）"></a>2.4 循环扫描算法（C-SCAN）</h4><p> SCAN算法对各个位置磁道的响应频率不平均，而C-SCAN算法就是为了解决这个问题。规定只有磁头朝某个特定方向移动时才处理磁道访问请求，而<strong>返回时直接快速移动至最靠边缘的并且需要访问的磁道上而不处理任何请求。</strong><br>  通俗理解就是SCAN算在改变磁头方向时不处理磁盘访问请求而是直接移动到另一端最靠边的磁盘访问请求的磁道上。</p>
-<p> 假设某磁盘的磁道为0~200号，磁头的初始位置是100号磁道，且此时磁头正在往磁道号增大的方向移动，有多个进程先后陆续的访问55、58、39、18、90、160、150、38、184号磁道。</p>
-<p><img src="https:////upload-images.jianshu.io/upload_images/18464438-53c43dcf70a1f1fa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/793/format/webp" alt="img"></p>
-<p> 磁头共移动了（184 -100）+ （184 - 18）+（90 - 18）=322个磁道。响应一个请求平均需要移动322 / 9 = 35.8个磁道（平均寻找长度）。</p>
-<p> 优点：<strong>相比于SCAN算法，对于各个位置磁道响应频率很平均。</strong><br>  缺点：<strong>相比于SCAN算法，平均寻道时间更长。</strong></p>
-<h2 id="3-小结"><a href="#3-小结" class="headerlink" title="3 小结"></a>3 小结</h2><p><img src="https:////upload-images.jianshu.io/upload_images/18464438-51a047178ff21028.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1017/format/webp" alt="img"></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.jianshu.com/p/3c2b79af130b" target="_blank" rel="noopener">磁盘调度算法</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/%E7%BC%96%E8%AF%91%E5%8E%9F%E7%90%86%E7%AE%80%E4%BB%8B/" class="post-title-link" itemprop="url">编译原理简介</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-03 02:43:35 / 修改时间：10:52:50" itemprop="dateCreated datePublished" datetime="2020-07-03T02:43:35+08:00">2020-07-03</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/" itemprop="url" rel="index"><span itemprop="name">程序设计</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="编译器的工作步骤"><a href="#编译器的工作步骤" class="headerlink" title="编译器的工作步骤"></a>编译器的工作步骤</h2><p>在开始说任何东西之前，我们先来大致看一下编译器是怎么工作的——从代码到程序，大概要经过下面这样的步骤——这里用粗浅的语言进行解释，先有个印象即可，后面还会提到</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<ul>
-<li>词法分析：编程语言的语句，由一堆堆的单词组成——比如变量类型名、变量名、函数名、值、符号等。既然我们要让机器来分析源程序然后编译，那么就需要首先让计算机能够明白我们写的语句是什么意思，而理解语句的第一步就是理解每个词。所谓词法分析，进行的工作就是让计算机识别单词；</li>
-<li>语法分析：完成语法分析，就是识别语句的结构；</li>
-<li>语义分析：该步骤的目标，就是确定“某一条语句是什么意思”，检查一下说的有没有不合法的地方；</li>
-<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
-<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
-<li>中间代码优化：中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率；</li>
-<li>目标代码生成：中间代码经过优化，就可以生成目标代码了。比如二进制程序的机器码，或者各种 VM 用的字节码。</li>
-</ul>
-<h2 id="词法分析器-Lex-和词法分析器-Yacc："><a href="#词法分析器-Lex-和词法分析器-Yacc：" class="headerlink" title="词法分析器 Lex 和词法分析器 Yacc："></a>词法分析器 Lex 和词法分析器 Yacc：</h2><p>Lex（Lexical Analyzar） 是词法分析器， Yacc（Yet Another Compiler Compiler） 是语法分析器。</p>
-<p>虽然从名字上看，这两个东西就已经是“分析器”了，然而实际上并不是，他们是用来生成“分析器”的工具。Lex 是用来生成词法分析器的工具，Yacc 是用来生成语法分析器的工具。</p>
-<p>这两个工具可以根据我们输入的词法 / 语法规则，自动生成相应的语法分析器、词法分析器，然后这些分析器就可以帮助我们简单地完成对源代码的词法、语法分析。</p>
-<p>因这两样工具的存在，开发编译器、解释器的词语法分析器的难度被极大降低。在现代编译器、解释器的开发中，真正有难度的地方在于语义分析和后期优化。</p>
-<h4 id="Lex正规式示例："><a href="#Lex正规式示例：" class="headerlink" title="Lex正规式示例："></a>Lex正规式示例：</h4><p>在 Lex 中，我们可以使用一种被称为“正规式”的字符串，来简单地定义“某种符号应该长成什么样子”。 我们先直接体验一下。 比如下面这个实际定义 Number 和 Identifier 的例子：</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3079359573?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<h4 id="Yacc-的产生式示例："><a href="#Yacc-的产生式示例：" class="headerlink" title="Yacc 的产生式示例："></a>Yacc 的产生式示例：</h4><p>Yacc 用如下这种形式来定义“一个表达式应该长成什么样子”： <code>E : E &#39;+&#39; E | E &#39;*&#39; E | id</code> 这段代码说明，一个表达式 E 可以有三种情况组成：最简单的情况就是 id 。一个变量 x ，他自己就是一个表达式，两个表达式相加是一个表达式，两个表达式相乘还是一个表达式。</p>
-<p>对于这个产生式，如果我们写<code>x-y</code>就是不合法的——因为我们并没有定义两个表达式可以被 ‘-‘ 连接</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c355a8f32d6?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>例：对于 Yacc 而言，-x–y也是合法的。对于表达式“-2–3”，这里的减号有一元操作也有二元操作，实际计算的情况是这样的：(-2)-(-3 )</p>
-<h2 id="语言之间的翻译"><a href="#语言之间的翻译" class="headerlink" title="语言之间的翻译"></a>语言之间的翻译</h2><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c3c115a1cfa?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>高级语言之间可以实现跨语言的翻译。</p>
-<p>预编译的例子：sql、c 混合编程。 sql、c 混合编程，实际上的运行方式是先把 sql 变成 c 语言，再对由 sql 转换来的 c 和本来就是 c 的部分进行整体编译。把 sql 转成 c 的过程就叫“预编译”，Lex、Yacc 就是这样的。</p>
-<p>在 UltraGram 中，就可以把我们写的 Lex、Yacc 变成合法的 C 代码。我们就可以把这两份代码和我们自己写的 C 代码一起编译，实现开发自己的解释器/编译器。（lex yacc 就是开发解释器编译器这种东西的工具，将曾需要手工实现的词法语法分析自动化实现）。</p>
-<p>对于反汇编，编译器为了防止反汇编会在编译时加入一些无效代码。</p>
-<h2 id="编译器与解释器"><a href="#编译器与解释器" class="headerlink" title="编译器与解释器"></a>编译器与解释器</h2><h3 id="语言翻译"><a href="#语言翻译" class="headerlink" title="语言翻译"></a>语言翻译</h3><p>语言翻译分为两种，分别是先翻译后执行和边翻译边执行。二者基本功能相同。且在翻译的角度来看，两种方式涉及的原理、方法、技术都是类似的</p>
-<h4 id="先翻译后执行"><a href="#先翻译后执行" class="headerlink" title="先翻译后执行"></a>先翻译后执行</h4><p>比如 C 这种需要编译的语言。特点是效率高、省空间。但交互性、动态性差，可移植性也差。。多数语言都是这种。</p>
-<p>![img](data:image/svg+xml;utf8,<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="1277" height="458"></svg>)</p>
-<h4 id="边翻译边执行"><a href="#边翻译边执行" class="headerlink" title="边翻译边执行"></a>边翻译边执行</h4><p>比如 py、js、java 这种使用解释器工作的语言。跟上面的基本相反。</p>
-<p>生成字节码然后运行。从高级语言到字节码实际上是翻译，在运行时再从字节码转化成机器码执行。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c42f98beb0b?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<h2 id="编译器的工作原理和基本组成"><a href="#编译器的工作原理和基本组成" class="headerlink" title="编译器的工作原理和基本组成"></a>编译器的工作原理和基本组成</h2><h3 id="通用程序设计语言的主要成分"><a href="#通用程序设计语言的主要成分" class="headerlink" title="通用程序设计语言的主要成分"></a>通用程序设计语言的主要成分</h3><p>语言都由声明、操作两大部分组成，声明+操作=语言的完整定义。</p>
-<h4 id="例：过程式语言："><a href="#例：过程式语言：" class="headerlink" title="例：过程式语言："></a>例：过程式语言：</h4><p>过程式语言有<strong>两种语句</strong>：声明性语句和操作性语句。前者提供操作对象的性质（比如数据类型、数据值、对象的作用域）。后者则描述各个操作（比如赋值）的次序，进行实际操作。</p>
-<p>编译器对上述两种语句使用不同的方式进行处理。对于声明性的，就是给被声明的对象<strong>分配一块空间</strong>（称为“环境”）。操作则是<strong>生成针对环境的可执行代码序列</strong>，比如从某个被声明的空间中取值，进行某些运算后将结果放到某个空间中。</p>
-<p>因此，“先声明后引用”的规则，能够方便编译器对语言进行处理，也能提升执行效率。</p>
-<p>例如，一些语言支持如下操作：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">i&#x3D;10;           &#x2F;&#x2F; 在没有对 i 进行声明的情况下直接赋整数值</span><br><span class="line">i&#x3D;&quot;abcdefg&quot;;    &#x2F;&#x2F; 直接重新赋字符串值</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
-
-<p>虽然看起来是两行代码，但是在实际执行中，执行过程是：为整型分配空间-&gt;写入整数值10-&gt;重新分配空间-&gt;写入字符串值。将导致效率的降低。</p>
-<h3 id="以阶段划分编译器"><a href="#以阶段划分编译器" class="headerlink" title="以阶段划分编译器"></a>以阶段划分编译器</h3><p>编译器的工作过程可以大致划分为四步：词法分析、语法分析、语义分析、目标代码生成。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c287c434e7f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>其中，中间代码生成及其之前的步骤，编译器和解释器可以是一致的。</p>
-<ul>
-<li>词法分析：相当于识别每个词代表什么。进行的工作就是识别单词。单词至少分为：关键字、标识符、字面量、特殊符号；</li>
-<li>语法分析：识别语句的结构。通常以树的形式表示；</li>
-<li>语义分析：前两者正确的情况下，语义未必正确。确保“什么语句是什么意思”——检查结构正确的句子是否语义合法，也可以修改语法树的结构；</li>
-<li>符号表管理：相当于字典。符号表用于各个阶段查找、填写；</li>
-<li>出错处理：在出现错误时的处理。种类可分词法错误、语法错误、静态/动态语义错误；</li>
-<li>中间代码（可选）可以为优化提供支持。中间代码接近于目标语言，却又与具体硬件对应的机器指令无关，便于优化和代码生成。中间代码优化是对指令进行等价变化，提高运行效率。</li>
-</ul>
-<h4 id="例：编译器各阶段工作："><a href="#例：编译器各阶段工作：" class="headerlink" title="例：编译器各阶段工作："></a>例：编译器各阶段工作：</h4><p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c518b98ba42?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<ul>
-<li><p>词法分析：将源程序转化为记号流（记号流是线性结构的），源代码中的变量名在记号流中被替换为id1、id2这样的标识符。若我们只写一个 <code>real x</code>，在词法分析执行完后仍然是正确的——词法分析只看代码中的单词是否符合规则，而不关心结构。但在语法分析中就过不了了；</p>
-</li>
-<li><p>语法分析：该步骤，我们将记号流分析为两个语法树。因为句子是有层次关系的，树又可以用于描述层次关系，因此我们使用语法树来描述句子的语法结构。右下角语法树的意思是：对 id3 和 60 使用 * 进行运算，再将结果和 id2 使用 + 进行操作…… 最后赋值给 id1；</p>
-</li>
-<li><p>语义分析：对语法分析生成的两个语法树进行分析。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c4d53a02901?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<p>语义分析这一步，要看语法结构正确的语法树的含义是否正确——这一步也可以做些附加的操作，比如这里对60的转换，这就是编译器为了简化语言而自动进行的附加工作——对类型进行了自动转换。另又如C语言中，我们可以写 </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1+2.0</span><br></pre></td></tr></table></figure>
-
-<p> 这样的式子，与此同理，也是编译器自动在语义分析时进行了类型转换。</p>
-</li>
-</ul>
-<ul>
-<li><p>中间代码优化：将4条语句转为了两条；</p>
-</li>
-<li><p>目标代码生成，解决汇编、可重定位、内存形式（Load-and-Go）问题</p>
-</li>
-</ul>
-<h3 id="编译器的分析-综合模式"><a href="#编译器的分析-综合模式" class="headerlink" title="编译器的分析/综合模式"></a>编译器的分析/综合模式</h3><p>编译器可分为前后端，前端进行语言结构和意义的分析，后端进行语言意义的处理。</p>
-<p>中间代码是前后端的分界。编译器的基础架构就分为前端、源代码的中间表示和后端。</p>
-<p><img src="https://user-gold-cdn.xitu.io/2020/5/24/17245c599e972afb?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="img"></p>
-<h3 id="编译器扫描遍数"><a href="#编译器扫描遍数" class="headerlink" title="编译器扫描遍数"></a>编译器扫描遍数</h3><p>在编译原理中有个术语，叫做“扫描”，“一遍扫描”是指：在编译的每个阶段中，编译程序将程序代码完整分析一遍的工作模式。</p>
-<p>比如：</p>
-<ol>
-<li>词法分析阶段，把整个程序转化为记号流，这叫一遍；</li>
-<li>词法分析，对记号流（记号流本身就是一种程序的变体）分析得到语法树，这又叫一遍；</li>
-<li>语义分析，对语法树（语法树是记号流的变体，也就是程序的变体）进行修改，分析得到中间代码，这又叫一遍；</li>
-</ol>
-<p>扫描遍数的影响因素：</p>
-<ol>
-<li><p>软硬件条件：如内存太小或者要做全局优化。想要做比较好的优化就需要全面了解程序，扫描的遍数就要增加；</p>
-</li>
-<li><p>语言结构：如果先声明后引用，就只需要扫描一遍；但如果先引用后声明，处理起来就比较复杂，需要多扫描一遍；</p>
-</li>
-<li><p>编译技术，比如拉链-回填</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">goto lab1;</span><br><span class="line">...</span><br><span class="line">goto lab2;</span><br><span class="line">...</span><br><span class="line">lab1:...</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
-
-<p>拉链-回填实际上也是先引用后声明，但只需要扫描一遍——当第一次读到引用时，先把后面的目标位置填个问号，读到多次也都填上问号——因为引用了相同的东西，所以这个问号可以“拉成一条链”。当我们确定了lab1的具体标号位置时，就回头把那一串的内容都填上。这并不是第二次扫描，叫做“拉链-回填”</p>
-</li>
-</ol>
-<h3 id="编译器的编写"><a href="#编译器的编写" class="headerlink" title="编译器的编写"></a>编译器的编写</h3><ol>
-<li>直接用语言写；</li>
-<li>使用编译器编写工具：包括语法/词法分析工具、语法制导翻译、代码生成、数据流分析等；</li>
-<li>基于编译器基础架构的编译器构造系统。也就是开放式编译器，比如LLVM、GCC、SUIF等。这样开发，就是自己用工具搞定词法分析、语法分析，再用这玩意做后端，就能开发出来自己的编译器了</li>
-</ol>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5eca2d53f265da76e97d31ba" target="_blank" rel="noopener">编译原理笔记1：概述编译相关的基本知识</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/02/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86%E5%8F%8A%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/02/MySQL%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86%E5%8F%8A%E6%85%A2%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96/" class="post-title-link" itemprop="url">MySQL索引原理及慢查询优化-转载</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-07-02 09:27:33 / 修改时间：18:50:46" itemprop="dateCreated datePublished" datetime="2020-07-02T09:27:33+08:00">2020-07-02</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>16k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>14 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>MySQL凭借着出色的性能、低廉的成本、丰富的资源，已经成为绝大多数互联网公司的首选关系型数据库。虽然性能出色，但所谓“好马配好鞍”，如何能够更好的使用它，已经成为开发工程师的必修课，我们经常会从职位描述上看到诸如“精通MySQL”、“SQL语句优化”、“了解数据库原理”等要求。我们知道一般的应用系统，读写比例在10:1左右，而且插入操作和一般的更新操作很少出现性能问题，遇到最多的，也是最容易出问题的，还是一些复杂的查询操作，所以查询语句的优化显然是重中之重。</p>
-<p>本人从2013年7月份起，一直在美团核心业务系统部做慢查询的优化工作，共计十余个系统，累计解决和积累了上百个慢查询案例。随着业务的复杂性提升，遇到的问题千奇百怪，五花八门，匪夷所思。本文旨在以开发工程师的角度来解释数据库索引的原理和如何优化慢查询。</p>
-<h2 id="一个慢查询引发的思考"><a href="#一个慢查询引发的思考" class="headerlink" title="一个慢查询引发的思考"></a>一个慢查询引发的思考</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   <span class="keyword">count</span>(*) </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   task </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   <span class="keyword">status</span>=<span class="number">2</span> </span><br><span class="line">   <span class="keyword">and</span> operator_id=<span class="number">20839</span> </span><br><span class="line">   <span class="keyword">and</span> operate_time&gt;<span class="number">1371169729</span> </span><br><span class="line">   <span class="keyword">and</span> operate_time&lt;<span class="number">1371174603</span> </span><br><span class="line">   <span class="keyword">and</span> <span class="keyword">type</span>=<span class="number">2</span>;</span><br></pre></td></tr></table></figure>
-
-<p>系统使用者反应有一个功能越来越慢，于是工程师找到了上面的SQL。</p>
-<p>并且兴致冲冲的找到了我，“这个SQL需要优化，给我把每个字段都加上索引”。</p>
-<p>我很惊讶，问道：“为什么需要每个字段都加上索引？”</p>
-<p>“把查询的字段都加上索引会更快”，工程师信心满满。</p>
-<p>“这种情况完全可以建一个联合索引，因为是最左前缀匹配，所以operate_time需要放到最后，而且还需要把其他相关的查询都拿来，需要做一个综合评估。”</p>
-<p>“联合索引？最左前缀匹配？综合评估？”工程师不禁陷入了沉思。</p>
-<p>多数情况下，我们知道索引能够提高查询效率，但应该如何建立索引？索引的顺序如何？许多人却只知道大概。其实理解这些概念并不难，而且索引的原理远没有想象的那么复杂。</p>
-<h2 id="MySQL索引原理"><a href="#MySQL索引原理" class="headerlink" title="MySQL索引原理"></a>MySQL索引原理</h2><h3 id="索引目的"><a href="#索引目的" class="headerlink" title="索引目的"></a>索引目的</h3><p>索引的目的在于提高查询效率，可以类比字典，如果要查“mysql”这个单词，我们肯定需要定位到m字母，然后从下往下找到y字母，再找到剩下的sql。如果没有索引，那么你可能需要把所有单词看一遍才能找到你想要的，如果我想找到m开头的单词呢？或者ze开头的单词呢？是不是觉得如果没有索引，这个事情根本无法完成？</p>
-<h3 id="索引原理"><a href="#索引原理" class="headerlink" title="索引原理"></a>索引原理</h3><p>除了词典，生活中随处可见索引的例子，如火车站的车次表、图书的目录等。它们的原理都是一样的，通过不断的缩小想要获得数据的范围来筛选出最终想要的结果，同时把随机的事件变成顺序的事件，也就是我们总是通过同一种查找方式来锁定数据。</p>
-<p>数据库也是一样，但显然要复杂许多，因为不仅面临着等值查询，还有范围查询(&gt;、&lt;、between、in)、模糊查询(like)、并集查询(or)等等。数据库应该选择怎么样的方式来应对所有的问题呢？我们回想字典的例子，能不能把数据分成段，然后分段查询呢？最简单的如果1000条数据，1到100分成第一段，101到200分成第二段，201到300分成第三段……这样查第250条数据，只要找第三段就可以了，一下子去除了90%的无效数据。但如果是1千万的记录呢，分成几段比较好？稍有算法基础的同学会想到搜索树，其平均复杂度是lgN，具有不错的查询性能。但这里我们忽略了一个关键的问题，复杂度模型是基于每次相同的操作成本来考虑的，数据库实现比较复杂，数据保存在磁盘上，而为了提高性能，每次又可以把部分数据读入内存来计算，因为我们知道访问磁盘的成本大概是访问内存的十万倍左右，所以简单的搜索树难以满足复杂的应用场景。</p>
-<h4 id="磁盘IO与预读"><a href="#磁盘IO与预读" class="headerlink" title="磁盘IO与预读"></a>磁盘IO与预读</h4><p>前面提到了访问磁盘，那么这里先简单介绍一下磁盘IO和预读，磁盘读取数据靠的是机械运动，每次读取数据花费的时间可以分为寻道时间、旋转延迟、传输时间三个部分，寻道时间指的是磁臂移动到指定磁道所需要的时间，主流磁盘一般在5ms以下；旋转延迟就是我们经常听说的磁盘转速，比如一个磁盘7200转，表示每分钟能转7200次，也就是说1秒钟能转120次，旋转延迟就是1/120/2 = 4.17ms；传输时间指的是从磁盘读出或将数据写入磁盘的时间，一般在零点几毫秒，相对于前两个时间可以忽略不计。那么访问一次磁盘的时间，即一次磁盘IO的时间约等于5+4.17 = 9ms左右，听起来还挺不错的，但要知道一台500 -MIPS的机器每秒可以执行5亿条指令，因为指令依靠的是电的性质，换句话说执行一次IO的时间可以执行40万条指令，数据库动辄十万百万乃至千万级数据，每次9毫秒的时间，显然是个灾难。下图是计算机硬件延迟的对比图，供大家参考：</p>
-<p><img src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2014/7f46a0a4.png" alt="various-system-software-hardware-latencies"></p>
-<p>various-system-software-hardware-latencies</p>
-<p>考虑到磁盘IO是非常高昂的操作，计算机操作系统做了一些优化，当一次IO时，不光把当前磁盘地址的数据，而是把相邻的数据也都读取到内存缓冲区内，因为局部预读性原理告诉我们，当计算机访问一个地址的数据的时候，与其相邻的数据也会很快被访问到。每一次IO读取的数据我们称之为一页(page)。具体一页有多大数据跟操作系统有关，一般为4k或8k，也就是我们读取一页内的数据时候，实际上才发生了一次IO，这个理论对于索引的数据结构设计非常有帮助。</p>
-<h4 id="索引的数据结构"><a href="#索引的数据结构" class="headerlink" title="索引的数据结构"></a>索引的数据结构</h4><p>前面讲了生活中索引的例子，索引的基本原理，数据库的复杂性，又讲了操作系统的相关知识，目的就是让大家了解，任何一种数据结构都不是凭空产生的，一定会有它的背景和使用场景，我们现在总结一下，我们需要这种数据结构能够做些什么，其实很简单，那就是：每次查找数据时把磁盘IO次数控制在一个很小的数量级，最好是常数数量级。那么我们就想到如果一个高度可控的多路搜索树是否能满足需求呢？就这样，b+树应运而生。</p>
-<h4 id="详解b-树"><a href="#详解b-树" class="headerlink" title="详解b+树"></a>详解b+树</h4><p><img src="https://awps-assets.meituan.net/mit-x/blog-images-bundle-2014/7af22798.jpg" alt="b+树"></p>
-<p>b+树</p>
-<p>如上图，是一颗b+树，关于b+树的定义可以参见<a href="http://zh.wikipedia.org/wiki/B%2B树" target="_blank" rel="noopener">B+树</a>(百度百科定义的B+树索引节点关键字数等于子树个数)，这里只说一些重点，浅蓝色的块我们称之为一个磁盘块，可以看到每个磁盘块包含几个数据项（深蓝色所示）和指针（黄色所示），如磁盘块1包含数据项17和35，包含指针P1、P2、P3，P1表示小于17的磁盘块，P2表示在17和35之间的磁盘块，P3表示大于35的磁盘块。真实的数据存在于叶子节点即3、5、9、10、13、15、28、29、36、60、75、79、90、99。非叶子节点只不存储真实的数据，只存储指引搜索方向的数据项，如17、35并不真实存在于数据表中。</p>
-<h4 id="b-树的查找过程"><a href="#b-树的查找过程" class="headerlink" title="b+树的查找过程"></a>b+树的查找过程</h4><p>如图所示，如果要查找数据项29，那么首先会把磁盘块1由磁盘加载到内存，此时发生一次IO，在内存中用二分查找确定29在17和35之间，锁定磁盘块1的P2指针，内存时间因为非常短（相比磁盘的IO）可以忽略不计，通过磁盘块1的P2指针的磁盘地址把磁盘块3由磁盘加载到内存，发生第二次IO，29在26和30之间，锁定磁盘块3的P2指针，通过指针加载磁盘块8到内存，发生第三次IO，同时内存中做二分查找找到29，结束查询，总计三次IO。真实的情况是，3层的b+树可以表示上百万的数据，如果上百万的数据查找只需要三次IO，性能提高将是巨大的，如果没有索引，每个数据项都要发生一次IO，那么总共需要百万次的IO(更严谨的话:百万*数据项长度/4K)，显然成本非常非常高。</p>
-<h4 id="b-树性质"><a href="#b-树性质" class="headerlink" title="b+树性质"></a>b+树性质</h4><p>1.通过上面的分析，我们知道IO次数取决于b+数的高度h，假设当前数据表的数据为N，每个磁盘块的数据项的数量是m，则有h=㏒(m+1)N，当数据量N一定的情况下，m越大，h越小；而m = 磁盘块的大小 / 数据项的大小，磁盘块的大小也就是一个数据页的大小，是固定的，如果数据项占的空间越小，数据项的数量越多，树的高度越低。这就是为什么每个数据项，即索引字段要尽量的小，比如int占4字节，要比bigint8字节少一半。这也是为什么b+树要求把真实的数据放到叶子节点而不是内层节点，一旦放到内层节点，磁盘块的数据项会大幅度下降，导致树增高。当数据项等于1时将会退化成线性表。</p>
-<p>2.当b+树的数据项是复合的数据结构，比如(name,age,sex)的时候，b+数是按照从左到右的顺序来建立搜索树的，比如当(张三,20,F)这样的数据来检索的时候，b+树会优先比较name来确定下一步的所搜方向，如果name相同再依次比较age和sex，最后得到检索的数据；但当(20,F)这样的没有name的数据来的时候，b+树就不知道下一步该查哪个节点，因为建立搜索树的时候name就是第一个比较因子，必须要先根据name来搜索才能知道下一步去哪里查询。比如当(张三,F)这样的数据来检索时，b+树可以用name来指定搜索方向，但下一个字段age的缺失，所以只能把名字等于张三的数据都找到，然后再匹配性别是F的数据了， 这个是非常重要的性质，即索引的<strong>最左匹配</strong>特性。</p>
-<h2 id="慢查询优化"><a href="#慢查询优化" class="headerlink" title="慢查询优化"></a>慢查询优化</h2><p>关于MySQL索引原理是比较枯燥的东西，大家只需要有一个感性的认识，并不需要理解得非常透彻和深入。我们回头来看看一开始我们说的慢查询，了解完索引原理之后，大家是不是有什么想法呢？先总结一下索引的几大基本原则：</p>
-<h3 id="建索引的几大原则"><a href="#建索引的几大原则" class="headerlink" title="建索引的几大原则"></a>建索引的几大原则</h3><p>1<strong>.最左前缀匹配原则</strong>，非常重要的原则，mysql会一直向右匹配<strong>直到遇到范围查询(&gt;、&lt;、between、like)就停止匹配</strong>，比如a = 1 and b = 2 and c &gt; 3 and d = 4 如果建立(a,b,c,d)顺序的索引，d是用不到索引的，如果建立(a,b,d,c)的索引则都可以用到，a,b,d的顺序可以任意调整。</p>
-<p>2.<strong>=和in可以乱序</strong>，比如a = 1 and b = 2 and c = 3 建立(a,b,c)索引可以任意顺序，mysql的查询优化器会帮你优化成索引可以识别的形式。</p>
-<p>3.尽量<strong>选择区分度高的列</strong>作为索引，区分度的公式是count(distinct col)/count(*)，表示字段不重复的比例，比例越大我们扫描的记录数越少，唯一键的区分度是1，而一些状态、性别字段可能在大数据面前区分度就是0，那可能有人会问，这个比例有什么经验值吗？使用场景不同，这个值也很难确定，一般需要join的字段我们都要求是0.1以上，即平均1条扫描10条记录。</p>
-<p>4.<strong>索引列不能参与计算</strong>，保持列“干净”，比如from_unixtime(create_time) = ’2014-05-29’就不能使用到索引，原因很简单，b+树中存的都是数据表中的字段值，但进行检索时，需要把所有元素都应用函数才能比较，显然成本太大。所以语句应该写成create_time = unix_timestamp(’2014-05-29’)。</p>
-<p>5.<strong>尽量的扩展索引，不要新建索引</strong>。比如表中已经有a的索引，现在要加(a,b)的索引，那么只需要修改原来的索引即可。</p>
-<h3 id="回到开始的慢查询"><a href="#回到开始的慢查询" class="headerlink" title="回到开始的慢查询"></a>回到开始的慢查询</h3><p>根据最左匹配原则，最开始的sql语句的索引应该是status、operator_id、type、operate_time的联合索引；其中status、operator_id、type的顺序可以颠倒，所以我才会说，把这个表的所有相关查询都找到，会综合分析；比如还有如下查询：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> task <span class="keyword">where</span> <span class="keyword">status</span> = <span class="number">0</span> <span class="keyword">and</span> <span class="keyword">type</span> = <span class="number">12</span> <span class="keyword">limit</span> <span class="number">10</span>;</span><br><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*) <span class="keyword">from</span> task <span class="keyword">where</span> <span class="keyword">status</span> = <span class="number">0</span> ;</span><br></pre></td></tr></table></figure>
-
-<p>那么索引建立成(status,type,operator_id,operate_time)就是非常正确的，因为可以覆盖到所有情况。这个就是利用了索引的最左匹配的原则</p>
-<h3 id="查询优化神器-explain命令"><a href="#查询优化神器-explain命令" class="headerlink" title="查询优化神器 - explain命令"></a>查询优化神器 - explain命令</h3><p>关于explain命令相信大家并不陌生，具体用法和字段含义可以参考官网<a href="http://dev.mysql.com/doc/refman/5.5/en/explain-output.html" target="_blank" rel="noopener">explain-output</a>，这里需要强调rows是核心指标，绝大部分rows小的语句执行一定很快（有例外，下面会讲到）。所以优化语句基本上都是在优化rows。</p>
-<h3 id="慢查询优化基本步骤"><a href="#慢查询优化基本步骤" class="headerlink" title="慢查询优化基本步骤"></a>慢查询优化基本步骤</h3><p>0.先运行看看是否真的很慢，注意设置SQL_NO_CACHE</p>
-<p>1.where条件单表查，锁定最小返回记录表。这句话的意思是把查询语句的where都应用到表中返回的记录数最小的表开始查起，单表每个字段分别查询，看哪个字段的区分度最高</p>
-<p>2.explain查看执行计划，是否与1预期一致（从锁定记录较少的表开始查询）</p>
-<p>3.order by limit 形式的sql语句让排序的表优先查</p>
-<p>4.了解业务方使用场景</p>
-<p>5.加索引时参照建索引的几大原则</p>
-<p>6.观察结果，不符合预期继续从0分析</p>
-<h3 id="几个慢查询案例"><a href="#几个慢查询案例" class="headerlink" title="几个慢查询案例"></a>几个慢查询案例</h3><p>下面几个例子详细解释了如何分析和优化慢查询。</p>
-<h4 id="复杂语句写法"><a href="#复杂语句写法" class="headerlink" title="复杂语句写法"></a>复杂语句写法</h4><p>很多情况下，我们写SQL只是为了实现功能，这只是第一步，不同的语句书写方式对于效率往往有本质的差别，这要求我们对mysql的执行计划和索引原则有非常清楚的认识，请看下面的语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   <span class="keyword">distinct</span> cert.emp_id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   (</span><br><span class="line">      <span class="keyword">select</span></span><br><span class="line">         emp.id <span class="keyword">as</span> emp_id,</span><br><span class="line">         emp_cert.id <span class="keyword">as</span> cert_id </span><br><span class="line">      <span class="keyword">from</span></span><br><span class="line">         employee emp </span><br><span class="line">      <span class="keyword">left</span> <span class="keyword">join</span></span><br><span class="line">         emp_certificate emp_cert </span><br><span class="line">            <span class="keyword">on</span> emp.id = emp_cert.emp_id </span><br><span class="line">      <span class="keyword">where</span></span><br><span class="line">         emp.is_deleted=<span class="number">0</span></span><br><span class="line">   ) cert </span><br><span class="line">      <span class="keyword">on</span> (</span><br><span class="line">         cl.ref_table=<span class="string">'Employee'</span> </span><br><span class="line">         <span class="keyword">and</span> cl.ref_oid= cert.emp_id</span><br><span class="line">      ) </span><br><span class="line">      <span class="keyword">or</span> (</span><br><span class="line">         cl.ref_table=<span class="string">'EmpCertificate'</span> </span><br><span class="line">         <span class="keyword">and</span> cl.ref_oid= cert.cert_id</span><br><span class="line">      ) </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span>;</span><br></pre></td></tr></table></figure>
-
-<p>0.先运行一下，53条记录 1.87秒，又没有用聚合语句，比较慢</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">53 rows in <span class="keyword">set</span> (<span class="number">1.87</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>1.explain</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br><span class="line">| id | select_type | table      | type  | possible_keys                   | key                   | key_len | ref               | rows  | Extra                          |</span><br><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br><span class="line">|  1 | PRIMARY     | cl         | range | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date     | 8       | NULL              |   379 | Using where; Using temporary   |</span><br><span class="line">|  1 | PRIMARY     | &lt;derived2&gt; | ALL   | NULL                            | NULL                  | NULL    | NULL              | 63727 | Using where; Using join buffer |</span><br><span class="line">|  2 | DERIVED     | emp        | ALL   | NULL                            | NULL                  | NULL    | NULL              | 13317 | Using where                    |</span><br><span class="line">|  2 | DERIVED     | emp_cert   | ref   | emp_certificate_empid           | emp_certificate_empid | 4       | meituanorg.emp.id |     1 | Using index                    |</span><br><span class="line">+<span class="comment">----+-------------+------------+-------+---------------------------------+-----------------------+---------+-------------------+-------+--------------------------------+</span></span><br></pre></td></tr></table></figure>
-
-<p>简述一下执行计划，首先mysql根据idx_last_upd_date索引扫描cm_log表获得379条记录；然后查表扫描了63727条记录，分为两部分，derived表示构造表，也就是不存在的表，可以简单理解成是一个语句形成的结果集，后面的数字表示语句的ID。derived2表示的是ID = 2的查询构造了虚拟表，并且返回了63727条记录。我们再来看看ID = 2的语句究竟做了写什么返回了这么大量的数据，首先全表扫描employee表13317条记录，然后根据索引emp_certificate_empid关联emp_certificate表，rows = 1表示，每个关联都只锁定了一条记录，效率比较高。获得后，再和cm_log的379条记录根据规则关联。从执行过程上可以看出返回了太多的数据，返回的数据绝大部分cm_log都用不到，因为cm_log只锁定了379条记录。</p>
-<p>如何优化呢？可以看到我们在运行完后还是要和cm_log做join,那么我们能不能之前和cm_log做join呢？仔细分析语句不难发现，其基本思想是如果cm_log的ref_table是EmpCertificate就关联emp_certificate表，如果ref_table是Employee就关联employee表，我们完全可以拆成两部分，并用union连接起来，注意这里用union，而不用union all是因为原语句有“distinct”来得到唯一的记录，而union恰好具备了这种功能。如果原语句中没有distinct不需要去重，我们就可以直接使用union all了，因为使用union需要去重的动作，会影响SQL性能。</p>
-<p>优化过的语句如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   emp.id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   employee emp </span><br><span class="line">      <span class="keyword">on</span> cl.ref_table = <span class="string">'Employee'</span> </span><br><span class="line">      <span class="keyword">and</span> cl.ref_oid = emp.id  </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span> </span><br><span class="line">   <span class="keyword">and</span> emp.is_deleted = <span class="number">0</span>  </span><br><span class="line"><span class="keyword">union</span></span><br><span class="line"><span class="keyword">select</span></span><br><span class="line">   emp.id </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   cm_log cl </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   emp_certificate ec </span><br><span class="line">      <span class="keyword">on</span> cl.ref_table = <span class="string">'EmpCertificate'</span> </span><br><span class="line">      <span class="keyword">and</span> cl.ref_oid = ec.id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   employee emp </span><br><span class="line">      <span class="keyword">on</span> emp.id = ec.emp_id  </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   cl.last_upd_date &gt;=<span class="string">'2013-11-07 15:03:00'</span> </span><br><span class="line">   <span class="keyword">and</span> cl.last_upd_date&lt;=<span class="string">'2013-11-08 16:00:00'</span> </span><br><span class="line">   <span class="keyword">and</span> emp.is_deleted = <span class="number">0</span></span><br></pre></td></tr></table></figure>
-
-<p>4.不需要了解业务场景，只需要改造的语句和改造之前的语句保持结果一致</p>
-<p>5.现有索引可以满足，不需要建索引</p>
-<p>6.用改造后的语句实验一下，只需要10ms 降低了近200倍！</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">| id | select_type  | table      | type   | possible_keys                   | key               | key_len | ref                   | rows | Extra       |</span><br><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">|  1 | PRIMARY      | cl         | range  | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date | 8       | NULL                  |  379 | Using where |</span><br><span class="line">|  1 | PRIMARY      | emp        | eq_ref | PRIMARY                         | PRIMARY           | 4       | meituanorg.cl.ref_oid |    1 | Using where |</span><br><span class="line">|  2 | UNION        | cl         | range  | cm_log_cls_id,idx_last_upd_date | idx_last_upd_date | 8       | NULL                  |  379 | Using where |</span><br><span class="line">|  2 | UNION        | ec         | eq_ref | PRIMARY,emp_certificate_empid   | PRIMARY           | 4       | meituanorg.cl.ref_oid |    1 |             |</span><br><span class="line">|  2 | UNION        | emp        | eq_ref | PRIMARY                         | PRIMARY           | 4       | meituanorg.ec.emp_id  |    1 | Using where |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | ALL    | NULL                            | NULL              | NULL    | NULL                  | NULL |             |</span><br><span class="line">+<span class="comment">----+--------------+------------+--------+---------------------------------+-------------------+---------+-----------------------+------+-------------+</span></span><br><span class="line">53 rows in <span class="keyword">set</span> (<span class="number">0.01</span> sec)</span><br></pre></td></tr></table></figure>
-
-<h4 id="明确应用场景"><a href="#明确应用场景" class="headerlink" title="明确应用场景"></a>明确应用场景</h4><p>举这个例子的目的在于颠覆我们对列的区分度的认知，一般上我们认为区分度越高的列，越容易锁定更少的记录，但在一些特殊的情况下，这种理论是有局限性的。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   * </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   stage_poi sp </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   sp.accurate_result=<span class="number">1</span> </span><br><span class="line">   <span class="keyword">and</span> (</span><br><span class="line">      sp.sync_status=<span class="number">0</span> </span><br><span class="line">      <span class="keyword">or</span> sp.sync_status=<span class="number">2</span> </span><br><span class="line">      <span class="keyword">or</span> sp.sync_status=<span class="number">4</span></span><br><span class="line">   );</span><br></pre></td></tr></table></figure>
-
-<p>0.先看看运行多长时间,951条数据6.22秒，真的很慢。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">951 rows in <span class="keyword">set</span> (<span class="number">6.22</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>1.先explain，rows达到了361万，type = ALL表明是全表扫描。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br><span class="line">| id | select_type | table | type | possible_keys | key  | key_len | ref  | rows    | Extra       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br><span class="line">|  1 | SIMPLE      | sp    | ALL  | NULL          | NULL | NULL    | NULL | 3613155 | Using where |</span><br><span class="line">+<span class="comment">----+-------------+-------+------+---------------+------+---------+------+---------+-------------+</span></span><br></pre></td></tr></table></figure>
-
-<p>2.所有字段都应用查询返回记录数，因为是单表查询 0已经做过了951条。</p>
-<p>3.让explain的rows 尽量逼近951。</p>
-<p>看一下accurate_result = 1的记录数：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*),accurate_result <span class="keyword">from</span> stage_poi  <span class="keyword">group</span> <span class="keyword">by</span> accurate_result;</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br><span class="line">| count(*) | accurate_result |</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br><span class="line">|     1023 |              -1 |</span><br><span class="line">|  2114655 |               0 |</span><br><span class="line">|   972815 |               1 |</span><br><span class="line">+<span class="comment">----------+-----------------+</span></span><br></pre></td></tr></table></figure>
-
-<p>我们看到accurate_result这个字段的区分度非常低，整个表只有-1,0,1三个值，加上索引也无法锁定特别少量的数据。</p>
-<p>再看一下sync_status字段的情况：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*),sync_status <span class="keyword">from</span> stage_poi  <span class="keyword">group</span> <span class="keyword">by</span> sync_status;</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br><span class="line">| count(*) | sync_status |</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br><span class="line">|     3080 |           0 |</span><br><span class="line">|  3085413 |           3 |</span><br><span class="line">+<span class="comment">----------+-------------+</span></span><br></pre></td></tr></table></figure>
-
-<p>同样的区分度也很低，根据理论，也不适合建立索引。</p>
-<p>问题分析到这，好像得出了这个表无法优化的结论，两个列的区分度都很低，即便加上索引也只能适应这种情况，很难做普遍性的优化，比如当sync_status 0、3分布的很平均，那么锁定记录也是百万级别的。</p>
-<p>4.找业务方去沟通，看看使用场景。业务方是这么来使用这个SQL语句的，每隔五分钟会扫描符合条件的数据，处理完成后把sync_status这个字段变成1,五分钟符合条件的记录数并不会太多，1000个左右。了解了业务方的使用场景后，优化这个SQL就变得简单了，因为业务方保证了数据的不平衡，如果加上索引可以过滤掉绝大部分不需要的数据。</p>
-<p>5.根据建立索引规则，使用如下语句建立索引</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> stage_poi <span class="keyword">add</span> <span class="keyword">index</span> idx_acc_status(accurate_result,sync_status);</span><br></pre></td></tr></table></figure>
-
-<p>6.观察预期结果,发现只需要200ms，快了30多倍。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">952 rows in <span class="keyword">set</span> (<span class="number">0.20</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>我们再来回顾一下分析问题的过程，单表查询相对来说比较好优化，大部分时候只需要把where条件里面的字段依照规则加上索引就好，如果只是这种“无脑”优化的话，显然一些区分度非常低的列，不应该加索引的列也会被加上索引，这样会对插入、更新性能造成严重的影响，同时也有可能影响其它的查询语句。所以我们第4步调差SQL的使用场景非常关键，我们只有知道这个业务场景，才能更好地辅助我们更好的分析和优化查询语句。</p>
-<h4 id="无法优化的语句"><a href="#无法优化的语句" class="headerlink" title="无法优化的语句"></a>无法优化的语句</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) <span class="keyword">as</span> created_time,</span><br><span class="line">   from_unixtime(c.last_modified) <span class="keyword">as</span> last_modified,</span><br><span class="line">   c.last_modified_user_id  </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   contact_branch cb </span><br><span class="line">      <span class="keyword">on</span>  c.id = cb.contact_id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   branch_user bu </span><br><span class="line">      <span class="keyword">on</span>  cb.branch_id = bu.branch_id </span><br><span class="line">      <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">         <span class="number">1</span>,</span><br><span class="line">      <span class="number">2</span>)  </span><br><span class="line">   <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">      org_emp_info oei </span><br><span class="line">         <span class="keyword">on</span>  oei.data_id = bu.user_id </span><br><span class="line">         <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span> </span><br><span class="line">         <span class="keyword">and</span> oei.node_right &lt;= <span class="number">10802</span> </span><br><span class="line">         <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>  </span><br><span class="line">   <span class="keyword">order</span> <span class="keyword">by</span></span><br><span class="line">      c.created_time <span class="keyword">desc</span>  <span class="keyword">limit</span> <span class="number">0</span> ,</span><br><span class="line">      <span class="number">10</span>;</span><br></pre></td></tr></table></figure>
-
-<p>还是几个步骤。</p>
-<p>0.先看语句运行多长时间，10条记录用了13秒，已经不可忍受。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10 rows in <span class="keyword">set</span> (<span class="number">13.06</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>1.explain</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | type   | possible_keys                       | key                     | key_len | ref                      | rows | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | oei   | ref    | idx_category_left_right,idx_data_id | idx_category_left_right | 5       | const                    | 8849 | Using where; Using temporary; Using filesort |</span><br><span class="line">|  1 | SIMPLE      | bu    | ref    | PRIMARY,idx_userid_status           | idx_userid_status       | 4       | meituancrm.oei.data_id   |   76 | Using where; Using index                     |</span><br><span class="line">|  1 | SIMPLE      | cb    | ref    | idx_branch_id,idx_contact_branch_id | idx_branch_id           | 4       | meituancrm.bu.branch_id  |    1 |                                              |</span><br><span class="line">|  1 | SIMPLE      | c     | eq_ref | PRIMARY                             | PRIMARY                 | 108     | meituancrm.cb.contact_id |    1 |                                              |</span><br><span class="line">+<span class="comment">----+-------------+-------+--------+-------------------------------------+-------------------------+---------+--------------------------+------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure>
-
-<p>从执行计划上看，mysql先查org_emp_info表扫描8849记录，再用索引idx_userid_status关联branch_user表，再用索引idx_branch_id关联contact_branch表，最后主键关联contact表。</p>
-<p>rows返回的都非常少，看不到有什么异常情况。我们在看一下语句，发现后面有order by + limit组合，会不会是排序量太大搞的？于是我们简化SQL，去掉后面的order by 和 limit，看看到底用了多少记录来排序。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">  <span class="keyword">count</span>(*)</span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   contact_branch cb </span><br><span class="line">      <span class="keyword">on</span>  c.id = cb.contact_id  </span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">   branch_user bu </span><br><span class="line">      <span class="keyword">on</span>  cb.branch_id = bu.branch_id </span><br><span class="line">      <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">         <span class="number">1</span>,</span><br><span class="line">      <span class="number">2</span>)  </span><br><span class="line">   <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">      org_emp_info oei </span><br><span class="line">         <span class="keyword">on</span>  oei.data_id = bu.user_id </span><br><span class="line">         <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span> </span><br><span class="line">         <span class="keyword">and</span> oei.node_right &lt;= <span class="number">10802</span> </span><br><span class="line">         <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>  </span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">| <span class="keyword">count</span>(*) |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line">|   <span class="number">778878</span> |</span><br><span class="line">+<span class="comment">----------+</span></span><br><span class="line"><span class="number">1</span> <span class="keyword">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">5.19</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>发现排序之前居然锁定了778878条记录，如果针对70万的结果集排序，将是灾难性的，怪不得这么慢，那我们能不能换个思路，先根据contact的created_time排序，再来join会不会比较快呢？</p>
-<p>于是改造成下面的语句，也可以用straight_join来优化：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">select</span><br><span class="line">   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) as created_time,</span><br><span class="line">   from_unixtime(c.last_modified) as last_modified,</span><br><span class="line">   c.last_modified_user_id   </span><br><span class="line">from</span><br><span class="line">   contact c  </span><br><span class="line">where</span><br><span class="line">   exists (</span><br><span class="line">      select</span><br><span class="line">         1 </span><br><span class="line">      from</span><br><span class="line">         contact_branch cb  </span><br><span class="line">      inner join</span><br><span class="line">         branch_user bu        </span><br><span class="line">            on  cb.branch_id &#x3D; bu.branch_id        </span><br><span class="line">            and bu.status in (</span><br><span class="line">               1,</span><br><span class="line">            2)      </span><br><span class="line">         inner join</span><br><span class="line">            org_emp_info oei           </span><br><span class="line">               on  oei.data_id &#x3D; bu.user_id           </span><br><span class="line">               and oei.node_left &gt;&#x3D; 2875           </span><br><span class="line">               and oei.node_right &lt;&#x3D; 10802           </span><br><span class="line">               and oei.org_category &#x3D; - 1      </span><br><span class="line">         where</span><br><span class="line">            c.id &#x3D; cb.contact_id    </span><br><span class="line">      )    </span><br><span class="line">   order by</span><br><span class="line">      c.created_time desc  limit 0 ,</span><br><span class="line">      10;</span><br></pre></td></tr></table></figure>
-
-<p>验证一下效果 预计在1ms内，提升了13000多倍！</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10 rows in <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>本以为至此大工告成，但我们在前面的分析中漏了一个细节，先排序再join和先join再排序理论上开销是一样的，为何提升这么多是因为有一个limit！大致执行过程是：mysql先按索引排序得到前10条记录，然后再去join过滤，当发现不够10条的时候，再次去10条，再次join，这显然在内层join过滤的数据非常多的时候，将是灾难的，极端情况，内层一条数据都找不到，mysql还傻乎乎的每次取10条，几乎遍历了这个数据表！</p>
-<p>用不同参数的SQL试验下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span></span><br><span class="line">   sql_no_cache   c.id,</span><br><span class="line">   c.name,</span><br><span class="line">   c.position,</span><br><span class="line">   c.sex,</span><br><span class="line">   c.phone,</span><br><span class="line">   c.office_phone,</span><br><span class="line">   c.feature_info,</span><br><span class="line">   c.birthday,</span><br><span class="line">   c.creator_id,</span><br><span class="line">   c.is_keyperson,</span><br><span class="line">   c.giveup_reason,</span><br><span class="line">   c.status,</span><br><span class="line">   c.data_source,</span><br><span class="line">   from_unixtime(c.created_time) <span class="keyword">as</span> created_time,</span><br><span class="line">   from_unixtime(c.last_modified) <span class="keyword">as</span> last_modified,</span><br><span class="line">   c.last_modified_user_id    </span><br><span class="line"><span class="keyword">from</span></span><br><span class="line">   contact c   </span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">   <span class="keyword">exists</span> (</span><br><span class="line">      <span class="keyword">select</span></span><br><span class="line">         <span class="number">1</span>        </span><br><span class="line">      <span class="keyword">from</span></span><br><span class="line">         contact_branch cb         </span><br><span class="line">      <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">         branch_user bu                     </span><br><span class="line">            <span class="keyword">on</span>  cb.branch_id = bu.branch_id                     </span><br><span class="line">            <span class="keyword">and</span> bu.status <span class="keyword">in</span> (</span><br><span class="line">               <span class="number">1</span>,</span><br><span class="line">            <span class="number">2</span>)                </span><br><span class="line">         <span class="keyword">inner</span> <span class="keyword">join</span></span><br><span class="line">            org_emp_info oei                           </span><br><span class="line">               <span class="keyword">on</span>  oei.data_id = bu.user_id                           </span><br><span class="line">               <span class="keyword">and</span> oei.node_left &gt;= <span class="number">2875</span>                           </span><br><span class="line">               <span class="keyword">and</span> oei.node_right &lt;= <span class="number">2875</span>                           </span><br><span class="line">               <span class="keyword">and</span> oei.org_category = - <span class="number">1</span>                </span><br><span class="line">         <span class="keyword">where</span></span><br><span class="line">            c.id = cb.contact_id           </span><br><span class="line">      )        </span><br><span class="line">   <span class="keyword">order</span> <span class="keyword">by</span></span><br><span class="line">      c.created_time <span class="keyword">desc</span>  <span class="keyword">limit</span> <span class="number">0</span> ,</span><br><span class="line">      <span class="number">10</span>;</span><br><span class="line">Empty <span class="keyword">set</span> (<span class="number">2</span> <span class="keyword">min</span> <span class="number">18.99</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>2 min 18.99 sec！比之前的情况还糟糕很多。由于mysql的nested loop机制，遇到这种情况，基本是无法优化的。这条语句最终也只能交给应用系统去优化自己的逻辑了。</p>
-<p>通过这个例子我们可以看到，并不是所有语句都能优化，而往往我们优化时，由于SQL用例回归时落掉一些极端情况，会造成比原来还严重的后果。所以，第一：不要指望所有语句都能通过SQL优化，第二：不要过于自信，只针对具体case来优化，而忽略了更复杂的情况。</p>
-<p>慢查询的案例就分析到这儿，以上只是一些比较典型的案例。我们在优化过程中遇到过超过1000行，涉及到16个表join的“垃圾SQL”，也遇到过线上线下数据库差异导致应用直接被慢查询拖死，也遇到过varchar等值比较没有写单引号，还遇到过笛卡尔积查询直接把从库搞死。再多的案例其实也只是一些经验的积累，如果我们熟悉查询优化器、索引的内部原理，那么分析这些案例就变得特别简单了。</p>
-<h2 id="写在后面的话"><a href="#写在后面的话" class="headerlink" title="写在后面的话"></a>写在后面的话</h2><p>本文以一个慢查询案例引入了MySQL索引原理、优化慢查询的一些方法论;并针对遇到的典型案例做了详细的分析。其实做了这么长时间的语句优化后才发现，任何数据库层面的优化都抵不上应用系统的优化，同样是MySQL，可以用来支撑Google/FaceBook/Taobao应用，但可能连你的个人网站都撑不住。套用最近比较流行的话：“查询容易，优化不易，且写且珍惜！”</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://tech.meituan.com/2014/06/30/mysql-index.html" target="_blank" rel="noopener">MySQL索引原理及慢查询优化</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1732,7 +1617,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1788,7 +1673,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>

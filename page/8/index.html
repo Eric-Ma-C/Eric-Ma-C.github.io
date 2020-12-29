@@ -186,6 +186,802 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/MySql%20MVCC%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/18/MySql%20MVCC%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">MySql MVCC机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-19 01:45:34 / 修改时间：09:59:50" itemprop="dateCreated datePublished" datetime="2020-06-19T01:45:34+08:00">2020-06-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>Multiversion concurrency control 多版本并发控制</p>
+<p>并发访问（读或者写）数据库时，对正在事务内处理的数据做多版本的管理，用来避免由于写操作的堵塞，而引发读操作失败的并发问题。</p>
+</blockquote>
+<h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>先看一个案例：</p>
+<p>1.查看数据的事务隔离级别</p>
+<p>对事务隔离级别不熟悉的同学可以参考文章 <a href="https://mp.weixin.qq.com/s/WIqoR0-l7h9SObIzmGDatQ" target="_blank" rel="noopener">【MySQL （三） | 五分钟搞清楚MySQL事务隔离级别】</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT @@tx_isolation;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c4a50c54d63?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="查看数据库的事务隔离级别"></p>
+<p>可见 数据库隔离级别使用的是MySQL默认的RR级别。</p>
+<p><strong>REPEATABLE READ</strong> 意味着：</p>
+<ul>
+<li>同一个事务中多次执行同一个select,读取到的数据没有发生改变；</li>
+<li>此时：允许幻读，但不允许不可重复读和脏读，所以RR隔离级别要求解决不可重复读；</li>
+</ul>
+<p>2.在不同会话中执行以下SQL</p>
+<p>补充一下建表语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> <span class="string">`test_zq`</span> (</span><br><span class="line">	<span class="string">`id`</span> <span class="built_in">int</span> (<span class="number">11</span>),</span><br><span class="line">	<span class="string">`test_id`</span> <span class="built_in">int</span> (<span class="number">11</span>)</span><br><span class="line">); </span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'1'</span>,<span class="string">'18'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'4'</span>,<span class="string">'8'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'7'</span>,<span class="string">'4'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> <span class="string">`test_zq`</span> (<span class="string">`id`</span>, <span class="string">`test_id`</span>) <span class="keyword">values</span>(<span class="string">'10'</span>,<span class="string">'1234'</span>);</span><br></pre></td></tr></table></figure>
+
+<p>用户1：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="comment">-- 更新 id 为 1 的数据</span></span><br><span class="line"><span class="keyword">UPDATE</span> test_zq <span class="keyword">SET</span> test_id = <span class="number">20</span> <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>用户2:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="comment">--查询 id 为 1 的数据</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> test_zq <span class="keyword">WHERE</span> <span class="keyword">id</span> = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果大致如下：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c50888174f0?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="执行结果"></p>
+<p>根据事务隔离级别来看，我们理论上对获得 X 锁（关于锁的概念可以参考 <a href="http://mp.weixin.qq.com/s?__biz=MzI1Mzg4OTMxNQ==&mid=100000550&idx=1&sn=8a5cdff008fc1eed7b5c623c1bdf4ed1&chksm=69ccdd6a5ebb547c7b7baf6be78763fc5065e0a58de202f3e25d8d8ed56e6d1c1146332cfec1#rd" target="_blank" rel="noopener">【MySQL （四） | 五分钟搞清楚InnoDB锁机制】</a>）的数据行是不能再被获取读锁而访问的，但是事实上我们依然访问到了这个数据！</p>
+<p><strong>通过结果说明</strong>：我们可以在一个事务未进行 commit/rollback操作之前，另一个事务仍然可以读取到数据库中的数据，只不过是读取到的是其他事务未改变之前的数据。此处是利用了MVCC多数据做了多版本处理，读取的数据来源于快照。</p>
+<p>3.同理，在不同会话中执行以下SQL</p>
+<p>用户1：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">begin;</span><br><span class="line">SELECT * FROM test_zq WHERE id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>用户2：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">begin;</span><br><span class="line">update test_zq set test_id &#x3D; 22 where id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>执行完之后再回到用户1进行一次数据查询</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT * FROM test_zq WHERE id &#x3D; 1;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果：</p>
+<p><img src="https://user-gold-cdn.xitu.io/2019/2/17/168f8c6166f8fecf?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="执行结果2"></p>
+<p>执行结果和上一步的执行结果一样，只不过区别在于2步骤中是先 update 后 select , 3 步骤是先 select 后 update.</p>
+<p>虽然两者执行结果是一致的，但是我们要思考两个问题：</p>
+<ul>
+<li>他们的底层实现是一样的吗？</li>
+<li>他们的实现和MVCC有什么关系呢？</li>
+</ul>
+<p>接下来我们便开始了解一下 MVCC 机制</p>
+<h3 id="什么是MVCC"><a href="#什么是MVCC" class="headerlink" title="什么是MVCC"></a>什么是MVCC</h3><blockquote>
+<p>MVCC，Multi-Version Concurrency Control，多版本并发控制。MVCC 是一种并发控制的方法，一般在数据库管理系统中，实现对数据库的并发访问；在编程语言中实现事务内存。</p>
+</blockquote>
+<p>如果有人从数据库中读数据的同时，有另外的人写入数据，有可能读数据的人会看到『半写』或者不一致的数据。有很多种方法来解决这个问题，叫做并发控制方法。最简单的方法，通过加锁，让所有的读者等待写者工作完成，但是这样效率会很差。MVCC 使用了一种不同的手段，每个连接到数据库的读者，<strong>在某个瞬间看到的是数据库的一个快照</strong>，写者写操作造成的变化在写操作完成之前（或者数据库事务提交之前）对于其他的读者来说是不可见的。</p>
+<p>当一个 MVCC 数据库需要更一个一条数据记录的时候，它不会直接用新数据覆盖旧数据，而是将旧数据标记为过时（obsolete）并在别处增加新版本的数据。这样就会有存储多个版本的数据，但是只有一个是最新的。这种方式允许读者读取在他读之前已经存在的数据，即使这些在读的过程中半路被别人修改、删除了，也对先前正在读的用户没有影响。<strong>这种多版本的方式避免了填充删除操作在内存和磁盘存储结构造成的空洞的开销，但是需要系统周期性整理（sweep through）以真实删除老的、过时的数据。</strong>对于面向文档的数据库（Document-oriented database，也即半结构化数据库）来说，这种方式允许系统将整个文档写到磁盘的一块连续区域上，当需要更新的时候，直接重写一个版本，而不是对文档的某些比特位、分片切除，或者维护一个链式的、非连续的数据库结构。</p>
+<p>MVCC 提供了时点（point in time）一致性视图。MVCC 并发控制下的读事务一般使用<strong>时间戳或者事务 ID</strong>去标记当前读的数据库的状态（版本），读取这个版本的数据。读、写事务相互隔离，不需要加锁。<strong>读写并存的时候，写操作会根据目前数据库的状态，创建一个新版本，并发的读则依旧访问旧版本的数据。</strong></p>
+<p>一句话总结就是：</p>
+<blockquote>
+<p>MVCC(<code>Multiversion concurrency control</code>) 就是 同一份数据临时保留多版本的一种方式，进而实现并发控制</p>
+</blockquote>
+<p>哪么此处需要注意的点就是：</p>
+<ul>
+<li>在读写并发的过程中如何实现多版本？</li>
+<li>在读写并发之后，如何实现旧版本的删除（毕竟很多时候只需要一份最新版的数据就够了）？</li>
+</ul>
+<p>下面介绍一下MySQL中对于 MVCC 的逻辑实现</p>
+<h3 id="MVCC逻辑流程-插入"><a href="#MVCC逻辑流程-插入" class="headerlink" title="MVCC逻辑流程-插入"></a>MVCC逻辑流程-插入</h3><p>在MySQL中建表时，每个表都会有三列隐藏记录，其中和MVCC有关系的有两列</p>
+<ul>
+<li>数据行的版本号 （DB_TRX_ID）</li>
+<li>删除版本号 (DB_ROLL_PT)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
+</tr>
+</tbody></table>
+<p>在插入数据的时候，假设系统的全局事务ID从1开始，以下SQL语句执行分析参考注释信息：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 获取到全局事务ID</span><br><span class="line">insert into &#96;test_zq&#96; (&#96;id&#96;, &#96;test_id&#96;) values(&#39;5&#39;,&#39;68&#39;);</span><br><span class="line">insert into &#96;test_zq&#96; (&#96;id&#96;, &#96;test_id&#96;) values(&#39;6&#39;,&#39;78&#39;);</span><br><span class="line">commit;-- 提交事务</span><br></pre></td></tr></table></figure>
+
+<p>当执行完以上SQL语句之后，表格中的内容会变成：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<p>可以看到，插入的过程中会把全局事务ID记录到列 DB_TRX_ID 中去</p>
+<h3 id="MVCC逻辑流程-删除"><a href="#MVCC逻辑流程-删除" class="headerlink" title="MVCC逻辑流程-删除"></a>MVCC逻辑流程-删除</h3><p>对上述表格做删除逻辑，执行以下SQL语句（假设获取到的事务逻辑ID为 3）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin；--获得全局事务ID &#x3D; 3</span><br><span class="line">delete test_zq where id &#x3D; 6;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行完上述SQL之后数据并没有被真正删除，而是对删除版本号做改变，如下所示：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">NULL</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">3</td>
+</tr>
+</tbody></table>
+<h3 id="MVCC逻辑流程-修改"><a href="#MVCC逻辑流程-修改" class="headerlink" title="MVCC逻辑流程-修改"></a>MVCC逻辑流程-修改</h3><p>修改逻辑和删除逻辑有点相似，修改数据的时候 会先复制一条当前记录行数据，同事标记这条数据的数据行版本号为当前是事务版本号，最后把原来的数据行的删除版本号标记为当前是事务。</p>
+<p>执行以下SQL语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 获取全局系统事务ID 假设为 10</span><br><span class="line">update test_zq set test_id &#x3D; 22 where id &#x3D; 5;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行后表格实际数据应该是：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">5</td>
+<td align="center">68</td>
+<td align="center">1</td>
+<td align="center">10</td>
+</tr>
+<tr>
+<td align="center">6</td>
+<td align="center">78</td>
+<td align="center">1</td>
+<td align="center">3</td>
+</tr>
+<tr>
+<td align="center">5</td>
+<td align="center">22</td>
+<td align="center">10</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<h3 id="MVCC逻辑流程-查询"><a href="#MVCC逻辑流程-查询" class="headerlink" title="MVCC逻辑流程-查询"></a>MVCC逻辑流程-查询</h3><p>此时，数据查询规则如下：</p>
+<ul>
+<li><p>查找<strong>数据行版本号早于当前事务版本号</strong>的数据行记录</p>
+<p>也就是说，数据行的版本号要小于或等于当前是事务的系统版本号，这样也就确保了读取到的数据是当前事务开始前已经存在的数据，或者是自身事务改变过的数据</p>
+</li>
+<li><p>查找<strong>删除版本号</strong>要么为NULL，要么<strong>大于当前事务版本号</strong>的记录</p>
+<p>这样确保查询出来的数据行记录在事务开启之前没有被删除</p>
+</li>
+</ul>
+<p>根据上述规则，我们继续以上张表格为例，对此做查询操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">begin;-- 假设拿到的系统事务ID为 12</span><br><span class="line">select * from test_zq;</span><br><span class="line">commit;</span><br></pre></td></tr></table></figure>
+
+<p>执行结果应该是：</p>
+<table>
+<thead>
+<tr>
+<th align="center">id</th>
+<th align="center">test_id</th>
+<th align="center">DB_TRX_ID</th>
+<th align="center">DB_ROLL_PT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">6</td>
+<td align="center">22</td>
+<td align="center">10</td>
+<td align="center">NULL</td>
+</tr>
+</tbody></table>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://juejin.im/post/5c68a4056fb9a049e063e0ab" target="_blank" rel="noopener">【MySQL（5）| 五分钟搞清楚 MVCC 机制】</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/18/MySQL%20%E8%BF%90%E7%AE%97%E7%AC%A6%E5%92%8C%E5%87%BD%E6%95%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/18/MySQL%20%E8%BF%90%E7%AE%97%E7%AC%A6%E5%92%8C%E5%87%BD%E6%95%B0/" class="post-title-link" itemprop="url">MySQL 运算符和函数</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-18 11:03:02 / 修改时间：19:04:56" itemprop="dateCreated datePublished" datetime="2020-06-18T11:03:02+08:00">2020-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="字符函数"><a href="#字符函数" class="headerlink" title="字符函数"></a>字符函数</h1><h4 id="CONCAT-字符连接"><a href="#CONCAT-字符连接" class="headerlink" title="CONCAT() 字符连接"></a><code>CONCAT()</code> 字符连接</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT CONCAT(&#39;a&#39;,&#39;-&#39;,&#39;b&#39;);</span><br><span class="line">--结果为: a-b</span><br></pre></td></tr></table></figure>
+
+<h4 id="CONCAT-WS-使用指定的分隔符进行字符连接"><a href="#CONCAT-WS-使用指定的分隔符进行字符连接" class="headerlink" title="CONCAT_WS() 使用指定的分隔符进行字符连接"></a><code>CONCAT_WS()</code> 使用指定的分隔符进行字符连接</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT CONCAT_WS(&#39;|&#39;,&#39;A&#39;,&#39;B&#39;,&#39;C&#39;); </span><br><span class="line">--结果为： A|B|C</span><br></pre></td></tr></table></figure>
+
+<h4 id="FORMAT-数字格式化"><a href="#FORMAT-数字格式化" class="headerlink" title="FORMAT() 数字格式化"></a><code>FORMAT()</code> 数字格式化</h4><p>对数字四舍五入,返回字符串,包括逗号’,’</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT FORMAT(12560.7,2); </span><br><span class="line">--结果：12,560.70</span><br><span class="line">SELECT FORMAT(12560.78,1); </span><br><span class="line">--结果：12,560.8</span><br></pre></td></tr></table></figure>
+
+<h4 id="LOWER-转换成小写字母"><a href="#LOWER-转换成小写字母" class="headerlink" title="LOWER() 转换成小写字母"></a><code>LOWER()</code> 转换成小写字母</h4><h4 id="UPPER-转换成大写字母"><a href="#UPPER-转换成大写字母" class="headerlink" title="UPPER() 转换成大写字母"></a><code>UPPER()</code> 转换成大写字母</h4><h4 id="LEFT-截取左侧字符"><a href="#LEFT-截取左侧字符" class="headerlink" title="LEFT() 截取左侧字符"></a><code>LEFT()</code> 截取左侧字符</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT LEFT(&#39;mysql&#39;,2);  </span><br><span class="line">--结果：my</span><br></pre></td></tr></table></figure>
+
+<h4 id="RIGHT-截取右侧字符"><a href="#RIGHT-截取右侧字符" class="headerlink" title="RIGHT() 截取右侧字符"></a><code>RIGHT()</code> 截取右侧字符</h4><h4 id="LENGTH-获取字符串长度"><a href="#LENGTH-获取字符串长度" class="headerlink" title="LENGTH() 获取字符串长度"></a><code>LENGTH()</code> 获取字符串长度</h4><p>长度包含空格</p>
+<h4 id="LTRIM-删除前导空格"><a href="#LTRIM-删除前导空格" class="headerlink" title="LTRIM() 删除前导空格"></a><code>LTRIM()</code> 删除前导空格</h4><p>等同于<code>LEFT TRIM()</code></p>
+<h4 id="RTRIM-删除后续空格"><a href="#RTRIM-删除后续空格" class="headerlink" title="RTRIM() 删除后续空格"></a><code>RTRIM()</code> 删除后续空格</h4><h4 id="TRIM-删除前后两边的指定字符-默认空格"><a href="#TRIM-删除前后两边的指定字符-默认空格" class="headerlink" title="TRIM() 删除前后两边的指定字符(默认空格)"></a><code>TRIM()</code> 删除前后两边的指定字符(默认空格)</h4><p>删除指定的前导和后续的字符,但不能删除中间的字符,如</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">SELECT TRIM(LEADING&#39;?&#39;,&#39;??MYSQL????&#39;);  </span><br><span class="line">--leading前导,结果：MYSQL????</span><br><span class="line">SELECT TRIM(TRAILING&#39;?&#39;,&#39;??MYSQL????&#39;);  </span><br><span class="line">--trailing后序,结果：??MYSQL</span><br><span class="line">SELECT TRIM(BOTH&#39;?&#39;,&#39;??MYSQL???&#39;); </span><br><span class="line">--结果：MYSQL</span><br></pre></td></tr></table></figure>
+
+<h4 id="REPLACE-替换字符"><a href="#REPLACE-替换字符" class="headerlink" title="REPLACE() 替换字符"></a><code>REPLACE()</code> 替换字符</h4><p>如将’?’替换为’-‘</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT REPLACE(&#39;??MYSQL???&#39;,&#39;?&#39;,&#39;-&#39;);  </span><br><span class="line">--结果：--MYSQL---</span><br></pre></td></tr></table></figure>
+
+<h4 id="SUBSTRING-string，offset，length-截取字符串"><a href="#SUBSTRING-string，offset，length-截取字符串" class="headerlink" title="SUBSTRING(string，offset，length) 截取字符串"></a><code>SUBSTRING(string，offset，length)</code> 截取字符串</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT SUBSTRING(&#39;MYSQL&#39;,2,3);  </span><br><span class="line">--结果：SQL</span><br></pre></td></tr></table></figure>
+
+<h4 id="NOT-LIKE-模糊匹配"><a href="#NOT-LIKE-模糊匹配" class="headerlink" title="[NOT] LIKE 模糊匹配"></a><code>[NOT] LIKE</code> 模糊匹配</h4><p><code>ESCAPE</code>可指定转义字符</p>
+<ul>
+<li><code>%</code> 代表任意个字符，0个或多个</li>
+<li><code>_</code> 代表任意一个字符，只有一个</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT name FROM test WHERE name LIKE&#39;%o%&#39;; </span><br><span class="line">--结果：输入name 中带‘o’的name</span><br><span class="line">SELECT name FROM test WHERE name LIKE&#39;%1%%&#39; ESCAPE &#39;1&#39;;</span><br><span class="line">--找到中间带% 的匹配name</span><br></pre></td></tr></table></figure>
+
+<h1 id="数值运算"><a href="#数值运算" class="headerlink" title="数值运算"></a>数值运算</h1><h4 id="CEIL-数值-向上取整"><a href="#CEIL-数值-向上取整" class="headerlink" title="CEIL(数值) 向上取整"></a><code>CEIL(数值)</code> 向上取整</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT CEIL(3.01);</span><br><span class="line">--结果是4</span><br></pre></td></tr></table></figure>
+
+<h4 id="FLOOR-数值-向下取整"><a href="#FLOOR-数值-向下取整" class="headerlink" title="FLOOR(数值) 向下取整"></a><code>FLOOR(数值)</code> 向下取整</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT FLOOR(3.99);</span><br><span class="line">--结果是3;</span><br></pre></td></tr></table></figure>
+
+<h4 id="DIV-除法-保留整数"><a href="#DIV-除法-保留整数" class="headerlink" title="DIV 除法,保留整数"></a><code>DIV</code> 除法,保留整数</h4><p>如果使用’’,如’3/4’结果为’0.75’</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT 3 DIV 4; </span><br><span class="line">--结果是0；因为3除以4，整数位为0</span><br></pre></td></tr></table></figure>
+
+<h4 id="MOD-取模"><a href="#MOD-取模" class="headerlink" title="MOD 取模"></a><code>MOD</code> 取模</h4><p>相当于’%’取余运算符，可以用%号代替；</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT 4 MOD 3; </span><br><span class="line">--结果为1；</span><br><span class="line">SELECT 5.3 MOD 3; </span><br><span class="line">--结果为2.3</span><br></pre></td></tr></table></figure>
+
+<h4 id="POWER-数值-数值-幂运算"><a href="#POWER-数值-数值-幂运算" class="headerlink" title="POWER(数值,数值) 幂运算"></a><code>POWER(数值,数值)</code> 幂运算</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT POWER(3,3); </span><br><span class="line">--结果为27</span><br></pre></td></tr></table></figure>
+
+<h4 id="ROUND-数值-小数的位数-四舍五入"><a href="#ROUND-数值-小数的位数-四舍五入" class="headerlink" title="ROUND(数值,小数的位数) 四舍五入"></a><code>ROUND(数值,小数的位数)</code> 四舍五入</h4><h4 id="TRUNCATE-数值-截取位数"><a href="#TRUNCATE-数值-截取位数" class="headerlink" title="TRUNCATE(数值,截取位数)"></a><code>TRUNCATE(数值,截取位数)</code></h4><p>和<code>ROUND()</code>类似,不四舍五入,直接截断,截取位数可以是负数，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT TRUNCATE(125.68,-1); </span><br><span class="line">--结果为120</span><br></pre></td></tr></table></figure>
+
+<h1 id="比较运算"><a href="#比较运算" class="headerlink" title="比较运算"></a>比较运算</h1><h4 id="NOT-BETWEEN-AND"><a href="#NOT-BETWEEN-AND" class="headerlink" title="[NOT] BETWEEN ... AND ..."></a><code>[NOT] BETWEEN ... AND ...</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT 15 BETWEEND 1 AND 20 </span><br><span class="line">-- 15在1到20之间 ,返回值是1</span><br><span class="line">SELECT 15 NOT BETWEEND 1 AND 20 </span><br><span class="line">--15在1到20之间,条件不成立 返回值是0</span><br></pre></td></tr></table></figure>
+
+<h4 id="NOT-IN"><a href="#NOT-IN" class="headerlink" title="[NOT] IN()"></a><code>[NOT] IN()</code></h4><p>判断值是否在给定的集合中,如果在返回1,不在返回0,或者相反</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT 10 IN(5,10,15) </span><br><span class="line">-- 返回1 </span><br><span class="line">SELECT 10 NOT(5,10,15) </span><br><span class="line">-- 返回0</span><br></pre></td></tr></table></figure>
+
+<h4 id="IS-NOT-NULL"><a href="#IS-NOT-NULL" class="headerlink" title="IS [NOT] NULL"></a><code>IS [NOT] NULL</code></h4><p>是否为<code>NULL</code>,成立返回1,不成立返回0</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT NULL IS NULL </span><br><span class="line">-- 返回1 </span><br><span class="line">SELECT &#39;&#39; IS NULL</span><br><span class="line">-- 返回0 , 除了NULL其它都是非空 返回都是1</span><br></pre></td></tr></table></figure>
+
+<h1 id="聚合函数"><a href="#聚合函数" class="headerlink" title="聚合函数"></a>聚合函数</h1><p>聚合函数只有一个返回值</p>
+<h4 id="AVG-平均值"><a href="#AVG-平均值" class="headerlink" title="AVG()平均值"></a><code>AVG()</code>平均值</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT ROUND(AVG(goods_price),2) AS avg_price </span><br><span class="line">FROM tdb_goods;</span><br></pre></td></tr></table></figure>
+
+<h4 id="COUNT-计数"><a href="#COUNT-计数" class="headerlink" title="COUNT()计数"></a><code>COUNT()</code>计数</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT COUNT(goods_id) AS counts </span><br><span class="line">FROM tdb_goods;</span><br></pre></td></tr></table></figure>
+
+<h4 id="MAX-最大值"><a href="#MAX-最大值" class="headerlink" title="MAX()最大值"></a><code>MAX()</code>最大值</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT MAX(goods_price) AS max </span><br><span class="line">FROM tdb_goods;</span><br></pre></td></tr></table></figure>
+
+<h4 id="MIN-最小值"><a href="#MIN-最小值" class="headerlink" title="MIN()最小值"></a><code>MIN()</code>最小值</h4><h4 id="SUM-求和"><a href="#SUM-求和" class="headerlink" title="SUM()求和"></a><code>SUM()</code>求和</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT SUM(goods_price) AS sum </span><br><span class="line">FROM tdb_goods;</span><br></pre></td></tr></table></figure>
+
+<h1 id="加密函数"><a href="#加密函数" class="headerlink" title="加密函数"></a>加密函数</h1><h4 id="MD5-摘要算法"><a href="#MD5-摘要算法" class="headerlink" title="MD5() 摘要算法"></a><code>MD5()</code> 摘要算法</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT MD5(&#39;admin&#39;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="PASSWORD-密码算法"><a href="#PASSWORD-密码算法" class="headerlink" title="PASSWORD() 密码算法"></a><code>PASSWORD()</code> 密码算法</h4><p>通过<code>PASSWORD()</code>修改MySQL当前用户和其他用户的密码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-- 把密码修改成dimitar。</span><br><span class="line">SET PASSWORD&#x3D;PASSWORD(‘dimitar’);</span><br></pre></td></tr></table></figure>
+
+<h1 id="日期时间函数"><a href="#日期时间函数" class="headerlink" title="日期时间函数"></a>日期时间函数</h1><h4 id="NOW-当前日期-时间"><a href="#NOW-当前日期-时间" class="headerlink" title="NOW() 当前日期,时间"></a><code>NOW()</code> 当前日期,时间</h4><h4 id="CURDATE-当前日期"><a href="#CURDATE-当前日期" class="headerlink" title="CURDATE() 当前日期"></a><code>CURDATE()</code> 当前日期</h4><h4 id="CURTIME-当前时间"><a href="#CURTIME-当前时间" class="headerlink" title="CURTIME() 当前时间"></a><code>CURTIME()</code> 当前时间</h4><h4 id="DATE-ADD-时间增减"><a href="#DATE-ADD-时间增减" class="headerlink" title="DATE_ADD() 时间增减"></a><code>DATE_ADD()</code> 时间增减</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">INTERVAL&#96;可以为负值</span><br><span class="line">单位 &#96;YEAR, MONTH, WEEK, DAY</span><br><span class="line">SELECT DATE_ADD(&#39;2014-3-12&#39;,INTERVAL 365 DAY); </span><br><span class="line">-- 返回2015-3-12</span><br><span class="line">-- 在原有给定的时间上增加365天</span><br></pre></td></tr></table></figure>
+
+<h4 id="DATEDIFF-日期差值"><a href="#DATEDIFF-日期差值" class="headerlink" title="DATEDIFF() 日期差值"></a><code>DATEDIFF()</code> 日期差值</h4><p>单位为日,前面时间减去后面时间</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT DATEDIFF(&#39;2014-1-1&#39;,&#39;2015-1-1&#39;) </span><br><span class="line">-- 返回365</span><br></pre></td></tr></table></figure>
+
+<h4 id="DATEDIFF-日期格式化"><a href="#DATEDIFF-日期格式化" class="headerlink" title="DATEDIFF() 日期格式化"></a><code>DATEDIFF()</code> 日期格式化</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SELECT DATE_FORMAT(&#39;2014-3-2&#39;,&#39;%m&#x2F;%d&#x2F;%Y&#39;);</span><br><span class="line">-- 返回03&#x2F;02&#x2F;2014</span><br></pre></td></tr></table></figure>
+
+<h1 id="内置信息函数"><a href="#内置信息函数" class="headerlink" title="内置信息函数"></a>内置信息函数</h1><h4 id="VERSION-MySQL版本信息"><a href="#VERSION-MySQL版本信息" class="headerlink" title="VERSION() MySQL版本信息"></a><code>VERSION()</code> MySQL版本信息</h4><h4 id="SELECT-DATABASE-当前数据库"><a href="#SELECT-DATABASE-当前数据库" class="headerlink" title="SELECT DATABASE() 当前数据库"></a><code>SELECT DATABASE()</code> 当前数据库</h4><h4 id="USER-当前用户"><a href="#USER-当前用户" class="headerlink" title="USER() 当前用户"></a><code>USER()</code> 当前用户</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT USER();</span><br></pre></td></tr></table></figure>
+
+<h4 id="CONNECTION-ID-当前用户的连接ID"><a href="#CONNECTION-ID-当前用户的连接ID" class="headerlink" title="CONNECTION_ID() 当前用户的连接ID"></a><code>CONNECTION_ID()</code> 当前用户的连接ID</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT CONNECTION_ID();</span><br></pre></td></tr></table></figure>
+
+<h4 id="LAST-INSERT-ID-最后插入的记录的-ID-号"><a href="#LAST-INSERT-ID-最后插入的记录的-ID-号" class="headerlink" title="LAST_INSERT_ID() 最后插入的记录的 ID 号"></a><code>LAST_INSERT_ID()</code> 最后插入的记录的 ID 号</h4><p><code>ID</code>为主键,必须自动编号<code>AUTO_INCREMENT</code>,可以不叫’ID’.<br>如果一次<code>INSERT</code>插入的是多条记录，得到的是多条记录中的第一条（而不是最后一条！）</p>
+<hr>
+<p>本文遵循CC 4.0 BY-SA版权协议.</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/17/Innodb%20%E9%94%81%E7%B1%BB%E5%9E%8B%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/17/Innodb%20%E9%94%81%E7%B1%BB%E5%9E%8B%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">InnoDB 锁类型详解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-06-18 07:04:20" itemprop="dateCreated datePublished" datetime="2020-06-18T07:04:20+08:00">2020-06-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-07-06 11:20:06" itemprop="dateModified" datetime="2020-07-06T11:20:06+08:00">2020-07-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="锁"><a href="#锁" class="headerlink" title="锁"></a>锁</h2><blockquote>
+<p>锁是用于管理不同事务对共享资源的并发访问</p>
+</blockquote>
+<p>表锁和行锁的区别：</p>
+<p>在加锁效率、锁定粒度以及冲突概率上，表锁肯定是大于行锁的</p>
+<p>但是在并发性能上，表锁远低于行锁。</p>
+<p>表锁是锁定了整个表，在加锁期间，无论读写，这个表的数据都是锁定的，相反行锁只是锁定了这个表中的一条数据，其他数据仍然可以操作，这就可很好的提高了数据库的并发性能。</p>
+<h2 id="Mysql-Innodb-锁类型"><a href="#Mysql-Innodb-锁类型" class="headerlink" title="Mysql Innodb 锁类型"></a>Mysql Innodb 锁类型</h2><ul>
+<li>共享锁 Shared Locks  （简称 S 锁，属于行锁）</li>
+<li>排他锁 Exclusive Locks（简称 X 锁，属于行锁）</li>
+<li>意向共享锁 Intention Shared Locks （简称 IS 锁，属于表锁）</li>
+<li>意向排他锁 Intention Exclusive Locks （简称 IX 锁，属于表锁）</li>
+<li>自增锁 AUTO-INC Locks</li>
+</ul>
+<h3 id="共享锁（S）与排它锁-（X）"><a href="#共享锁（S）与排它锁-（X）" class="headerlink" title="共享锁（S）与排它锁 （X）"></a>共享锁（S）与排它锁 （X）</h3><h4 id="共享锁"><a href="#共享锁" class="headerlink" title="共享锁"></a>共享锁</h4><blockquote>
+<p>又称之为 读锁，简称 s 锁，顾名思义，共享锁就是多个事务对于同一数据可以共享一把锁，都能访问到数据库，但是只能读不能修改；</p>
+</blockquote>
+<p>加锁方式：</p>
+<p>select * from users where id = 1 lock in share mode;</p>
+<p>释放方式：</p>
+<p>rollback/commit;</p>
+<p>举例：</p>
+<p>当手动为select语句加上共享锁之后，在右边的会话中我们对该条数据执行update 操作 ，会发现一直卡住，这就是说，加了共享锁的数据，只能被其他事务读取，但是不能被修改</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUSMPVblzsOic8pMzqSxEZG9NCceMqIfGbZoTqiavicgTtEEDFTfA6nN2gw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>当我们 commit/rollback结束掉左边会话框的事务时，会发现右边会话框的update操作可以正常进行了</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU03AHumpzGXmr1O5AgibNvrWfiaRM7bcugVRWBPEvmYdJ3yINaA8H3bvw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>但是我们要注意一点，哪就是共享锁是不影响其他事物读取数据的，如下举例：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUnUUIibyicUY2y445Tlxtych9hXxvZjd3hcS2gz1jPj59ZUWOJx4eWqicg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="排它锁"><a href="#排它锁" class="headerlink" title="排它锁"></a>排它锁</h4><blockquote>
+<p>又称为写锁，简称 X 锁，排它锁不能与其他锁并存，如一个事务获取了一个数据行的排它锁，其他事务就不能再获取改行的锁（包括共享锁和排它锁），只有当前获取了排它锁的事务可以对数据进行读取和修改（此时其他事务要读取数据可从快照获取）</p>
+</blockquote>
+<p>加锁方式：</p>
+<p>delete update  insert 默认加排他锁</p>
+<p>select * from users where id = 1 for update;</p>
+<p>释放方式：</p>
+<p>rollback/commit;</p>
+<p>举例：</p>
+<p>另一事务获取共享锁,排他锁,都会锁住</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUAMqY5LzLU8q4ia4owttZo5PvHaWiaMFvuGtsXDfZmsRK1zL6SbicKOeSA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUG3aMMGJmLcQD9F5UT9x5G7DuRicp32T7rQDbnib9XvYcHU0qRymOZQUg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="InnoDB-行锁到底锁的是什么？"><a href="#InnoDB-行锁到底锁的是什么？" class="headerlink" title="InnoDB 行锁到底锁的是什么？"></a>InnoDB 行锁到底锁的是什么？</h4><p>我们首先来看如下一个例子：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUriaCW7eXTC4wc9ATGKnbJTicjNzSyvgHMP0paA7jHxBVeC8Kp81eNksg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>发现在事务1中对id=1的数据行做了更新操作，但是事务未提交之前，事务2去再去更新这条数据会卡住，也就是被锁住了。</p>
+<p>接下来我们在事务1 未做任何改变，保持事务未提交状态的情况下去更新id = 2 的数据行</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU7uzJrzSQiczd53rt0lFb3v8m4ibzyIfyuHW6WWiaBkq2vy47zKhIEAssg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>结果显而易见，更新数据成功了。</p>
+<p>综上所述：</p>
+<p>InnoDB的行锁是通过<strong>给索引上的索引项加锁</strong>来实现的，只有通过索引条件进行数据检索，Innodb才使用行级锁。否则，将使用表锁（锁住索引的所有记录）。</p>
+<p>借此我们是不是能联想到，如果我们的删除/修改语句是没有命中索引的，哪么，则会锁住整个表，这在性能上的影响还是挺大的。</p>
+<h3 id="意向共享锁-IS-和意向排他锁-IX"><a href="#意向共享锁-IS-和意向排他锁-IX" class="headerlink" title="意向共享锁(IS)和意向排他锁(IX)"></a>意向共享锁(IS)和意向排他锁(IX)</h3><h4 id="意向共享锁"><a href="#意向共享锁" class="headerlink" title="意向共享锁"></a>意向共享锁</h4><p>表示事务准备给数据行加入共享锁，也就是说一个数据行在加共享锁之前必须先取得该表的IS锁。</p>
+<h4 id="意向排他锁"><a href="#意向排他锁" class="headerlink" title="意向排他锁"></a>意向排他锁</h4><p>表示事务准备给数据行加入排它锁，也就是说一个数据行加排它锁之前必须先取得该表的IX锁。</p>
+<ul>
+<li><p>意向锁是InnoDB数据操作之前自动加的，不需要用户干预</p>
+</li>
+<li><p>意向锁是表级锁</p>
+</li>
+</ul>
+<p>关于这两个锁的实际演示例子本文鉴于篇幅便不再赘述，感兴趣的可以根据上边描述的共享锁和排他锁演示过程自己体验一遍.</p>
+<p>这两个意向锁存在的意义是：</p>
+<blockquote>
+<p>当事务想去进行锁表时，可以先判断意向锁是否存在，存在时则可快速的返回，告知该表不能启用表锁（也就是会锁住对应会话），提高了加锁的效率。??</p>
+</blockquote>
+<h3 id="自增锁-（AUTO-INC-Locks）"><a href="#自增锁-（AUTO-INC-Locks）" class="headerlink" title="自增锁 （AUTO -INC Locks）"></a>自增锁 （AUTO -INC Locks）</h3><p>针对自增列自增长的一个特殊的表级别锁</p>
+<p>可以使用如下语句查看 ：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 默认取值1 代表连续 事务未提交则id永久丢失</span></span><br><span class="line"><span class="keyword">SHOW</span> <span class="keyword">VARIABLES</span> <span class="keyword">LIKE</span> <span class="string">'innodb_autoinc_lock_mode'</span>;</span><br></pre></td></tr></table></figure>
+
+<p>实际演示效果如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUOGwehXDXLJzy76EsCnFS8XEuXgJERjQlI27qjuPLT1M5OaqicWtTGgg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>执行结果如下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUgzrNtMRebpj9SeONiczVcM9ic3ROsuT5liaibQQG4CibhhMHu91OVMEAzPQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="行锁的算法"><a href="#行锁的算法" class="headerlink" title="行锁的算法"></a>行锁的算法</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>行锁锁的是索引上的索引项</p>
+<p>只有通过索引条件进行数据检索，Innodb才使用行级锁。否则，将使用表锁（锁住索引的所有记录）</p>
+<p>行锁的算法:</p>
+<ul>
+<li><p><strong>临键锁 Next-Key locks</strong></p>
+<p>当sql执行按照索引进行数据的检索时，查询条件为<strong>范围查找</strong>（between and &lt; &gt; 等等）并<strong>有数据命中</strong>，则测试SQL语句加上的锁为Next-Key locks,锁住索引的记录区间加下一个记录区间，这个区间是<strong>左开右闭</strong>的</p>
+</li>
+<li><p><strong>间隙锁 Gap</strong> </p>
+<p>查询条件为<strong>范围查找</strong>（between and &lt; &gt; 等等）且<strong>当记录不存在时</strong>，临键锁退化成Gap. 在上述检索条件下，如果没有命中记录，则退化成Gap锁，锁住数据不存在的区间（<strong>左开右开</strong>）</p>
+</li>
+<li><p><strong>记录锁 Record Lock</strong> </p>
+<p>唯一性索引 条件为<strong>精准匹配</strong>，退化成Record锁. 当SQL执行按照唯一性（Primary Key,Unique Key）索引进行数据的检索时，查询条件等值匹配且<strong>查询的数据存在</strong>，这时SQL语句上加的锁即为记录锁Record locks,锁住具体的索引项。</p>
+</li>
+</ul>
+<h3 id="举例"><a href="#举例" class="headerlink" title="举例"></a>举例</h3><h4 id="临键锁"><a href="#临键锁" class="headerlink" title="临键锁"></a><strong>临键锁</strong></h4><p>Next-Key locks 也是 InnoDB 引擎默认的行锁算法.</p>
+<p>如图：我们假设一张表中的数据行的id 是 1 4 7 10</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgU5iboxJuvrEH5zuDEFQU6pfm2w5SVAZqyACxib7U4D7CcW8fBDkN9kiaBw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>则innodb会把这个表的数据划分成如图五个区间(因为有四个记录)，然后我们执行图中的SQL语句之后，会发现有两个区间被锁住了，一个是（4,7] ， 一个是 (7,10]</p>
+<p>为了验证这个结论，我做了如下实验：</p>
+<p>验证区间是否左开右闭：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUA4IMQVFgaOPZjLGicSNKIAc7ramcBU9fVdL9Q5OKG1zicGE9u3Ria50AA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>验证当前记录行是否被锁定：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUkVLbVbsqrEa8V7iaaPB3aI7P3dwvFHZMTFCnwia4AdTjjkHYu1V3zPwQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>验证是否锁定下一区间：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUj5Skvok8TyKtqfh7LKqF1yVhKh3yVicWicLJpibQK4ZUjicDDkgEZeP9TA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<p>以下两种锁只给出结论，演示过程省略，感兴趣可自行验证哈！都是同样的方法，就不赘述了</p>
+<h4 id="间隙锁"><a href="#间隙锁" class="headerlink" title="间隙锁"></a>间隙锁</h4><p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUH3k4pG23rtXq1fq06QMn6ib9hicIq9FVDN7z1ibnFTtcmzwxqwuWr2F8A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h4 id="记录锁"><a href="#记录锁" class="headerlink" title="记录锁"></a>记录锁</h4><p><img src="https://mmbiz.qpic.cn/mmbiz_png/3wiaHiab86pHEVsjczjHIlJCViandagPUgUWxia5c5BRVpKaegdcbicXic8Wus5BSayicF42tNNuokFzy7MWf0IdthOiaw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt="img"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>MySQL 的 Innodb引擎正是通过上述不同类型的锁，完成了事务隔离：</p>
+<ul>
+<li>加 X 锁 避免了数据的脏读</li>
+<li>加 S 锁 避免了数据的不可重复读</li>
+<li>加上 Next Key 避免了数据的幻读</li>
+</ul>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><blockquote>
+<p>Innodb中行级锁作用于索引之上，如果没有索引，则只能够锁表。</p>
+</blockquote>
+<h3 id="一次封锁法"><a href="#一次封锁法" class="headerlink" title="一次封锁法"></a>一次封锁法</h3><blockquote>
+<p>为了预防死锁，一般应用中推荐一次封锁法。也就是在方法的开始阶段，已经预先知道会用到哪些数据，然后全部锁住，在方法运行完成之后，再进行解锁。</p>
+</blockquote>
+<p>一次封锁法能够预防死锁，但从该方法的定义中可以看到，每次操作都锁住全部数据，如果这样数据的执行只能是串行化的，性能不高。</p>
+<h3 id="两阶段锁协议"><a href="#两阶段锁协议" class="headerlink" title="两阶段锁协议"></a>两阶段锁协议</h3><blockquote>
+<p>数据库遵循的是两段锁协议，将事务分解成加锁和解锁两个阶段</p>
+</blockquote>
+<h3 id="加锁阶段"><a href="#加锁阶段" class="headerlink" title="加锁阶段"></a>加锁阶段</h3><blockquote>
+<p>该阶段可以进行加锁操作，在对任何数据进行读操作之前要申请并获得S锁(Shared Lock，其它事务可以继续加S锁，但不能加Exclusive Lock，即排他锁)；而在进行写操作之前，需要申请X锁(Exclusive Lock，其它事务不能再获得任何锁)。加锁不成功则进入等待状态，而不能再加其它锁。</p>
+</blockquote>
+<p>从这个定义可以看出，加锁阶段定义了事务之间的协调规则，能够有效提高多个事务之间的执行性能，但同时也带来了死锁的风险，之后会举例介绍死锁的成因。</p>
+<h3 id="解锁阶段"><a href="#解锁阶段" class="headerlink" title="解锁阶段"></a>解锁阶段</h3><blockquote>
+<p>事务进入解锁阶段将释放其持有的锁，该阶段只能进行解锁操作，而不能再加其它锁。</p>
+</blockquote>
+<h3 id="Innodb中的各种锁"><a href="#Innodb中的各种锁" class="headerlink" title="Innodb中的各种锁"></a>Innodb中的各种锁</h3><h3 id="Shared-Lock-And-Exclusive-Locks"><a href="#Shared-Lock-And-Exclusive-Locks" class="headerlink" title="Shared Lock And Exclusive Locks"></a>Shared Lock And Exclusive Locks</h3><p>这是两个行级锁，包括 <strong>Shared Lock(S 共享锁)</strong> 和 <strong>Exclusive Lock(X 排他锁):</strong></p>
+<ol>
+<li><strong>共享锁</strong> 允许持有锁的事务去读取一行数据，可以有多个事务同时持有共享锁，但当数据被加上共享锁时，不能再被加排他锁。</li>
+<li><strong>排他锁</strong> 允许持有锁的事务去更新或则删除一行数据，同时只能有一个事务持有排他锁，当数据被加上排他锁时，不能再加共享锁。</li>
+</ol>
+<h3 id="Record-Locks"><a href="#Record-Locks" class="headerlink" title="Record Locks"></a>Record Locks</h3><p>记录锁是作用在索引上，比如这么一条语句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT c1 FROM t WHERE c1&#x3D;10 FOR UPDATE</span><br></pre></td></tr></table></figure>
+
+<p>这条语句将会在<code>c1</code>值为10这条记录的索引加锁，阻止其它事务的插入，更新和删除操作。 即使<code>c1</code>不存在索引，Innodb也会创建一个隐藏的<code>clustered index</code>，并用其作为锁的依据。</p>
+<h3 id="Next-key-Locks"><a href="#Next-key-Locks" class="headerlink" title="Next-key Locks"></a>Next-key Locks</h3><p>Next-key锁是记录锁和Gap锁的结合，锁住了记录和记录之前的一段Gap区间。 比如索引包含了10，11，13和20，那么Next-key分出的区间如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">(negative infinity, 10]</span><br><span class="line">(10, 11]</span><br><span class="line">(11, 13]</span><br><span class="line">(13, 20]</span><br><span class="line">(20, positive infinity)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Intention-Locks"><a href="#Intention-Locks" class="headerlink" title="Intention Locks"></a>Intention Locks</h3><p>Intention Locks(意向锁)是MySQL为了支持不同粒度的锁而设计的一种 <strong>表级别锁(但不是通常认为的表锁)</strong> ，它表示了表之后将被加上哪种行级锁。意向锁的分类如下：</p>
+<ol>
+<li><strong>Intention Shared Lock，意向共享锁(IS)</strong> ，表示事务将要在表上加共享锁，规则是在表中申请某些行的共享锁之前，必须先申请<code>IS</code>锁。</li>
+<li><strong>Intention Exclusive Lock，意向排他锁(IX)</strong> ，表示事务将要在标上加排他锁，规则是在表中申请某些行的排他锁之前，必须先申请<code>IX</code>锁。</li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT ... LOCK IN SHARE MODE</span><br></pre></td></tr></table></figure>
+
+<p>该语句将会在表上加<code>IS</code>锁，同时在对应的记录上加上<code>S</code>锁。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT ... FOR UPDATE</span><br></pre></td></tr></table></figure>
+
+<p>该语句将会在标上加上<code>IX</code>锁，同时在对应的记录上加上<code>X</code>锁。</p>
+<p><strong>表级锁的兼容性矩阵：</strong></p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/5/9/fc76a4b5cf0aeeac6fe08ba3035a183f?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Matrix"></p>
+<p>总结:<strong>意向锁(IX,IS)之间不会产生冲突, 其他情况可将IX锁当做X锁, IS锁当做S锁</strong></p>
+<p>事实上意向锁不会和行级的<code>S</code>和<code>X</code>锁产生冲突，只会和表级的<code>S</code>和<code>X</code>锁产生冲突.</p>
+<h3 id="GAP-Locks"><a href="#GAP-Locks" class="headerlink" title="GAP Locks"></a>GAP Locks</h3><p>Gap锁是一种范围锁，Gap锁作用范围是Record锁之间，或者Record锁之前与Record锁之后的范围。</p>
+<p><img src="https://user-gold-cdn.xitu.io/2017/5/9/1b13166b10c5b1662a636d5f1614488c?imageView2/0/w/1280/h/960/format/webp/ignore-error/1" alt="Gap"></p>
+<p>如图所示，首先当前该记录存在索引，id为5和30的记录将整个分为了 <code>&lt;=5</code> ，<code>&gt;5&amp;&lt;=30</code> 和 <code>&gt;30</code> 三个区间，如果要更新30的数据，那么 <code>&gt;5</code> 的所有区间都会被锁住。</p>
+<h3 id="Insert-Intention-Locks"><a href="#Insert-Intention-Locks" class="headerlink" title="Insert Intention Locks"></a>Insert Intention Locks</h3><p>Insert Intention Locks也就是插入意向锁，但它其实是一种GAP锁，在行数据被插入之前，设定的一种锁，如果两个事务要插入同一个GAP中的不同行记录，它们都会获取这个GAP的插入意向锁，但相互之间不会冲突。</p>
+<h3 id="AUTO-INC-Locks"><a href="#AUTO-INC-Locks" class="headerlink" title="AUTO-INC Locks"></a>AUTO-INC Locks</h3><p>AUTO-INC锁是一种特殊的表级别锁，主要处理表中带有自增列的情况。实际上是为了保证自增的正确性，所以有了这种锁。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://mp.weixin.qq.com/s?__biz=MzI1Mzg4OTMxNQ==&mid=100000550&idx=1&sn=8a5cdff008fc1eed7b5c623c1bdf4ed1&chksm=69ccdd6a5ebb547c7b7baf6be78763fc5065e0a58de202f3e25d8d8ed56e6d1c1146332cfec1#rd" target="_blank" rel="noopener">【MySQL （四） | 五分钟搞清楚InnoDB锁机制】</a></p>
+<p><a href="https://juejin.im/entry/59104bdea0bb9f0058a2a1db" target="_blank" rel="noopener">Innodb 锁类型详解</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/17/mysql%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/eric.png">
+      <meta itemprop="name" content="EricMa">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Eric's Blogs">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/06/17/mysql%E7%B4%A2%E5%BC%95%E5%AE%9E%E7%8E%B0/" class="post-title-link" itemprop="url">mysql索引实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-06-18 06:34:07 / 修改时间：14:45:41" itemprop="dateCreated datePublished" datetime="2020-06-18T06:34:07+08:00">2020-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="B树"><a href="#B树" class="headerlink" title="B树"></a>B树</h2><p>B树是一种多路自平衡搜索树，它类似普通的二叉树，但是B书允许每个节点有更多的子节点。B树示意图如下：</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/7361383-b4226ba0e306bd27.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/800/format/webp" alt="img"></p>
+<p>B树的特点：<br> （1）所有键值分布在整个树中<br> （2）任何关键字出现且只出现在一个节点中<br> （3）搜索有可能在非叶子节点结束<br> （4）在关键字全集内做一次查找，性能逼近二分查找算法</p>
+<h2 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h2><p>B+树是B树的变体，也是一种多路平衡查找树，B+树的示意图为：</p>
+<p><img src="https:////upload-images.jianshu.io/upload_images/7361383-3e9ef22b51d553c3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/800/format/webp" alt="img"></p>
+<p>从图中也可以看到，B+树与B树的不同在于：<br> （1）所有关键字存储在叶子节点，非叶子节点不存储真正的data<br> （2）为所有叶子节点增加了一个链指针</p>
+<h2 id="为什么用B-B-树来实现索引"><a href="#为什么用B-B-树来实现索引" class="headerlink" title="为什么用B/B+树来实现索引"></a>为什么用B/B+树来实现索引</h2><p>红黑树等结构也可以用来实现索引，但是文件系统及数据库系统普遍使用B/B+树结构来实现索引。mysql是基于磁盘的数据库，索引是以索引文件的形式存在于磁盘中的，索引的查找过程就会涉及到磁盘IO消耗，磁盘IO的消耗相比较于内存IO的消耗要高好几个数量级，所以索引的组织结构要设计得在<strong>查找关键字时要尽量减少磁盘IO的次数</strong>。为什么要使用B/B+树，跟磁盘的存储原理有关。</p>
+<h3 id="局部性原理与磁盘预读"><a href="#局部性原理与磁盘预读" class="headerlink" title="局部性原理与磁盘预读"></a><strong>局部性原理与磁盘预读</strong></h3><p> 为了提升效率，要尽量减少磁盘IO的次数。实际过程中，磁盘<strong>并不是每次严格按需读取，而是每次都会预读</strong>。磁盘读取完需要的数据后，会按顺序再多读一部分数据到内存中，这样做的理论依据是计算机科学中注明的局部性原理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">当一个数据被用到时，其附近的数据也通常会马上被使用</span><br><span class="line">程序运行期间所需要的数据通常比较集中</span><br></pre></td></tr></table></figure>
+
+<p>（1）由于磁盘顺序读取的效率很高(不需要寻道时间，只需很少的旋转时间)，<br> 因此对于具有局部性的程序来说，预读可以提高I/O效率.预读的长度一般为页(page)的整倍数。<br> （2）MySQL(默认使用InnoDB引擎),将记录按照页的方式进行管理,每页大小默认为16K(这个值可以修改)。linux 默认页大小为4K。</p>
+<h3 id="B-Tree利用了磁盘预读的机制"><a href="#B-Tree利用了磁盘预读的机制" class="headerlink" title="B-Tree利用了磁盘预读的机制"></a>B-Tree利用了磁盘预读的机制</h3><p> 每次新建节点时，直接申请一个页的空间，这样就保证一个节点物理上也存储在一个页里，加之计算机存储分配都是按页对齐的，就实现了一个结点只需一次I/O。<br> 假设 B-Tree 的高度为 h,B-Tree中一次检索最多需要h-1次I/O（根节点常驻内存），渐进复杂度为O(h)=O(logdN)O(h)=O(logdN)。一般实际应用中，<strong>出度d</strong>是非常大的数字，通常超过100，因此h非常小（通常不超过3，也即索引的B+树层次一般不超过三层，所以查找效率很高）。<br> 而红黑树这种结构，h明显要深的多。由于逻辑上很近的节点（父子）物理上可能很远，<strong>无法利用局部性</strong>，所以红黑树的I/O渐进复杂度也为O(h)，效率明显比B-Tree差很多。</p>
+<h3 id="B-树的优势"><a href="#B-树的优势" class="headerlink" title="B+树的优势"></a>B+树的优势</h3><p>为什么InnoDB的索引使用B+树而不是B树:<br> （1）B+树更适合外部存储(一般指磁盘存储),由于<strong>内节点(非叶子节点)不存储data</strong>，所以一个节点可以存储更多的内节点，<strong>每个节点能索引的范围更大更精确</strong>。也就是说使用B+树单次磁盘IO的信息量相比较B树更大，IO效率更高。<br> （2）mysql是关系型数据库，经常会<strong>按照区间来访问某个索引列</strong>，B+树的<strong>叶子节点间按顺序建立了链表指针</strong>，加强了区间访问性，所以B+树对索引列上的区间范围查询很友好。而B树每个节点的key和data在一起，无法进行区间查找。</p>
+<h2 id="附-B树严格定义"><a href="#附-B树严格定义" class="headerlink" title="附:B树严格定义"></a>附:B树严格定义</h2><p><img src="https:////upload-images.jianshu.io/upload_images/7361383-8129bb0b3bf44e62.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/624/format/webp" alt="img"></p>
+<p>3：所有叶子节点都出现在同一层，且叶子节点不包含任何关键字信息(可以看做是外部接点或查询失败的接点，实际上这些结点不存在，指向这些结点的指针都为null)<br> 4：每个非叶子节点包含有n个关键字信息(n，P0，K1，P1，K2，P2，……，Kn，Pn)，其中：<br> a)   Ki (i=1…n)为关键字，且关键字按顺序升序排序K(i-1)&lt; Ki。<br> b)   Pi为指向子树根的接点，且指针P(i-1)指向子树种所有结点的关键字均小于Ki，但都大于K(i-1)。<br> c)   关键字的个数n必须满足： [ceil(m / 2)-1]&lt;= n &lt;= m-1。</p>
+<p>比如，我们通过上面那张btree结构来查找29这个元素，查找过程为：<br> （1）根据根节点找到文件目录的跟磁盘块1，将其中的信息装入到内存中【磁盘IO操作第1次】<br> （2）此时内存中有两个文件名17,35和三个存储其他磁盘页面地址的数据（指针），根据算法我们发现17 &lt; 29 &lt;35，因此我们找到指针p2<br> （3）根据指针p2我们找到磁盘块3，并将其中信息装入到内存中【磁盘IO操作第2次】<br> （4）此时内存中有两个文件名26，30和三个存储其他磁盘页面地址的数据（指针），根据算法我们发现26 &lt;29&lt;30，因为我们找到指针p2<br> （5）根据指针p2我们定位到磁盘块8，并将其中信息装入内存【磁盘IO操作第3次】<br> （6）此时内存中有两个文件名28，29。根据算法我们查找到文件29，并定位了该文件内存的磁盘地址。</p>
+<hr>
+<p>本文整理自</p>
+<p><a href="https://www.jianshu.com/p/0371c9569736" target="_blank" rel="noopener">以B tree和B+ tree的区别来分析mysql索引实现</a><br><a href="https://link.jianshu.com?t=https://segmentfault.com/a/1190000004690721" target="_blank" rel="noopener">由 B-/B+树看 MySQL索引结构</a><br><a href="https://link.jianshu.com?t=http://m.blog.csdn.net/endlu/article/details/51720299" target="_blank" rel="noopener">BTree和B+Tree详解</a><br><a href="https://link.jianshu.com?t=http://www.cnblogs.com/heiming/p/5865101.html" target="_blank" rel="noopener">MySQL B+树索引和哈希索引的区别</a></p>
+<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
+<hr>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/17/MyISAM%20%E5%92%8C%20InnoDB%20%E7%9A%84%E5%8C%BA%E5%88%AB/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1568,702 +2364,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/%E5%A6%82%E4%BD%95%E7%94%A8LinkedHashMap%E5%AE%9E%E7%8E%B0LRU/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/15/%E5%A6%82%E4%BD%95%E7%94%A8LinkedHashMap%E5%AE%9E%E7%8E%B0LRU/" class="post-title-link" itemprop="url">如何用LinkedHashMap实现LRU</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-16 02:58:41 / 修改时间：11:05:33" itemprop="dateCreated datePublished" datetime="2020-06-16T02:58:41+08:00">2020-06-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇文章分析了HashMap的原理,有网友留言想看LinkedHashMap分析，今天它来了。</p>
-<p>LinkedHashMap是HashMap的子类,在原有HashMap数据结构的基础上,它还维护着一个双向链表链接所有entry,这个链表定义了迭代顺序，通常是数据插入的顺序。</p>
-<div align=center><img src="/images/linkedhashmap.png"/></div>
-
-<p>上图我只画了链表，其实红黑树节点也是一样的，只是节点类型不一样而已</p>
-<p>也就是说我们遍历LinkedHashMap的时候,是从head指针指向的节点开始遍历,一直到tail指向的节点。</p>
-<h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LinkedHashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">HashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">implements</span> <span class="title">Map</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt;</span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Entry</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">HashMap</span>.<span class="title">Node</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">    Entry&lt;K,V&gt; before, after;</span><br><span class="line">    Entry(<span class="keyword">int</span> hash, K key, V value, Node&lt;K,V&gt; next) &#123;</span><br><span class="line">        <span class="keyword">super</span>(hash, key, value, next);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 双向链表头节点</span></span><br><span class="line">    <span class="keyword">transient</span> LinkedHashMap.Entry&lt;K,V&gt; head;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 双向链表尾节点</span></span><br><span class="line">    <span class="keyword">transient</span> LinkedHashMap.Entry&lt;K,V&gt; tail;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 指定遍历LinkedHashMap的顺序,true表示按照访问顺序,false表示按照插入顺序，默认为false</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> accessOrder;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>从LinkedHashMap的定义里面可以看到它单独维护了一个双向链表，用于记录元素插入的顺序。这也是为什么我们打印LinkedHashMap的时候可以按照插入顺序打印的支撑。而accessOrder属性则指明了进行遍历时是按照什么顺序进行访问,我们可以通过它的构造方法自己指定顺序。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">LinkedHashMap</span><span class="params">(<span class="keyword">int</span> initialCapacity,<span class="keyword">float</span> loadFactor,</span></span></span><br><span class="line"><span class="function"><span class="params">                   <span class="keyword">boolean</span> accessOrder)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">super</span>(initialCapacity, loadFactor);</span><br><span class="line">  <span class="keyword">this</span>.accessOrder = accessOrder;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>当accessOrder=true,访问顺序的输出是什么意思呢？来看下下面的一段代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">LinkedHashMap&lt;Integer,Integer&gt; map = <span class="keyword">new</span> LinkedHashMap&lt;&gt;(<span class="number">8</span>, <span class="number">0.75f</span>, <span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">map.put(<span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line">map.put(<span class="number">2</span>, <span class="number">2</span>);</span><br><span class="line">map.put(<span class="number">3</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">map.get(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">System.out.println(map);</span><br></pre></td></tr></table></figure>
-
-<p>输出结果是</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;1&#x3D;1, 3&#x3D;3, 2&#x3D;2&#125;</span><br></pre></td></tr></table></figure>
-
-<p>可以看到get了的数据被放到了双向链表尾部，也就是按照了访问时间进行排序,这就是访问顺序的含义。</p>
-<p>在插入的时候LinkedHashMap复写了HashMap的newNode以及newTreeNode方法,并且在方法内部更新了双向链表的指向关系。</p>
-<p>同时插入的时候调用了afterNodeAccess()方法以及afterNodeInsertion()方法,在HashMap中这两个方法是空实现,而在LinkedHashMap中则有具体实现,这两个方法也是专门给LinkedHashMap进行回调处理的。</p>
-<p>afterNodeAccess()方法中如果accessOrder=true时会移动节点到双向链表尾部。当我们在调用map.get()方法的时候如果accessOrder=true也会调用这个方法,这就是为什么访问顺序输出时访问到的元素移动到链表尾部的原因。</p>
-<p>接下来来看看afterNodeInsertion()的实现</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// evict如果为false，则表处于创建模式,当我们new HashMap(Map map)的时候就处于创建模式</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">afterNodeInsertion</span><span class="params">(<span class="keyword">boolean</span> evict)</span> </span>&#123; <span class="comment">// possibly remove eldest</span></span><br><span class="line">  LinkedHashMap.Entry&lt;K,V&gt; first;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// removeEldestEntry 总是返回false,所以下面的代码不会执行。</span></span><br><span class="line">  <span class="keyword">if</span> (evict &amp;&amp; (first = head) != <span class="keyword">null</span> &amp;&amp; removeEldestEntry(first)) &#123;</span><br><span class="line">      K key = first.key;</span><br><span class="line">      removeNode(hash(key), key, <span class="keyword">null</span>, <span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>看到这里我有一个想法,可以通过LinkedHashMap来实现LRU(Least Recently Used,即近期最少使用),只要满足条件,就删除head节点。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LRUCache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">LinkedHashMap</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">    </span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> cacheSize;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">LRUCache</span><span class="params">(<span class="keyword">int</span> cacheSize)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">super</span>(<span class="number">16</span>,<span class="number">0.75f</span>,<span class="keyword">true</span>);</span><br><span class="line">      <span class="keyword">this</span>.cacheSize = cacheSize;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/**</span></span><br><span class="line"><span class="comment">   * 判断元素个数是否超过缓存容量</span></span><br><span class="line"><span class="comment">   */</span></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">removeEldestEntry</span><span class="params">(Map.Entry&lt;K, V&gt; eldest)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> size() &gt; cacheSize;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>就这样一个简单的LRU Cache就实现了,以后面试官如果喊你给它实现一个LRU,你就这样写给他,如果他让你换一种方式,你就用链表使用同样的思维给他实现一个,然后你就可以收割offer了。</p>
-<p>对于删除,LinkedHashMap也同样是在HashMap的删除逻辑完成后，调用了afterNodeRemoval这个回调方法来更正链表指向关系。</p>
-<p>其实你只要看了上一篇文章再也不怕面试官问我JDK8 HashMap,再记得LinkedHashMap只是多维护了一个双向链表之后,再看LinkedHashMap中关于链表操作的代码就非常简单了。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5d567642e51d4561f40add67" target="_blank" rel="noopener">如何用LinkedHashMap实现LRU</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java8%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/15/Java8%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/" class="post-title-link" itemprop="url">Java8函数式编程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-16 02:46:42 / 修改时间：11:09:24" itemprop="dateCreated datePublished" datetime="2020-06-16T02:46:42+08:00">2020-06-16</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.7k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="函数式编程的由来"><a href="#函数式编程的由来" class="headerlink" title="函数式编程的由来"></a>函数式编程的由来</h3><p>在很长的一段时间里，Java一直是面向对象的语言，一切皆对象，如果想要调用一个函数，函数必须属于一个类或对象，然后在使用类或对象进行调用。但是在其它的编程语言中，如js，c++，我们可以直接写一个函数，然后在需要的时候进行调用，即可以说是面向对象编程，也可以说是函数式编程。</p>
-<p>从功能上来看，面向对象编程没什么不好的地方，但是从开发的角度来看，面向对象编程会多<strong>写很多可能是重复的代码行</strong>。比如创建一个Runnable的匿名类的时候：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Runnable runnable = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"do something..."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>这一段代码中真正有用的只有run方法中的内容，<strong>剩余的部分都是属于Java编程语言的结构部分</strong>，没什么用，但是要写。</p>
-<p>幸运的是Java8开始，引入了函数式编程接口与Lambda表达式，帮助我们<code>写更少更优雅的代码</code></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 一行即可</span></span><br><span class="line">Runnable runnable = () -&gt; System.out.println(<span class="string">"do something..."</span>);</span><br></pre></td></tr></table></figure>
-
-<h3 id="函数式接口-Functional-interfaces"><a href="#函数式接口-Functional-interfaces" class="headerlink" title="函数式接口(Functional interfaces)"></a>函数式接口(Functional interfaces)</h3><p>一个接口类<strong>只有一个抽象的方法</strong>叫做函数式接口(Functional Interface)，在JDK中大部分函数式接口都会标记上<code>@FunctionalInterface</code>注解，并不是所有的函数式接口都要写<code>@FunctionalInterface</code>注解，只是用来方便我们区分哪些是函数式接口的，如果标记了这个注解，内部有多个抽象方法的时候，会报编译错误。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Error:(3, 1) java: 意外的 @FunctionalInterface 注释</span><br><span class="line"> xxx 不是函数接口</span><br><span class="line"> 在 接口 xxx 中找到多个非覆盖抽象方法</span><br></pre></td></tr></table></figure>
-
-<p>当一个类是函数式接口的时候，我们可以直接使用Lambda表达式来实例化它，而不用写很多模板式代码。</p>
-<p>写法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 类名称  变量 = (参数) -&gt; (函数体)</span></span><br><span class="line"><span class="comment">// 如</span></span><br><span class="line">FunctionTest test = () -&gt; &#123; &#125;;</span><br></pre></td></tr></table></figure>
-
-<h4 id="内置函数式接口"><a href="#内置函数式接口" class="headerlink" title="内置函数式接口"></a>内置函数式接口</h4><p>JDK中已经内置了一些标准的函数式接口，位于<code>java.util.function</code>包下，满足我们大多数情况下的需求。包下的接口都比较通用，如果我们想要写新的函数式接口，可以首先看这个包下是不是已经提供了。</p>
-<p>那么这个包提供了那些接口呢？</p>
-<ul>
-<li><p>最常见的四种，<strong>Function，Consumer，Supplier，Predicate</strong>。标准输入输出，优雅代码所推荐的写法</p>
-<ul>
-<li>Function：即一个入参一个出参的场景。</li>
-<li>Consumer：一个入参，但是没有出参</li>
-<li>Supplier：无入参，一个出参</li>
-<li>Predicate：可以看做是特殊的Function，一个入参，出参为bool类型。</li>
-</ul>
-</li>
-<li><p>两个入参的函数式接口，即两个入参，一个出参。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BiFunction&lt;T, U, R&gt;</span><br></pre></td></tr></table></figure>
-
-<p>, 最典型的使用案例即Java的Map方法。</p>
-<ul>
-<li>BiFunction： 两个入参，一个泛型出参</li>
-<li>ToDoubleBiFunction,ToIntBiFunction,ToLongBiFunction。两个入参，返回原始类型的出参</li>
-</ul>
-</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">HashMap&lt;String, Object&gt; map = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">map.put(<span class="string">"a"</span>,<span class="number">1</span>);</span><br><span class="line">map.put(<span class="string">"b"</span>,<span class="number">2</span>);</span><br><span class="line">map.replaceAll((o, o2) -&gt; o + o2.toString());</span><br><span class="line">System.out.println(map.values())</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>一元函数式接口， 可以看做是特殊的Function接口，入参与出参有相同的类型。UnaryOperator，相同类型的转换。</li>
-<li>原始类型Function，因为Java的原始类型或者叫做主类型，int，short，double之类的，不能作为泛型参数。官方对这些原始类型提供了特殊的函数式接口<ul>
-<li>以int类型：IntFunction, IntComsumer,IntSupplieer, IntPredicate, IntToDoubleFcuntion, IntToLongFunction, IntUnaryOperator, ToIntFunction</li>
-</ul>
-</li>
-</ul>
-<p>官方：</p>
-<p><a href="https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html" target="_blank" rel="noopener">docs.oracle.com/javase/8/do…</a></p>
-<h3 id="Lambda表达式"><a href="#Lambda表达式" class="headerlink" title="Lambda表达式"></a>Lambda表达式</h3><p>如果理解了函数式接口，在一定程度上也是理解了Lambda表达式，<strong>Lambda表达式相当于对函数式接口的使用</strong>，我们不能只去写接口，但不去使用。</p>
-<p>尽管Java支持了函数式接口，但是Java的函数仍然要寄托与类之中，不能单独存在，但是因为函数式接口只有一个抽象的函数，那么我们很明确的知道要使用拿一个方法。所以<strong>编译器可以自动帮我们推导要用哪个方法，不用在写多余的模板式代码</strong>：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Runnable runnable = () -&gt; System.out.println(<span class="string">"do something..."</span>);</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>首先Runnable是一个函数式的接口，所以我们可以使用Lambda表达式来实例化它</li>
-<li>因为run方法没有参数，所以lambda表达式：<strong>(argument) -&gt; {body}</strong>，参数为空<code>()</code></li>
-<li>关于函数体部分，如果我们只有一行代码可以省略掉{}。</li>
-</ul>
-<p>除了函数调用的Lambda表达式，还有一些<strong>方法的引用操作</strong>，使用<code>::</code>，<strong>引用方法或者构造器而没有真正的实例化对象</strong>，可以探索下</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String::toUpperCase</span><br><span class="line">System.out::println</span><br><span class="line">&quot;abc&quot;::length</span><br><span class="line">ArrayList::new</span><br><span class="line">int[]::new</span><br></pre></td></tr></table></figure>
-
-<p>官方：</p>
-<p><a href="https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/Lambda-QuickStart/index.html" target="_blank" rel="noopener">www.oracle.com/webfolder/t…</a></p>
-<p><a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html" target="_blank" rel="noopener">docs.oracle.com/javase/tuto…</a></p>
-<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><p>我们可以通过以下实例（Java8Tester.java）来了解函数式接口 Predicate <T> 的使用：</p>
-<p>Java8Tester.java 文件:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.Arrays;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"><span class="keyword">import</span> java.util.function.Predicate;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Java8Tester</span> </span>&#123;</span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String args[])</span></span>&#123;</span><br><span class="line">      List&lt;Integer&gt; list = Arrays.asList(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">8</span>, <span class="number">9</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate = n -&gt; true</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// n 如果存在则 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出所有数据:"</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// 传递参数 n</span></span><br><span class="line">      eval(list, n-&gt;<span class="keyword">true</span>);</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate1 = n -&gt; n%2 == 0</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// 如果 n%2 为 0 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出所有偶数:"</span>);</span><br><span class="line">      eval(list, n-&gt; n%<span class="number">2</span> == <span class="number">0</span> );</span><br><span class="line">        </span><br><span class="line">      <span class="comment">// Predicate&lt;Integer&gt; predicate2 = n -&gt; n &gt; 3</span></span><br><span class="line">      <span class="comment">// n 是一个参数传递到 Predicate 接口的 test 方法</span></span><br><span class="line">      <span class="comment">// 如果 n 大于 3 test 方法返回 true</span></span><br><span class="line">        </span><br><span class="line">      System.out.println(<span class="string">"输出大于 3 的所有数字:"</span>);</span><br><span class="line">      eval(list, n-&gt; n &gt; <span class="number">3</span> );</span><br><span class="line">   &#125;</span><br><span class="line">    </span><br><span class="line">   <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">eval</span><span class="params">(List&lt;Integer&gt; list, Predicate&lt;Integer&gt; predicate)</span> </span>&#123;</span><br><span class="line">      <span class="keyword">for</span>(Integer n: list) &#123;</span><br><span class="line">        </span><br><span class="line">         <span class="keyword">if</span>(predicate.test(n)) &#123;</span><br><span class="line">            System.out.println(n + <span class="string">" "</span>);</span><br><span class="line">         &#125;</span><br><span class="line">      &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>执行以上脚本，输出结果为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">$ javac Java8Tester.java </span><br><span class="line">$ java Java8Tester</span><br><span class="line">输出所有数据:</span><br><span class="line">1 </span><br><span class="line">2 </span><br><span class="line">3 </span><br><span class="line">4 </span><br><span class="line">5 </span><br><span class="line">6 </span><br><span class="line">7 </span><br><span class="line">8 </span><br><span class="line">9 </span><br><span class="line">输出所有偶数:</span><br><span class="line">2 </span><br><span class="line">4 </span><br><span class="line">6 </span><br><span class="line">8 </span><br><span class="line">输出大于 3 的所有数字:</span><br><span class="line">4 </span><br><span class="line">5 </span><br><span class="line">6 </span><br><span class="line">7 </span><br><span class="line">8 </span><br><span class="line">9</span><br></pre></td></tr></table></figure>
-
-<h3 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h3><p>Java的函数式编程远远超出这里所表达的内容，还需要更多的探索。当然这里主要介绍了Java的函数式接口，已经在java.util.function包下常见的函数式接口，最后对lambda表达式做了简单的说明。</p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://juejin.im/post/5df2d501f265da33eb6be914" target="_blank" rel="noopener">Java8函数式编程</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/15/Java%20%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/" class="post-title-link" itemprop="url">Java 运行时数据区</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-06-15 11:07:52" itemprop="dateCreated datePublished" datetime="2020-06-15T11:07:52+08:00">2020-06-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-06-16 11:05:49" itemprop="dateModified" datetime="2020-06-16T11:05:49+08:00">2020-06-16</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/JVM/" itemprop="url" rel="index"><span itemprop="name">JVM</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>7.2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>7 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="为什么要进行内存区域划分"><a href="#为什么要进行内存区域划分" class="headerlink" title="为什么要进行内存区域划分"></a>为什么要进行内存区域划分</h2><p><a href="https://docs.oracle.com/javase/specs/jvms/se8/html/" target="_blank" rel="noopener">JVM规范</a> 规定，JVM 在执行 Java 程序的过程中会把它所管理的内存划分为若干个不同的数据区域。这些区域都有各自的用途。以及创建和销毁的时间，有的区域随着虚拟机进程的启动就存在了，而有些区域则依赖用户线程的启动和结束而建立和销毁。JVM 规范对 JVM 定义了运行时统一的内存划分规范，统一了标准，类似于 JDBC 规范一样。JVM 也有许多厂商的不同产品。比如下面的这些：</p>
-<table>
-<thead>
-<tr>
-<th align="center">厂商</th>
-<th>JVM</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center">Oracle-SUN</td>
-<td>Hotspot</td>
-</tr>
-<tr>
-<td align="center">Oracle</td>
-<td>JRocket</td>
-</tr>
-<tr>
-<td align="center">IBM</td>
-<td>J9 JVM</td>
-</tr>
-<tr>
-<td align="center">阿里</td>
-<td>Taobao JVM</td>
-</tr>
-</tbody></table>
-<p>其内存区域划分规范对于 JVM 的含义类似于我们 Java 中的接口，都是起到了规范的作用，JVM 是一台可以运行 Java 应用程序的抽象的计算机。在 JVM 中存在三个重要的概念：</p>
-<ul>
-<li>JVM 规范：它定义了虚拟机运行的规范，但是由 Oracle（SUN）或者其它厂商实现</li>
-<li>Java 运行时环境(JRE：Java Runtime Environment)：它是 JVM 规范的具体实现</li>
-<li>JVM 实例：编写好 Java 代码之后，运行 Java 程序，此时就会创建 JMV 实例</li>
-</ul>
-<p>对于 Java 程序员来说，在虚拟机自动内存管理机制的帮助下，不再需要为每一个对象去编写内存释放的代码，不要像 C 或者 C++ 要时刻注意着内存泄漏和内存溢出的问题，这种由虚拟机去管理一切看起来都很美好。不过，也正是因为 Java 设计者把内存控制全部交给了 JVM，一旦出现了内存泄漏和溢出方面的问题，如果不了解虚拟机是怎么分配运行时内存的，那么排查错误将是一项非常艰难的工作。</p>
-<h2 id="运行时数据区域的组成"><a href="#运行时数据区域的组成" class="headerlink" title="运行时数据区域的组成"></a>运行时数据区域的组成</h2><p>为什么我们经常把运行时数据区叫做 Java 内存模型（JMM：Java Memory Model），是因为运行时数据区太过于分散，没有联系，所以才会有 JVM 内存模型这个词，让我们把这些东西联系起来，方便记忆。JVM 运行时数据区中有些数据是一直存在的，被所有线程所共享。而有些区域则是线程私有的，伴随着线程的开始而创建，线程的结束而销毁。所以我们可以把JMM 分为两类：<code>线程共享的</code>、<code>线程私有的</code>。根据 JVM 虚拟机规范的规定，JVM 虚拟机运行时数据区划分如下图所示：</p>
-<div align=center><img src="/images/jvmruntime.png"/></div>
-
-<p>运行时数据区主要分为以下五个部分：</p>
-<ul>
-<li><strong>方法区</strong></li>
-<li><strong>虚拟机栈</strong></li>
-<li><strong>本地方法栈</strong></li>
-<li><strong>堆</strong></li>
-<li><strong>程序计数器</strong></li>
-</ul>
-<p>其中，按照线程在各个区域的数据是否共享划分为：</p>
-<ul>
-<li>线程共享部分：方法区、Java 堆以及运行时常量池（归属于方法区）</li>
-<li>线程私有部分：虚拟机栈、本地方法栈、程序计数器</li>
-</ul>
-<p>接下来看看 Java 运行时数据区中各个部分的用途和特点：</p>
-<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><h5 id="什么是方法区"><a href="#什么是方法区" class="headerlink" title="什么是方法区"></a>什么是方法区</h5><p>在 JVM 中，方法区是可供各个线程共享运行时的内存区域。方法区域传统语言中的编译代码存储区或者操作系统进程的正文段的作用非常类似，它存储了每一个类的结构信息，例如运行时常量池、字段和方法数据、类的构造函数和普通方法的字节码内容、还包括一些类、实例、接口初始化的时候用到的特殊方法。</p>
-<p>在 Hotspot 虚拟机中，JDK 1.7 及以前版本用<code>永久代（Permanent Generation）</code>定义方法区，而在 JDK 1.8 以后则称为 <code>元空间（Metapace）</code>。<br>方法区有个别名叫做非堆（Non-Heap），用于区别于 Java 堆区。默认最小值为 16 MB，最大值为 64 MB，可通过 <code>-XX:PermSize</code> 和 <code>-XX:MaxPermSize</code> 参数设置方法的大小。<br>JDK 1.7 及之前的版本设置为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:PermSize&#x3D;10m</span><br><span class="line">-XX:MaxPermSize&#x3D;55m</span><br></pre></td></tr></table></figure>
-
-<p>JDK 1.8 及之后的版本设置为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:MetaspaceSize&#x3D;10m</span><br><span class="line">-XX:MaxMetaspaceSize&#x3D;55m</span><br></pre></td></tr></table></figure>
-
-<h5 id="方法区的特点"><a href="#方法区的特点" class="headerlink" title="方法区的特点"></a>方法区的特点</h5><ul>
-<li>线程共享：方法区是堆的一个逻辑部分，因此和对一样是线程共享的。整个虚拟机中只有一个方法区。</li>
-<li>永久代：方法区中的信息一般要长期存在，而且它又是堆的逻辑部分，因此用堆的划分方法，我们把方法区称作永久代（方法区是规范，永久代是实现）。</li>
-<li>内存回收少：方法区中的信息一般需要长期存在，回收一遍内存之后可能之后少量信息无效。对方法区的内存回收主要是 <code>对常量池的回收和对类型的卸载</code>。</li>
-<li>JVM 规范对方法区的定义比较宽松：和堆一样，允许固定大小，也允许可扩展大小，还允许不实现垃圾回收。</li>
-</ul>
-<p>方法区是所有都线程共享的，在一定的条件下它也会被 GC，当方法区域需要使用的内存超过其允许的大小时，会抛出 OOM（OutOfMemory）错误信息。</p>
-<h5 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h5><p>类加载后，Class 文件结构中常量池中的数据将被存储在运行时常量池中。我们一般在一个类中通过 <code>public static final</code> 来声明一个常量或者声明一个字符串 <code>String str = &quot;abc&quot;</code>。这个类编译后产生的 Class 文件，这个类的所有信息都存储在这个 class 文件中，当这个类被 JVM 加载之后，class 文件中的常量就存放在方法区的运行时常量池中。而且在运行期间，可以向常量池添加新的常量。比如，String 类的 intern() 方法就能在运行期间向常量池中添加新的常量。</p>
-<p>当运行时常量池中的某些常量没有被对象引用，同时也没有被变量引用时，那么就需要垃圾收集器回收。JVM 为每个已加载的类型维护一个常量池，常量池就是这个类型用到的常量的一个有序集合。其包括直接常量(基本类型，String)和对其他类型、方法、字段的符号引用。即字面量和符号引用，其中字面量指的是整个类中的字面量。包含成员变量、静态方法、非静态方法等中的字面量。池中的数据和数组一样通过索引访问。</p>
-<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><h5 id="什么是虚拟机栈"><a href="#什么是虚拟机栈" class="headerlink" title="什么是虚拟机栈"></a>什么是虚拟机栈</h5><p>Java 虚拟机栈是描述 Java 方法运行过程的内存模型。Java 虚拟机栈会为每一个即将运行的方法创建一块叫做 <code>栈帧</code> 的区域，这块区域用于存储用于方法在运行时所需要的一些信息，这些信息具体包括：</p>
-<ul>
-<li>局部变量表</li>
-<li>操作数栈</li>
-<li>动态链接</li>
-<li>方法出口信息</li>
-<li>其它信息</li>
-</ul>
-<p>当一个方法即将被运行时，Java 虚拟机栈首先会在 Java 虚拟机栈中为该方法创建一块”栈帧”，栈帧中包含局部变量表，操作数栈，动态链接，方法出口信息等。当方法在运行过程中需要创建局部变量时，就将局部变量的值存入栈帧的局部变量表中。当这个方法执行完毕后，这个方法所对应的栈帧将会出栈，并释放内存空间。<strong>Java 虚拟机栈上数据都是私有的</strong>，其他线程都不能访问该线程的栈数据。在函数中定义的一些基本类型的变量数据和对象的引用变量都在函数的栈内存中分配。当在一段代码块中定义一个变量时，Java 就会在栈中为这个变量分配内存空间，当该变量退出该作用域后，Java 会自动释放掉为该变量所分配的内存空间，该内存空间可以立即被另作他用。</p>
-<h5 id="虚拟机栈的特点"><a href="#虚拟机栈的特点" class="headerlink" title="虚拟机栈的特点"></a>虚拟机栈的特点</h5><ul>
-<li>局部变量表的创建是在方法被执行的时候，随着栈帧的创建而创建。局部变量表的大小在程序的编译期间就确定下来了，在创建的时候需要事先指定好大小，在方法运行的过程中局部变量表的大小是不会发生改变的。</li>
-<li>Java虚拟机栈会出现两种错误（StackOverFlowError 和 OutOfMemoryError），<code>StackOverFlowError</code>：若 Java 虚拟机栈的内存大小不允许动态扩展，那么当线程请求栈的深度超过当前 Java 虚拟机栈的最大深度的时候就会抛出 StackOverFlowError。<code>OutOfMemoryError</code>：若 Java 虚拟机栈的内存大小不允许动态扩展，那么当线程请求栈时内存用完了，无法再动态扩展了，此时就会抛出 StackOverFlowError。</li>
-<li>虚拟机栈也是线程私有的，每个线程都有各自的 Java 虚拟机栈，而且随着线程的创建而创建，随着线程的死亡而死亡。</li>
-<li>栈中的数据在线程内部是共享的，要注意这种数据的共享与两个对象引用同 时指向一个对象的这种共享是不同的。它是由编译器完成的，它有利于节省空间。</li>
-</ul>
-<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>本地方法指的是使用 Java 以外的其他语言编写的代码，因为有些时候 Java 无法直接操作一些底层资源，只能通过 C 或汇编操作。因此需要通过本地方法来实现。而本地方法栈就是设计用来调用这些非 Java 语言方法的。会存放对应的局部变量信息、返回结果等。本地方法栈和 Java 虚拟机栈实现的功能类似，只不过本地方法栈是本地方法运行的内存模型。区别是虚拟机栈为虚拟机执行 Java 方法服务，而本地方法栈则是为虚拟机用到的 Native 方法服务，本地方法被执行的时候，在本地方法栈也会创建一个栈帧，用于存放该本地方法的局部变量表、操作数栈、动态链接以及出口信息等。方法执行完毕后相应的栈帧也会出栈并释放内存空间。</p>
-<p><strong>HotSpot虚拟机将虚拟机栈和本地方法栈合并实现了.</strong></p>
-<p>本地方法栈也会抛出两种错误，StackOverFlowError 和 OutOfMemoryError。</p>
-<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><h5 id="什么是堆"><a href="#什么是堆" class="headerlink" title="什么是堆"></a>什么是堆</h5><p>堆是用来存放对象（类、接口、数组）的内存空间,<strong>是JVM管理的最大的一块内存空间</strong>。几乎所有的对象都存储在堆中（实例创建后，成员变量也随对象存在堆中，随着垃圾回收进行释放）。堆是一个运行时数据区，在程序运行时动态分配内存。<br>在堆中产生了一个数组对对象后，还可以在栈中定义一个特殊的变量，让栈用这个变量的取值等于数组或对象在堆地址内存中的首地址，栈中的这个变量就成了数组或对象的引用变量。引用变量就相当于是为数组和对象起的一个名称，以后就可以在程序中使用栈中的引用变量来访问堆中数组或对象。<br>引用变量是普通的变量，定义时在栈中分配，引用变量在程序运行到其作用域外后释放。而数组和对象本身在堆中分配，即使程序运行到使用 new 产生数组或者对象的语句所在的代码之外，数组和对象本身占据的内存空间不会被释放，数组和对象在没有引用指向它的时候才会变为垃圾，不能再被使用。仍然占据内存空间不放，在随后的一个不确定的时期被 GC 垃圾回收收走。这也是 Java 比较占用内存的原因之一，实际上，栈中的变量指向堆内存的变量，这就是 Java 中的指针。</p>
-<h5 id="堆的特点"><a href="#堆的特点" class="headerlink" title="堆的特点"></a>堆的特点</h5><ul>
-<li>线程共享：整个 JVM 只有一个堆，所有的线程都访问同一个堆。而程序计数器、Java 虚拟机栈、本地方法栈都是一个线程对应一个。</li>
-<li>在虚拟机启动的时候创建。</li>
-<li>垃圾回收的主要场所。</li>
-<li>堆的大小既可以固定也可以扩展，但主流的虚拟机堆的大小是可扩展的。</li>
-<li>堆可以分为：新生代和老年代</li>
-</ul>
-<h6 id="新生代"><a href="#新生代" class="headerlink" title="新生代"></a>新生代</h6><p>新生代程序新创建的对象都在新生代分配的，新生代由 <code>Eden Space</code> 和两块大小相同的 <code>Survivor Space</code>（通常又称 S0 和 S1或 FROM 和 To ）构成，可通过 -Xmn 参数来指定新生代的大小，也可以通过</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:SurvivorRation</span><br></pre></td></tr></table></figure>
-
-<p> 来调整 Eden Space 及 Survivor Space 的大小，因此新生代又可被分为：Eden，From Survivor，To Survivor。</p>
-<h6 id="老年代"><a href="#老年代" class="headerlink" title="老年代"></a>老年代</h6><p>老年代用户存放经过多次新生代垃圾回收仍然存活的对象，例如缓存对象，新建的对象也有可能直接进入老年代。主要有两种情况：一种是 <code>大对象</code>，可通过启动参数设置</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-XX:PretenureSizeThreshold&#x3D;1024</span><br></pre></td></tr></table></figure>
-
-<p>（单位为字节，默认为 0）来代表超过多大时就不再在新生代分配，而是直接在老年代分配。另一种是 <code>大的数组对象</code>，且数组中无引用外部对象。老年代所占的内存大小为 -Xmx 对应的值减去 -Xmn（新生代）对应的值。不同的区域存放具有不同生命周期的对象。这样可以根据不同的区域使用不同的垃圾回收算法，从而更具有针对性，从而更加高效。</p>
-<ul>
-<li>JDK 1.8 及之后版本堆的内存空间分配（老年代：三分之二的堆空间，年轻代：三分之一的堆空间）</li>
-<li>eden 区： 十分之八的年轻代空间</li>
-<li>survivor 0：十分之一的年轻代空间</li>
-<li>survivor 1：十分之一的年轻代空间</li>
-</ul>
-<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><h5 id="什么是程序计数器"><a href="#什么是程序计数器" class="headerlink" title="什么是程序计数器"></a>什么是程序计数器</h5><p>程序计数器是一块比较小的内存空间，可以把它看作当前线程正在执行的字节码的行号指示器。程序计数器里面记录的是当前线程正在执行的那一条字节码指令的地址。当然，<code>程序计数器是线程私有的</code>。但是，如果当前线程执行的是一个线程本地的方法，那么此时这个线程的程序计数器为空。</p>
-<blockquote>
-<p>本地方法为 Native Method，即由 native 修饰的方法。在定义一个 native 方法时，并不提供实现（类似 Java 中的接口或者抽象方法），因为其实现往往是由外面的 C 或者 C++ 等非 Java 语言实现的。</p>
-</blockquote>
-<h5 id="程序计数器的作用"><a href="#程序计数器的作用" class="headerlink" title="程序计数器的作用"></a>程序计数器的作用</h5><p>程序计数器主要有两个作用：</p>
-<ul>
-<li>字节码解释器通过改变程序计数器来一次读取指令，从而实现代码的流程控制，如顺序执行、选择、循环、异常处理等。</li>
-<li>在多线程的条件下，程序计数器用来记录当前线程执行的位置，从而当线程被切换回来的时候能够知道这个线程上次运行到哪个地方了。</li>
-</ul>
-<h5 id="程序计数器的特点"><a href="#程序计数器的特点" class="headerlink" title="程序计数器的特点"></a>程序计数器的特点</h5><ul>
-<li>是一块比较小的存储空间</li>
-<li>是线程私有的，即每一个线程都有一个独立程序计数器</li>
-<li>是唯一一个不会出现 OOM（OutOfMemoryError）的内存区域</li>
-<li>声明周期随着线程的开始而创建，随着线程的终止而结束</li>
-</ul>
-<h2 id="方法区、永久代和元空间的关系"><a href="#方法区、永久代和元空间的关系" class="headerlink" title="方法区、永久代和元空间的关系"></a>方法区、永久代和元空间的关系</h2><h3 id="方法区和永久代的关系"><a href="#方法区和永久代的关系" class="headerlink" title="方法区和永久代的关系"></a>方法区和永久代的关系</h3><p>涉及到内存模型，往往都会提到永久代，那么它和方法区又是什么关系呢？<br><a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.5" target="_blank" rel="noopener">JVM 虚拟机规范</a> 只是规定了有方法区这个概念和它的作用，并没有规定如何实现它。那么，在不同 JVM 上方法区的实现肯定是不同的。同时大多数公司用的 JVM 都是 Oracle 公司的 HotSpot。<strong>在 HotSpot 上把 GC 分代收集扩展至方法区，或者说使用永久代(PermGen Space)来实现方法区。</strong>因此，我们可以得到结论，<strong>永久代是 HotSpot 的概念</strong>，方式区是 JVM 规范的定义，是一种规范，而永久代是一种实现，一个是标准一个是实现。其它的虚拟机实现并没有永久代这么一说。<strong>在 JDK 1.7 及之前的实现中，HotSpot 使用永久代实现方法区</strong>，HotSpot 使用 GC 分代来实现方法区内存回收，可以使用以下参数来调准方法区的大小：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:PermSize     # 方法区初始大小</span><br><span class="line">-XX:MaxPermSize  # 方法区最大大小（超过这个值会抛出 OutOfMemoryError 异常：java.lang.OutOfMemoryError：PermGen）</span><br></pre></td></tr></table></figure>
-
-<p>永久代仍存在于JDK1.7中，并没完全移除，譬如</p>
-<ul>
-<li><p>符号引用(Symbols)转移到了native heap；</p>
-</li>
-<li><p>字面量(interned strings)转移到了java heap;</p>
-</li>
-<li><p>String.intern()方法的实现也有变化；</p>
-</li>
-<li><p>类的静态变量(class statics)转移到了java heap；</p>
-</li>
-</ul>
-<p>不断的使用String.intern()方法，在JDK1.6中会产生java.lang.OutOfMemoryError: PermGen space这个错误，在JDK1.7中就会报java.lang.OutOfMemoryError: Java Heap space，而在JDK1.8 中，也是java.lang.OutOfMemoryError: Java Heap space，但是还会多出warning;</p>
-<p>在JDK1.8中，永久代被移除，取而代之的是元空间概念，也就是使用本地内存。对参数PermSize以及MaxPermSize的设置已经从1.8中移除。</p>
-<h3 id="元空间"><a href="#元空间" class="headerlink" title="元空间"></a>元空间</h3><p>对于 Java 8，HotSpot 取消了永久代，那么是不是也就没有方法区了吗？<br>当然不是，方法区是一个规范，规范没变，它就会一直在。那么取代永久代的就是元空间。它和永久代有什么不同呢？</p>
-<ul>
-<li>存储位置不同，永久代是堆的一部分，和新生代、老年代地址是连续的，而<strong>元空间属于本地内存(直接内存)</strong></li>
-<li>存储内容不同，<strong>元空间存储类的元信息</strong>，<strong>静态变量和常量池等并入堆中。相当于永久代的数据被分到了堆和元空间中。</strong></li>
-</ul>
-<h2 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h2><p>直接内存也称本地内存或堆外内存, 不属于虚拟机运行时数据区内存，该空间划分在虚拟机外，大小不受堆内存容量限制。</p>
-<p>JDK1.4中加入新的NIO（New Input/OutPut）类，引入了一种基于通道（Channel）与缓冲区（Buffer）的I/O方式，可以通过Native函数库直接分配<strong>堆外内存</strong>，然后通过Java堆中的<code>DirectByteBuffer</code>对象来对这块内存的引用进行操作，避免数据在Java堆与Native堆中数据的来回复制。</p>
-<p>直接内存受物理机剩余可用内存、处理器寻址空间的限制。如果虚拟机堆内存分配太大，会导致剩余直接内存空间不足而出现OutOfMemoryError异常。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h6 id="1-JVM-内存模型一共有两个“栈”，分别是-Java-虚拟机栈和本地方法栈"><a href="#1-JVM-内存模型一共有两个“栈”，分别是-Java-虚拟机栈和本地方法栈" class="headerlink" title="1 JVM 内存模型一共有两个“栈”，分别是 Java 虚拟机栈和本地方法栈"></a>1 JVM 内存模型一共有两个“栈”，分别是 Java 虚拟机栈和本地方法栈</h6><p>两个“栈”功能类似，都是方法运行过程的内存模型。并且两个“栈”内部构造相同，都是方法私有的。只不过 Java 虚拟机栈描述的是 Java 方法运行过程的内存模型，而本地方法栈是描述 Java 本地方法运行过程的内存模型。</p>
-<h6 id="2-JVM-内存模型中一共有两个“堆”，分别是原本的堆和方法区"><a href="#2-JVM-内存模型中一共有两个“堆”，分别是原本的堆和方法区" class="headerlink" title="2 JVM 内存模型中一共有两个“堆”，分别是原本的堆和方法区"></a>2 JVM 内存模型中一共有两个“堆”，分别是原本的堆和方法区</h6><p>方法区本质上还是属于堆的一个逻辑部分。堆中存放对象，方法区中存放类信息、常量、静态变量，即时编译器编译后的代码等。</p>
-<h6 id="3-堆是-JVM-中最大的一块内存区域，也是垃圾收集器主要工作的地方"><a href="#3-堆是-JVM-中最大的一块内存区域，也是垃圾收集器主要工作的地方" class="headerlink" title="3 堆是 JVM 中最大的一块内存区域，也是垃圾收集器主要工作的地方"></a>3 堆是 JVM 中最大的一块内存区域，也是垃圾收集器主要工作的地方</h6><p>在创建对象的时候，非静态成员会被加载到堆内存中，并完成成员变量的初始化。也就是说所有的非静态成员（成员变量、成员方法、构造方法、构造代码块和普通代码块）都是保存在堆内存中的。但是方法调用的时候，调用的方法会在栈内存中执行，构造代码块也会在栈内存中执行。</p>
-<h6 id="4-线程私有与共享"><a href="#4-线程私有与共享" class="headerlink" title="4 线程私有与共享"></a>4 线程私有与共享</h6><p>Java 虚拟机栈、程序计数器和本地方法栈都是线程私有的，也就是说每个线程都是各自的程序计数器、Java 虚拟机栈和本地方法栈。他们的生命周期和线程的生命周期一样。而堆、方法区则是线程共享的，在 JVM 中只有一个堆，一个方法区。并在 JVM 启动的时候就创建，直到 JVM 停止的时候才销毁。</p>
-<hr>
-<p>参考文章：<br><a href="https://betsol.com/2017/06/java-memory-management-for-java-virtual-machine-jvm/" target="_blank" rel="noopener">Java Memory Management for Java Virtual Machine (JVM)</a><br><a href="https://docs.oracle.com/javase/specs/jvms/se8/html" target="_blank" rel="noopener">The Java® Virtual Machine Specification（Java SE 8 Edition）</a></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://segmentfault.com/a/1190000020812909" target="_blank" rel="noopener">Java 运行时数据区域</a></p>
-<p><a href="https://www.jianshu.com/p/fe6af43c02eb" target="_blank" rel="noopener">JVM内存管理—直接内存</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/15/Java%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%9C%BA%E5%88%B6%E6%80%BB%E7%BB%93/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/eric.png">
-      <meta itemprop="name" content="EricMa">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Eric's Blogs">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/15/Java%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%9C%BA%E5%88%B6%E6%80%BB%E7%BB%93/" class="post-title-link" itemprop="url">Java异常处理机制总结</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2020-06-15 09:26:52 / 修改时间：19:54:25" itemprop="dateCreated datePublished" datetime="2020-06-15T09:26:52+08:00">2020-06-15</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>8.6k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h3><p>异常是发生在程序执行过程中阻碍程序正常执行的错误事件，当一个程序出现错误时，可能的情况有如下3种：</p>
-<ul>
-<li>语法错误<br> 代码的格式错了，某个字母输错了</li>
-<li><strong>运行时错误</strong><br> 空指针异常，数组越界，除数为零等</li>
-<li>逻辑错误<br> 运行结果与预想的结果不一样，这是一种很难调试的错误</li>
-</ul>
-<p>Java中的异常处理机制主要处理运行时错误。</p>
-<h3 id="异常分类"><a href="#异常分类" class="headerlink" title="异常分类"></a>异常分类</h3><p>下图是一张经典的Java异常类层次结构图，对各种异常做出了较为清晰的分类</p>
-<div align=center><img src="/images/javaexception.png"/></div>
-
-<p>Java异常类层次结构图</p>
-<p>从上图中可以看到，所有的异常都继承自一个共同的父类Throwable，而Throwable有两个重要的子类：Exception（异常）和Error（错误）<br> 下面对这两个重要的子类进行介绍</p>
-<ul>
-<li><strong>Error（错误）</strong><br> 是程序无法处理的错误，表示运行应用程序中较严重问题。大多数错误与代码编写者执行的操作无关，而表示代码运行时 JVM（Java 虚拟机）出现的问题。例如，Java虚拟机运行错误（Virtual MachineError），当 JVM 不再有继续执行操作所需的内存资源时，将出现 OutOfMemoryError。这些异常发生时，Java虚拟机（JVM）一般会选择线程终止。<br> 这些错误表示故障发生于虚拟机自身、或者发生在虚拟机试图执行应用时，如Java虚拟机运行错误（Virtual MachineError）、类定义错误（NoClassDefFoundError）等。这些错误是不可查的，因为它们在应用程序的控制和处理能力之 外，而且绝大多数是程序运行时不允许出现的状况。对于设计合理的应用程序来说，即使确实发生了错误，本质上也不应该试图去处理它所引起的异常状况。在 Java中，错误通过Error的子类描述。</li>
-<li><strong>Exception（异常）</strong><br> 是程序本身可以处理的异常。主要包含RuntimeException等运行时异常和IOException，SQLException等非运行时异常。<br> <strong>运行时异常</strong>包括：都是RuntimeException类及其子类异常，如NullPointerException(空指针异常)、IndexOutOfBoundsException(下标越界异常)等，这些异常是不检查异常，程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的，程序应该从逻辑角度尽可能避免这类异常的发生。<br> 运行时异常的特点是Java编译器不会检查它，也就是说，当程序中可能出现这类异常，即使没有用try-catch语句捕获它，也没有用throws子句声明抛出它，也会编译通过。<br> <strong>非运行时异常（编译异常）</strong>包括：RuntimeException以外的异常，类型上都属于Exception类及其子类。从程序语法角度讲是必须进行处理的异常，如果不处理，程序就不能编译通过。如IOException、SQLException等以及用户自定义的Exception异常，一般情况下不自定义检查异常。</li>
-</ul>
-<p>从<strong>编译器是否要求强制处理</strong>的角度分类，异常类别又可分为：</p>
-<ul>
-<li>可查异常<br> 正确的程序在运行中，很容易出现的、情理可容的异常状况。可查异常虽然是异常状况，但在一定程度上它的发生是可以预计的，而且一旦发生这种异常状况，就必须采取某种方式进行处理。<br> <strong>除了RuntimeException及其子类以外，其他的Exception类及其子类都属于可查异常。</strong>这种异常的特点是Java编译器会检查它，也就是说，当程序中可能出现这类异常，要么用try-catch语句捕获它，要么用throws子句声明抛出它，否则编译不会通过。</li>
-<li>不可查异常<br> 包括运行时异常（RuntimeException与其子类）和错误（Error）。</li>
-</ul>
-<h3 id="常见异常"><a href="#常见异常" class="headerlink" title="常见异常"></a>常见异常</h3><p>ArithmeticException：数学运算异常,比如除0。<br>NullPointerException：空指针异常。<br>NegativeArraySizeException：数组大小为负值异常。<br>ArrayIndexOutOfBoundException：数组下标越界异常。<br>NumberFormatException：数字格式异常。<br>InputMismatchException：输入类型不匹配异常。<br>NoSuchMethodException：方法不存在异常。<br>DataFormatException：数据格式错误异常。<br>NoClassDefFoundError：未找到类定义错误。<br>OutOfMemoryError:内存不足错误。<br>StackOverflowError：堆栈溢出错误。<br>ThreadDeath：线程结束。<br>UnknownError：未知错误。</p>
-<h3 id="异常处理机制"><a href="#异常处理机制" class="headerlink" title="异常处理机制"></a>异常处理机制</h3><p>在 Java 应用程序中，异常处理机制为：抛出异常，捕捉异常。</p>
-<ul>
-<li><strong>抛出异常</strong><br> 当一个方法出现错误引发异常时，方法创建异常对象并交付运行时系统，异常对象中包含了异常类型和异常出现时的程序状态等异常信息。运行时系统负责寻找处置异常的代码并执行。<br> 注意：对于运行时异常、错误或可查异常，Java技术所要求的异常处理方式有所不同。<br> 由于运行时异常的不可查性，为了更合理、更容易地实现应用程序，Java规定，<strong>运行时异常将由Java运行时系统自动抛出</strong>，允许应用程序忽略运行时异常。<br> 对于方法运行中可能出现的Error，当运行方法不欲捕捉时，Java允许该方法<strong>不做任何抛出声明</strong>。因为，大多数Error异常属于永远不能被允许发生的状况，也属于合理的应用程序不该捕捉的异常。<br> 对于所有的可查异常，Java规定：一个方法必须捕捉，或者声明抛出方法之外。也就是说，当一个方法选择不捕捉可查异常时，<strong>它必须声明将抛出异常</strong>。</li>
-<li><strong>捕获异常</strong><br> 在方法抛出异常之后，运行时系统将转为寻找合适的异常处理器（exception handler）。潜在的异常处理器是异常发生时依次存留在调用栈中的方法的集合。当异常处理器所能处理的异常类型与方法抛出的异常类型相符时，即为合适 的异常处理器。运行时系统从发生异常的方法开始，依次回查调用栈中的方法，直至找到含有合适异常处理器的方法并执行。当运行时系统遍历调用栈而未找到合适 的异常处理器，则运行时系统终止。同时，意味着Java程序的终止。</li>
-</ul>
-<p>通常使用关键字try、catch、finally来捕获异常<br> 语法形式如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;  </span><br><span class="line">    <span class="comment">// 可能会发生异常的程序代码  </span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Type1 id1) &#123;  </span><br><span class="line">    <span class="comment">// 捕获并处理try抛出的异常类型Type1  </span></span><br><span class="line">&#125; <span class="keyword">catch</span> (Type2 id2) &#123;  </span><br><span class="line">    <span class="comment">// 捕获并处理try抛出的异常类型Type2  </span></span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;  </span><br><span class="line">    <span class="comment">// 无论是否发生异常，都将执行的语句块  </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>小结：<br> <strong>try 块：</strong>用于捕获异常。其后可接零个或多个catch块，如果没有catch块，则必须跟一个finally块。<br> <strong>catch 块：</strong>用于处理try捕获到的异常。<br> <strong>finally 块：</strong>无论是否捕获或处理异常，finally块里的语句都会被执行。当在try块或catch块中遇到return语句时，finally语句块将在方法返回之前被执行。在以下4种特殊情况下，finally块不会被执行：<br> 1）在finally语句块中发生了异常。<br> 2）在前面的代码中用了System.exit()退出程序。<br> 3）程序所在的线程死亡。<br> 4）关闭CPU。</p>
-<p><strong>try、catch、finally语句块的执行顺序:</strong><br> 1)当try没有捕获到异常时：try语句块中的语句逐一被执行，程序将跳过catch语句块，执行finally语句块和其后的语句；</p>
-<p>2)当try捕获到异常，catch语句块里没有处理此异常的情况：当try语句块里的某条语句出现异常时，而没有处理此异常的catch语句块时，此异常将会抛给JVM处理，finally语句块里的语句还是会被执行，但finally语句块后的语句不会被执行；</p>
-<p>3)当try捕获到异常，catch语句块里有处理此异常的情况：在try语句块中是按照顺序来执行的，当执行到某一条语句出现异常时，程序将跳到catch语句块，并与catch语句块逐一匹配，找到与之对应的处理程序，其他的catch语句块将不会被执行，而try语句块中，出现异常之后的语句也不会被执行，catch语句块执行完后，执行finally语句块里的语句，最后执行finally语句块后的语句；<br> 流程如下图所示：</p>
-<div align=center><img src="/images/try.png"/></div>
-
-<p>try、catch、finally语句块的执行顺序</p>
-<h3 id="面试常考问题总结"><a href="#面试常考问题总结" class="headerlink" title="面试常考问题总结"></a>面试常考问题总结</h3><p>1.描述Java 7 ARM(Automatic Resource Management，自动资源管理)特征和多个catch块的使用<br> 如果一个try块中有多个异常要被捕获，catch块中的代码会变丑陋的同时还要用多余的代码来记录异常。有鉴于此，Java 7的一个新特征是：一个catch子句中可以捕获多个异常。示例代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">catch</span>(IOException | SQLException | Exception ex)&#123;</span><br><span class="line">     logger.error(ex);</span><br><span class="line">     <span class="keyword">throw</span> <span class="keyword">new</span> MyException(ex.getMessage());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>大多数情况下，当忘记关闭资源或因资源耗尽出现运行时异常时，我们只是用finally子句来关闭资源。这些异常很难调试，我们需要深入到资源使用的每一步来确定是否已关闭。因此，Java 7用try-with-resources进行了改进：在try子句中能创建一个资源对象，当程序的执行完try-catch之后，运行环境自动关闭资源。下面是这方面改进的示例代码：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> (MyResource mr = <span class="keyword">new</span> MyResource()) &#123;</span><br><span class="line">     System.out.println(<span class="string">"MyResource created in try-with-resources"</span>);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">     e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>2.在Java中throw与throws关键字之间的区别？<br> throws用于在方法签名中声明此方法可能抛出的异常，而throw关键字则是中断程序的执行并移交异常对象到运行时进行处理。</p>
-<p>3.被检查的异常和不受检查的异常有什么区别？</p>
-<ul>
-<li>被检查的异常应该用try-catch块代码处理，或者在main方法中用throws关键字让JRE了解程序可能抛出哪些异常。不受检查的异常在程序中不要求被处理或用throws语句告知。</li>
-<li>Exception是所有被检查异常的基类，然而，<strong>RuntimeException是所有不受检查异常的基类</strong>。</li>
-<li>被检查的异常适用于那些不是因程序引起的错误情况，比如：读取文件时文件不存在引发的FileNotFoundException。然而，不被检查的异常通常都是由于糟糕的编程引起的，比如：在对象引用时没有确保对象非空而引起的NullPointerException。</li>
-</ul>
-<p>4.Java中final,finally,finalize的区别？<br> final和finally在Java中是关键字，而finalize则是一个方法。</p>
-<ul>
-<li>final关键字使得类变量不可变，避免类被其它类继承或方法被重写。</li>
-<li>finally跟try-catch块一起使用，即使是出现了异常，其子句总会被执行，通常，finally子句用来关闭相关资源。</li>
-<li>finalize方法中的对象被销毁之前会被垃圾回收。</li>
-</ul>
-<p>5.下面是一些代码相关的问题，需要回答该代码有没有问题？该怎么修改？<br> A．下面这段代码有什么问题呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;         </span><br><span class="line">        <span class="keyword">try</span> &#123;             </span><br><span class="line">            testExceptions();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (FileNotFoundException | IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">testExceptions</span><span class="params">()</span> <span class="keyword">throws</span> IOException,</span></span><br><span class="line"><span class="function">            FileNotFoundException </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面代码的主要问题在于FileNotFoundException是IOException的子类，编译会报错：The exception FileNotFoundException is already caught by the alternative IOException.<br> 有两种办法可以解决这个问题</p>
-<ul>
-<li>用两个catch子句来处理这两个异常</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;     </span><br><span class="line">    testExceptions(); </span><br><span class="line">&#125;<span class="keyword">catch</span>(FileNotFoundException e)&#123;</span><br><span class="line">    e.printStackTrace(); </span><br><span class="line">&#125;<span class="keyword">catch</span> (IOException  e) &#123;</span><br><span class="line">    e.printStackTrace(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>在catch子句中移除FileNotFoundException，只用IOException</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">     testExceptions(); </span><br><span class="line">&#125;<span class="keyword">catch</span> (IOException  e) &#123;</span><br><span class="line">     e.printStackTrace(); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>B．下面这段代码又有什么问题呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException; </span><br><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException1</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 go();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (JAXBException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">             &#125;</span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">go</span><span class="params">()</span> <span class="keyword">throws</span> IOException, JAXBException, FileNotFoundException</span>&#123;</span><br><span class="line">        &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面代码的问题同样在于FileNotFoundException是IOException的子类，所以，FileNotFoundException的catch子句将被隐藏。编译时会报错：Unreachable catch block for FileNotFoundException.<br> 解决方案：<br> 改变catch子句的顺序来修复程序</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  go();</span><br><span class="line">&#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125; <span class="keyword">catch</span> (JAXBException e) &#123;</span><br><span class="line">  e.printStackTrace();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>C．下面的代码同样存在问题。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException2</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span> &#123;</span><br><span class="line">             foo();</span><br><span class="line">         &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(JAXBException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(NullPointerException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;       </span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>&#123;</span><br><span class="line"> </span><br><span class="line">       &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>这段代码同样不能编译，因为JAXBException是个受检查的异常，而foo方法应该抛出此异常供调用方法捕获。你将会得到：Unreachable catch block for JAXBException这样的错误信息。这个异常不可能从try子句中抛出。为解决这个错误，只能将JAXBException从catch子句中移除。<br> 也要注意到，NullPointerException的异常捕获是有效的，因为它是个不被检查的异常。</p>
-<p>D．下面的代码存在什么问题呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException3</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span>&#123;</span><br><span class="line">         bar();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(NullPointerException e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">                   foo();     </span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">()</span></span>&#123;</span><br><span class="line"> </span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">          <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> NullPointerException</span>&#123;</span><br><span class="line">         &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这代码是个幌子，根本没问题，能被正确编译。我们能捕获到一般异常或者是不被检查的异常，即使在throws语句中没被提及。<br> 同样，如果程序中的一个方法foo()在throws中声明了不被检查的异常，程序中也不一定要处理这个异常。</p>
-<p>E．下面这段代码同样存在瑕疵。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException4</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> IOException</span>&#123;</span><br><span class="line"> </span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> NullPointerException</span>&#123;     &#125; </span><br><span class="line">&#125;  </span><br><span class="line"> </span><br><span class="line"> <span class="class"><span class="keyword">class</span> <span class="title">TestException5</span> <span class="keyword">extends</span> <span class="title">TestException4</span></span>&#123;</span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> Exception</span>&#123;     &#125;</span><br><span class="line">           <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> RuntimeException</span>&#123;</span><br><span class="line">               &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这段代码不能被编译，因为父类中start的方法签名与子类中的start方法签名不相同。为纠正这错误，我们可以修改子类的方法签名使之与超类相同，我们也可以像下面代码那样移除子类中throws关键字。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span>    </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>&#123;</span><br><span class="line"> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>F．下面的代码存在什么问题呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;   </span><br><span class="line"><span class="keyword">import</span> javax.xml.bind.JAXBException;   </span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestException6</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">         <span class="keyword">try</span> &#123;</span><br><span class="line">             foo();</span><br><span class="line">         &#125; <span class="keyword">catch</span> (IOException | JAXBException e) &#123;</span><br><span class="line">             e = <span class="keyword">new</span> Exception(<span class="string">""</span>);</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;<span class="keyword">catch</span>(Exception e)&#123;</span><br><span class="line">             e = <span class="keyword">new</span> Exception(<span class="string">""</span>);</span><br><span class="line">             e.printStackTrace();</span><br><span class="line">         &#125;</span><br><span class="line">       &#125;</span><br><span class="line"> </span><br><span class="line">       <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> <span class="keyword">throws</span> IOException, JAXBException</span>&#123;</span><br><span class="line">       &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<p>这段代码同样不能编译，<strong>因为在多个catch子句中的异常对象是不可变的，我们不能改变其值</strong>。你会得到这样的：The parameter e of a multi-catch block cannot be assigned编译时错误信息。我们需要删掉将e赋值给新异常对象这句来修正错误。</p>
-<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p>[1]<a href="https://link.jianshu.com?t=http://www.360doc.com/content/12/0102/09/1824154_176605921.shtml" target="_blank" rel="noopener">详解Java中异常处理机制</a><br> [2]<a href="https://link.jianshu.com?t=http://www.importnew.com/14688.html" target="_blank" rel="noopener">深入理解java异常处理机制</a><br> [3]<a href="https://link.jianshu.com?t=http://blog.csdn.net/zhaoqianjava/article/details/6854732" target="_blank" rel="noopener">JAVA异常处理相关面试题</a><br> [4]<a href="https://link.jianshu.com?t=http://www.importnew.com/7383.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 1</a><br> [5]<a href="https://link.jianshu.com?t=http://www.importnew.com/7541.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 2</a><br> [6]<a href="https://link.jianshu.com?t=http://www.importnew.com/7820.html" target="_blank" rel="noopener">Java异常的面试问题及答案-Part 3</a></p>
-<hr>
-<p>本文整理自</p>
-<p><a href="https://www.jianshu.com/p/872844d995c4" target="_blank" rel="noopener">Java异常处理机制总结</a></p>
-<p>仅做个人学习总结所用,遵循CC 4.0 BY-SA版权协议,如有侵权请联系删除!</p>
-<hr>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -2335,7 +2435,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">225</span>
+          <span class="site-state-item-count">229</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -2391,7 +2491,7 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">848k</span>
+    <span title="站点总字数">864k</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
